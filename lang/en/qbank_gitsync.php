@@ -28,3 +28,5 @@ defined('MOODLE_INTERNAL') || die();
 $string['pluginname'] = 'Gitsync';
 $string['gitsync:exportquestions'] = 'Export';
 $string['gitsync:importquestions'] = 'Import';
+$string['exporterror'] = 'Could not export question id: {$a}';
+$string['importerror'] = 'Could not import question from file: {$a}';

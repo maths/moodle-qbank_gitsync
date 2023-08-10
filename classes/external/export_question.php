@@ -23,15 +23,19 @@
  */
 
 namespace qbank_gitsync\external;
+
 defined('MOODLE_INTERNAL') || die();
+
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot . '/question/format/xml/format.php');
+
+use context_system;
+use external_api;
 use external_function_parameters;
 use external_value;
-use external_api;
-use question_bank;
+use moodle_exception;
 use qformat_xml;
-use context_system;
+use question_bank;
 use question_edit_contexts;
 
 /**
@@ -76,7 +80,12 @@ class export_question extends external_api {
         $qformat->setContexts($contexts->having_one_edit_tab_cap('export'));
         $qformat->setCattofile(false);
         $qformat->setContexttofile(false);
-        $qformat->exportpreprocess();
+        if (!$qformat->exportpreprocess()) {
+            throw new moodle_exception('exporterror', 'gitsync', '', $questionid);
+        }
+        if (!$question = $qformat->exportprocess(true)) {
+            throw new moodle_exception('exporterror', 'gitsync', '', $questionid);
+        }
         $question = $qformat->exportprocess();
 
         return var_dump($question);
