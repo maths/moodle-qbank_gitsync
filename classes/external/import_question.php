@@ -37,6 +37,7 @@ use context_system;
 use Exception;
 use external_api;
 use external_function_parameters;
+use external_single_structure;
 use external_value;
 use qformat_xml;
 use question_edit_contexts;
@@ -56,17 +57,19 @@ class import_question extends external_api {
             'filepath' => new external_value(PARAM_PATH, 'Local path for file for upload'),
             'contextlevel' => new external_value(PARAM_TEXT, 'Context level: 10, 40, 50, 70'),
             'contextidentifier1' => new external_value(PARAM_TEXT, 'Unique course or category name'),
-            'contentidentifier2' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
+            'contextidentifier2' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
                 ]
             );
     }
 
     /**
      * Returns description of webservice function output.
-     * @return external_value
+     * @return external_single_structure
      */
     public static function execute_returns() {
-        return new external_value(PARAM_SEQUENCE, 'question id');
+        return new external_single_structure([
+            'questionid' => new external_value(PARAM_SEQUENCE, 'question id'),
+        ]);
     }
 
     /**
@@ -116,6 +119,7 @@ class import_question extends external_api {
         self::validate_context($thiscontext);
         $qformat = new qformat_xml();
 
+        $iscategory = false;
         if ($categoryname) {
             // Category should be in form top/$category/$subcat1/$subcat2 and
             // have been gleaned directly from the directory structure.
@@ -137,6 +141,7 @@ class import_question extends external_api {
             $category = $DB->get_record("question_categories", ['name' => 'top', 'contextid' => $thiscontext->id]);
             $qformat->setCategory($category);
             $qformat->setCatfromfile(true);
+            $iscategory = true;
         }
         $qformat->setFilename($filepath);
         $qformat->set_display_progress(false);
@@ -159,16 +164,22 @@ class import_question extends external_api {
             throw new moodle_exception('importerror', 'gitsync', '', $filepath);
         }
 
-        $eventparams = [
-            'contextid' => $qformat->category->contextid,
-            'other' => ['format' => 'xml', 'categoryid' => $qformat->category->id],
+        $response = [
+            'questionid' => null,
         ];
-        $event = \core\event\questions_imported::create($eventparams);
-        $event->trigger();
+        // Log imported question and return id of new question ready to make manifest file.
+        if (!$iscategory) {
+            $eventparams = [
+                'contextid' => $qformat->category->contextid,
+                'other' => ['format' => 'xml', 'categoryid' => $qformat->category->id],
+            ];
+            $event = \core\event\questions_imported::create($eventparams);
+            $event->trigger();
 
-        // Return id of new question ready to make manifest file.
-        $questions = $DB->get_records('question', ['modifiedby' => $USER->id], 'id DESC', 'id', 0, 1);
-        $question = reset($questions);
-        return $question->id;
+            $questions = $DB->get_records('question', ['modifiedby' => $USER->id], 'id DESC', 'id', 0, 1);
+            $question = reset($questions);
+            $response['questionid'] = $question->id;
+        }
+        return $response;
     }
 }
