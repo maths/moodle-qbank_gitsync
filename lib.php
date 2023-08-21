@@ -28,14 +28,51 @@
  * Each category name is cleaned by a call to clean_param(, PARAM_TEXT),
  * which matches the cleaning in question/bank/managecategories/category_form.php.
  *
- * @param string $path
+ * @param string|null $path
  * @return array of category names.
  */
-function split_category_path($path) {
+function split_category_path(?string $path): array {
     $rawnames = preg_split('~(?<!/)/(?!/)~', $path);
     $names = array();
     foreach ($rawnames as $rawname) {
         $names[] = clean_param(trim(str_replace('//', '/', $rawname)), PARAM_TEXT);
     }
     return $names;
+}
+/**
+ * Return the correct context given a valid selection of identifying information
+ *
+ * @param integer $contextlevel
+ * @param string|null $categoryname
+ * @param string|null $coursename
+ * @param string|null $modulename
+ * @return object
+ */
+function get_context(int $contextlevel, ?string $categoryname = null, ?string $coursename = null, ?string $modulename = null): object {
+    global $DB;
+    switch ($contextlevel) {
+        case \CONTEXT_SYSTEM:
+            return context_system::instance();
+        case \CONTEXT_COURSECAT:
+            $coursecatid = $DB->get_field('course_categories', 'id', ['name' => $categoryname], $strictness = MUST_EXIST);
+            return context_coursecat::instance($coursecatid);
+        case \CONTEXT_COURSE:
+            $courseid = $DB->get_field('course', 'id', ['fullname' => $coursename], $strictness = MUST_EXIST);
+            return context_course::instance($courseid);
+        case \CONTEXT_MODULE:
+            // Assuming here that the module is a quiz.
+            $cmid = $DB->get_field_sql("
+                   SELECT cm.id
+                     FROM {course_modules} cm
+                LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
+                LEFT JOIN {course} c ON c.id = cm.course
+                    WHERE c.fullname = :coursename
+                            AND q.name = :quizname
+                            AND cm.module = 18",
+                ['coursename' => $coursename, 'quizname' => $modulename]);
+                return context_module::instance($cmid);
+            break;
+        default:
+            throw new Exception('Invalid context level supplied.');
+    }
 }

@@ -38,8 +38,8 @@ $token = '4ec7cd3f62e08f595df5e9c90ea7cfcd';
 $wsurl = $moodleurl . '/webservice/rest/server.php';
 $contextlevel = 'module'; // Set to system, coursecategory, course or module.
 $questionid = '0'; // TODO Holding value until import of existing questions developed.
-$contextidentifier1 = 'Course 1'; // Unique course or category name.
-$contextidentifier2 = 'Test 1'; // Unique (within course) module name.
+$coursename = 'Course 1'; // Unique course name.
+$modulename = 'Test 1'; // Unique (within course) module name.
 /**
  * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
  */
@@ -79,8 +79,8 @@ $post = [
     'moodlewsrestformat' => 'json',
     'questionid' => $questionid,
     'contextlevel' => getcontextlevel($contextlevel),
-    'contextidentifier1' => $contextidentifier1,
-    'contextidentifier2' => $contextidentifier2,
+    'coursename' => $coursename,
+    'modulename' => $modulename,
 ];
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
@@ -116,8 +116,8 @@ foreach ($repoiterator as $repoitem) {
                     'questionid' => $responsejson->questionid,
                     'contextlevel' => $post['contextlevel'], // Questions can be imported in multiple contexts.
                     'filepath' => $post['filepath'],
-                    'contextidentifier1' => $post['contextidentifier1'],
-                    'contextidentifier2' => $post['contextidentifier2'],
+                    'coursename' => $post['coursename'],
+                    'modulename' => $post['modulename'],
                     'format' => 'xml',
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");

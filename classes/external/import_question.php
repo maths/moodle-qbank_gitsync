@@ -26,15 +26,11 @@ namespace qbank_gitsync\external;
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot . '/question/format/xml/format.php');
 require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
 
-use context_course;
-use context_coursecat;
-use context_module;
-use context_system;
-use Exception;
 use external_api;
 use external_function_parameters;
 use external_single_structure;
@@ -56,10 +52,9 @@ class import_question extends external_api {
             'categoryname' => new external_value(PARAM_TEXT, 'Category of question'),
             'filepath' => new external_value(PARAM_PATH, 'Local path for file for upload'),
             'contextlevel' => new external_value(PARAM_TEXT, 'Context level: 10, 40, 50, 70'),
-            'contextidentifier1' => new external_value(PARAM_TEXT, 'Unique course or category name'),
-            'contextidentifier2' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
-                ]
-            );
+            'coursename' => new external_value(PARAM_TEXT, 'Unique course or category name'),
+            'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
+        ]);
     }
 
     /**
@@ -80,42 +75,15 @@ class import_question extends external_api {
      * @param string $categoryname category of the question
      * @param string $filepath local file path (including filename) for file to be imported
      * @param int $contextlevel Moodle code for context level e.g. 10 for system
-     * @param string $contextidentifier1 Unique course or category name (optional depending on context)
-     * @param string $contextidentifier2 Unique (within course) module name (optional depending on context)
+     * @param string $coursename Unique course name (optional depending on context)
+     * @param string $modulename Unique (within course) module name (optional depending on context)
      */
     public static function execute($questionid, $categoryname, $filepath,
-                                    $contextlevel, $contextidentifier1 = null, $contextidentifier2 = null) {
+                                    $contextlevel, $coursename = null, $modulename = null) {
         global $CFG, $DB, $USER;
-        switch ($contextlevel) {
-            case \CONTEXT_SYSTEM:
-                $thiscontext = context_system::instance();
-                break;
-            case \CONTEXT_COURSECAT:
-                $coursecatid = $DB->get_field('course_categories', 'id', ['name' => $contextidentifier1], $strictness = MUST_EXIST);
-                $thiscontext = context_coursecat::instance($coursecatid);
-                break;
-            case \CONTEXT_COURSE:
-                $courseid = $DB->get_field('course', 'id', ['fullname' => $contextidentifier1], $strictness = MUST_EXIST);
-                $thiscontext = context_course::instance($courseid);
-                break;
-            case \CONTEXT_MODULE:
-                // Assuming here that the module is a quiz.
-                $cmid = $DB->get_field_sql("
-                       SELECT cm.id
-                         FROM {course_modules} cm
-                    LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
-                    LEFT JOIN {course} c ON c.id = cm.course
-                        WHERE c.fullname = :coursename
-                              AND q.name = :quizname
-                              AND cm.module = 18",
-                    ['coursename' => $contextidentifier1, 'quizname' => $contextidentifier2]);
-                    $thiscontext = context_module::instance($cmid);
-                break;
-            default:
-                throw new Exception('Invalid context level supplied.');
-                return;
-        }
-
+        $thiscontext = get_context($contextlevel, $categoryname, $coursename, $modulename);
+        // The webservice user needs to have access to the context. They could be given Manager
+        // role at site level to access everything or access could be restricted to certain courses.
         self::validate_context($thiscontext);
         $qformat = new qformat_xml();
 
