@@ -40,6 +40,8 @@ $contextlevel = 'module'; // Set to system, coursecategory, course or module.
 $questionid = '0'; // TODO Holding value until import of existing questions developed.
 $coursename = 'Course 1'; // Unique course name.
 $modulename = 'Test 1'; // Unique (within course) module name.
+$coursecategory = null; // Unique course category name.
+
 /**
  * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
  */
@@ -81,6 +83,7 @@ $post = [
     'contextlevel' => getcontextlevel($contextlevel),
     'coursename' => $coursename,
     'modulename' => $modulename,
+    'coursecategory' => $coursecategory
 ];
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 

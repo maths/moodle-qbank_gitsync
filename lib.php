@@ -42,13 +42,20 @@ function split_category_path(?string $path): array {
 /**
  * Return the correct context given a valid selection of identifying information
  *
- * @param integer $contextlevel
+ * Required parameters are dependent on the supplied context level.
+ * System: nothing.
+ * Course category: category name.
+ * Course: course name.
+ * Module: course name and module name.
+ *
+ * @param int $contextlevel
  * @param string|null $categoryname
  * @param string|null $coursename
  * @param string|null $modulename
- * @return object
+ * @return context
  */
-function get_context(int $contextlevel, ?string $categoryname = null, ?string $coursename = null, ?string $modulename = null): object {
+function get_context(int $contextlevel, ?string $categoryname = null,
+                    ?string $coursename = null, ?string $modulename = null):context {
     global $DB;
     switch ($contextlevel) {
         case \CONTEXT_SYSTEM:
@@ -66,10 +73,11 @@ function get_context(int $contextlevel, ?string $categoryname = null, ?string $c
                      FROM {course_modules} cm
                 LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                 LEFT JOIN {course} c ON c.id = cm.course
+                LEFT JOIN {modules} m ON m.id = cm.module
                     WHERE c.fullname = :coursename
                             AND q.name = :quizname
-                            AND cm.module = 18",
-                ['coursename' => $coursename, 'quizname' => $modulename]);
+                            AND m.name = 'quiz'",
+                ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
                 return context_module::instance($cmid);
             break;
         default:

@@ -35,28 +35,52 @@ use context_course;
 use externallib_advanced_testcase;
 use external_api;
 use require_login_exception;
+use moodle_exception;
 
+/**
+ * Test the export_question webservice funcyion.
+ *
+ * @covers \gitsync\external\export_question::execute
+ */
 class export_question_test extends externallib_advanced_testcase {
+    /** @var plugin generator */
+    protected $generator;
+    /** @var generated course object */
+    protected $course;
+    /** @var generated question_category object */
+    protected $qcategory;
+    /** @var generated question object */
+    protected $q;
+    /** @var generated user object */
+    protected $user;
+    /** Name of question to be generated and exported. */
+    const QNAME = 'Example STACK question';
+
+    public function setUp(): void {
+        $this->resetAfterTest();
+        $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $this->course = $this->getDataGenerator()->create_course();
+        $this->qcategory = $this->generator->create_question_category(
+                        ['contextid' => \context_course::instance($this->course->id)->id]);
+        $user = $this->getDataGenerator()->create_user();
+        $this->user = $user;
+        $this->setUser($user);
+        $this->q = $this->generator->create_question('stack', 'test3',
+                        ['name' => self::QNAME, 'category' => $this->qcategory->id]);
+
+    }
+
     /**
      * Test the execute function when capabilities are present.
-     *
-     * @covers \gitsync\external\export_question::execute
      */
     public function test_capabilities(): void {
-        global $DB, $USER;
-        $this->resetAfterTest(true);
-        $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $course = $this->getDataGenerator()->create_course();
-        $cat = $generator->create_question_category(['contextid' => \context_course::instance($course->id)->id]);
-        $q = $generator->create_question('numerical', null,
-        ['name' => 'Example numerical question', 'category' => $cat->id]);
-
-        // Set the required capabilities - webservice access and export rights on course
-        $context = context_course::instance($course->id);
+        global $DB;
+        // Set the required capabilities - webservice access and export rights on course.
+        $context = context_course::instance($this->course->id);
         $this->assignUserCapability('qbank/gitsync:exportquestions', $context->id);
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
-        role_assign($managerroleid, $USER->id, $context->id);
-        $returnvalue = export_question::execute($q->id, 50, $course->fullname, null);
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $returnvalue = export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
 
         // We need to execute the return values cleaning process to simulate
         // the web service server.
@@ -71,30 +95,81 @@ class export_question_test extends externallib_advanced_testcase {
     }
 
     /**
-     * Test the execute function fails when capabilities are missing.
-     *
-     * @covers \mod_fruit\external\get_fruit::execute
+     * Test the execute function fails when not logged in.
      */
-    public function test_capabilities_missing(): void {
-        global $DB, $USER;
-        $this->resetAfterTest(true);
-
-        $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $course = $this->getDataGenerator()->create_course();
-        $cat = $generator->create_question_category(['contextid' => \context_course::instance($course->id)->id]);
-        $q = $generator->create_question('numerical', null,
-            ['name' => 'Example numerical question', 'category' => $cat->id]);
-
-        // Check when no access to the webservice
+    public function test_not_logged_in(): void {
+        global $DB;
+        $this->setUser();
         $this->expectException(require_login_exception::class);
+        // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        export_question::execute($q->id, 50, $course->fullname, null);
+        export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
+    }
 
-        // Check when user has no access to export from course
-        $context = context_course::instance($course->id);
+    /**
+     * Test the execute function fails when no webservice capability assigned.
+     */
+    public function test_no_webservice_access(): void {
+        global $DB;
+        $this->expectException(require_login_exception::class);
+        $this->expectExceptionMessage('Not enrolled');
+        export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
+    }
+
+    /**
+     * Test the execute function fails when user has no access to supplied context.
+     */
+    public function test_export_capability(): void {
+        $context = context_course::instance($this->course->id);
         $this->assignUserCapability('qbank/gitsync:exportquestions', $context->id);
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        export_question::execute($q->id, 50, $course->fullname, null);
+        export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
+    }
+
+    /**
+     * Test the execute function fails when the question is not accessible in the supplied context.
+     */
+    public function test_question_is_in_supplied_context(): void {
+        global $DB;
+        $context = context_course::instance($this->course->id);
+        $course2 = $this->getDataGenerator()->create_course();
+        $catincourse2 = $this->generator->create_question_category(['contextid' => \context_course::instance($course2->id)->id]);
+        $qincourse2 = $this->generator->create_question('numerical', null,
+            ['name' => 'Example numerical question', 'category' => $catincourse2->id]);
+
+        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $this->expectException(moodle_exception::class);
+        $this->expectExceptionMessage(get_string('contexterror', 'qbank_gitsync', $qincourse2->id));
+        // Trying to export question from course 2 using context of course 1.
+        // User has export capability on course 1 but not course 2.
+        export_question::execute($qincourse2->id, 50, $this->course->fullname, null, null);
+    }
+
+    /**
+     * Test output of execute function.
+     */
+    public function test_export(): void {
+        global $DB;
+        // Set the required capabilities - webservice access and export rights on course.
+        $context = context_course::instance($this->course->id);
+        $this->assignUserCapability('qbank/gitsync:exportquestions', $context->id);
+        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $sink = $this->redirectEvents();
+        $returnvalue = export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
+
+        $returnvalue = external_api::clean_returnvalue(
+            export_question::execute_returns(),
+            $returnvalue
+        );
+
+        $this->assertStringContainsString("question: {$this->q->id}", $returnvalue['question']);
+        $this->assertStringContainsString(self::QNAME, $returnvalue['question']);
+
+        $events = $sink->get_events();
+        $this->assertEquals(count($events), 1);
+        $this->assertInstanceOf('\core\event\questions_exported', $events['0']);
     }
 }

@@ -35,8 +35,9 @@ use external_api;
 use external_function_parameters;
 use external_single_structure;
 use external_value;
+use moodle_exception;
 use qformat_xml;
-use question_edit_contexts;
+use core_question\local\bank\question_edit_contexts;
 
 /**
  * A webservice function to import a single question with metadata.
@@ -49,11 +50,12 @@ class import_question extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters([
             'questionid' => new external_value(PARAM_SEQUENCE, 'Moodle question id if it exists'),
-            'categoryname' => new external_value(PARAM_TEXT, 'Category of question'),
+            'categoryname' => new external_value(PARAM_TEXT, 'Category of question in form top/$category/$subcat1/$subcat2'),
             'filepath' => new external_value(PARAM_PATH, 'Local path for file for upload'),
             'contextlevel' => new external_value(PARAM_TEXT, 'Context level: 10, 40, 50, 70'),
-            'coursename' => new external_value(PARAM_TEXT, 'Unique course or category name'),
+            'coursename' => new external_value(PARAM_TEXT, 'Unique course name'),
             'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
+            'coursecategory' => new external_value(PARAM_TEXT, 'Unique course category name'),
         ]);
     }
 
@@ -69,31 +71,36 @@ class import_question extends external_api {
 
     /**
      * Import a question from XML file
+     *
      * Initially just create a new one in Moodle DB. Will need to expand to
      * use importasversion if question already exists.
-     * @param string $questionid question id
-     * @param string $categoryname category of the question
+     *
+     * @param string|null $questionid question id
+     * @param string|null $qcategoryname category of the question in form top/$category/$subcat1/$subcat2
      * @param string $filepath local file path (including filename) for file to be imported
      * @param int $contextlevel Moodle code for context level e.g. 10 for system
-     * @param string $coursename Unique course name (optional depending on context)
-     * @param string $modulename Unique (within course) module name (optional depending on context)
+     * @param string|null $coursename Unique course name (optional unless course or module context level)
+     * @param string|null $modulename Unique (within course) module name (optional unless module context level)
+     * @param string|null $coursecategory course category name (optional unless course catgeory context level)
+     * @return array ['questionid']
      */
-    public static function execute($questionid, $categoryname, $filepath,
-                                    $contextlevel, $coursename = null, $modulename = null) {
+    public static function execute(?string $questionid, ?string $qcategoryname, string $filepath,
+                                    int $contextlevel, ?string $coursename = null, ?string $modulename = null,
+                                    ?string $coursecategory = null):array {
         global $CFG, $DB, $USER;
-        $thiscontext = get_context($contextlevel, $categoryname, $coursename, $modulename);
+        $thiscontext = get_context($contextlevel, $coursecategory, $coursename, $modulename);
         // The webservice user needs to have access to the context. They could be given Manager
         // role at site level to access everything or access could be restricted to certain courses.
         self::validate_context($thiscontext);
         $qformat = new qformat_xml();
 
         $iscategory = false;
-        if ($categoryname) {
-            // Category should be in form top/$category/$subcat1/$subcat2 and
+        if ($qcategoryname) {
+            // Category name should be in form top/$category/$subcat1/$subcat2 and
             // have been gleaned directly from the directory structure.
             // Find the 'top' category for the context ($parent==0) and
             // then descend through the hierarchy until we find the category we need.
-            $catnames = split_category_path($categoryname);
+            $catnames = split_category_path($qcategoryname);
             $parent = 0;
             foreach ($catnames as $key => $catname) {
                 $category = $DB->get_record('question_categories', ['name' => $catname,
@@ -119,17 +126,17 @@ class import_question extends external_api {
         $qformat->setContexts($contexts->having_one_edit_tab_cap('import'));
 
         if (!$qformat->importpreprocess()) {
-            throw new moodle_exception('importerror', 'gitsync', '', $filepath);
+            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filepath));
         }
 
         // Process the uploaded file.
         if (!$qformat->importprocess()) {
-            throw new moodle_exception('importerror', 'gitsync', '', $filepath);
+            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filepath));
         }
 
         // In case anything needs to be done after.
         if (!$success = $qformat->importpostprocess()) {
-            throw new moodle_exception('importerror', 'gitsync', '', $filepath);
+            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filepath));
         }
 
         $response = [
