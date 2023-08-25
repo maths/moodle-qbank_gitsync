@@ -18,7 +18,6 @@
  * Unit tests for export_question function of gitsync webservice
  *
  * @package    qbank_gitsync
- * @subpackage cli
  * @copyright  2023 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -38,7 +37,7 @@ use require_login_exception;
 use moodle_exception;
 
 /**
- * Test the export_question webservice funcyion.
+ * Test the export_question webservice function.
  *
  * @covers \gitsync\external\export_question::execute
  */

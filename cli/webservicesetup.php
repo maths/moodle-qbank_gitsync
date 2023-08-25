@@ -18,7 +18,6 @@
  * Set up a webservice. Based on https://gist.github.com/timhunt/51987ad386faca61fe013904c242e9b4 by Tim Hunt.
  *
  * @package    qbank_gitsync
- * @subpackage cli
  * @copyright  2023 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

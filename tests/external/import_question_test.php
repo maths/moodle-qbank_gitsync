@@ -18,7 +18,6 @@
  * Unit tests for import_question function of gitsync webservice
  *
  * @package    qbank_gitsync
- * @subpackage cli
  * @copyright  2023 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -38,7 +37,7 @@ use external_api;
 use require_login_exception;
 
 /**
- * Test the export_question webservice funcyion.
+ * Test the export_question webservice function.
  *
  * @covers \gitsync\external\import_question::execute
  */
@@ -51,7 +50,7 @@ class import_question_test extends externallib_advanced_testcase {
     protected $qcategory;
     /** @var generated user object */
     protected $user;
-    /** @var filepath of directory containg test files */
+    /** @var filepath of directory containing test files */
     protected $testrepo;
 
     public function setUp(): void {
