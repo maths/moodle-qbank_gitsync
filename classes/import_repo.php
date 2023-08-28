@@ -41,6 +41,8 @@ class import_repo {
     /**
      * Settings for POST request
      *
+     * These are the parameters for the webservice call.
+     *
      * @var array
      */
     public array $postsettings;
@@ -80,7 +82,7 @@ class import_repo {
      * @param array $moodleinstances pairs of names and URLs
      * @return void
      */
-    public function process($clihelper, $moodleinstances) {
+    public function process(cli_helper $clihelper, array $moodleinstances):void {
         // Convert command line options into variables.
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
@@ -132,9 +134,9 @@ class import_repo {
      * Wrapper for cURL request to allow mocking.
      *
      * @param string $wsurl webservice URL
-     * @return void
+     * @return curl_request
      */
-    public function get_curl_request($wsurl) {
+    public function get_curl_request($wsurl):curl_request {
         return new \qbank_gitsync\curl_request($wsurl);
     }
 
@@ -164,7 +166,7 @@ class import_repo {
     /**
      * Import questions
      *
-     * @return void
+     * @return resource Temporary manifest file of added questions, one line per question.
      */
     public function import_questions() {
         $tempfile = fopen($this->tempfilepath, 'a+');
@@ -186,6 +188,7 @@ class import_repo {
                             'filepath' => $this->postsettings['filepath'],
                             'coursename' => $this->postsettings['coursename'],
                             'modulename' => $this->postsettings['modulename'],
+                            'coursecategory' => $this->postsettings['coursecategory'],
                             'format' => 'xml',
                         ];
                         fwrite($tempfile, json_encode($fileoutput) . "\n");
@@ -203,7 +206,8 @@ class import_repo {
     /**
      * Create manifest file from temporary file.
      *
-     * @return void
+     * @return resource manifest file. Contains all questions (not just from this run) as
+     * a single JSON array.
      */
     public function create_manifest_file() {
         // Create manifest file if it doesn't already exist.

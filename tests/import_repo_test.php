@@ -68,7 +68,7 @@ class import_repo_test extends advanced_testcase {
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
-            'coursecategory' => null,
+            'coursecategory' => 'Cat 1',
             'token' => 'XXXXXX',
             'help' => false
         ];
@@ -160,6 +160,12 @@ class import_repo_test extends advanced_testcase {
             new \RecursiveDirectoryIterator($this->rootpath, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
+        $this->importrepo->postsettings = [
+            'contextlevel' => '10',
+            'coursename' => 'Course 1',
+            'modulename' => 'Test 1',
+            'coursecategory' => 'Cat 1',
+        ];
         $this->importrepo->import_questions();
         $this->assertContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1'], $this->results);
         $this->assertContains([$this->rootpath .
@@ -167,6 +173,19 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains([$this->rootpath .
                                '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1'], $this->results);
         $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2'], $this->results);
+
+        // Check temp manifest file created.
+        $this->assertEquals(file_exists($this->importrepo->tempfilepath), true);
+        $this->assertEquals(4, count(file($this->importrepo->tempfilepath)));
+        $tempfile = fopen($this->importrepo->tempfilepath, 'r');
+        $firstline = json_decode(fgets($tempfile));
+        $this->assertStringContainsString('3500', $firstline->questionid);
+        $this->assertEquals($firstline->contextlevel, '10');
+        $this->assertStringContainsString($this->rootpath . '/top/cat ', $firstline->filepath);
+        $this->assertEquals($firstline->coursename, 'Course 1');
+        $this->assertEquals($firstline->modulename, 'Test 1');
+        $this->assertEquals($firstline->coursecategory, 'Cat 1');
+        $this->assertEquals($firstline->format, 'xml');
     }
 
     /**
@@ -183,5 +202,46 @@ class import_repo_test extends advanced_testcase {
         );
         $this->importrepo->import_questions();
         $this->expectOutputRegex('/^Root directory should not contain XML files/');
+    }
+
+    /**
+     * Test creation of manifest file.
+     *
+     * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
+     */
+    public function test_manifest_file(): void {
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 3 category calls to the webservice and 4 question calls.
+        $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionid": null}',
+            '{"questionid": null}',
+            '{"questionid": null}',
+            '{"questionid": 35001}',
+            '{"questionid": 35002}',
+            '{"questionid": 35004}',
+            '{"questionid": 35003}',
+        );
+
+        $this->importrepo->process($this->clihelper, $this->moodleinstances);
+
+        // Manifest file is a single array.
+        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
+        $this->assertEquals(4, count($manifestcontents));
+        $questionids = array_map(function($q) {return $q->questionid;} , $manifestcontents);
+        $this->assertEquals(4, count($questionids));
+        $this->assertContains(35001, $questionids);
+        $this->assertContains(35002, $questionids);
+        $this->assertContains(35003, $questionids);
+        $this->assertContains(35004, $questionids);
+
+        $samplerecords = array_filter($manifestcontents, function($q) {return $q->questionid === 35004;});
+        $samplerecord = reset($samplerecords);
+        $this->assertEquals($samplerecord->contextlevel, '10');
+        $this->assertStringContainsString($this->rootpath . '/top/cat ', $samplerecord->filepath);
+        $this->assertEquals($samplerecord->coursename, 'Course 1');
+        $this->assertEquals($samplerecord->modulename, 'Test 1');
+        $this->assertEquals($samplerecord->coursecategory, 'Cat 1');
+        $this->assertEquals($samplerecord->format, 'xml');
     }
 }

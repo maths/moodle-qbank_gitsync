@@ -134,8 +134,8 @@ class cli_helper_test extends advanced_testcase {
      * @covers \gitsync\cli_helper\get_context_level()
      */
     public function test_incorrect_level(): void {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("Context level 'wrong' is not valid.");
         cli_helper::get_context_level('wrong');
-        $this->expectOutputString("Context level 'wrong' is not valid.\n");
     }
-
 }

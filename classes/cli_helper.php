@@ -153,8 +153,7 @@ class cli_helper {
             case 'module':
                 return 70;
             default:
-                echo "Context level '{$level}' is not valid.\n";
-                exit;
+                throw new \Exception("Context level '{$level}' is not valid.");
         }
     }
 }

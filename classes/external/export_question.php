@@ -52,9 +52,10 @@ class export_question extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'questionid' => new external_value(PARAM_SEQUENCE, 'Moodle question id if it exists'),
-            'contextlevel' => new external_value(PARAM_TEXT, 'Context level: 10, 40, 50, 70'),
+            'contextlevel' => new external_value(PARAM_SEQUENCE, 'Context level: 10, 40, 50, 70'),
             'coursename' => new external_value(PARAM_TEXT, 'Unique course or category name'),
             'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
+            'coursecategory' => new external_value(PARAM_TEXT, 'Unique course category name'),
         ]);
     }
 
