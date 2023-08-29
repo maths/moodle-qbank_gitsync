@@ -218,7 +218,7 @@ class import_repo {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) !== self::CATEGORY_FILE) {
                     // Path of file (without filename) relative to base $directory.
-                    $this->postsettings['categoryname'] = $this->repoiterator->getSubPath();
+                    $this->postsettings['categoryname'] = str_replace( '\\', '/', $this->repoiterator->getSubPath());
                     if ($this->postsettings['categoryname']) {
                         $this->upload_file($repoitem);
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
