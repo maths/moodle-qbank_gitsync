@@ -47,11 +47,25 @@ class import_repo {
      */
     public array $postsettings;
     /**
+     * Settings for POST file upload request
+     *
+     * These are the parameters for the webservice upload call.
+     *
+     * @var array
+     */
+    public array $uploadpostsettings;
+    /**
      * cURL request handle
      *
      * @var curl_request
      */
     public curl_request $curlrequest;
+    /**
+     * cURL request handle for file upload
+     *
+     * @var curl_request
+     */
+    public curl_request $uploadcurlrequest;
     /**
      * Path to temporary manifest file
      *
@@ -111,6 +125,7 @@ class import_repo {
         );
 
         $this->curlrequest = $this->get_curl_request($wsurl);
+        $this->uploadcurlrequest = $this->get_curl_request($moodleurl . '/webservice/upload.php');
 
         $this->postsettings = [
             'wstoken' => $token,
@@ -123,6 +138,13 @@ class import_repo {
             'coursecategory' => $coursecategory
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+        $this->uploadcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+        $this->uploadcurlrequest->set_option(CURLOPT_POST, 1);
+        $this->curlrequest->set_option(CURLOPT_POST, 1);
+        $this->uploadpostsettings = [
+            'token' => $token,
+            'moodlewsrestformat' => 'json'
+        ];
 
         $this->import_categories();
         $this->import_questions();
@@ -154,13 +176,33 @@ class import_repo {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) === self::CATEGORY_FILE) {
                     $this->postsettings['categoryname'] = '';
-                    // Full path of file (including filename) on the local computer.
-                    $this->postsettings['filepath'] = $repoitem->getPathname();
+                    $this->upload_file($repoitem);
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                     $this->curlrequest->execute();
                 }
             }
         }
+    }
+
+    /**
+     * Uploads a file to Moodle via cURL request to webservice
+     *
+     * Fileinfo parameter is set ready for import call to the webservice.
+     *
+     * @param resource $repoitem
+     * @return void
+     */
+    public function upload_file($repoitem) {
+        $this->uploadpostsettings['file_1'] = new \CURLFile($repoitem->getPathname());
+        $this->uploadcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->uploadpostsettings);
+        $fileinfo = json_decode($this->uploadcurlrequest->execute())[0];
+        $this->postsettings['fileinfo[contextid]'] = $fileinfo->contextid;
+        $this->postsettings['fileinfo[userid]'] = $fileinfo->userid;
+        $this->postsettings['fileinfo[component]'] = $fileinfo->component;
+        $this->postsettings['fileinfo[filearea]'] = $fileinfo->filearea;
+        $this->postsettings['fileinfo[itemid]'] = $fileinfo->itemid;
+        $this->postsettings['fileinfo[filepath]'] = $fileinfo->filepath;
+        $this->postsettings['fileinfo[filename]'] = $fileinfo->filename;
     }
 
     /**
@@ -177,15 +219,15 @@ class import_repo {
                         && pathinfo($repoitem, PATHINFO_FILENAME) !== self::CATEGORY_FILE) {
                     // Path of file (without filename) relative to base $directory.
                     $this->postsettings['categoryname'] = $this->repoiterator->getSubPath();
-                    $this->postsettings['filepath'] = $repoitem->getPathname();
                     if ($this->postsettings['categoryname']) {
+                        $this->upload_file($repoitem);
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                         $responsejson = json_decode($this->curlrequest->execute());
                         $fileoutput = [
                             'questionid' => $responsejson->questionid,
                             // Questions can be imported in multiple contexts.
                             'contextlevel' => $this->postsettings['contextlevel'],
-                            'filepath' => $this->postsettings['filepath'],
+                            'filepath' => $repoitem->getPathname(),
                             'coursename' => $this->postsettings['coursename'],
                             'modulename' => $this->postsettings['modulename'],
                             'coursecategory' => $this->postsettings['coursecategory'],
@@ -194,7 +236,7 @@ class import_repo {
                         fwrite($tempfile, json_encode($fileoutput) . "\n");
                     } else {
                         echo "Root directory should not contain XML files, only a 'top' directory and manifests.\n" .
-                             "{$this->postsettings['filepath']} not imported.\n";
+                             "{$repoitem->getPathname()} not imported.\n";
                     }
                 }
             }

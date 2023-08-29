@@ -51,7 +51,15 @@ class import_question extends external_api {
         return new external_function_parameters([
             'questionid' => new external_value(PARAM_SEQUENCE, 'Moodle question id if it exists'),
             'categoryname' => new external_value(PARAM_TEXT, 'Category of question in form top/$category/$subcat1/$subcat2'),
-            'filepath' => new external_value(PARAM_PATH, 'Local path for file for upload'),
+            'fileinfo' => new external_single_structure([
+                'component' => new external_value(PARAM_TEXT, 'File component'),
+                'contextid' => new external_value(PARAM_TEXT, 'File context'),
+                'userid' => new external_value(PARAM_TEXT, 'File user'),
+                'filearea' => new external_value(PARAM_TEXT, 'File area'),
+                'filename' => new external_value(PARAM_TEXT, 'File name'),
+                'filepath' => new external_value(PARAM_TEXT, 'File path'),
+                'itemid' => new external_value(PARAM_SEQUENCE, 'File item id'),
+            ]),
             'contextlevel' => new external_value(PARAM_TEXT, 'Context level: 10, 40, 50, 70'),
             'coursename' => new external_value(PARAM_TEXT, 'Unique course name'),
             'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
@@ -77,14 +85,14 @@ class import_question extends external_api {
      *
      * @param string|null $questionid question id
      * @param string|null $qcategoryname category of the question in form top/$category/$subcat1/$subcat2
-     * @param string $filepath local file path (including filename) for file to be imported
+     * @param array $fileinfo Moodle file information of previously uploaded file
      * @param int $contextlevel Moodle code for context level e.g. 10 for system
      * @param string|null $coursename Unique course name (optional unless course or module context level)
      * @param string|null $modulename Unique (within course) module name (optional unless module context level)
      * @param string|null $coursecategory course category name (optional unless course catgeory context level)
      * @return array ['questionid']
      */
-    public static function execute(?string $questionid, ?string $qcategoryname, string $filepath,
+    public static function execute(?string $questionid, ?string $qcategoryname, array $fileinfo,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null):array {
         global $CFG, $DB, $USER;
@@ -118,7 +126,13 @@ class import_question extends external_api {
             $qformat->setCatfromfile(true);
             $iscategory = true;
         }
-        $qformat->setFilename($filepath);
+        $fs = get_file_storage();
+        $file = $fs->get_file($fileinfo['contextid'], $fileinfo['component'], $fileinfo['filearea'],
+                      $fileinfo['itemid'], $fileinfo['filepath'], $fileinfo['filename']);
+        $filename = $file->get_filename();
+        $requestdir = make_request_directory();
+        $tempfile = $file->copy_content_to_temp("{$requestdir}/{$filename}");
+        $qformat->setFilename($tempfile);
         $qformat->set_display_progress(false);
         $qformat->setContextfromfile(false);
         $qformat->setStoponerror(true);
@@ -126,19 +140,20 @@ class import_question extends external_api {
         $qformat->setContexts($contexts->having_one_edit_tab_cap('import'));
 
         if (!$qformat->importpreprocess()) {
-            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filepath));
+            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
         }
 
         // Process the uploaded file.
         if (!$qformat->importprocess()) {
-            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filepath));
+            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
         }
 
         // In case anything needs to be done after.
         if (!$success = $qformat->importpostprocess()) {
-            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filepath));
+            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
         }
 
+        $file->delete();
         $response = [
             'questionid' => null,
         ];

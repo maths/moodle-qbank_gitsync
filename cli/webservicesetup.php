@@ -54,15 +54,13 @@ assign_capability('qbank/gitsync:importquestions', CAP_ALLOW, $wsroleid, $system
 // Give the user the role.
 role_assign($wsroleid, $webserviceuser->id, $systemcontext->id);
 
-// Enable the externalquiz webservice.
+// Enable the gitsync webservice.
 $webservicemanager = new webservice();
 $service = $webservicemanager->get_external_service_by_shortname('qbank_gitsync_ws');
 $service->enabled = true;
+$service->uploadfiles = "1";
 $webservicemanager->update_external_service($service);
 
 // Authorise the user to use the service.
 $webservicemanager->add_ws_authorised_user((object) ['externalserviceid' => $service->id,
     'userid' => $webserviceuser->id]);
-
-// Create a token for the user.
-$token = external_generate_token(EXTERNAL_TOKEN_PERMANENT, $service, $webserviceuser->id, $systemcontext);

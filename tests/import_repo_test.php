@@ -44,6 +44,8 @@ class import_repo_test extends advanced_testcase {
     public cli_helper $clihelper;
     /** @var mocked curl_request */
     public curl_request $curl;
+    /** @var mocked curl_request for doc upload */
+    public curl_request $uploadcurl;
     /** @var mocked import_repo */
     public import_repo $importrepo;
     /** @var root of virtual file system */
@@ -81,12 +83,20 @@ class import_repo_test extends advanced_testcase {
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();;
+        $this->uploadcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute'
+        ])->setConstructorArgs(['xxxx'])->getMock();;
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request'
+            'get_curl_request', 'upload_file'
         ])->getMock();
         $this->importrepo->expects($this->any())->method('get_curl_request')->will($this->returnValue($this->curl));
+        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(null));
 
-        $this->importrepo->postsettings = ['contextlevel' => null, 'coursename' => null, 'modulename' => null];
+        $this->importrepo->postsettings = ['contextlevel' => null, 'coursename' => null, 'modulename' => null,
+                                           'fileinfo[contextid]' => '', 'fileinfo[userid]' => '',
+                                           'fileinfo[component]' => '', 'fileinfo[filearea]' => '',
+                                           'fileinfo[itemid]' => '', 'fileinfo[filepath]' => '',
+                                           'fileinfo[filename]' => ''];
     }
 
     /**
@@ -120,7 +130,7 @@ class import_repo_test extends advanced_testcase {
         $this->results = [];
         $this->curl->expects($this->exactly(3))->method('execute')->will($this->returnCallback(
             function() {
-                $this->results[] = $this->importrepo->postsettings['filepath'];
+                $this->results[] = $this->importrepo->repoiterator->getPathname();
             })
         );
         $this->importrepo->curlrequest = $this->curl;
@@ -150,7 +160,7 @@ class import_repo_test extends advanced_testcase {
         $this->curl->expects($this->exactly(4))->method('execute')->will($this->returnCallback(
             function() {
                 $this->results[] = [
-                                    $this->importrepo->postsettings['filepath'],
+                                    $this->importrepo->repoiterator->getPathname(),
                                     $this->importrepo->postsettings['categoryname']
                                    ];
             })
@@ -228,14 +238,18 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertEquals(4, count($manifestcontents));
-        $questionids = array_map(function($q) {return $q->questionid;} , $manifestcontents);
+        $questionids = array_map(function($q) {
+            return $q->questionid;
+        }, $manifestcontents);
         $this->assertEquals(4, count($questionids));
         $this->assertContains(35001, $questionids);
         $this->assertContains(35002, $questionids);
         $this->assertContains(35003, $questionids);
         $this->assertContains(35004, $questionids);
 
-        $samplerecords = array_filter($manifestcontents, function($q) {return $q->questionid === 35004;});
+        $samplerecords = array_filter($manifestcontents, function($q) {
+            return $q->questionid === 35004;
+        });
         $samplerecord = reset($samplerecords);
         $this->assertEquals($samplerecord->contextlevel, '10');
         $this->assertStringContainsString($this->rootpath . '/top/cat ', $samplerecord->filepath);
