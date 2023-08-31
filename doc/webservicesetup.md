@@ -21,6 +21,7 @@
     - questionid: _Your question id_
     - contextlevel: 10
     - coursename: _Your course name_
-    - modulename: null
-    - coursecategory: null
+    - modulename:
+    - coursecategory:
+
 ![Screenshot of Postman.](../images/Postman.png)

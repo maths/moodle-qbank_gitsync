@@ -190,12 +190,22 @@ class import_repo {
      * Fileinfo parameter is set ready for import call to the webservice.
      *
      * @param resource $repoitem
-     * @return void
+     * @return bool success or failure
      */
-    public function upload_file($repoitem) {
+    public function upload_file($repoitem):bool {
         $this->uploadpostsettings['file_1'] = new \CURLFile($repoitem->getPathname());
         $this->uploadcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->uploadpostsettings);
-        $fileinfo = json_decode($this->uploadcurlrequest->execute())[0];
+        $fileinfo = json_decode($this->uploadcurlrequest->execute());
+        // We're expecting an array containing one file information object.
+        // If things go wrong, we should get just an error object.
+        if (!is_array($fileinfo)) {
+            if (property_exists($fileinfo, 'error')) {
+                echo "{$fileinfo->error}\n";
+            }
+            echo "{$repoitem->getPathname()} not imported.\n";
+            return false;
+        }
+        $fileinfo = $fileinfo[0];
         $this->postsettings['fileinfo[contextid]'] = $fileinfo->contextid;
         $this->postsettings['fileinfo[userid]'] = $fileinfo->userid;
         $this->postsettings['fileinfo[component]'] = $fileinfo->component;
@@ -203,6 +213,7 @@ class import_repo {
         $this->postsettings['fileinfo[itemid]'] = $fileinfo->itemid;
         $this->postsettings['fileinfo[filepath]'] = $fileinfo->filepath;
         $this->postsettings['fileinfo[filename]'] = $fileinfo->filename;
+        return true;
     }
 
     /**
@@ -220,20 +231,28 @@ class import_repo {
                     // Path of file (without filename) relative to base $directory.
                     $this->postsettings['categoryname'] = str_replace( '\\', '/', $this->repoiterator->getSubPath());
                     if ($this->postsettings['categoryname']) {
-                        $this->upload_file($repoitem);
+                        if (!$this->upload_file($repoitem)) {
+                            continue;
+                        };
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                         $responsejson = json_decode($this->curlrequest->execute());
-                        $fileoutput = [
-                            'questionid' => $responsejson->questionid,
-                            // Questions can be imported in multiple contexts.
-                            'contextlevel' => $this->postsettings['contextlevel'],
-                            'filepath' => $repoitem->getPathname(),
-                            'coursename' => $this->postsettings['coursename'],
-                            'modulename' => $this->postsettings['modulename'],
-                            'coursecategory' => $this->postsettings['coursecategory'],
-                            'format' => 'xml',
-                        ];
-                        fwrite($tempfile, json_encode($fileoutput) . "\n");
+                        if (property_exists($responsejson, 'exception')) {
+                            echo "{$responsejson->message}\n" .
+                                 "{$responsejson->debuginfo}\n" .
+                                 "{$repoitem->getPathname()} not imported.\n";
+                        } else {
+                            $fileoutput = [
+                                'questionid' => $responsejson->questionid,
+                                // Questions can be imported in multiple contexts.
+                                'contextlevel' => $this->postsettings['contextlevel'],
+                                'filepath' => $repoitem->getPathname(),
+                                'coursename' => $this->postsettings['coursename'],
+                                'modulename' => $this->postsettings['modulename'],
+                                'coursecategory' => $this->postsettings['coursecategory'],
+                                'format' => 'xml',
+                            ];
+                            fwrite($tempfile, json_encode($fileoutput) . "\n");
+                        }
                     } else {
                         echo "Root directory should not contain XML files, only a 'top' directory and manifests.\n" .
                              "{$repoitem->getPathname()} not imported.\n";

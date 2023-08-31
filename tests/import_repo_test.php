@@ -90,7 +90,7 @@ class import_repo_test extends advanced_testcase {
             'get_curl_request', 'upload_file'
         ])->getMock();
         $this->importrepo->expects($this->any())->method('get_curl_request')->will($this->returnValue($this->curl));
-        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(null));
+        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
 
         $this->importrepo->postsettings = ['contextlevel' => null, 'coursename' => null, 'modulename' => null,
                                            'fileinfo[contextid]' => '', 'fileinfo[userid]' => '',
