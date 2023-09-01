@@ -131,7 +131,7 @@ class import_repo {
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_import_question',
             'moodlewsrestformat' => 'json',
-            'questionid' => null,
+            'questionbankentryid' => null,
             'contextlevel' => cli_helper::get_context_level($contextlevel),
             'coursename' => $coursename,
             'modulename' => $modulename,
@@ -242,7 +242,7 @@ class import_repo {
                                  "{$repoitem->getPathname()} not imported.\n";
                         } else {
                             $fileoutput = [
-                                'questionid' => $responsejson->questionid,
+                                'questionbankentryid' => $responsejson->questionbankentryid,
                                 // Questions can be imported in multiple contexts.
                                 'contextlevel' => $this->postsettings['contextlevel'],
                                 'filepath' => $repoitem->getPathname(),

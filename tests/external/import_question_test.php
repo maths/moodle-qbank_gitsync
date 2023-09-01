@@ -204,7 +204,7 @@ class import_question_test extends externallib_advanced_testcase {
             $returnvalue
         );
 
-        $this->assertEquals($returnvalue['questionid'], null);
+        $this->assertEquals($returnvalue['questionbankentryid'], null);
         $events = $sink->get_events();
         $this->assertEquals(count($events), 1);
         $event = reset($events);
@@ -250,7 +250,7 @@ class import_question_test extends externallib_advanced_testcase {
             $returnvalue
         );
 
-        $this->assertEquals($returnvalue['questionid'], null);
+        $this->assertEquals($returnvalue['questionbankentryid'], null);
         $events = $sink->get_events();
         $this->assertEquals(count($events), 2);
         $this->assertInstanceOf('\core\event\question_category_created', $events['0']);
@@ -282,7 +282,7 @@ class import_question_test extends externallib_advanced_testcase {
                                                 50,
                                                 $this->course->fullname);
         $createdquestion = $DB->get_record('question', ['name' => 'Third Question'], '*', $strictness = MUST_EXIST);
-        $qversion = $DB->get_record('question_versions', ['questionid' => $createdquestion->id], '*', $strictness = MUST_EXIST);
+        $qversion = $DB->get_record('question_versions', ['questionbankentryid' => $createdquestion->id], '*', $strictness = MUST_EXIST);
         $qbankentry = $DB->get_record('question_bank_entries',
                                       ['id' => $qversion->questionbankentryid],
                                       '*',
@@ -298,7 +298,7 @@ class import_question_test extends externallib_advanced_testcase {
             $returnvalue
         );
 
-        $this->assertEquals($returnvalue['questionid'], $createdquestion->id);
+        $this->assertEquals($returnvalue['questionbankentryid'], $createdquestion->id);
         $events = $sink->get_events();
         $this->assertEquals(count($events), 2);
         $this->assertInstanceOf('\core\event\question_created', $events['0']);

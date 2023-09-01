@@ -51,11 +51,7 @@ class export_question extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'questionid' => new external_value(PARAM_SEQUENCE, 'Moodle question id if it exists'),
-            'contextlevel' => new external_value(PARAM_SEQUENCE, 'Context level: 10, 40, 50, 70'),
-            'coursename' => new external_value(PARAM_TEXT, 'Unique course or category name'),
-            'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
-            'coursecategory' => new external_value(PARAM_TEXT, 'Unique course category name'),
+            'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle question id if it exists'),
         ]);
     }
 
@@ -73,60 +69,63 @@ class export_question extends external_api {
      * Exports a single question as XML.
      * Will need to add metadata and be packaged properly.
      *
-     * @param string $questionid question id
-     * @param int $contextlevel Moodle code for context level e.g. 10 for system
-     * @param string $coursename Unique course name (required whatever the context)
-     * @param string|null $modulename Unique (within course) module name (required for module context)
-     * @param string|null $coursecategory course category name (optional unless course catgeory context level)
+     * @param string $questionbankentryid questionbankentry id
      * @return array question details
      */
-    public static function execute(string $questionid, int $contextlevel,
-                                   string $coursename, ?string $modulename = null,
-                                   ?string $coursecategory = null):array {
-        global $DB;
-        $course = $DB->get_record('course', ['fullname' => $coursename], '*', $strictness = MUST_EXIST);
-        $thiscontext = get_context($contextlevel, $coursecategory, $coursename, $modulename);
+    public static function execute(string $questionbankentryid):array {
+        global $DB, $SITE;
+
+        $questiondata = $DB->get_record_sql("
+               SELECT qc.contextid as contextid, c.contextlevel as contextlevel,
+                      MAX(q.id) as questionid, c.instanceid as instanceid,
+                      qc.id as categoryid
+                 FROM {question_categories} qc
+                 JOIN {question_bank_entries} qbe ON qc.id = qbe.questioncategoryid
+                 JOIN {question_versions} qv ON qbe.id = qv.questionbankentryid
+                 JOIN {question} q ON qv.questionid = q.id
+                 JOIN {context} c on qc.contextid = c.id
+                WHERE qbe.id = :questionbankentryid",
+            ['questionbankentryid' => $questionbankentryid],
+            MUST_EXIST);
+
+        switch ($questiondata->contextlevel) {
+            case \CONTEXT_SYSTEM:
+                $course = $DB->get_record('course', ['shortname' => $SITE->shortname], '*', $strictness = MUST_EXIST);
+                break;
+            case \CONTEXT_COURSECAT:
+                $course = $DB->get_record('course', ['shortname' => $SITE->shortname], '*', $strictness = MUST_EXIST);
+                break;
+            case \CONTEXT_COURSE:
+                $course = $DB->get_record('course', ['id' => $questiondata->instanceid], '*', $strictness = MUST_EXIST);
+                break;
+            case \CONTEXT_MODULE:
+                $course = $DB->get_record_sql("
+                    SELECT c.*
+                      FROM mdl_course_modules cm
+                      JOIN mdl_course c ON c.id = cm.course
+                     WHERE cm.id = :moduleid",
+                ['moduleid' => $questiondata->instanceid],
+                MUST_EXIST);
+                break;
+            default:
+                throw new moodle_exception(get_string('contexterror', 'qbank_gitsync', $questiondata->questionid));
+        }
+        $thiscontext = get_context($questiondata->contextlevel, null, null, null, $questiondata->instanceid);
         self::validate_context($thiscontext);
-        $questiondata = question_bank::load_question_data($questionid);
+        $question = question_bank::load_question_data($questiondata->questionid);
         $qformat = new qformat_xml();
-        $qformat->setQuestions([$questiondata]);
+        $qformat->setQuestions([$question]);
         $qformat->setCourse($course);
         $contexts = new question_edit_contexts($thiscontext);
         // Checks user has export permission for the supplied context.
         $qformat->setContexts($contexts->having_one_edit_tab_cap('export'));
-        // Check question is available in the supplied context.
-        // This may be overly complicated. In most cases always using the course context level
-        // and supplying course name would be sufficient. Course categories would be an issue, though -
-        // they use the system 'course' and so a user can have permission on the category and not
-        // the course.
-        $questiondata = $DB->get_record_sql("
-               SELECT c.path as contextpath, qc.id as categoryid
-                 FROM {question} q
-            LEFT JOIN {question_versions} qv ON qv.questionid = q.id
-            LEFT JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
-            LEFT JOIN {question_categories} qc ON qc.id = qbe.questioncategoryid
-            LEFT JOIN {context} c ON c.id = qc.contextid
-                WHERE q.id = :questionid",
-            ['questionid' => $questionid],
-            MUST_EXIST);
-        $contextids = explode('/', $questiondata->contextpath);
-        $contextmatched = false;
-        foreach ($contextids as $currentcontextid) {
-            if ($currentcontextid === strval($thiscontext->id)) {
-                $contextmatched = true;
-                break;
-            }
-        }
-        if (!$contextmatched) {
-            throw new moodle_exception(get_string('contexterror', 'qbank_gitsync', $questionid));
-        }
         $qformat->setCattofile(false);
         $qformat->setContexttofile(false);
         if (!$qformat->exportpreprocess()) {
-            throw new moodle_exception(get_string('exporterror', 'qbank_gitsync', $questionid));
+            throw new moodle_exception(get_string('exporterror', 'qbank_gitsync', $questiondata->questionid));
         }
         if (!$question = $qformat->exportprocess(true)) {
-            throw new moodle_exception(get_string('exporterror', 'qbank_gitsync', $questionid));
+            throw new moodle_exception(get_string('exporterror', 'qbank_gitsync', $questiondata->questionid));
         }
 
         // Log the export of this question.

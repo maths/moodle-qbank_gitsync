@@ -106,13 +106,13 @@ class import_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionid": null}',
-            '{"questionid": null}',
-            '{"questionid": null}',
-            '{"questionid": 35001}',
-            '{"questionid": 35002}',
-            '{"questionid": 35004}',
-            '{"questionid": 35003}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": 35001}',
+            '{"questionbankentryid": 35002}',
+            '{"questionbankentryid": 35004}',
+            '{"questionbankentryid": 35003}',
         );
 
         $this->importrepo->process($this->clihelper, $this->moodleinstances);
@@ -152,10 +152,10 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . '_manifest_update.tmp';
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionid": 35001}',
-            '{"questionid": 35002}',
-            '{"questionid": 35004}',
-            '{"questionid": 35003}',
+            '{"questionbankentryid": 35001}',
+            '{"questionbankentryid": 35002}',
+            '{"questionbankentryid": 35004}',
+            '{"questionbankentryid": 35003}',
         );
         $this->curl->expects($this->exactly(4))->method('execute')->will($this->returnCallback(
             function() {
@@ -189,7 +189,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals(4, count(file($this->importrepo->tempfilepath)));
         $tempfile = fopen($this->importrepo->tempfilepath, 'r');
         $firstline = json_decode(fgets($tempfile));
-        $this->assertStringContainsString('3500', $firstline->questionid);
+        $this->assertStringContainsString('3500', $firstline->questionbankentryid);
         $this->assertEquals($firstline->contextlevel, '10');
         $this->assertStringContainsString($this->rootpath . '/top/cat ', $firstline->filepath);
         $this->assertEquals($firstline->coursename, 'Course 1');
@@ -204,7 +204,7 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_questions_wrong_directory(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . '_manifest_update.tmp';
-        $this->curl->expects($this->any())->method('execute')->will($this->returnValue('{"questionid": 35001}'));
+        $this->curl->expects($this->any())->method('execute')->will($this->returnValue('{"questionbankentryid": 35001}'));
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->repoiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->rootpath . '\top\cat 1', \RecursiveDirectoryIterator::SKIP_DOTS),
@@ -223,13 +223,13 @@ class import_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionid": null}',
-            '{"questionid": null}',
-            '{"questionid": null}',
-            '{"questionid": 35001}',
-            '{"questionid": 35002}',
-            '{"questionid": 35004}',
-            '{"questionid": 35003}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": 35001}',
+            '{"questionbankentryid": 35002}',
+            '{"questionbankentryid": 35004}',
+            '{"questionbankentryid": 35003}',
         );
 
         $this->importrepo->process($this->clihelper, $this->moodleinstances);
@@ -238,17 +238,17 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertEquals(4, count($manifestcontents));
-        $questionids = array_map(function($q) {
-            return $q->questionid;
+        $questionbankentryids = array_map(function($q) {
+            return $q->questionbankentryid;
         }, $manifestcontents);
-        $this->assertEquals(4, count($questionids));
-        $this->assertContains(35001, $questionids);
-        $this->assertContains(35002, $questionids);
-        $this->assertContains(35003, $questionids);
-        $this->assertContains(35004, $questionids);
+        $this->assertEquals(4, count($questionbankentryids));
+        $this->assertContains(35001, $questionbankentryids);
+        $this->assertContains(35002, $questionbankentryids);
+        $this->assertContains(35003, $questionbankentryids);
+        $this->assertContains(35004, $questionbankentryids);
 
         $samplerecords = array_filter($manifestcontents, function($q) {
-            return $q->questionid === 35004;
+            return $q->questionbankentryid === 35004;
         });
         $samplerecord = reset($samplerecords);
         $this->assertEquals($samplerecord->contextlevel, '10');
