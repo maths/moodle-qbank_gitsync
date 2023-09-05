@@ -118,7 +118,7 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->process($this->clihelper, $this->moodleinstances);
 
         // Check manifest file created.
-        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . import_repo::MANIFEST_FILE), true);
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . import_repo::MANIFEST_FILE), true);
     }
 
 

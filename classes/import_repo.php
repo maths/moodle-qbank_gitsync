@@ -116,8 +116,21 @@ class import_repo {
 
         $moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $moodleurl . '/webservice/rest/server.php';
-        $this->manifestpath = $directory . '/' . $moodleinstance . self::MANIFEST_FILE;
-        $this->tempfilepath = $directory . '/' . $moodleinstance . '_manifest_update.tmp';
+        $filenamemod = '_' . $contextlevel;
+        switch ($contextlevel) {
+            case 'coursecategory':
+                $filenamemod = $filenamemod . '_' . $coursecategory;
+                break;
+            case 'course':
+                $filenamemod = $filenamemod . '_' . $coursename;
+                break;
+            case 'module':
+                $filenamemod = $filenamemod . '_' . $coursename . '_' . $modulename;
+                break;
+        }
+
+        $this->manifestpath = $directory . '/' . $moodleinstance . $filenamemod . self::MANIFEST_FILE;
+        $this->tempfilepath = $directory . '/' . $moodleinstance . $filenamemod . '_manifest_update.tmp';
 
         $this->repoiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS),
@@ -281,12 +294,25 @@ class import_repo {
         $tempfile = fopen($this->tempfilepath, 'r');
         $manifestcontents = json_decode(file_get_contents($this->manifestpath));
         if (!$manifestcontents) {
-            $manifestcontents = [];
+            $manifestcontents = new \stdClass();
+            $manifestcontents->context = null;
+            $manifestcontents->questions = [];
         }
         while (!feof($tempfile)) {
             $questioninfo = json_decode(fgets($tempfile));
             if ($questioninfo) {
-                array_push($manifestcontents, $questioninfo);
+                array_push($manifestcontents->questions,
+                           [
+                            'questionbankid' => $questioninfo->questionbankentryid,
+                            'filepath' => $questioninfo->filepath,
+                            'format' => $questioninfo->format
+                           ]);
+            }
+            if ($manifestcontents->context === null) {
+                $manifestcontents->context->contextlevel = $questioninfo->contextlevel;
+                $manifestcontents->context->coursename = $questioninfo->coursename;
+                $manifestcontents->context->modulename = $questioninfo->modulename;
+                $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
             }
         }
         file_put_contents($this->manifestpath, json_encode($manifestcontents));

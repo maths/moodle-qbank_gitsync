@@ -69,7 +69,8 @@ class export_question_test extends externallib_advanced_testcase {
         $this->setUser($user);
         $this->q = $this->generator->create_question('stack', 'test3',
                         ['name' => self::QNAME, 'category' => $this->qcategory->id]);
-        $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $this->q->id], $strictness = MUST_EXIST);
+        $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
+                                             ['questionid' => $this->q->id], $strictness = MUST_EXIST);
 
     }
 
@@ -140,12 +141,13 @@ class export_question_test extends externallib_advanced_testcase {
         $catincourse2 = $this->generator->create_question_category(['contextid' => \context_course::instance($course2->id)->id]);
         $qincourse2 = $this->generator->create_question('numerical', null,
             ['name' => 'Example numerical question', 'category' => $catincourse2->id]);
-        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $qincourse2->id], $strictness = MUST_EXIST);
+        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
+                                        ['questionid' => $qincourse2->id], $strictness = MUST_EXIST);
 
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->expectException(moodle_exception::class);
-        $this->expectExceptionMessage(get_string('contexterror', 'qbank_gitsync', $qincourse2->id));
+        $this->expectExceptionMessage('Not enrolled');
         // Trying to export question from course 2 using context of course 1.
         // User has export capability on course 1 but not course 2.
         export_question::execute($qbankentryid2);

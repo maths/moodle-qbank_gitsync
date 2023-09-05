@@ -282,7 +282,8 @@ class import_question_test extends externallib_advanced_testcase {
                                                 50,
                                                 $this->course->fullname);
         $createdquestion = $DB->get_record('question', ['name' => 'Third Question'], '*', $strictness = MUST_EXIST);
-        $qversion = $DB->get_record('question_versions', ['questionbankentryid' => $createdquestion->id], '*', $strictness = MUST_EXIST);
+        $qversion = $DB->get_record('question_versions',
+                                    ['questionbankentryid' => $createdquestion->id], '*', $strictness = MUST_EXIST);
         $qbankentry = $DB->get_record('question_bank_entries',
                                       ['id' => $qversion->questionbankentryid],
                                       '*',
