@@ -30,6 +30,7 @@ global $CFG;
 require_once($CFG->dirroot . '/question/engine/tests/helpers.php');
 require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 require_once($CFG->dirroot . '/files/externallib.php');
+require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
 
 use context_course;
 use externallib_advanced_testcase;

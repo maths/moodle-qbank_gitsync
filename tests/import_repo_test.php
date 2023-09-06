@@ -118,7 +118,7 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->process($this->clihelper, $this->moodleinstances);
 
         // Check manifest file created.
-        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . import_repo::MANIFEST_FILE), true);
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
     }
 
 
@@ -237,25 +237,28 @@ class import_repo_test extends advanced_testcase {
         // Manifest file is a single array.
         $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
-        $this->assertEquals(4, count($manifestcontents));
+        $this->assertEquals(4, count($manifestcontents->questions));
         $questionbankentryids = array_map(function($q) {
             return $q->questionbankentryid;
-        }, $manifestcontents);
+        }, $manifestcontents->questions);
         $this->assertEquals(4, count($questionbankentryids));
         $this->assertContains(35001, $questionbankentryids);
         $this->assertContains(35002, $questionbankentryids);
         $this->assertContains(35003, $questionbankentryids);
         $this->assertContains(35004, $questionbankentryids);
 
-        $samplerecords = array_filter($manifestcontents, function($q) {
+        $context = $manifestcontents->context;
+        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->coursename, 'Course 1');
+        $this->assertEquals($context->modulename, 'Test 1');
+        $this->assertEquals($context->coursecategory, 'Cat 1');
+
+        $samplerecords = array_filter($manifestcontents->questions, function($q) {
             return $q->questionbankentryid === 35004;
         });
         $samplerecord = reset($samplerecords);
-        $this->assertEquals($samplerecord->contextlevel, '10');
         $this->assertStringContainsString($this->rootpath . '/top/cat ', $samplerecord->filepath);
-        $this->assertEquals($samplerecord->coursename, 'Course 1');
-        $this->assertEquals($samplerecord->modulename, 'Test 1');
-        $this->assertEquals($samplerecord->coursecategory, 'Cat 1');
         $this->assertEquals($samplerecord->format, 'xml');
+
     }
 }

@@ -27,7 +27,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace qbank_gitsync;
-
+use stdClass;
 /**
  * Import a Git repo.
  */
@@ -79,16 +79,6 @@ class import_repo {
      */
     public string $manifestpath;
     /**
-     * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
-     */
-    public const CATEGORY_FILE = 'gitsync_category';
-    /**
-     * MANIFEST_FILE - File name ending for manifest file.
-     * Appended to name of moodle instance.
-     */
-    public const MANIFEST_FILE = '_question_manifest.json';
-
-    /**
      * Iterate through the directory structure and call the web service
      * to create categories and questions.
      *
@@ -129,7 +119,7 @@ class import_repo {
                 break;
         }
 
-        $this->manifestpath = $directory . '/' . $moodleinstance . $filenamemod . self::MANIFEST_FILE;
+        $this->manifestpath = $directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
         $this->tempfilepath = $directory . '/' . $moodleinstance . $filenamemod . '_manifest_update.tmp';
 
         $this->repoiterator = new \RecursiveIteratorIterator(
@@ -187,7 +177,7 @@ class import_repo {
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
-                        && pathinfo($repoitem, PATHINFO_FILENAME) === self::CATEGORY_FILE) {
+                        && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE) {
                     $this->postsettings['categoryname'] = '';
                     $this->upload_file($repoitem);
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
@@ -202,7 +192,7 @@ class import_repo {
      *
      * Fileinfo parameter is set ready for import call to the webservice.
      *
-     * @param resource $repoitem
+     * @param $repoitem
      * @return bool success or failure
      */
     public function upload_file($repoitem):bool {
@@ -240,7 +230,7 @@ class import_repo {
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
-                        && pathinfo($repoitem, PATHINFO_FILENAME) !== self::CATEGORY_FILE) {
+                        && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
                     // Path of file (without filename) relative to base $directory.
                     $this->postsettings['categoryname'] = str_replace( '\\', '/', $this->repoiterator->getSubPath());
                     if ($this->postsettings['categoryname']) {
@@ -303,12 +293,13 @@ class import_repo {
             if ($questioninfo) {
                 array_push($manifestcontents->questions,
                            [
-                            'questionbankid' => $questioninfo->questionbankentryid,
+                            'questionbankentryid' => $questioninfo->questionbankentryid,
                             'filepath' => $questioninfo->filepath,
                             'format' => $questioninfo->format
                            ]);
             }
             if ($manifestcontents->context === null) {
+                $manifestcontents->context = new stdClass();
                 $manifestcontents->context->contextlevel = $questioninfo->contextlevel;
                 $manifestcontents->context->coursename = $questioninfo->coursename;
                 $manifestcontents->context->modulename = $questioninfo->modulename;
