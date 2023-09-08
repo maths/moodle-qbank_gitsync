@@ -22,12 +22,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace qbank_gitsync;
 define('CLI_SCRIPT', true);
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/import_repo.php');
-use \qbank_gitsync\cli_helper;
-use \qbank_gitsync\import_repo;
 
 $moodleinstances = [
     'edmundlocal' => 'http://stack.stack.virtualbox.org/edmundlocal',

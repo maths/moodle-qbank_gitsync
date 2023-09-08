@@ -52,7 +52,7 @@ class import_repo_test extends advanced_testcase {
     public string $rootpath;
     /** @var used to store output of multiple calls to a function */
     public array $results;
-    /** @var name of moodle instance for urpose of tests */
+    /** @var name of moodle instance for purpose of tests */
     const MOODLE = 'fake';
 
     public function setUp(): void {

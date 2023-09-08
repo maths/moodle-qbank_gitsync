@@ -84,6 +84,8 @@ class export_repo {
         $this->curlrequest->set_option(CURLOPT_POST, 1);
 
         $this->export_to_repo();
+
+        return;
     }
 
     /**
@@ -116,6 +118,8 @@ class export_repo {
                 file_put_contents($questioninfo->filepath, $question);
             }
         }
+
+        return;
     }
 
     /**
@@ -124,6 +128,7 @@ class export_repo {
      * @return string question XML
      */
     public function reformat_question(string $question):string {
+        $locale = setlocale(LC_ALL, 0);
         // Options for HTML Tidy.
         // If in doubt, set to false to avoid unexpected 'repairs'.
         $sharedoptions = [
@@ -141,7 +146,7 @@ class export_repo {
             'quote-nbsp' => false,
         ];
 
-        if (!function_exists('tidy_repair_string')){
+        if (!function_exists('tidy_repair_string')) {
             echo 'Tidy not installed';
             exit;
         }
@@ -154,7 +159,6 @@ class export_repo {
         $tidyoptions = array_merge($sharedoptions, [
             'output-xhtml' => true
         ]);
-
         $tidy = new \tidy();
 
         // Find CDATA sections and format nicely.
@@ -186,6 +190,10 @@ class export_repo {
         $tidy->parseString($noidxml, $tidyoptions);
         $tidy->cleanRepair();
         $result = tidy_get_output($tidy);
+        // HTML Tidy switches to the default locale for the system. PHPUnit uses en_AU.
+        // PHPUnit throws a warning unless we switch back to en_AU.
+        setlocale(LC_ALL, $locale);
+
         return $result;
     }
 }
