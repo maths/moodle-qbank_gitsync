@@ -86,7 +86,7 @@ $options = [
     [
         'longopt' => 'token',
         'shortopt' => 't',
-        'description' => 'Securoty token for webservice.',
+        'description' => 'Security token for webservice.',
         'default' => '4ec7cd3f62e08f595df5e9c90ea7cfcd',
         'variable' => 'token',
         'valuerequired' => true,

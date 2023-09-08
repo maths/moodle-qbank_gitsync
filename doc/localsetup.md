@@ -2,11 +2,30 @@
 
 ## Prerequisites (TODO - expand!)
 - Install Git
+
+  Go to `https://git-scm.com/book/en/v2/Getting-Started-Installing-Git` and follow the instructions for your operating system.
+
+  For Windows:
+  - Go to `https://git-scm.com/download/win` and download the standalone installer (probably '64-bit Git for Windows Setup').
+  - Run the installer and fight through the setup questions. The defaults are fine for most of them but if you've never heard of Vim
+  don't choose it as your default editor. Choose 'Checkout as-is, commit as-is' for line endings.
+  - Set your identity:
+    - `git config --global user.name "John Doe"`
+    - `git config --global user.email johndoe@example.com`
+
 - Install PHP
+  - Go to `https://www.php.net/manual/en/install.php` and follow the instructions for your operating system.
+
+  For Windows:
+  - Go to `https://windows.php.net/download/` and download the non-thread safe Zip file of PHP 8.1(?).
+  - Unzip the folder into a folder of your choice.
+  - Add the folder to the `Path` variable of your system via 'Edit System Environment Variables'.
+
+  You will need to enable 2 PHP extensions. On the command line, run `php i`. This will display pages of information but near the top there should be a line similar to `Loaded Configuration File => C:\Program Files\php-x64\php.ini`. Open the shown file as an administrator and search for `;extension=curl` and `;extension=tidy`. Remove the semi-colons from these lines and save.
 
 ## Setup
-- Open a terminal and clone this repository `git clone https://github.com/maths/moodle-qbank_gitsync.git gitsync`
-- In the `cli` folder, update `$moodleinstances` in `importrepo.php` with the URL and name of your Moodle instance.
-- In the same file add any defaults for command line options such as `token`.
-- `php importrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -d "C:\question_repos\first\questions" -l system`
+- Open a terminal and clone this repository `git clone https://github.com/maths/moodle-qbank_gitsync.git gitsync`. The repository will be downloaded in a folder `gitsync` inside your current folder.
+- In the `cli` folder within `gitsync`, update `$moodleinstances` in `importrepo.php` with the URL and name of your Moodle instance.
+- In the same file add any defaults for command line options such as `token`. (See Setting up the Webservice for token creation.)
+- Repeat for other scripts in the CLI folder.
 

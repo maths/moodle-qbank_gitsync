@@ -145,10 +145,9 @@ class export_repo {
             'quote-ampersand' => false,
             'quote-nbsp' => false,
         ];
-
         if (!function_exists('tidy_repair_string')) {
-            echo 'Tidy not installed';
-            exit;
+            // Tidy not installed
+            return $question;
         }
         $dom = new \DOMDocument('1.0');
         $dom->preserveWhiteSpace = true;

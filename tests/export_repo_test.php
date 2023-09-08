@@ -114,6 +114,11 @@ class export_repo_test extends advanced_testcase {
             "\n        ]]>\n      </text>\n    </questiontext>\n  </question>\n</quiz>";
         $result = $this->exportrepo->reformat_question($xml);
 
-        $this->assertEquals($result, $expectedresult);
+        // Output will depend on Tidy being installed.
+        if (!function_exists('tidy_repair_string')) {
+            $this->assertEquals($result, $xml);
+        } else {
+            $this->assertEquals($result, $expectedresult);
+        }
     }
 }

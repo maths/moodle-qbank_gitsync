@@ -22,56 +22,60 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
- namespace qbank_gitsync;
- define('CLI_SCRIPT', true);
- require_once('../classes/curl_request.php');
- require_once('../classes/cli_helper.php');
- require_once('../classes/export_repo.php');
+namespace qbank_gitsync;
+define('CLI_SCRIPT', true);
+require_once('../classes/curl_request.php');
+require_once('../classes/cli_helper.php');
+require_once('../classes/export_repo.php');
 
- $moodleinstances = [
-     'edmundlocal' => 'http://stack.stack.virtualbox.org/edmundlocal',
-     'other' => 'http:localhost:8888'
- ];
+$moodleinstances = [
+    'edmundlocal' => 'http://stack.stack.virtualbox.org/edmundlocal',
+    'other' => 'http:localhost:8888'
+];
 
- $options = [
-     [
-         'longopt' => 'moodleinstance',
-         'shortopt' => 'i',
-         'description' => 'Key of Moodle instance in $moodleinstances to use. ' .
-                          'Should match end of instance URL.',
-         'default' => 'edmundlocal',
-         'variable' => 'moodleinstance',
-         'valuerequired' => true,
-     ],
-     [
-         'longopt' => 'manifestpath',
-         'shortopt' => 'f',
-         'description' => 'Filepath of manifest file contain',
-         'default' => '/home/efarrow1/question_repos/first/questions/edmundlocal_module_Course 1_Test 1_question_manifest.json',
-         'variable' => 'manifestpath',
-         'valuerequired' => true,
-     ],
-     [
-         'longopt' => 'token',
-         'shortopt' => 't',
-         'description' => 'Security token for webservice.',
-         'default' => '4ec7cd3f62e08f595df5e9c90ea7cfcd',
-         'variable' => 'token',
-         'valuerequired' => true,
-     ],
-     [
-         'longopt' => 'help',
-         'shortopt' => 'h',
-         'description' => '',
-         'default' => false,
-         'variable' => 'help',
-         'valuerequired' => false,
-     ]
- ];
+$options = [
+    [
+        'longopt' => 'moodleinstance',
+        'shortopt' => 'i',
+        'description' => 'Key of Moodle instance in $moodleinstances to use. ' .
+                        'Should match end of instance URL.',
+        'default' => 'edmundlocal',
+        'variable' => 'moodleinstance',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'manifestpath',
+        'shortopt' => 'f',
+        'description' => 'Filepath of manifest file.',
+        'default' => '/home/efarrow1/question_repos/first/questions/edmundlocal_module_Course 1_Test 1_question_manifest.json',
+        'variable' => 'manifestpath',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'token',
+        'shortopt' => 't',
+        'description' => 'Security token for webservice.',
+        'default' => '4ec7cd3f62e08f595df5e9c90ea7cfcd',
+        'variable' => 'token',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'help',
+        'shortopt' => 'h',
+        'description' => '',
+        'default' => false,
+        'variable' => 'help',
+        'valuerequired' => false,
+    ]
+];
 
- $clihelper = new cli_helper($options);
- $exportrepo = new export_repo;
- $exportrepo->process($clihelper, $moodleinstances);
+if (!function_exists('tidy_repair_string')) {
+    echo 'Please install HTML Tidy.';
+    exit;
+}
+$clihelper = new cli_helper($options);
+$exportrepo = new export_repo;
+$exportrepo->process($clihelper, $moodleinstances);
 
 
 
