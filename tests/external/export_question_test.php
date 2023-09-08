@@ -50,12 +50,15 @@ class export_question_test extends externallib_advanced_testcase {
     protected $qcategory;
     /** @var generated question object */
     protected $q;
+    /** @var question bank entry id for generated question */
+    protected $qbankentryid;
     /** @var generated user object */
     protected $user;
     /** Name of question to be generated and exported. */
     const QNAME = 'Example STACK question';
 
     public function setUp(): void {
+        global $DB;
         $this->resetAfterTest();
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $this->course = $this->getDataGenerator()->create_course();
@@ -66,6 +69,8 @@ class export_question_test extends externallib_advanced_testcase {
         $this->setUser($user);
         $this->q = $this->generator->create_question('stack', 'test3',
                         ['name' => self::QNAME, 'category' => $this->qcategory->id]);
+        $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
+                                             ['questionid' => $this->q->id], $strictness = MUST_EXIST);
 
     }
 
@@ -79,7 +84,7 @@ class export_question_test extends externallib_advanced_testcase {
         $this->assignUserCapability('qbank/gitsync:exportquestions', $context->id);
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
-        $returnvalue = export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
+        $returnvalue = export_question::execute($this->qbankentryid);
 
         // We need to execute the return values cleaning process to simulate
         // the web service server.
@@ -102,7 +107,7 @@ class export_question_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
+        $returnvalue = export_question::execute($this->qbankentryid);
     }
 
     /**
@@ -112,7 +117,7 @@ class export_question_test extends externallib_advanced_testcase {
         global $DB;
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
+        $returnvalue = export_question::execute($this->qbankentryid);
     }
 
     /**
@@ -123,7 +128,7 @@ class export_question_test extends externallib_advanced_testcase {
         $this->assignUserCapability('qbank/gitsync:exportquestions', $context->id);
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
+        $returnvalue = export_question::execute($this->qbankentryid);
     }
 
     /**
@@ -136,14 +141,16 @@ class export_question_test extends externallib_advanced_testcase {
         $catincourse2 = $this->generator->create_question_category(['contextid' => \context_course::instance($course2->id)->id]);
         $qincourse2 = $this->generator->create_question('numerical', null,
             ['name' => 'Example numerical question', 'category' => $catincourse2->id]);
+        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
+                                        ['questionid' => $qincourse2->id], $strictness = MUST_EXIST);
 
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->expectException(moodle_exception::class);
-        $this->expectExceptionMessage(get_string('contexterror', 'qbank_gitsync', $qincourse2->id));
+        $this->expectExceptionMessage('Not enrolled');
         // Trying to export question from course 2 using context of course 1.
         // User has export capability on course 1 but not course 2.
-        export_question::execute($qincourse2->id, 50, $this->course->fullname, null, null);
+        export_question::execute($qbankentryid2);
     }
 
     /**
@@ -157,7 +164,7 @@ class export_question_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
         $sink = $this->redirectEvents();
-        $returnvalue = export_question::execute($this->q->id, 50, $this->course->fullname, null, null);
+        $returnvalue = export_question::execute($this->qbankentryid);
 
         $returnvalue = external_api::clean_returnvalue(
             export_question::execute_returns(),

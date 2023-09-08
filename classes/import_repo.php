@@ -27,7 +27,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace qbank_gitsync;
-
+use stdClass;
 /**
  * Import a Git repo.
  */
@@ -79,16 +79,6 @@ class import_repo {
      */
     public string $manifestpath;
     /**
-     * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
-     */
-    public const CATEGORY_FILE = 'gitsync_category';
-    /**
-     * MANIFEST_FILE - File name ending for manifest file.
-     * Appended to name of moodle instance.
-     */
-    public const MANIFEST_FILE = '_question_manifest.json';
-
-    /**
      * Iterate through the directory structure and call the web service
      * to create categories and questions.
      *
@@ -116,8 +106,21 @@ class import_repo {
 
         $moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $moodleurl . '/webservice/rest/server.php';
-        $this->manifestpath = $directory . '/' . $moodleinstance . self::MANIFEST_FILE;
-        $this->tempfilepath = $directory . '/' . $moodleinstance . '_manifest_update.tmp';
+        $filenamemod = '_' . $contextlevel;
+        switch ($contextlevel) {
+            case 'coursecategory':
+                $filenamemod = $filenamemod . '_' . $coursecategory;
+                break;
+            case 'course':
+                $filenamemod = $filenamemod . '_' . $coursename;
+                break;
+            case 'module':
+                $filenamemod = $filenamemod . '_' . $coursename . '_' . $modulename;
+                break;
+        }
+
+        $this->manifestpath = $directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
+        $this->tempfilepath = $directory . '/' . $moodleinstance . $filenamemod . '_manifest_update.tmp';
 
         $this->repoiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS),
@@ -131,7 +134,7 @@ class import_repo {
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_import_question',
             'moodlewsrestformat' => 'json',
-            'questionid' => null,
+            'questionbankentryid' => null,
             'contextlevel' => cli_helper::get_context_level($contextlevel),
             'coursename' => $coursename,
             'modulename' => $modulename,
@@ -174,7 +177,7 @@ class import_repo {
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
-                        && pathinfo($repoitem, PATHINFO_FILENAME) === self::CATEGORY_FILE) {
+                        && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE) {
                     $this->postsettings['categoryname'] = '';
                     $this->upload_file($repoitem);
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
@@ -189,7 +192,7 @@ class import_repo {
      *
      * Fileinfo parameter is set ready for import call to the webservice.
      *
-     * @param resource $repoitem
+     * @param $repoitem
      * @return bool success or failure
      */
     public function upload_file($repoitem):bool {
@@ -227,7 +230,7 @@ class import_repo {
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
-                        && pathinfo($repoitem, PATHINFO_FILENAME) !== self::CATEGORY_FILE) {
+                        && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
                     // Path of file (without filename) relative to base $directory.
                     $this->postsettings['categoryname'] = str_replace( '\\', '/', $this->repoiterator->getSubPath());
                     if ($this->postsettings['categoryname']) {
@@ -242,7 +245,7 @@ class import_repo {
                                  "{$repoitem->getPathname()} not imported.\n";
                         } else {
                             $fileoutput = [
-                                'questionid' => $responsejson->questionid,
+                                'questionbankentryid' => $responsejson->questionbankentryid,
                                 // Questions can be imported in multiple contexts.
                                 'contextlevel' => $this->postsettings['contextlevel'],
                                 'filepath' => $repoitem->getPathname(),
@@ -281,12 +284,26 @@ class import_repo {
         $tempfile = fopen($this->tempfilepath, 'r');
         $manifestcontents = json_decode(file_get_contents($this->manifestpath));
         if (!$manifestcontents) {
-            $manifestcontents = [];
+            $manifestcontents = new \stdClass();
+            $manifestcontents->context = null;
+            $manifestcontents->questions = [];
         }
         while (!feof($tempfile)) {
             $questioninfo = json_decode(fgets($tempfile));
             if ($questioninfo) {
-                array_push($manifestcontents, $questioninfo);
+                array_push($manifestcontents->questions,
+                           [
+                            'questionbankentryid' => $questioninfo->questionbankentryid,
+                            'filepath' => $questioninfo->filepath,
+                            'format' => $questioninfo->format
+                           ]);
+            }
+            if ($manifestcontents->context === null) {
+                $manifestcontents->context = new stdClass();
+                $manifestcontents->context->contextlevel = $questioninfo->contextlevel;
+                $manifestcontents->context->coursename = $questioninfo->coursename;
+                $manifestcontents->context->modulename = $questioninfo->modulename;
+                $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
             }
         }
         file_put_contents($this->manifestpath, json_encode($manifestcontents));

@@ -49,7 +49,7 @@ class import_question extends external_api {
      */
     public static function execute_parameters() {
         return new external_function_parameters([
-            'questionid' => new external_value(PARAM_SEQUENCE, 'Moodle question id if it exists'),
+            'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle questionbankentryid if question exists already'),
             'categoryname' => new external_value(PARAM_TEXT, 'Category of question in form top/$category/$subcat1/$subcat2'),
             'fileinfo' => new external_single_structure([
                 'component' => new external_value(PARAM_TEXT, 'File component'),
@@ -73,7 +73,7 @@ class import_question extends external_api {
      */
     public static function execute_returns() {
         return new external_single_structure([
-            'questionid' => new external_value(PARAM_SEQUENCE, 'question id'),
+            'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'questionbankentry id'),
         ]);
     }
 
@@ -83,16 +83,16 @@ class import_question extends external_api {
      * Initially just create a new one in Moodle DB. Will need to expand to
      * use importasversion if question already exists.
      *
-     * @param string|null $questionid question id
+     * @param string|null $questionbankentryid questionbankentry id
      * @param string|null $qcategoryname category of the question in form top/$category/$subcat1/$subcat2
      * @param array $fileinfo Moodle file information of previously uploaded file
      * @param int $contextlevel Moodle code for context level e.g. 10 for system
      * @param string|null $coursename Unique course name (optional unless course or module context level)
      * @param string|null $modulename Unique (within course) module name (optional unless module context level)
      * @param string|null $coursecategory course category name (optional unless course catgeory context level)
-     * @return array ['questionid']
+     * @return array ['questionbankentryid']
      */
-    public static function execute(?string $questionid, ?string $qcategoryname, array $fileinfo,
+    public static function execute(?string $questionbankentryid, ?string $qcategoryname, array $fileinfo,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null):array {
         global $CFG, $DB, $USER;
@@ -155,7 +155,7 @@ class import_question extends external_api {
 
         $file->delete();
         $response = [
-            'questionid' => null,
+            'questionbankentryid' => null,
         ];
         // Log imported question and return id of new question ready to make manifest file.
         if (!$iscategory) {
@@ -166,9 +166,20 @@ class import_question extends external_api {
             $event = \core\event\questions_imported::create($eventparams);
             $event->trigger();
 
-            $questions = $DB->get_records('question', ['modifiedby' => $USER->id], 'id DESC', 'id', 0, 1);
-            $question = reset($questions);
-            $response['questionid'] = $question->id;
+            if ($questionbankentryid) {
+                $response['questionbankentryid'] = $questionbankentryid;
+            } else {
+                // This is a problem if two people using the webservice at the same time unless
+                // using different webservice users.
+                $newquestionbankentryid = $DB->get_field_sql("
+                       SELECT MAX(qv.questionbankentryid)
+                         FROM {question} q
+                         JOIN {question_versions} qv ON q.id = qv.questionid
+                        WHERE q.modifiedby = :user",
+                    ['user' => $USER->id],
+                    MUST_EXIST);
+                $response['questionbankentryid'] = $newquestionbankentryid;
+            }
         }
         return $response;
     }

@@ -45,7 +45,15 @@ class cli_helper {
      *
      */
     protected array $options;
-
+    /**
+     * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
+     */
+    public const CATEGORY_FILE = 'gitsync_category';
+    /**
+     * MANIFEST_FILE - File name ending for manifest file.
+     * Appended to name of moodle instance.
+     */
+    public const MANIFEST_FILE = '_question_manifest.json';
     /**
      * Constructor
      *

@@ -48,37 +48,46 @@ function split_category_path(?string $path): array {
  * Course: course name.
  * Module: course name and module name.
  *
+ * If the id of the category, course or module is known this can be supplied instead.
+ *
  * @param int $contextlevel
  * @param string|null $categoryname
  * @param string|null $coursename
  * @param string|null $modulename
+ * @param int|null $instanceid
  * @return context
  */
 function get_context(int $contextlevel, ?string $categoryname = null,
-                    ?string $coursename = null, ?string $modulename = null):context {
+                    ?string $coursename = null, ?string $modulename = null, ?int $instanceid = null):context {
     global $DB;
     switch ($contextlevel) {
         case \CONTEXT_SYSTEM:
             return context_system::instance();
         case \CONTEXT_COURSECAT:
-            $coursecatid = $DB->get_field('course_categories', 'id', ['name' => $categoryname], $strictness = MUST_EXIST);
-            return context_coursecat::instance($coursecatid);
+            if (is_null($instanceid)) {
+                $instanceid = $DB->get_field('course_categories', 'id', ['name' => $categoryname], $strictness = MUST_EXIST);
+            }
+            return context_coursecat::instance($instanceid);
         case \CONTEXT_COURSE:
-            $courseid = $DB->get_field('course', 'id', ['fullname' => $coursename], $strictness = MUST_EXIST);
-            return context_course::instance($courseid);
+            if (is_null($instanceid)) {
+                $instanceid = $DB->get_field('course', 'id', ['fullname' => $coursename], $strictness = MUST_EXIST);
+            }
+            return context_course::instance($instanceid);
         case \CONTEXT_MODULE:
-            // Assuming here that the module is a quiz.
-            $cmid = $DB->get_field_sql("
-                   SELECT cm.id
-                     FROM {course_modules} cm
-                LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
-                LEFT JOIN {course} c ON c.id = cm.course
-                LEFT JOIN {modules} m ON m.id = cm.module
-                    WHERE c.fullname = :coursename
-                            AND q.name = :quizname
-                            AND m.name = 'quiz'",
-                ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
-                return context_module::instance($cmid);
+            if (is_null($instanceid)) {
+                // Assuming here that the module is a quiz.
+                $instanceid = $DB->get_field_sql("
+                    SELECT cm.id
+                        FROM {course_modules} cm
+                        JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
+                        JOIN {course} c ON c.id = cm.course
+                        JOIN {modules} m ON m.id = cm.module
+                        WHERE c.fullname = :coursename
+                                AND q.name = :quizname
+                                AND m.name = 'quiz'",
+                    ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
+            }
+                return context_module::instance($instanceid);
             break;
         default:
             throw new Exception('Invalid context level supplied.');

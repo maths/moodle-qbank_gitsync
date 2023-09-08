@@ -29,4 +29,4 @@ $string['gitsync:exportquestions'] = 'Export';
 $string['gitsync:importquestions'] = 'Import';
 $string['exporterror'] = 'Could not export question id: {$a}';
 $string['importerror'] = 'Could not import question from file: {$a}';
-$string['contexterror'] = 'The question is not available in the supplied context: {$a}';
+$string['contexterror'] = 'The context level is invalid';
