@@ -46,9 +46,17 @@ $options = [
     [
         'longopt' => 'directory',
         'shortopt' => 'd',
-        'description' => 'Directory of repo on users computer, containg "top" folder',
+        'description' => 'Directory of repo on users computer, containing "top" folder',
         'default' => '/home/efarrow1/question_repos/first/questions',
         'variable' => 'directory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'subdirectory',
+        'shortopt' => 's',
+        'description' => 'Relative subdirectory of repo to actually import.',
+        'default' => '/top/cat 1',
+        'variable' => 'subdirectory',
         'valuerequired' => true,
     ],
     [

@@ -32,19 +32,6 @@ use stdClass;
  * Import a Git repo.
  */
 class import_repo {
-    /**
-     * File system iterator
-     *
-     * @var \RecursiveIteratorIterator
-     */
-    public \RecursiveIteratorIterator $repoiterator;
-    /**
-     * Settings for POST request
-     *
-     * These are the parameters for the webservice call.
-     *
-     * @var array
-     */
     public array $postsettings;
     /**
      * Settings for POST file upload request
@@ -77,6 +64,19 @@ class import_repo {
      *
      * @var string
      */
+    /**
+     * Path of root of repo
+     * i.e. folder containing manifest
+     *
+     * @var string
+     */
+    public string $directory;
+    /**
+     * Relative path of subdirectory to import.
+     *
+     * @var string
+     */
+    public string $subdirectory;
     public string $manifestpath;
     /**
      * Iterate through the directory structure and call the web service
@@ -91,7 +91,11 @@ class import_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $directory = $arguments['directory'];
+        $this->directory = $arguments['directory'];
+        $this->subdirectory = '';
+        if ($arguments['subdirectory']) {
+            $this->subdirectory = $arguments['subdirectory'];
+        }
         $token = $arguments['token'];
         $contextlevel = $arguments['contextlevel'];
         $coursename = $arguments['coursename'];
@@ -119,13 +123,8 @@ class import_repo {
                 break;
         }
 
-        $this->manifestpath = $directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
-        $this->tempfilepath = $directory . '/' . $moodleinstance . $filenamemod . '_manifest_update.tmp';
-
-        $this->repoiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
+        $this->manifestpath = $this->directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
+        $this->tempfilepath = $this->directory . $this->subdirectory . '/' . $moodleinstance . $filenamemod . '_manifest_update.tmp';
 
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->uploadcurlrequest = $this->get_curl_request($moodleurl . '/webservice/upload.php');
@@ -152,7 +151,7 @@ class import_repo {
         $this->import_categories();
         $this->import_questions();
         $this->curlrequest->close();
-        $this->create_manifest_file();
+        $questionstodelete = $this->create_manifest_file();
     }
 
     /**
@@ -170,11 +169,15 @@ class import_repo {
      *
      * @return void
      */
-    public function import_categories() {
+    public function import_categories():void {
+        $repoiterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->directory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
         // Find all the category files first and create categories where needed.
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
-        foreach ($this->repoiterator as $repoitem) {
+        foreach ($repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE) {
@@ -225,22 +228,25 @@ class import_repo {
      * @return resource Temporary manifest file of added questions, one line per question.
      */
     public function import_questions() {
+        $subdirectoryiterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->directory . $this->subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
         $tempfile = fopen($this->tempfilepath, 'a+');
         $manifestcontents = json_decode(file_get_contents($this->manifestpath));
+        $existingentries = array_column($manifestcontents->questions, null, 'filepath');
         // Find all the question files and import them. Order is uncertain.
-        foreach ($this->repoiterator as $repoitem) {
+        foreach ($subdirectoryiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
                     // Path of file (without filename) relative to base $directory.
-                    $this->postsettings['categoryname'] = str_replace( '\\', '/', $this->repoiterator->getSubPath());
+                    $this->postsettings['categoryname'] = str_replace( '\\', '/', $this->subdirectory . $subdirectoryiterator->getSubPath());
                     if ($this->postsettings['categoryname']) {
                         if (!$this->upload_file($repoitem)) {
                             continue;
                         };
-                        $existingentry = array_column($manifestcontents->questions,
-                            null,
-                            'filepath')["{$repoitem->getPathname()}"] ?? false;
+                        $existingentry = $existingentries["{$repoitem->getPathname()}"] ?? false;
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
                         }
@@ -277,10 +283,9 @@ class import_repo {
     /**
      * Create manifest file from temporary file.
      *
-     * @return resource manifest file. Contains all questions (not just from this run) as
-     * a single JSON array.
+     * @return array Contains manifest entries that no longer have a matching file.
      */
-    public function create_manifest_file() {
+    public function create_manifest_file():array {
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
         fclose($manifestfile);
@@ -290,6 +295,7 @@ class import_repo {
         // to manifest in the first place if no processing materialises.
         $tempfile = fopen($this->tempfilepath, 'r');
         $manifestcontents = json_decode(file_get_contents($this->manifestpath));
+        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
         if (!$manifestcontents) {
             $manifestcontents = new \stdClass();
             $manifestcontents->context = null;
@@ -298,9 +304,7 @@ class import_repo {
         while (!feof($tempfile)) {
             $questioninfo = json_decode(fgets($tempfile));
             if ($questioninfo) {
-                $existingentry = array_column($manifestcontents->questions,
-                    null,
-                    'questionbankentryid')["{$questioninfo->questionbankentryid}"] ?? false;
+                $existingentry = $existingentries["{$questioninfo->questionbankentryid}"] ?? false;
                 if (!$existingentry) {
                     array_push($manifestcontents->questions,
                             [
@@ -308,6 +312,8 @@ class import_repo {
                                 'filepath' => $questioninfo->filepath,
                                 'format' => $questioninfo->format
                             ]);
+                } else {
+                    unset($existingentries["{$questioninfo->questionbankentryid}"]);
                 }
             }
             if ($manifestcontents->context === null) {
@@ -322,6 +328,6 @@ class import_repo {
 
         fclose($tempfile);
         unlink($this->tempfilepath);
-        return $manifestfile;
+        return $existingentries;
     }
 }
