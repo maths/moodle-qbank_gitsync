@@ -226,6 +226,7 @@ class import_repo {
      */
     public function import_questions() {
         $tempfile = fopen($this->tempfilepath, 'a+');
+        $manifestcontents = json_decode(file_get_contents($this->manifestpath));
         // Find all the question files and import them. Order is uncertain.
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
@@ -237,6 +238,12 @@ class import_repo {
                         if (!$this->upload_file($repoitem)) {
                             continue;
                         };
+                        $existingentry = array_column($manifestcontents->questions,
+                            null,
+                            'filepath')["{$repoitem->getPathname()}"] ?? false;
+                        if ($existingentry) {
+                            $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
+                        }
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                         $responsejson = json_decode($this->curlrequest->execute());
                         if (property_exists($responsejson, 'exception')) {
@@ -291,12 +298,17 @@ class import_repo {
         while (!feof($tempfile)) {
             $questioninfo = json_decode(fgets($tempfile));
             if ($questioninfo) {
-                array_push($manifestcontents->questions,
-                           [
-                            'questionbankentryid' => $questioninfo->questionbankentryid,
-                            'filepath' => $questioninfo->filepath,
-                            'format' => $questioninfo->format
-                           ]);
+                $existingentry = array_column($manifestcontents->questions,
+                    null,
+                    'questionbankentryid')["{$questioninfo->questionbankentryid}"] ?? false;
+                if (!$existingentry) {
+                    array_push($manifestcontents->questions,
+                            [
+                                'questionbankentryid' => $questioninfo->questionbankentryid,
+                                'filepath' => $questioninfo->filepath,
+                                'format' => $questioninfo->format
+                            ]);
+                }
             }
             if ($manifestcontents->context === null) {
                 $manifestcontents->context = new stdClass();

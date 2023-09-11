@@ -146,7 +146,7 @@ class export_repo {
             'quote-nbsp' => false,
         ];
         if (!function_exists('tidy_repair_string')) {
-            // Tidy not installed
+            // Tidy not installed.
             return $question;
         }
         $dom = new \DOMDocument('1.0');
