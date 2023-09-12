@@ -55,7 +55,7 @@ $options = [
         'longopt' => 'subdirectory',
         'shortopt' => 's',
         'description' => 'Relative subdirectory of repo to actually import.',
-        'default' => '/top/cat 1',
+        'default' => '/top/cat 2',
         'variable' => 'subdirectory',
         'valuerequired' => true,
     ],

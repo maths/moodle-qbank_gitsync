@@ -78,6 +78,7 @@ class import_repo {
      */
     public string $subdirectory;
     public string $manifestpath;
+    public \stdClass $manifestcontents;
     /**
      * Iterate through the directory structure and call the web service
      * to create categories and questions.
@@ -124,7 +125,9 @@ class import_repo {
         }
 
         $this->manifestpath = $this->directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
-        $this->tempfilepath = $this->directory . $this->subdirectory . '/' . $moodleinstance . $filenamemod . '_manifest_update.tmp';
+        $this->tempfilepath = $this->directory . $this->subdirectory . '/' .
+                              $moodleinstance . $filenamemod . '_manifest_update.tmp';
+        $this->manifestcontents = json_decode(file_get_contents($this->manifestpath));
 
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->uploadcurlrequest = $this->get_curl_request($moodleurl . '/webservice/upload.php');
@@ -152,6 +155,7 @@ class import_repo {
         $this->import_questions();
         $this->curlrequest->close();
         $questionstodelete = $this->create_manifest_file();
+        $this->delete_questions($questionstodelete);
     }
 
     /**
@@ -233,15 +237,15 @@ class import_repo {
             \RecursiveIteratorIterator::SELF_FIRST
         );
         $tempfile = fopen($this->tempfilepath, 'a+');
-        $manifestcontents = json_decode(file_get_contents($this->manifestpath));
-        $existingentries = array_column($manifestcontents->questions, null, 'filepath');
+        $existingentries = array_column($this->manifestcontents->questions, null, 'filepath');
         // Find all the question files and import them. Order is uncertain.
         foreach ($subdirectoryiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
                     // Path of file (without filename) relative to base $directory.
-                    $this->postsettings['categoryname'] = str_replace( '\\', '/', $this->subdirectory . $subdirectoryiterator->getSubPath());
+                    $this->postsettings['categoryname'] = str_replace( '\\', '/',
+                                $this->subdirectory . $subdirectoryiterator->getSubPath());
                     if ($this->postsettings['categoryname']) {
                         if (!$this->upload_file($repoitem)) {
                             continue;
@@ -294,19 +298,18 @@ class import_repo {
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
         $tempfile = fopen($this->tempfilepath, 'r');
-        $manifestcontents = json_decode(file_get_contents($this->manifestpath));
-        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
-        if (!$manifestcontents) {
-            $manifestcontents = new \stdClass();
-            $manifestcontents->context = null;
-            $manifestcontents->questions = [];
+        $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+        if (!$this->manifestcontents) {
+            $this->manifestcontents = new \stdClass();
+            $this->manifestcontents->context = null;
+            $this->manifestcontents->questions = [];
         }
         while (!feof($tempfile)) {
             $questioninfo = json_decode(fgets($tempfile));
             if ($questioninfo) {
                 $existingentry = $existingentries["{$questioninfo->questionbankentryid}"] ?? false;
                 if (!$existingentry) {
-                    array_push($manifestcontents->questions,
+                    array_push($this->manifestcontents->questions,
                             [
                                 'questionbankentryid' => $questioninfo->questionbankentryid,
                                 'filepath' => $questioninfo->filepath,
@@ -316,18 +319,41 @@ class import_repo {
                     unset($existingentries["{$questioninfo->questionbankentryid}"]);
                 }
             }
-            if ($manifestcontents->context === null) {
-                $manifestcontents->context = new stdClass();
-                $manifestcontents->context->contextlevel = $questioninfo->contextlevel;
-                $manifestcontents->context->coursename = $questioninfo->coursename;
-                $manifestcontents->context->modulename = $questioninfo->modulename;
-                $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
+            if ($this->manifestcontents->context === null) {
+                $this->manifestcontents->context = new stdClass();
+                $this->manifestcontents->context->contextlevel = $questioninfo->contextlevel;
+                $this->manifestcontents->context->coursename = $questioninfo->coursename;
+                $this->manifestcontents->context->modulename = $questioninfo->modulename;
+                $this->manifestcontents->context->coursecategory = $questioninfo->coursecategory;
             }
         }
-        file_put_contents($this->manifestpath, json_encode($manifestcontents));
+        file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
 
         fclose($tempfile);
         unlink($this->tempfilepath);
+        $existingentries = array_filter($existingentries, function($value) {
+            $subdirectorypath = $this->directory . $this->subdirectory;
+            return (substr($value->filepath, 0, strlen($subdirectorypath)) === $subdirectorypath);
+        });
         return $existingentries;
+    }
+
+    public function delete_questions(array $questionstodelete):void {
+        echo "\nThese questions are listed in the manifest but there is no longer a matching file:\n";
+        foreach ($questionstodelete as $question) {
+            echo $question->filepath . "\n";
+        }
+        foreach ($questionstodelete as $question) {
+            echo "\nDelete {$question->filepath} from Moodle? y/n\n";
+            $handle = fopen ("php://stdin", "r");
+            $line = fgets($handle);
+            if (trim($line) === 'y') {
+                // TO-DO Need a call to a delete webservice function here.
+                echo "Deleted\n";
+            } else {
+                echo "Not deleted\n";
+            }
+            fclose($handle);
+        }
     }
 }
