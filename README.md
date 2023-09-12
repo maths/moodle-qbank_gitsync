@@ -56,3 +56,16 @@ Users remain entirely responsible for deciding which copy of the materials is th
 ## Using other tools
 
 The purpose of this module is to synchronise questions from part of a moodle question bank to an external file system.  Users are free to create moodle xml files with external tools and then use this tool to import them to moodle.  For example, users have asked for tools to create similar questions from templates.  If such questions end up on an external file system in a suitable way, this tool could be used to import them into part of a moodle question bank.
+
+## Maintainance of manifest files
+
+There are two logically separate parts of this project.
+
+1. Using manifest files to synchronise questions from part of a moodle question bank to an external file system.
+2. Maintainance of manifest files
+
+We expect the most common use will be one or more manifest files in the top-level of the git repository.  For this reason this project will provide tools which scans the files on the external file system, and maintains the manifest file to match the file system.  Questions added or removed from the file system (via `git add`, `git rm` or through consequences of a `git pull` from an external repro) will be reflected in the manifest file.
+
+Typical users will want both parts to be performed in one call, transparently.
+
+We do not preclude advanced users maintaining manifest files in other ways, e.g. choosing a subset of questions from their library, and using only part of this project to synchronise questions from part of a moodle question bank to _part_ of the external file system.
