@@ -35,19 +35,19 @@ For example a user creates two branches to match two different Moodle courses: E
 
 ## Using subsets of materials
 
-User might want to manage sub-sets of questions.  This must be done by positioning the manifest file inside the external file system.
+A user might want to manage sub-sets of questions.  This must be done by positioning the manifest file inside the external file system.
 
-Putting a manifest file in a sub-directory of a git repository will help synchronise questions from part of a larger external library of materials (the git repro) to a moodle question bank.
+Putting a manifest file in a sub-directory of a git repository will help synchronise questions from part of a larger external library of materials (the git repro) to a moodle question bank.  This has the advangate of not importing irrelevant material from a large external library of materials into moodle. (But see "duplicates and waste" below)
 
-Putting a number of separate git repositories into sub-directories below a manifest file on the external file system fill help synchronise questions from a large moodle question bank into separate external git repositories.
+Putting a number of separate git repositories into sub-directories below a manifest file on the external file system will help synchronise questions from a single large moodle question bank into separate external git repositories.  This has the advantage of a single, clean, import/export call.
 
 The logical disconnection of the synchronise questions from the .git repository provides lots of options.  The position of the manifest file in the external file system dictates the top-level directory on the external file system, and the software will look down the directory tree for question files to syncronise with Moodle.
 
 ## Duplicates and waste
 
-Expert users' time is much more valuable than DB storage or file storage.  If users import/export materials which are not needed in a particular Moodle course then they could simply be ignored..... up to a point.
+Expert users' time is much more valuable than DB storage or file storage.  If users import/export materials which are not needed in a particular Moodle course then they could simply be ignored.....up to a point.
 
-The logical disconnection of the synchronise questions from the .git repository provides lots of options when combined with version control features such as branches.  Users will need to match their expertise with the complexity of the way they choose to use the tool.  
+The logical disconnection of the synchronise questions from the .git repository provides lots of options when combined with version control features such as branches.  Users will need to match their expertise with the complexity of the way they choose to use the tool.  We expect the most common use will be one or more manifest files in the top-level of the git repository.
 
 This module will not help users make judgements on how to organise their question banks!  Users must consider how to arrange their materials in such a way that makes sense.
 
