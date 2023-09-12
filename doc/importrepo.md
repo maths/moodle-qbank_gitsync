@@ -1,12 +1,12 @@
 # Importing a repo into Moodle
 
 ## Prerequisites
-- Set up the webserver on the Moodle instance.
-- Set up your local machine.
+- Set up the [webserver](webservicesetup.md) on the Moodle instance.
+- Set up your [local machine](localsetup.md).
 
 ## Importing
 - Create a repository of questions with a folder hierarchy akin to question categories i.e. top/category/subcategory.
-- Each category below top should have a `gitsync_gategory.xml` file containing a 'category question' with the details of he category. See the `testrepo` folder in this repository for an example.
+- Each category below top should have a `gitsync_category.xml` file containing a 'category question' with the details of he category. See the `testrepo` folder in this repository for an example.
 - From the commandline in the `cli` folder run `importrepo.php`. There are a number of options you can input. List them all with `php importrepo.php -h`. You can use -shortname or --longname on the command line followed by a space and the value.
 
 |Short|Long|Required value|

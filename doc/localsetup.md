@@ -1,4 +1,4 @@
-# Running the scripts locally
+# Running the scripts locally on an external file system
 
 ## Prerequisites (TODO - expand!)
 - Install Git
