@@ -1,4 +1,4 @@
-# Synchronize questions in a Moodle question bank with files in an external git repository 
+# Synchronize questions in a Moodle question bank with files in an external git repository
 
 The purpose of this module is to synchronise questions from part of a moodle question bank to an external file system.
 
@@ -24,7 +24,7 @@ A single manifest file sits in the same directory as the .git directory.
 Importing and exporting questions from the moodle question bank to/from an external file system enables a user to track changes (and externally backup) questions in a designated part of a moodle question bank.
 
 ## Using version control tools to share materials
- 
+
 One or more manifest files sits in the same directory as the .git directory.
 The user can then share materials in two ways.
 
@@ -37,7 +37,7 @@ For example a user creates two branches to match two different Moodle courses: E
 
 A user might want to manage sub-sets of questions.  This must be done by positioning the manifest file inside the external file system.
 
-Putting a manifest file in a sub-directory of a git repository will help synchronise questions from part of a larger external library of materials (the git repro) to a moodle question bank.  This has the advangate of not importing irrelevant material from a large external library of materials into moodle. (But see "duplicates and waste" below)
+Putting a manifest file in a sub-directory of a git repository will help synchronise questions from part of a larger external library of materials (the git repro) to a moodle question bank.  This has the advantage of not importing irrelevant material from a large external library of materials into moodle. (But see "duplicates and waste" below)
 
 Putting a number of separate git repositories into sub-directories below a manifest file on the external file system will help synchronise questions from a single large moodle question bank into separate external git repositories.  This has the advantage of a single, clean, import/export call.
 
@@ -45,7 +45,7 @@ The logical disconnection of the synchronise questions from the .git repository 
 
 ## Duplicates and waste
 
-Expert users' time is much more valuable than DB storage or file storage.  If users import/export materials which are not needed in a particular Moodle course then they could simply be ignored.....up to a point.
+Expert users' time is much more valuable than DB storage or file storage.  If users import/export materials which are not needed in a particular moodle course then they could simply be ignored.....up to a point.
 
 The logical disconnection of the synchronise questions from the .git repository provides lots of options when combined with version control features such as branches.  Users will need to match their expertise with the complexity of the way they choose to use the tool.  We expect the most common use will be one or more manifest files in the top-level of the git repository.
 
@@ -53,4 +53,4 @@ This module will not help users make judgements on how to organise their questio
 
 ## Using other tools
 
-The purpose of this module is to synchronise questions from part of a moodle question bank to an external file system.  Users a free to create moodle xml files with external tools and then use this tool to import them to Moodle.  For example, users have asked for tools to create similar questions from templates.  If such questions end up on an external file system in a suitable way, this tool could be used to import them
+The purpose of this module is to synchronise questions from part of a moodle question bank to an external file system.  Users are free to create moodle xml files with external tools and then use this tool to import them to moodle.  For example, users have asked for tools to create similar questions from templates.  If such questions end up on an external file system in a suitable way, this tool could be used to import them into part of a moodle question bank.
