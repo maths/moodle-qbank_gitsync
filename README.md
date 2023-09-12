@@ -31,13 +31,13 @@ The user can then share materials in two ways.
 1. Use .git as version control.  Users with their own fork of the repository will have a parallel manifest file in their fork to synchronise questions from their external file system to part of a moodle question bank.
 2. More than one manifest file sits in the same directory as the .git directory.  A single user can then synchronise questions from their external file system to different parts of a moodle question bank on one site, or different moodle sites.  Version control is very useful in this situation for tracking changes, backing up and resolving possible conflicts between versions.
 
-For example a user creates two branches to match two different Moodle courses: Exporting and committing to separate branches enables the git-merge features to help resolve conflicts.  Branches can diverge if necessary to reflect genuine differences in course on Moodle, but share materials can still be merge between branches.  (But see "duplicates and waste" below)
+For example a user creates two branches to match two different Moodle courses: Exporting and committing to separate branches enables the git-merge features to help resolve conflicts.  Branches can diverge, if necessary, to reflect genuine differences between courses on moodle, but shared materials can still be merge between branches.  (But see "duplicates and waste" below.)
 
 ## Using subsets of materials
 
 A user might want to manage sub-sets of questions.  This must be done by positioning the manifest file inside the external file system.
 
-Putting a manifest file in a sub-directory of a git repository will help synchronise questions from part of a larger external library of materials (the git repro) to a moodle question bank.  This has the advantage of not importing irrelevant material from a large external library of materials into moodle. (But see "duplicates and waste" below)
+Putting a manifest file in a sub-directory of a git repository will help synchronise questions from part of a larger external library of materials (the git repro) to a moodle question bank.  This has the advantage of not importing irrelevant material from a large external library of materials into moodle. (But see "duplicates and waste" below.)
 
 Putting a number of separate git repositories into sub-directories below a manifest file on the external file system will help synchronise questions from a single large moodle question bank into separate external git repositories.  This has the advantage of a single, clean, import/export call.
 
@@ -50,6 +50,8 @@ Expert users' time is much more valuable than DB storage or file storage.  If us
 The logical disconnection of the synchronise questions from the .git repository provides lots of options when combined with version control features such as branches.  Users will need to match their expertise with the complexity of the way they choose to use the tool.  We expect the most common use will be one or more manifest files in the top-level of the git repository.
 
 This module will not help users make judgements on how to organise their question banks!  Users must consider how to arrange their materials in such a way that makes sense.
+
+Users remain entirely responsible for deciding which copy of the materials is the "golden copy", remembering this decision, and looking after their digital materials!
 
 ## Using other tools
 
