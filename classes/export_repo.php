@@ -110,9 +110,11 @@ class export_repo {
             $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
             $responsejson = json_decode($this->curlrequest->execute());
             if (property_exists($responsejson, 'exception')) {
-                echo "{$responsejson->message}\n" .
-                     "{$responsejson->debuginfo}\n" .
-                     "{$questioninfo->filepath} not updated.\n";
+                echo "{$responsejson->message}\n";
+                if (property_exists($responsejson, 'debuginfo')) {
+                    echo "{$responsejson->debuginfo}\n";
+                }
+                echo "{$questioninfo->filepath} not updated.\n";
             } else {
                 $question = $this->reformat_question($responsejson->question);
                 file_put_contents($questioninfo->filepath, $question);

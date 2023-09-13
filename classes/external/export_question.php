@@ -52,7 +52,7 @@ class export_question extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle question id if it exists'),
+            'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle question questionbankentryid'),
         ]);
     }
 

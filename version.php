@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2023080206;
+$plugin->version   = 2023091202;
 // Question versions functionality of Moodle 4 required.
 $plugin->requires  = 2022041900;
 $plugin->component = 'qbank_gitsync';

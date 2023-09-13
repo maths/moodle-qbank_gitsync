@@ -50,6 +50,7 @@ set_role_contextlevels($wsroleid, [CONTEXT_SYSTEM]);
 assign_capability('webservice/rest:use', CAP_ALLOW, $wsroleid, $systemcontext->id, true);
 assign_capability('qbank/gitsync:exportquestions', CAP_ALLOW, $wsroleid, $systemcontext->id, true);
 assign_capability('qbank/gitsync:importquestions', CAP_ALLOW, $wsroleid, $systemcontext->id, true);
+assign_capability('qbank/gitsync:deletequestions', CAP_ALLOW, $wsroleid, $systemcontext->id, true);
 
 // Give the user the role.
 role_assign($wsroleid, $webserviceuser->id, $systemcontext->id);
