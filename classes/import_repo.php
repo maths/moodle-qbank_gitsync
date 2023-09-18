@@ -221,7 +221,7 @@ class import_repo {
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
-            'categoryname' => substr($this->subdirectory, 1)
+            'qcategoryname' => substr($this->subdirectory, 1)
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);

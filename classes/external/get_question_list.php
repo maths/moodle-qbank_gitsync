@@ -46,7 +46,7 @@ class get_question_list extends external_api {
      */
     public static function execute_parameters() {
         return new external_function_parameters([
-            'categoryname' => new external_value(PARAM_TEXT, 'Category of questions in form top/$category/$subcat1/$subcat2'),
+            'qcategoryname' => new external_value(PARAM_TEXT, 'Category of questions in form top/$category/$subcat1/$subcat2'),
             'contextlevel' => new external_value(PARAM_TEXT, 'Context level: 10, 40, 50, 70'),
             'coursename' => new external_value(PARAM_TEXT, 'Unique course name'),
             'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
@@ -82,17 +82,26 @@ class get_question_list extends external_api {
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null):array {
         global $CFG, $DB, $USER;
-        $thiscontext = get_context($contextlevel, $coursecategory, $coursename, $modulename);
+        $params = self::validate_parameters(self::execute_parameters(), [
+            'qcategoryname' => $qcategoryname,
+            'contextlevel' => $contextlevel,
+            'coursename' => $coursename,
+            'modulename' => $modulename,
+            'coursecategory' => $coursecategory
+        ]);
+        $thiscontext = get_context($params['contextlevel'], $params['coursecategory'],
+                                   $params['coursename'], $params['modulename']);
 
         // The webservice user needs to have access to the context. They could be given Manager
         // role at site level to access everything or access could be restricted to certain courses.
         self::validate_context($thiscontext);
+        require_capability('qbank/gitsync:listquestions', $thiscontext);
 
         // Category name should be in form top/$category/$subcat1/$subcat2 and
         // have been gleaned directly from the directory structure.
         // Find the 'top' category for the context ($parent==0) and
         // then descend through the hierarchy until we find the category we need.
-        $catnames = split_category_path($qcategoryname);
+        $catnames = split_category_path($params['qcategoryname']);
         $parent = 0;
         foreach ($catnames as $catname) {
             $category = $DB->get_record('question_categories', ['name' => $catname,
