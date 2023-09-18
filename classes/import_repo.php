@@ -33,15 +33,21 @@ use stdClass;
  */
 class import_repo {
     /**
-     * File system iterator
+     * File system iterator for categories
      *
      * @var \RecursiveIteratorIterator
      */
     public \RecursiveIteratorIterator $repoiterator;
     /**
+     * File system iterator for questions
+     *
+     * @var \RecursiveIteratorIterator
+     */
+    public \RecursiveIteratorIterator $subdirectoryiterator;
+    /**
      * Settings for POST request
      *
-     * These are the parameters for the webservice call.
+     * These are the parameters for the webservice import call.
      *
      * @var array
      */
@@ -55,6 +61,14 @@ class import_repo {
      */
     public array $uploadpostsettings;
     /**
+     * Settings for question delete request
+     *
+     * These are the parameters for the webservice delete call.
+     *
+     * @var array
+     */
+    public array $deletepostsettings;
+    /**
      * cURL request handle
      *
      * @var curl_request
@@ -66,6 +80,18 @@ class import_repo {
      * @var curl_request
      */
     public curl_request $uploadcurlrequest;
+    /**
+     * cURL request handle for question delete
+     *
+     * @var curl_request
+     */
+    public curl_request $deletecurlrequest;
+    /**
+     * cURL request handle for question list retrieve
+     *
+     * @var curl_request
+     */
+    public curl_request $listcurlrequest;
     /**
      * Path to temporary manifest file
      *
@@ -79,6 +105,25 @@ class import_repo {
      */
     public string $manifestpath;
     /**
+     * Path of root of repo
+     * i.e. folder containing manifest
+     *
+     * @var string
+     */
+    public string $directory;
+    /**
+     * Relative path of subdirectory to import.
+     *
+     * @var string
+     */
+    public string $subdirectory;
+    /**
+     * Parsed content of JSON manifest file
+     *
+     * @var \stdClass|null
+     */
+    public ?\stdClass $manifestcontents;
+    /**
      * Iterate through the directory structure and call the web service
      * to create categories and questions.
      *
@@ -91,7 +136,11 @@ class import_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $directory = $arguments['directory'];
+        $this->directory = $arguments['directory'];
+        $this->subdirectory = '';
+        if ($arguments['subdirectory']) {
+            $this->subdirectory = $arguments['subdirectory'];
+        }
         $token = $arguments['token'];
         $contextlevel = $arguments['contextlevel'];
         $coursename = $arguments['coursename'];
@@ -119,15 +168,23 @@ class import_repo {
                 break;
         }
 
-        $this->manifestpath = $directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
-        $this->tempfilepath = $directory . '/' . $moodleinstance . $filenamemod . '_manifest_update.tmp';
-
-        $this->repoiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
-
+        $this->manifestpath = $this->directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
+        $this->tempfilepath = $this->directory . $this->subdirectory . '/' .
+                              $moodleinstance . $filenamemod . '_manifest_update.tmp';
+        // Create manifest file if it doesn't already exist.
+        $manifestfile = fopen($this->manifestpath, 'a+');
+        fclose($manifestfile);
+        $manifestcontents = json_decode(file_get_contents($this->manifestpath));
+        if (!$manifestcontents) {
+            $this->manifestcontents = new \stdClass();
+            $this->manifestcontents->context = null;
+            $this->manifestcontents->questions = [];
+        } else {
+            $this->manifestcontents = $manifestcontents;
+        }
         $this->curlrequest = $this->get_curl_request($wsurl);
+        $this->deletecurlrequest = $this->get_curl_request($wsurl);
+        $this->listcurlrequest = $this->get_curl_request($wsurl);
         $this->uploadcurlrequest = $this->get_curl_request($moodleurl . '/webservice/upload.php');
 
         $this->postsettings = [
@@ -141,18 +198,41 @@ class import_repo {
             'coursecategory' => $coursecategory
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
-        $this->uploadcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
-        $this->uploadcurlrequest->set_option(CURLOPT_POST, 1);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
         $this->uploadpostsettings = [
             'token' => $token,
             'moodlewsrestformat' => 'json'
         ];
+        $this->uploadcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+        $this->uploadcurlrequest->set_option(CURLOPT_POST, 1);
+        $this->deletepostsettings = [
+            'wstoken' => $token,
+            'wsfunction' => 'qbank_gitsync_delete_question',
+            'moodlewsrestformat' => 'json',
+            'questionbankentryid' => null
+        ];
+        $this->deletecurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+        $this->deletecurlrequest->set_option(CURLOPT_POST, 1);
+        $listpostsettings = [
+            'wstoken' => $token,
+            'wsfunction' => 'qbank_gitsync_get_question_list',
+            'moodlewsrestformat' => 'json',
+            'contextlevel' => cli_helper::get_context_level($contextlevel),
+            'coursename' => $coursename,
+            'modulename' => $modulename,
+            'coursecategory' => $coursecategory,
+            'qcategoryname' => substr($this->subdirectory, 1)
+        ];
+        $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+        $this->listcurlrequest->set_option(CURLOPT_POST, 1);
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $listpostsettings);
 
         $this->import_categories();
         $this->import_questions();
         $this->curlrequest->close();
         $this->create_manifest_file();
+        $this->delete_no_file_questions();
+        $this->delete_no_record_questions();
     }
 
     /**
@@ -170,7 +250,11 @@ class import_repo {
      *
      * @return void
      */
-    public function import_categories() {
+    public function import_categories():void {
+        $this->repoiterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->directory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
         // Find all the category files first and create categories where needed.
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
@@ -178,7 +262,7 @@ class import_repo {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE) {
-                    $this->postsettings['categoryname'] = '';
+                    $this->postsettings['qcategoryname'] = '';
                     $this->upload_file($repoitem);
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                     $this->curlrequest->execute();
@@ -192,7 +276,7 @@ class import_repo {
      *
      * Fileinfo parameter is set ready for import call to the webservice.
      *
-     * @param $repoitem
+     * @param resource $repoitem
      * @return bool success or failure
      */
     public function upload_file($repoitem):bool {
@@ -225,25 +309,46 @@ class import_repo {
      * @return resource Temporary manifest file of added questions, one line per question.
      */
     public function import_questions() {
+        $this->subdirectoryiterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->directory . $this->subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
         $tempfile = fopen($this->tempfilepath, 'a+');
+        $existingentries = array_column($this->manifestcontents->questions, null, 'filepath');
         // Find all the question files and import them. Order is uncertain.
-        foreach ($this->repoiterator as $repoitem) {
+        foreach ($this->subdirectoryiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
+                    // Avoid starting slash in categoryname.
+                    $qcategory = substr($this->subdirectory, 1);
+                    if ($qcategory) {
+                        $qcategory = $qcategory . '/' . $this->subdirectoryiterator->getSubPath();
+                    } else {
+                        $qcategory = $this->subdirectoryiterator->getSubPath();
+                    }
                     // Path of file (without filename) relative to base $directory.
-                    $this->postsettings['categoryname'] = str_replace( '\\', '/', $this->repoiterator->getSubPath());
-                    if ($this->postsettings['categoryname']) {
+                    $this->postsettings['qcategoryname'] = str_replace( '\\', '/',
+                                        $qcategory);
+                    if ($this->postsettings['qcategoryname']) {
                         if (!$this->upload_file($repoitem)) {
                             continue;
                         };
+                        $existingentry = $existingentries["{$repoitem->getPathname()}"] ?? false;
+                        if ($existingentry) {
+                            $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
+                        } else {
+                            $this->postsettings['questionbankentryid'] = null;
+                        }
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                         $responsejson = json_decode($this->curlrequest->execute());
                         if (property_exists($responsejson, 'exception')) {
-                            echo "{$responsejson->message}\n" .
-                                 "{$responsejson->debuginfo}\n" .
-                                 "{$repoitem->getPathname()} not imported.\n";
-                        } else {
+                            echo "{$responsejson->message}\n";
+                            if (property_exists($responsejson, 'debuginfo')) {
+                                echo "{$responsejson->debuginfo}\n";
+                            }
+                            echo "{$repoitem->getPathname()} not imported.\n";
+                        } else if ($responsejson->questionbankentryid) {
                             $fileoutput = [
                                 'questionbankentryid' => $responsejson->questionbankentryid,
                                 // Questions can be imported in multiple contexts.
@@ -270,46 +375,139 @@ class import_repo {
     /**
      * Create manifest file from temporary file.
      *
-     * @return resource manifest file. Contains all questions (not just from this run) as
-     * a single JSON array.
+     * @return void
      */
-    public function create_manifest_file() {
-        // Create manifest file if it doesn't already exist.
-        $manifestfile = fopen($this->manifestpath, 'a+');
-        fclose($manifestfile);
-
+    public function create_manifest_file():void {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
         $tempfile = fopen($this->tempfilepath, 'r');
-        $manifestcontents = json_decode(file_get_contents($this->manifestpath));
-        if (!$manifestcontents) {
-            $manifestcontents = new \stdClass();
-            $manifestcontents->context = null;
-            $manifestcontents->questions = [];
-        }
+        $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         while (!feof($tempfile)) {
             $questioninfo = json_decode(fgets($tempfile));
             if ($questioninfo) {
-                array_push($manifestcontents->questions,
-                           [
-                            'questionbankentryid' => $questioninfo->questionbankentryid,
-                            'filepath' => $questioninfo->filepath,
-                            'format' => $questioninfo->format
-                           ]);
-            }
-            if ($manifestcontents->context === null) {
-                $manifestcontents->context = new stdClass();
-                $manifestcontents->context->contextlevel = $questioninfo->contextlevel;
-                $manifestcontents->context->coursename = $questioninfo->coursename;
-                $manifestcontents->context->modulename = $questioninfo->modulename;
-                $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
+                $existingentry = $existingentries["{$questioninfo->questionbankentryid}"] ?? false;
+                if (!$existingentry) {
+                    $questionentry = new stdClass();
+                    $questionentry->questionbankentryid = $questioninfo->questionbankentryid;
+                    $questionentry->filepath = $questioninfo->filepath;
+                    $questionentry->format = $questioninfo->format;
+                    array_push($this->manifestcontents->questions, $questionentry);
+                }
+                if ($this->manifestcontents->context === null) {
+                    $this->manifestcontents->context = new stdClass();
+                    $this->manifestcontents->context->contextlevel = $questioninfo->contextlevel;
+                    $this->manifestcontents->context->coursename = $questioninfo->coursename;
+                    $this->manifestcontents->context->modulename = $questioninfo->modulename;
+                    $this->manifestcontents->context->coursecategory = $questioninfo->coursecategory;
+                }
             }
         }
-        file_put_contents($this->manifestpath, json_encode($manifestcontents));
+        file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
 
         fclose($tempfile);
         unlink($this->tempfilepath);
-        return $manifestfile;
+    }
+
+    /**
+     * Offer to delete questions from Moodle/manifest where the question is in the manifest
+     * but there is no file in the repo.
+     *
+     * @return void
+     */
+    public function delete_no_file_questions():void {
+        // Get all manifest entries for imported subdirectory.
+        $manifestentries = array_filter($this->manifestcontents->questions, function($value) {
+            $subdirectorypath = $this->directory . $this->subdirectory;
+            return (substr($value->filepath, 0, strlen($subdirectorypath)) === $subdirectorypath);
+        });
+        // Check to see there is a matching file in the repo still.
+        $questionstodelete = [];
+        foreach ($manifestentries as $manifestentry) {
+            if (!file_exists($manifestentry->filepath)) {
+                array_push($questionstodelete, $manifestentry);
+            }
+        }
+        // If not offer to delete questions from Moodle as well.
+        if (!empty($questionstodelete)) {
+            echo "\nThese questions are listed in the manifest but there is no longer a matching file:\n";
+
+            foreach ($questionstodelete as $question) {
+                echo $question->filepath . "\n";
+            }
+            unset($question);
+            $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+            foreach ($questionstodelete as $question) {
+                echo "\nDelete {$question->filepath} from Moodle? y/n\n";
+                $handle = fopen ("php://stdin", "r");
+                $line = fgets($handle);
+                if (trim($line) === 'y') {
+                    $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
+                    $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
+                    $responsejson = json_decode($this->deletecurlrequest->execute());
+                    if (property_exists($responsejson, 'exception')) {
+                        echo "{$responsejson->message}\n" .
+                            "Not deleted\n";
+                    } else {
+                        echo "Deleted\n";
+                        // Update manifest file. Do we want to do this even if user chooses not to delete.
+                        unset($existingentries["{$question->questionbankentryid}"]);
+                    }
+                } else {
+                    echo "Not deleted\n";
+                }
+                fclose($handle);
+            }
+            $this->manifestcontents->questions = array_values($existingentries);
+            file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+        }
+    }
+
+    /**
+     * Offer to delete questions from Moodle where the question is in Moodle
+     * but not in the manifest.
+     *
+     * @return void
+     */
+    public function delete_no_record_questions():void {
+        $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $questionstodelete = [];
+        // Check each question in Moodle to see if there is a corresponding entry
+        // in the manifest for that questionbankentryid.
+        foreach ($questionsinmoodle as $moodleq) {
+            if (!array_key_exists($moodleq->questionbankentryid, $existingentries)) {
+                array_push($questionstodelete, $moodleq);
+            }
+        }
+        // If not offer to delete question from Moodle.
+        if (!empty($questionstodelete)) {
+            echo "\nThese questions are in Moodle but not linked to your repository:\n";
+
+            foreach ($questionstodelete as $question) {
+                echo "{$question->questionbankentryid} - {$question->questioncategory} - {$question->name}\n";
+            }
+            unset($question);
+            $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+            foreach ($questionstodelete as $question) {
+                echo "\nDelete {$question->questioncategory} - {$question->name} from Moodle? y/n\n";
+                $handle = fopen ("php://stdin", "r");
+                $line = fgets($handle);
+                if (trim($line) === 'y') {
+                    $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
+                    $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
+                    $responsejson = json_decode($this->deletecurlrequest->execute());
+                    if (property_exists($responsejson, 'exception')) {
+                        echo "{$responsejson->message}\n" .
+                            "Not deleted\n";
+                    } else {
+                        echo "Deleted\n";
+                    }
+                } else {
+                    echo "Not deleted\n";
+                }
+                fclose($handle);
+            }
+        }
     }
 }

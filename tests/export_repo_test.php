@@ -35,19 +35,19 @@ use org\bovigo\vfs\vfsStream;
  * @covers \gitsync\export_repo::class
  */
 class export_repo_test extends advanced_testcase {
-    /** @var mocked output of cli_helper->get_arguments */
+    /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
     public array $moodleinstances;
-    /** @var mocked cli_helper */
+    /** @var cli_helper mocked cli_helper */
     public cli_helper $clihelper;
-    /** @var mocked curl_request */
+    /** @var curl_request mocked curl_request */
     public curl_request $curl;
-    /** @var mocked curl_request for doc upload */
+    /** @var export_repo mocked curl_request for doc upload */
     public export_repo $exportrepo;
-    /** @var root of virtual file system */
+    /** @var string root of virtual file system */
     public string $rootpath;
-    /** @var used to store output of multiple calls to a function */
+    /** @var string used to store output of multiple calls to a function */
     const MOODLE = 'fakeexport';
 
     public function setUp(): void {

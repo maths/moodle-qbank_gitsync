@@ -35,6 +35,7 @@ require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
 use context_course;
 use externallib_advanced_testcase;
 use external_api;
+use required_capability_exception;
 use require_login_exception;
 use core_files_external;
 
@@ -68,7 +69,7 @@ class import_question_test extends externallib_advanced_testcase {
         $this->user = $user;
         $this->setUser($user);
         $this->testrepo = $CFG->dirroot . '/question/bank/gitsync/testrepo/';
-        $this->fileinfo = ['contextid' => '', 'component' => '', 'filearea' => '',
+        $this->fileinfo = ['contextid' => '', 'component' => '', 'filearea' => '', 'userid' => '',
                            'itemid' => '', 'filepath' => '', 'filename' => ''];
     }
 
@@ -99,6 +100,8 @@ class import_question_test extends externallib_advanced_testcase {
         $fileinfo = \external_api::clean_returnvalue(core_files_external::upload_returns(), $fileinfo);
 
         $this->fileinfo = $fileinfo;
+        unset($this->fileinfo['url']);
+        $this->fileinfo['userid'] = '';
     }
 
     /**
@@ -110,7 +113,6 @@ class import_question_test extends externallib_advanced_testcase {
         global $DB;
         // Set the required capabilities - webservice access and export rights on course.
         $context = context_course::instance($this->course->id);
-        $this->assignUserCapability('qbank/gitsync:importquestions', $context->id);
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
         return $context;
@@ -153,12 +155,16 @@ class import_question_test extends externallib_advanced_testcase {
     }
 
     /**
-     * Test the execute function fails when no webservice capability assigned.
+     * Test the execute function fails when no webservice import capability assigned.
      */
     public function test_no_webservice_access(): void {
         global $DB;
-        $this->expectException(require_login_exception::class);
-        $this->expectExceptionMessage('Not enrolled');
+        $context = context_course::instance($this->course->id);
+        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $this->unassignUserCapability('qbank/gitsync:importquestions', \context_system::instance()->id, $managerroleid);
+        $this->expectException(required_capability_exception::class);
+        $this->expectExceptionMessage('you do not currently have permissions to do that (Import)');
         import_question::execute('', null, $this->fileinfo, 50, $this->course->fullname);
     }
 
@@ -166,8 +172,6 @@ class import_question_test extends externallib_advanced_testcase {
      * Test the execute function fails when user has no access to supplied context.
      */
     public function test_import_capability(): void {
-        $context = context_course::instance($this->course->id);
-        $this->assignUserCapability('qbank/gitsync:importquestions', $context->id);
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
         import_question::execute('', null, $this->fileinfo, 50, $this->course->fullname);
@@ -284,7 +288,7 @@ class import_question_test extends externallib_advanced_testcase {
                                                 $this->course->fullname);
         $createdquestion = $DB->get_record('question', ['name' => 'Third Question'], '*', $strictness = MUST_EXIST);
         $qversion = $DB->get_record('question_versions',
-                                    ['questionbankentryid' => $createdquestion->id], '*', $strictness = MUST_EXIST);
+                                    ['questionid' => $createdquestion->id], '*', $strictness = MUST_EXIST);
         $qbankentry = $DB->get_record('question_bank_entries',
                                       ['id' => $qversion->questionbankentryid],
                                       '*',
@@ -300,7 +304,7 @@ class import_question_test extends externallib_advanced_testcase {
             $returnvalue
         );
 
-        $this->assertEquals($returnvalue['questionbankentryid'], $createdquestion->id);
+        $this->assertEquals($returnvalue['questionbankentryid'], $qbankentry->id);
         $events = $sink->get_events();
         $this->assertEquals(count($events), 2);
         $this->assertInstanceOf('\core\event\question_created', $events['0']);

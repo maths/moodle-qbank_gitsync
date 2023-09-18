@@ -31,6 +31,7 @@ require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot . '/question/format/xml/format.php');
 require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
 
+use context;
 use external_api;
 use external_function_parameters;
 use external_single_structure;
@@ -51,7 +52,7 @@ class export_question extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle question id if it exists'),
+            'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle question questionbankentryid'),
         ]);
     }
 
@@ -74,20 +75,12 @@ class export_question extends external_api {
      */
     public static function execute(string $questionbankentryid):array {
         global $DB, $SITE;
+        $params = self::validate_parameters(self::execute_parameters(), [
+            'questionbankentryid' => $questionbankentryid,
+        ]);
+        $questiondata = get_question_data($params['questionbankentryid']);
 
-        $questiondata = $DB->get_record_sql("
-               SELECT qc.contextid as contextid, c.contextlevel as contextlevel,
-                      MAX(q.id) as questionid, c.instanceid as instanceid,
-                      qc.id as categoryid
-                 FROM {question_categories} qc
-                 JOIN {question_bank_entries} qbe ON qc.id = qbe.questioncategoryid
-                 JOIN {question_versions} qv ON qbe.id = qv.questionbankentryid
-                 JOIN {question} q ON qv.questionid = q.id
-                 JOIN {context} c on qc.contextid = c.id
-                WHERE qbe.id = :questionbankentryid",
-            ['questionbankentryid' => $questionbankentryid],
-            MUST_EXIST);
-
+        // Get course as needs to be set in qformat for export.
         switch ($questiondata->contextlevel) {
             case \CONTEXT_SYSTEM:
                 $course = $DB->get_record('course', ['shortname' => $SITE->shortname], '*', $strictness = MUST_EXIST);
@@ -110,8 +103,9 @@ class export_question extends external_api {
             default:
                 throw new moodle_exception(get_string('contexterror', 'qbank_gitsync', $questiondata->questionid));
         }
-        $thiscontext = get_context($questiondata->contextlevel, null, null, null, $questiondata->instanceid);
+        $thiscontext = context::instance_by_id($questiondata->contextid);
         self::validate_context($thiscontext);
+        require_capability('qbank/gitsync:exportquestions', $thiscontext);
         $question = question_bank::load_question_data($questiondata->questionid);
         $qformat = new qformat_xml();
         $qformat->setQuestions([$question]);

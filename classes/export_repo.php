@@ -40,11 +40,16 @@ class export_repo {
      * @var array
      */
     public array $postsettings;
-    public curl_request $curlrequest;
-    /**
+     /**
      * cURL request handle for file upload
      *
      * @var curl_request
+     */
+    public curl_request $curlrequest;
+    /**
+     * Full path to manifest file
+     *
+     * @var string
      */
     public string $manifestpath;
 
@@ -110,9 +115,11 @@ class export_repo {
             $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
             $responsejson = json_decode($this->curlrequest->execute());
             if (property_exists($responsejson, 'exception')) {
-                echo "{$responsejson->message}\n" .
-                     "{$responsejson->debuginfo}\n" .
-                     "{$questioninfo->filepath} not updated.\n";
+                echo "{$responsejson->message}\n";
+                if (property_exists($responsejson, 'debuginfo')) {
+                    echo "{$responsejson->debuginfo}\n";
+                }
+                echo "{$questioninfo->filepath} not updated.\n";
             } else {
                 $question = $this->reformat_question($responsejson->question);
                 file_put_contents($questioninfo->filepath, $question);
@@ -125,7 +132,8 @@ class export_repo {
     /**
      * Tidy up question formatting and remove unwanted comment
      *
-     * @return string question XML
+     * @param string $question original question XML
+     * @return string tidied question XML
      */
     public function reformat_question(string $question):string {
         $locale = setlocale(LC_ALL, 0);
@@ -146,7 +154,7 @@ class export_repo {
             'quote-nbsp' => false,
         ];
         if (!function_exists('tidy_repair_string')) {
-            // Tidy not installed
+            // Tidy not installed.
             return $question;
         }
         $dom = new \DOMDocument('1.0');

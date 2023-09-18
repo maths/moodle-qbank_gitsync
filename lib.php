@@ -93,3 +93,48 @@ function get_context(int $contextlevel, ?string $categoryname = null,
             throw new Exception('Invalid context level supplied.');
     }
 }
+
+/**
+ * Return information on the latest version of a question given its questionbankentryid.
+ *
+ * @param string $questionbankentryid
+ * @return stdClass Contains properties of question such as verison and context
+ */
+function get_question_data(string $questionbankentryid):stdClass {
+    global $DB;
+    $questiondata = $DB->get_record_sql("
+    SELECT qc.contextid as contextid, c.contextlevel as contextlevel,
+            q.id as questionid, c.instanceid as instanceid,
+            qc.id as categoryid, MAX(qv.version) as version
+        FROM {question_categories} qc
+        JOIN {question_bank_entries} qbe ON qc.id = qbe.questioncategoryid
+        JOIN {question_versions} qv ON qbe.id = qv.questionbankentryid
+        JOIN {question} q ON qv.questionid = q.id
+        JOIN {context} c on qc.contextid = c.id
+        WHERE qbe.id = :questionbankentryid",
+    ['questionbankentryid' => $questionbankentryid],
+    MUST_EXIST);
+
+    return $questiondata;
+}
+
+/**
+ * Return information on the latest version of a question given its questionbankentryid.
+ *
+ * @param string $questionbankentryid
+ * @return stdClass Contains properties of question such as verison and context
+ */
+function get_minimal_question_data(string $questionbankentryid):stdClass {
+    global $DB;
+    $questiondata = $DB->get_record_sql("
+    SELECT q.id as questionid, q.name as name, MAX(qv.version) as version
+        FROM {question} q
+        JOIN {question_versions} qv ON qv.questionid = q.id
+        JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
+        WHERE qbe.id = :questionbankentryid",
+    ['questionbankentryid' => $questionbankentryid],
+    MUST_EXIST);
+
+    return $questiondata;
+}
+
