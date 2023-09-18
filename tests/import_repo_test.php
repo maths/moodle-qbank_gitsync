@@ -36,23 +36,27 @@ use org\bovigo\vfs\vfsStream;
  * @covers \gitsync\import_repo::class
  */
 class import_repo_test extends advanced_testcase {
-    /** @var mocked output of cli_helper->get_arguments */
+    /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
     public array $moodleinstances;
-    /** @var mocked cli_helper */
+    /** @var cli_helper mocked cli_helper */
     public cli_helper $clihelper;
-    /** @var mocked curl_request */
+    /** @var curl_request mocked curl_request */
     public curl_request $curl;
-    /** @var mocked curl_request for doc upload */
+    /** @var curl_request mocked curl_request for doc upload */
     public curl_request $uploadcurl;
-    /** @var mocked import_repo */
+     /** @var curl_request mocked curl_request for question list */
+    public curl_request $listcurl;
+    /** @var import_repo mocked for question delete */
+    public curl_request $deletecurl;
+    /** @var import_repo mocked import_repo */
     public import_repo $importrepo;
-    /** @var root of virtual file system */
+    /** @var string root of virtual file system */
     public string $rootpath;
-    /** @var used to store output of multiple calls to a function */
+    /** @var array used to store output of multiple calls to a function */
     public array $results;
-    /** @var name of moodle instance for purpose of tests */
+    /** name of moodle instance for purpose of tests */
     const MOODLE = 'fake';
 
     public function setUp(): void {
@@ -87,10 +91,18 @@ class import_repo_test extends advanced_testcase {
         $this->uploadcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();;
+        $this->deletecurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute'
+        ])->setConstructorArgs(['xxxx'])->getMock();;
+        $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute'
+        ])->setConstructorArgs(['xxxx'])->getMock();;
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
             'get_curl_request', 'upload_file'
         ])->getMock();
-        $this->importrepo->expects($this->any())->method('get_curl_request')->will($this->returnValue($this->curl));
+        $this->importrepo->expects($this->any())->method('get_curl_request')->willReturnOnConsecutiveCalls(
+            $this->curl, $this->deletecurl, $this->listcurl, $this->uploadcurl
+        );
         $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
 
         $this->importrepo->directory = $this->rootpath;
@@ -121,6 +133,10 @@ class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": 35002}',
             '{"questionbankentryid": 35004}',
             '{"questionbankentryid": 35003}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{}',
         );
 
         $this->importrepo->process($this->clihelper, $this->moodleinstances);
@@ -241,6 +257,10 @@ class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": 35002}',
             '{"questionbankentryid": 35004}',
             '{"questionbankentryid": 35003}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{}',
         );
 
         $this->importrepo->process($this->clihelper, $this->moodleinstances);
