@@ -44,6 +44,13 @@ class import_repo {
      * @var \RecursiveIteratorIterator
      */
     public \RecursiveIteratorIterator $subdirectoryiterator;
+    /**
+     * Settings for POST request
+     *
+     * These are the parameters for the webservice import call.
+     *
+     * @var array
+     */
     public array $postsettings;
     /**
      * Settings for POST file upload request
@@ -110,6 +117,11 @@ class import_repo {
      * @var string
      */
     public string $subdirectory;
+    /**
+     * Parsed content of JSON manifest file
+     *
+     * @var \stdClass|null
+     */
     public ?\stdClass $manifestcontents;
     /**
      * Iterate through the directory structure and call the web service
@@ -219,7 +231,8 @@ class import_repo {
         $this->import_questions();
         $this->curlrequest->close();
         $this->create_manifest_file();
-        $this->delete_questions();
+        $this->delete_no_file_questions();
+        $this->delete_no_record_questions();
     }
 
     /**
@@ -263,7 +276,7 @@ class import_repo {
      *
      * Fileinfo parameter is set ready for import call to the webservice.
      *
-     * @param $repoitem
+     * @param resource $repoitem
      * @return bool success or failure
      */
     public function upload_file($repoitem):bool {
@@ -396,7 +409,13 @@ class import_repo {
         unlink($this->tempfilepath);
     }
 
-    public function delete_questions():void {
+    /**
+     * Offer to delete questions from Moodle/manifest where the question is in the manifest
+     * but there is no file in the repo.
+     *
+     * @return void
+     */
+    public function delete_no_file_questions():void {
         // Get all manifest entries for imported subdirectory.
         $manifestentries = array_filter($this->manifestcontents->questions, function($value) {
             $subdirectorypath = $this->directory . $this->subdirectory;
@@ -409,7 +428,6 @@ class import_repo {
                 array_push($questionstodelete, $manifestentry);
             }
         }
-        unset($manifestentry);
         // If not offer to delete questions from Moodle as well.
         if (!empty($questionstodelete)) {
             echo "\nThese questions are listed in the manifest but there is no longer a matching file:\n";
@@ -427,7 +445,6 @@ class import_repo {
                     $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
                     $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
                     $responsejson = json_decode($this->deletecurlrequest->execute());
-                    $responsejson = new stdClass();
                     if (property_exists($responsejson, 'exception')) {
                         echo "{$responsejson->message}\n" .
                             "Not deleted\n";
@@ -443,6 +460,54 @@ class import_repo {
             }
             $this->manifestcontents->questions = array_values($existingentries);
             file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+        }
+    }
+
+    /**
+     * Offer to delete questions from Moodle where the question is in Moodle
+     * but not in the manifest.
+     *
+     * @return void
+     */
+    public function delete_no_record_questions():void {
+        $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $questionstodelete = [];
+        // Check each question in Moodle to see if there is a corresponding entry
+        // in the manifest for that questionbankentryid.
+        foreach ($questionsinmoodle as $moodleq) {
+            if (!array_key_exists($moodleq->questionbankentryid, $existingentries)) {
+                array_push($questionstodelete, $moodleq);
+            }
+        }
+        // If not offer to delete question from Moodle.
+        if (!empty($questionstodelete)) {
+            echo "\nThese questions are in Moodle but not linked to your repository:\n";
+
+            foreach ($questionstodelete as $question) {
+                echo "{$question->questionbankentryid} - {$question->questioncategory} - {$question->name}\n";
+            }
+            unset($question);
+            $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+            foreach ($questionstodelete as $question) {
+                echo "\nDelete {$question->questioncategory} - {$question->name} from Moodle? y/n\n";
+                $handle = fopen ("php://stdin", "r");
+                $line = fgets($handle);
+                if (trim($line) === 'y') {
+                    $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
+                    $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
+                    $responsejson = json_decode($this->deletecurlrequest->execute());
+                    if (property_exists($responsejson, 'exception')) {
+                        echo "{$responsejson->message}\n" .
+                            "Not deleted\n";
+                    } else {
+                        echo "Deleted\n";
+                    }
+                } else {
+                    echo "Not deleted\n";
+                }
+                fclose($handle);
+            }
         }
     }
 }

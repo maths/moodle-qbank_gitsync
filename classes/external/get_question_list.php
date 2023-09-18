@@ -30,16 +30,11 @@ require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
 
-use context;
 use external_api;
 use external_function_parameters;
 use external_multiple_structure;
 use external_single_structure;
 use external_value;
-use moodle_exception;
-use qformat_xml;
-use question_bank;
-use core_question\local\bank\question_edit_contexts;
 
 /**
  * A webservice function to import a single question with metadata.
@@ -67,19 +62,21 @@ class get_question_list extends external_api {
         return new external_multiple_structure(
             new external_single_structure([
                 'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'questionbankentry id'),
+                'name' => new external_value(PARAM_TEXT, 'question name'),
+                'questioncategory' => new external_value(PARAM_TEXT, 'question category'),
             ])
         );
     }
 
     /**
+     * Get a list of questions for a given context for a given question category and below.
      *
-     *
-     * @param string|null $qcategoryname category of the question in form top/$category/$subcat1/$subcat2
+     * @param string|null $qcategoryname category to search in form top/$category/$subcat1/$subcat2
      * @param int $contextlevel Moodle code for context level e.g. 10 for system
      * @param string|null $coursename Unique course name (optional unless course or module context level)
      * @param string|null $modulename Unique (within course) module name (optional unless module context level)
      * @param string|null $coursecategory course category name (optional unless course catgeory context level)
-     * @return array [['questionbankentryid']]
+     * @return array of question data
      */
     public static function execute(?string $qcategoryname,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
@@ -111,8 +108,10 @@ class get_question_list extends external_api {
         $categories = array_column($categoriestosearch, null, 'id');
         $response = [];
         foreach ($qbentries as $qbe) {
+            $mindata = get_minimal_question_data($qbe->id);
             $qinfo = new \stdClass();
             $qinfo->questionbankentryid = $qbe->id;
+            $qinfo->name = $mindata->name;
             $qinfo->questioncategory = $categories[$qbe->questioncategoryid]->name;
             array_push($response, $qinfo);
         }
@@ -120,6 +119,12 @@ class get_question_list extends external_api {
         return $response;
     }
 
+    /**
+     * Recursive function to return the ids of all the question categories below a given category.
+     *
+     * @param int $parentid ID of the category to search below
+     * @return array of question categories
+     */
     public static function get_category_descendants(int $parentid):array {
         global $DB;
         $children = $DB->get_records('question_categories', ['parent' => $parentid], null, 'id, parent, name');

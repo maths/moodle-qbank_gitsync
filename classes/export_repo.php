@@ -40,11 +40,16 @@ class export_repo {
      * @var array
      */
     public array $postsettings;
-    public curl_request $curlrequest;
-    /**
+     /**
      * cURL request handle for file upload
      *
      * @var curl_request
+     */
+    public curl_request $curlrequest;
+    /**
+     * Full path to manifest file
+     *
+     * @var string
      */
     public string $manifestpath;
 
@@ -127,7 +132,8 @@ class export_repo {
     /**
      * Tidy up question formatting and remove unwanted comment
      *
-     * @return string question XML
+     * @param string $question original question XML
+     * @return string tidied question XML
      */
     public function reformat_question(string $question):string {
         $locale = setlocale(LC_ALL, 0);
