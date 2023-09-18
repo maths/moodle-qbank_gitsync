@@ -69,12 +69,16 @@ class delete_question extends external_api {
      * @return array success: true or exception
      */
     public static function execute(string $questionbankentryid):array {
-        $questiondata = get_question_data($questionbankentryid);
+        $params = self::validate_parameters(self::execute_parameters(), [
+            'questionbankentryid' => $questionbankentryid,
+        ]);
+        $questiondata = get_question_data($params['questionbankentryid']);
         if (!$questiondata->questionid) {
-            throw new moodle_exception(get_string('noquestionerror', 'qbank_gitsync', $questionbankentryid));
+            throw new moodle_exception(get_string('noquestionerror', 'qbank_gitsync', $params['questionbankentryid']));
         }
         $thiscontext = context::instance_by_id($questiondata->contextid);
         self::validate_context($thiscontext);
+        require_capability('qbank/gitsync:deletequestions', $thiscontext);
         \qbank_deletequestion\helper::delete_questions([$questiondata->questionid], true);
 
         $response = [

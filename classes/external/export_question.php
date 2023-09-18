@@ -75,8 +75,10 @@ class export_question extends external_api {
      */
     public static function execute(string $questionbankentryid):array {
         global $DB, $SITE;
-
-        $questiondata = get_question_data($questionbankentryid);
+        $params = self::validate_parameters(self::execute_parameters(), [
+            'questionbankentryid' => $questionbankentryid,
+        ]);
+        $questiondata = get_question_data($params['questionbankentryid']);
 
         // Get course as needs to be set in qformat for export.
         switch ($questiondata->contextlevel) {
@@ -103,6 +105,7 @@ class export_question extends external_api {
         }
         $thiscontext = context::instance_by_id($questiondata->contextid);
         self::validate_context($thiscontext);
+        require_capability('qbank/gitsync:exportquestions', $thiscontext);
         $question = question_bank::load_question_data($questiondata->questionid);
         $qformat = new qformat_xml();
         $qformat->setQuestions([$question]);

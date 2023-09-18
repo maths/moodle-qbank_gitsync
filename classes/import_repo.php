@@ -32,6 +32,18 @@ use stdClass;
  * Import a Git repo.
  */
 class import_repo {
+    /**
+     * File system iterator for categories
+     *
+     * @var \RecursiveIteratorIterator
+     */
+    public \RecursiveIteratorIterator $repoiterator;
+    /**
+     * File system iterator for questions
+     *
+     * @var \RecursiveIteratorIterator
+     */
+    public \RecursiveIteratorIterator $subdirectoryiterator;
     public array $postsettings;
     /**
      * Settings for POST file upload request
@@ -67,6 +79,12 @@ class import_repo {
      * @var curl_request
      */
     public curl_request $deletecurlrequest;
+    /**
+     * cURL request handle for question list retrieve
+     *
+     * @var curl_request
+     */
+    public curl_request $listcurlrequest;
     /**
      * Path to temporary manifest file
      *
@@ -154,6 +172,7 @@ class import_repo {
         }
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->deletecurlrequest = $this->get_curl_request($wsurl);
+        $this->listcurlrequest = $this->get_curl_request($wsurl);
         $this->uploadcurlrequest = $this->get_curl_request($moodleurl . '/webservice/upload.php');
 
         $this->postsettings = [
@@ -182,6 +201,19 @@ class import_repo {
         ];
         $this->deletecurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->deletecurlrequest->set_option(CURLOPT_POST, 1);
+        $listpostsettings = [
+            'wstoken' => $token,
+            'wsfunction' => 'qbank_gitsync_get_question_list',
+            'moodlewsrestformat' => 'json',
+            'contextlevel' => cli_helper::get_context_level($contextlevel),
+            'coursename' => $coursename,
+            'modulename' => $modulename,
+            'coursecategory' => $coursecategory,
+            'categoryname' => substr($this->subdirectory, 1)
+        ];
+        $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+        $this->listcurlrequest->set_option(CURLOPT_POST, 1);
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $listpostsettings);
 
         $this->import_categories();
         $this->import_questions();
@@ -206,18 +238,18 @@ class import_repo {
      * @return void
      */
     public function import_categories():void {
-        $repoiterator = new \RecursiveIteratorIterator(
+        $this->repoiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->directory, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
         // Find all the category files first and create categories where needed.
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
-        foreach ($repoiterator as $repoitem) {
+        foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE) {
-                    $this->postsettings['categoryname'] = '';
+                    $this->postsettings['qcategoryname'] = '';
                     $this->upload_file($repoitem);
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                     $this->curlrequest->execute();
@@ -264,23 +296,28 @@ class import_repo {
      * @return resource Temporary manifest file of added questions, one line per question.
      */
     public function import_questions() {
-        $subdirectoryiterator = new \RecursiveIteratorIterator(
+        $this->subdirectoryiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->directory . $this->subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
         $tempfile = fopen($this->tempfilepath, 'a+');
         $existingentries = array_column($this->manifestcontents->questions, null, 'filepath');
-        // Avoid starting slash in categoryname.
-        $directorymodifier = substr($this->subdirectory, 1);
         // Find all the question files and import them. Order is uncertain.
-        foreach ($subdirectoryiterator as $repoitem) {
+        foreach ($this->subdirectoryiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
+                    // Avoid starting slash in categoryname.
+                    $qcategory = substr($this->subdirectory, 1);
+                    if ($qcategory) {
+                        $qcategory = $qcategory . '/' . $this->subdirectoryiterator->getSubPath();
+                    } else {
+                        $qcategory = $this->subdirectoryiterator->getSubPath();
+                    }
                     // Path of file (without filename) relative to base $directory.
-                    $this->postsettings['categoryname'] = str_replace( '\\', '/',
-                                        $directorymodifier . $subdirectoryiterator->getSubPath());
-                    if ($this->postsettings['categoryname']) {
+                    $this->postsettings['qcategoryname'] = str_replace( '\\', '/',
+                                        $qcategory);
+                    if ($this->postsettings['qcategoryname']) {
                         if (!$this->upload_file($repoitem)) {
                             continue;
                         };
@@ -389,7 +426,7 @@ class import_repo {
                 if (trim($line) === 'y') {
                     $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
                     $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
-                    // $responsejson = json_decode($this->deletecurlrequest->execute());
+                    $responsejson = json_decode($this->deletecurlrequest->execute());
                     $responsejson = new stdClass();
                     if (property_exists($responsejson, 'exception')) {
                         echo "{$responsejson->message}\n" .

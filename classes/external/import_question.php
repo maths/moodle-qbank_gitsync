@@ -52,12 +52,12 @@ class import_question extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters([
             'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle questionbankentryid if question exists already'),
-            'categoryname' => new external_value(PARAM_TEXT, 'Category of question in form top/$category/$subcat1/$subcat2'),
+            'qcategoryname' => new external_value(PARAM_TEXT, 'Category of question in form top/$category/$subcat1/$subcat2'),
             'fileinfo' => new external_single_structure([
                 'component' => new external_value(PARAM_TEXT, 'File component'),
                 'contextid' => new external_value(PARAM_TEXT, 'File context'),
-                'userid' => new external_value(PARAM_TEXT, 'File user'),
                 'filearea' => new external_value(PARAM_TEXT, 'File area'),
+                'userid' => new external_value(PARAM_TEXT, 'File area'),
                 'filename' => new external_value(PARAM_TEXT, 'File name'),
                 'filepath' => new external_value(PARAM_TEXT, 'File path'),
                 'itemid' => new external_value(PARAM_SEQUENCE, 'File item id'),
@@ -98,15 +98,25 @@ class import_question extends external_api {
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null):array {
         global $CFG, $DB, $USER;
+        $params = self::validate_parameters(self::execute_parameters(), [
+            'questionbankentryid' => $questionbankentryid,
+            'qcategoryname' => $qcategoryname,
+            'fileinfo' => $fileinfo,
+            'contextlevel' => $contextlevel,
+            'coursename' => $coursename,
+            'modulename' => $modulename,
+            'coursecategory' => $coursecategory
+        ]);
         $questiondata = null;
         $question = null;
         $thiscontext = null;
         $qformat = null;
-        if ($questionbankentryid) {
-            $questiondata = get_question_data($questionbankentryid);
+        if ($params['questionbankentryid']) {
+            $questiondata = get_question_data($params['questionbankentryid']);
             $thiscontext = context::instance_by_id($questiondata->contextid);
         } else {
-            $thiscontext = get_context($contextlevel, $coursecategory, $coursename, $modulename);
+            $thiscontext = get_context($params['contextlevel'], $params['coursecategory'],
+                                       $params['coursename'], $params['modulename']);
         }
 
         $qformat = new qformat_xml();
@@ -115,16 +125,17 @@ class import_question extends external_api {
         // The webservice user needs to have access to the context. They could be given Manager
         // role at site level to access everything or access could be restricted to certain courses.
         self::validate_context($thiscontext);
+        require_capability('qbank/gitsync:importquestions', $thiscontext);
 
         $iscategory = false;
-        if ($questionbankentryid) {
+        if ($params['questionbankentryid']) {
             $question = question_bank::load_question_data($questiondata->questionid);
-        } else if ($qcategoryname) {
+        } else if ($params['qcategoryname']) {
             // Category name should be in form top/$category/$subcat1/$subcat2 and
             // have been gleaned directly from the directory structure.
             // Find the 'top' category for the context ($parent==0) and
             // then descend through the hierarchy until we find the category we need.
-            $catnames = split_category_path($qcategoryname);
+            $catnames = split_category_path($params['qcategoryname']);
             $parent = 0;
             foreach ($catnames as $key => $catname) {
                 $category = $DB->get_record('question_categories', ['name' => $catname,
@@ -143,13 +154,14 @@ class import_question extends external_api {
             $iscategory = true;
         }
         $fs = get_file_storage();
-        $file = $fs->get_file($fileinfo['contextid'], $fileinfo['component'], $fileinfo['filearea'],
-                      $fileinfo['itemid'], $fileinfo['filepath'], $fileinfo['filename']);
+        $file = $fs->get_file($params['fileinfo']['contextid'], $params['fileinfo']['component'],
+                              $params['fileinfo']['filearea'], $params['fileinfo']['itemid'],
+                              $params['fileinfo']['filepath'], $params['fileinfo']['filename']);
         $filename = $file->get_filename();
         $requestdir = make_request_directory();
         $tempfile = $file->copy_content_to_temp("{$requestdir}/{$filename}");
 
-        if ($questionbankentryid) {
+        if ($params['questionbankentryid']) {
             question_require_capability_on($question, 'edit');
         } else {
             $qformat->setFilename($tempfile);
@@ -163,7 +175,7 @@ class import_question extends external_api {
             throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
         }
 
-        if ($questionbankentryid) {
+        if ($params['questionbankentryid']) {
             \qbank_importasversion\importer::import_file($qformat, $question, $tempfile);
         } else {
             if (!$qformat->importprocess()) {
@@ -181,7 +193,7 @@ class import_question extends external_api {
             'questionbankentryid' => null,
         ];
         // Log imported question and return id of new question ready to make manifest file.
-        if (!$questionbankentryid && !$iscategory) {
+        if (!$params['questionbankentryid'] && !$iscategory) {
             $eventparams = [
                 'contextid' => $qformat->category->contextid,
                 'other' => ['format' => 'xml', 'categoryid' => $qformat->category->id],
@@ -200,8 +212,8 @@ class import_question extends external_api {
                 MUST_EXIST);
             $response['questionbankentryid'] = $newquestionbankentryid;
         }
-        if ($questionbankentryid) {
-            $response['questionbankentryid'] = $questionbankentryid;
+        if ($params['questionbankentryid']) {
+            $response['questionbankentryid'] = $params['questionbankentryid'];
         }
         return $response;
     }

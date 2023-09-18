@@ -44,13 +44,20 @@ $functions = [
         'type'        => 'write',
         'ajax'        => true
     ],
+    'qbank_gitsync_get_question_list' => [
+        'classname'   => 'qbank_gitsync\external\get_question_list',
+        'description' => 'Get list of questions for a context',
+        'type'        => 'read',
+        'ajax'        => true
+    ],
 ];
 
 $services = array(
     'qbank_gitsync' => array(
             'functions' => ['qbank_gitsync_export_question',
                             'qbank_gitsync_import_question',
-                            'qbank_gitsync_delete_question'],
+                            'qbank_gitsync_delete_question',
+                            'qbank_gitsync_get_question_list'],
             'restrictedusers' => 0,
             'enabled' => 1,
             'shortname' => 'qbank_gitsync_ws'

@@ -33,6 +33,7 @@ require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 use context_course;
 use externallib_advanced_testcase;
 use external_api;
+use required_capability_exception;
 use require_login_exception;
 use moodle_exception;
 
@@ -81,9 +82,9 @@ class export_question_test extends externallib_advanced_testcase {
         global $DB;
         // Set the required capabilities - webservice access and export rights on course.
         $context = context_course::instance($this->course->id);
-        $this->assignUserCapability('qbank/gitsync:exportquestions', $context->id);
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
+
         $returnvalue = export_question::execute($this->qbankentryid);
 
         // We need to execute the return values cleaning process to simulate
@@ -107,28 +108,30 @@ class export_question_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        $returnvalue = export_question::execute($this->qbankentryid);
+        export_question::execute($this->qbankentryid);
     }
 
     /**
-     * Test the execute function fails when no webservice capability assigned.
+     * Test the execute function fails when no webservice export capability assigned.
      */
     public function test_no_webservice_access(): void {
         global $DB;
-        $this->expectException(require_login_exception::class);
-        $this->expectExceptionMessage('Not enrolled');
-        $returnvalue = export_question::execute($this->qbankentryid);
+        $context = context_course::instance($this->course->id);
+        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $this->unassignUserCapability('qbank/gitsync:exportquestions', \context_system::instance()->id, $managerroleid);
+        $this->expectException(required_capability_exception::class);
+        $this->expectExceptionMessage('you do not currently have permissions to do that (Export)');
+        export_question::execute($this->qbankentryid);
     }
 
     /**
      * Test the execute function fails when user has no access to supplied context.
      */
     public function test_export_capability(): void {
-        $context = context_course::instance($this->course->id);
-        $this->assignUserCapability('qbank/gitsync:exportquestions', $context->id);
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        $returnvalue = export_question::execute($this->qbankentryid);
+        export_question::execute($this->qbankentryid);
     }
 
     /**
@@ -160,7 +163,6 @@ class export_question_test extends externallib_advanced_testcase {
         global $DB;
         // Set the required capabilities - webservice access and export rights on course.
         $context = context_course::instance($this->course->id);
-        $this->assignUserCapability('qbank/gitsync:exportquestions', $context->id);
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
         $sink = $this->redirectEvents();

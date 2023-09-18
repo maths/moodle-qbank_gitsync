@@ -67,6 +67,7 @@ class import_repo_test extends advanced_testcase {
         $this->options = [
             'moodleinstance' => self::MOODLE,
             'directory' => $this->rootpath,
+            'subdirectory' => '',
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
@@ -92,11 +93,18 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->expects($this->any())->method('get_curl_request')->will($this->returnValue($this->curl));
         $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
 
+        $this->importrepo->directory = $this->rootpath;
+        $this->importrepo->subdirectory = '';
+        $this->importrepo->manifestcontents = new \StdClass();
+        $this->importrepo->manifestcontents->context = null;
+        $this->importrepo->manifestcontents->questions = [];
         $this->importrepo->postsettings = ['contextlevel' => null, 'coursename' => null, 'modulename' => null,
+                                           'directory' => '', 'subdirectory' => '',
                                            'fileinfo[contextid]' => '', 'fileinfo[userid]' => '',
                                            'fileinfo[component]' => '', 'fileinfo[filearea]' => '',
                                            'fileinfo[itemid]' => '', 'fileinfo[filepath]' => '',
-                                           'fileinfo[filename]' => ''];
+                                           'fileinfo[filename]' => '',
+                                           'coursecategory' => ''];
     }
 
     /**
@@ -160,13 +168,13 @@ class import_repo_test extends advanced_testcase {
         $this->curl->expects($this->exactly(4))->method('execute')->will($this->returnCallback(
             function() {
                 $this->results[] = [
-                                    $this->importrepo->repoiterator->getPathname(),
-                                    $this->importrepo->postsettings['categoryname']
+                                    $this->importrepo->subdirectoryiterator->getPathname(),
+                                    $this->importrepo->postsettings['qcategoryname']
                                    ];
             })
         );
         $this->importrepo->curlrequest = $this->curl;
-        $this->importrepo->repoiterator = new \RecursiveIteratorIterator(
+        $this->importrepo->subdirectoryiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->rootpath, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
@@ -206,8 +214,11 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . '_manifest_update.tmp';
         $this->curl->expects($this->any())->method('execute')->will($this->returnValue('{"questionbankentryid": 35001}'));
         $this->importrepo->curlrequest = $this->curl;
-        $this->importrepo->repoiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->rootpath . '\top\cat 1', \RecursiveDirectoryIterator::SKIP_DOTS),
+        $wrongfile = fopen($this->rootpath . '\wrong.xml', 'a+');
+        fclose($wrongfile);
+
+        $this->importrepo->subdirectoryiterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->rootpath, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
         $this->importrepo->import_questions();

@@ -47,4 +47,12 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         )
     ],
+    'qbank/gitsync:listquestions' => [
+        'riskbitmask' => RISK_DATALOSS,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+        )
+    ],
 ];
