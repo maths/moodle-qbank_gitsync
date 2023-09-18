@@ -158,10 +158,6 @@ class import_repo_test extends advanced_testcase {
             })
         );
         $this->importrepo->curlrequest = $this->curl;
-        $this->importrepo->repoiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->rootpath, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
         $this->importrepo->import_categories();
         $this->assertContains($this->rootpath . '/top/cat 1/gitsync_category.xml', $this->results);
         $this->assertContains($this->rootpath . '/top/cat 2/gitsync_category.xml', $this->results);
@@ -190,10 +186,6 @@ class import_repo_test extends advanced_testcase {
             })
         );
         $this->importrepo->curlrequest = $this->curl;
-        $this->importrepo->subdirectoryiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->rootpath, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
             'coursename' => 'Course 1',
@@ -223,6 +215,54 @@ class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test importing questions from only a subdirectory of questions
+     * @covers \gitsync\import_repo\import_questions()
+     */
+    public function test_import_subdirectory_questions(): void {
+        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . '_manifest_update.tmp';
+        $this->results = [];
+        $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": 35001}',
+            '{"questionbankentryid": 35002}',
+        );
+        $this->curl->expects($this->exactly(2))->method('execute')->will($this->returnCallback(
+            function() {
+                $this->results[] = [
+                                    $this->importrepo->subdirectoryiterator->getPathname(),
+                                    $this->importrepo->postsettings['qcategoryname']
+                                   ];
+            })
+        );
+        $this->importrepo->subdirectory = '/top/cat 2/subcat 2_1';
+        $this->importrepo->curlrequest = $this->curl;
+
+        $this->importrepo->postsettings = [
+            'contextlevel' => '10',
+            'coursename' => 'Course 1',
+            'modulename' => 'Test 1',
+            'coursecategory' => 'Cat 1',
+        ];
+        $this->importrepo->import_questions();
+        $this->assertContains([$this->rootpath .
+                               '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1'], $this->results);
+        $this->assertContains([$this->rootpath .
+                               '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1'], $this->results);
+
+        // Check temp manifest file created.
+        $this->assertEquals(file_exists($this->importrepo->tempfilepath), true);
+        $this->assertEquals(2, count(file($this->importrepo->tempfilepath)));
+        $tempfile = fopen($this->importrepo->tempfilepath, 'r');
+        $firstline = json_decode(fgets($tempfile));
+        $this->assertStringContainsString('3500', $firstline->questionbankentryid);
+        $this->assertEquals($firstline->contextlevel, '10');
+        $this->assertStringContainsString($this->rootpath . '/top/cat ', $firstline->filepath);
+        $this->assertEquals($firstline->coursename, 'Course 1');
+        $this->assertEquals($firstline->modulename, 'Test 1');
+        $this->assertEquals($firstline->coursecategory, 'Cat 1');
+        $this->assertEquals($firstline->format, 'xml');
+    }
+
+    /**
      * Test message displayed when an invalid directory is used.
      * @covers \gitsync\import_repo\import_questions()
      */
@@ -233,10 +273,6 @@ class import_repo_test extends advanced_testcase {
         $wrongfile = fopen($this->rootpath . '\wrong.xml', 'a+');
         fclose($wrongfile);
 
-        $this->importrepo->subdirectoryiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->rootpath, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
         $this->importrepo->import_questions();
         $this->expectOutputRegex('/^Root directory should not contain XML files/');
     }

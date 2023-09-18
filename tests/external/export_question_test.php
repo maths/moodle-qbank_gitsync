@@ -43,18 +43,18 @@ use moodle_exception;
  * @covers \gitsync\external\export_question::execute
  */
 class export_question_test extends externallib_advanced_testcase {
-    /** @var plugin generator */
-    protected $generator;
-    /** @var generated course object */
-    protected $course;
-    /** @var generated question_category object */
-    protected $qcategory;
-    /** @var generated question object */
-    protected $q;
-    /** @var question bank entry id for generated question */
-    protected $qbankentryid;
-    /** @var generated user object */
-    protected $user;
+    /** @var \core_question_generator plugin generator */
+    protected \core_question_generator  $generator;
+    /** @var \stdClass generated course object */
+    protected \stdClass $course;
+    /** @var \stdClass generated question_category object */
+    protected \stdClass $qcategory;
+    /** @var \stdClass generated question object */
+    protected \stdClass $q;
+    /** @var int question bank entry id for generated question */
+    protected int $qbankentryid;
+    /** @var \stdClass generated user object */
+    protected \stdClass $user;
     /** Name of question to be generated and exported. */
     const QNAME = 'Example STACK question';
 

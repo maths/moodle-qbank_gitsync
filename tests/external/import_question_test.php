@@ -45,18 +45,20 @@ use core_files_external;
  * @covers \gitsync\external\import_question::execute
  */
 class import_question_test extends externallib_advanced_testcase {
-    /** @var plugin generator */
-    protected $generator;
+    /** @var core_question_generator plugin generator */
+    protected \core_question_generator $generator;
     /** @var generated course object */
-    protected $course;
-    /** @var generated question_category object */
-    protected $qcategory;
+    protected \stdClass $course;
+    /** @var \stdClass generated question_category object */
+    protected \stdClass $qcategory;
+    /** @var array information about uploaded file */
+    protected array $fileinfo;
     /** @var generated user object */
-    protected $fileinfo;
-    /** @var information about uploaded file */
-    protected $user;
-    /** @var filepath of directory containing test files */
-    protected $testrepo;
+    protected \stdClass $user;
+    /** @var string filepath of directory containing test files */
+    protected string $testrepo;
+    /** Name of question to be generated and updated. */
+    const QNAME = 'Example STACK question';
 
     public function setUp(): void {
         global $CFG;
@@ -309,5 +311,42 @@ class import_question_test extends externallib_advanced_testcase {
         $this->assertEquals(count($events), 2);
         $this->assertInstanceOf('\core\event\question_created', $events['0']);
         $this->assertInstanceOf('\core\event\questions_imported', $events['1']);
+    }
+
+    /**
+     * Test question update.
+     */
+    public function test_question_update(): void {
+        global $DB;
+        $this->give_capabilities();
+        // Generate question and obtain its QBE id.
+        $question = $this->generator->create_question('stack', 'test3',
+                            ['name' => self::QNAME, 'category' => $this->qcategory->id]);
+        $qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
+                            ['questionid' => $question->id], $strictness = MUST_EXIST);
+        $this->assertEquals(false, $DB->record_exists('question_versions',
+                            ['questionbankentryid' => $qbankentryid, 'version' => 2]));
+        $sink = $this->redirectEvents();
+        // Update question.
+        $this->upload_file($this->testrepo . 'top/cat 2/subcat 2_1/Third Question.xml');
+        $returnvalue = import_question::execute($qbankentryid,
+                                 null,
+                                 $this->fileinfo,
+                                 50,
+                                 $this->course->fullname);
+
+        // Check version number has increased.
+        $this->assertEquals(true, $DB->record_exists('question_versions',
+                            ['questionbankentryid' => $qbankentryid, 'version' => 2]));
+
+        $returnvalue = external_api::clean_returnvalue(
+            import_question::execute_returns(),
+            $returnvalue
+        );
+
+        $this->assertEquals($returnvalue['questionbankentryid'], $qbankentryid);
+        $events = $sink->get_events();
+        $this->assertEquals(count($events), 1);
+        $this->assertInstanceOf('\qbank_importasversion\event\question_version_imported', $events['0']);
     }
 }

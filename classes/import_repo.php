@@ -322,9 +322,9 @@ class import_repo {
                         && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
                     // Avoid starting slash in categoryname.
                     $qcategory = substr($this->subdirectory, 1);
-                    if ($qcategory) {
+                    if ($qcategory && $this->subdirectoryiterator->getSubPath()) {
                         $qcategory = $qcategory . '/' . $this->subdirectoryiterator->getSubPath();
-                    } else {
+                    } else if ($this->subdirectoryiterator->getSubPath()) {
                         $qcategory = $this->subdirectoryiterator->getSubPath();
                     }
                     // Path of file (without filename) relative to base $directory.
