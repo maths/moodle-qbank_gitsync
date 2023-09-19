@@ -98,7 +98,7 @@ class import_repo_test extends advanced_testcase {
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();;
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'upload_file'
+            'get_curl_request', 'upload_file', 'handle_delete'
         ])->getMock();
         $this->importrepo->expects($this->any())->method('get_curl_request')->willReturnOnConsecutiveCalls(
             $this->curl, $this->deletecurl, $this->listcurl, $this->uploadcurl
@@ -169,7 +169,7 @@ class import_repo_test extends advanced_testcase {
      * @covers \gitsync\import_repo\import_questions()
      */
     public function test_import_questions(): void {
-        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . '_manifest_update.tmp';
+        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": 35001}',
@@ -219,7 +219,7 @@ class import_repo_test extends advanced_testcase {
      * @covers \gitsync\import_repo\import_questions()
      */
     public function test_import_subdirectory_questions(): void {
-        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . '_manifest_update.tmp';
+        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
         $this->results = [];
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": 35001}',
@@ -263,11 +263,61 @@ class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test importing existing questions.
+     * @covers \gitsync\import_repo\import_questions()
+     */
+    public function test_import_existing_questions(): void {
+        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
+        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
+                             "questions":[{
+                                "questionbankentryid":"1",
+                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "format":"xml"
+                            }, {
+                                "questionbankentryid":"2",
+                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "format":"xml"
+                            }]}';
+        $this->importrepo->manifestcontents = json_decode($manifestcontents);
+        $this->results = [];
+        $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": 35001}',
+            '{"questionbankentryid": 35002}',
+            '{"questionbankentryid": 1}',
+            '{"questionbankentryid": 2}',
+        );
+        $this->curl->expects($this->exactly(4))->method('execute')->will($this->returnCallback(
+            function() {
+                $this->results[] = [
+                                    $this->importrepo->subdirectoryiterator->getPathname(),
+                                    $this->importrepo->postsettings['qcategoryname'],
+                                    $this->importrepo->postsettings['questionbankentryid']
+                                   ];
+            })
+        );
+        $this->importrepo->curlrequest = $this->curl;
+        $this->importrepo->postsettings = [
+            'contextlevel' => '10',
+            'coursename' => 'Course 1',
+            'modulename' => 'Test 1',
+            'coursecategory' => 'Cat 1',
+        ];
+        $this->importrepo->import_questions();
+        // Check questions in manifest pass questionbankentryid to webservice but the others don't.
+        $this->assertContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1', '1'], $this->results);
+        $this->assertContains([$this->rootpath .
+                               '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1', '2'], $this->results);
+        $this->assertContains([$this->rootpath .
+                               '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', null], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
+    }
+
+    /**
      * Test message displayed when an invalid directory is used.
      * @covers \gitsync\import_repo\import_questions()
      */
     public function test_import_questions_wrong_directory(): void {
-        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . '_manifest_update.tmp';
+        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
         $this->curl->expects($this->any())->method('execute')->will($this->returnValue('{"questionbankentryid": 35001}'));
         $this->importrepo->curlrequest = $this->curl;
         $wrongfile = fopen($this->rootpath . '\wrong.xml', 'a+');
@@ -279,6 +329,7 @@ class import_repo_test extends advanced_testcase {
 
     /**
      * Test creation of manifest file.
+     * @covers \gitsync\import_repo\create_manifest_file()
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
@@ -326,6 +377,154 @@ class import_repo_test extends advanced_testcase {
         $samplerecord = reset($samplerecords);
         $this->assertStringContainsString($this->rootpath . '/top/cat ', $samplerecord->filepath);
         $this->assertEquals($samplerecord->format, 'xml');
+    }
 
+    /**
+     * Test update of manifest file.
+     * @covers \gitsync\import_repo\create_manifest_file()
+     */
+    public function test_manifest_file_update(): void {
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 3 category calls to the webservice and 4 question calls.
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
+        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
+        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
+                             "questions":[{
+                                "questionbankentryid":"1",
+                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "format":"xml"
+                            }, {
+                                "questionbankentryid":"2",
+                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "format":"xml"
+                            }]}';
+        $tempcontents = '{"questionbankentryid":"1",' .
+                          '"filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",' .
+                          '"format":"xml"}' . "\n" .
+                        '{"questionbankentryid":"3",' .
+                          '"filepath":"' . $this->rootpath . '/top/cat 2/Second Question.xml",' .
+                          '"format":"xml"}' . "\n" .
+                        '{"questionbankentryid":"2",' .
+                          '"filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",' .
+                          '"format":"xml"}' . "\n" .
+                        '{"questionbankentryid":"4",' .
+                          '"filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml",' .
+                          '"format":"xml"}' . "\n";
+        $this->importrepo->manifestcontents = json_decode($manifestcontents);
+        file_put_contents($this->importrepo->tempfilepath, $tempcontents);
+
+        $this->importrepo->create_manifest_file();
+
+        $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
+        $this->assertEquals(4, count($manifestcontents->questions));
+        $questionbankentryids = array_map(function($q) {
+            return $q->questionbankentryid;
+        }, $manifestcontents->questions);
+        $this->assertEquals(4, count($questionbankentryids));
+        $this->assertContains('1', $questionbankentryids);
+        $this->assertContains('2', $questionbankentryids);
+        $this->assertContains('3', $questionbankentryids);
+        $this->assertContains('4', $questionbankentryids);
+
+        $context = $manifestcontents->context;
+        $this->assertEquals($context->contextlevel, '70');
+        $this->assertEquals($context->coursename, 'Course 1');
+        $this->assertEquals($context->modulename, 'Test 1');
+        $this->assertEquals($context->coursecategory, null);
+
+        $samplerecords = array_filter($manifestcontents->questions, function($q) {
+            return $q->questionbankentryid === '1';
+        });
+        $samplerecord = reset($samplerecords);
+        $this->assertEquals($this->rootpath . '/top/cat 1/First Question.xml', $samplerecord->filepath);
+    }
+
+    /**
+     * Test delete of questions with no file in repo.
+     * @covers \gitsync\import_repo\delete_no_file_questions()
+     */
+    public function test_delete_no_file_questions(): void {
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
+        // 4 files in the manifest.
+        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
+                             "questions":[{
+                                "questionbankentryid":"1",
+                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "format":"xml"
+                            }, {
+                                "questionbankentryid":"2",
+                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "format":"xml"
+                            }, {
+                                "questionbankentryid":"3",
+                                "filepath":"' . $this->rootpath . '/top/cat 2/Second Question.xml",
+                                "format":"xml"
+                            }, {
+                                "questionbankentryid":"4",
+                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml",
+                                "format":"xml"
+                            }]}';
+        $this->importrepo->manifestcontents = json_decode($manifestcontents);
+        file_put_contents($this->importrepo->manifestpath, $manifestcontents);
+
+        // Delete 2 of the files.
+        unlink($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml');
+        unlink($this->rootpath . '/top/cat 2/Second Question.xml');
+
+        // One question deleted of two that no longer have files.
+        $this->importrepo->expects($this->exactly(2))->method('handle_delete')->willReturnOnConsecutiveCalls(
+            true, false
+        );
+
+        $this->importrepo->delete_no_file_questions();
+
+        // One manifest record removed.
+        $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
+        $this->assertEquals(3, count($manifestcontents->questions));
+        $questionbankentryids = array_map(function($q) {
+            return $q->questionbankentryid;
+        }, $manifestcontents->questions);
+        $this->assertEquals(3, count($questionbankentryids));
+        $this->assertContains('1', $questionbankentryids);
+        $this->assertContains('4', $questionbankentryids);
+
+        $this->expectOutputRegex('/^\nThese questions are listed in the manifest but there is no longer a matching file/');
+        $this->expectOutputRegex('/top\/cat 2\/subcat 2_1\/Third Question.xml+/');
+        $this->expectOutputRegex('/top\/cat 2\/Second Question.xml+/');
+    }
+
+    /**
+     * Test delete of questions with no file in repo.
+     * @covers \gitsync\import_repo\delete_no_file_questions()
+     */
+    public function test_delete_no_record_questions(): void {
+        // 2 records in the manifest.
+        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
+                             "questions":[{
+                                "questionbankentryid":"1",
+                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "format":"xml"
+                            }, {
+                                "questionbankentryid":"2",
+                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "format":"xml"
+                            }]}';
+        $this->importrepo->manifestcontents = json_decode($manifestcontents);
+        $this->importrepo->listcurlrequest = $this->listcurl;
+        // One question deleted of two that no longer have files.
+        $this->importrepo->expects($this->exactly(2))->method('handle_delete')->willReturnOnConsecutiveCalls(
+            true, false
+        );
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '[{"questionbankentryid": "1", "name": "First Question", "questioncategory": "cat 1"},
+              {"questionbankentryid": "2", "name": "Third Question", "questioncategory": "subcat 2_1"},
+              {"questionbankentryid": "3", "name": "Second Question", "questioncategory": "cat 1"},
+              {"questionbankentryid": "4", "name": "Fourth Question", "questioncategory": "cat 1"}]'
+        );
+        $this->importrepo->delete_no_record_questions();
+
+        $this->expectOutputRegex('/^\nThese questions are in Moodle but not linked to your repository:/');
+        $this->expectOutputRegex('/cat 1 - Second Question+/');
+        $this->expectOutputRegex('/cat 1 - Fourth Question+/');
     }
 }

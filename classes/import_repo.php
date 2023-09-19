@@ -170,7 +170,7 @@ class import_repo {
 
         $this->manifestpath = $this->directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
         $this->tempfilepath = $this->directory . $this->subdirectory . '/' .
-                              $moodleinstance . $filenamemod . '_manifest_update.tmp';
+                              $moodleinstance . $filenamemod . cli_helper::TEMP_MANIFEST_FILE;
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
         fclose($manifestfile);
@@ -439,24 +439,10 @@ class import_repo {
             $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
             foreach ($questionstodelete as $question) {
                 echo "\nDelete {$question->filepath} from Moodle? y/n\n";
-                $handle = fopen ("php://stdin", "r");
-                $line = fgets($handle);
-                if (trim($line) === 'y') {
-                    $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
-                    $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
-                    $responsejson = json_decode($this->deletecurlrequest->execute());
-                    if (property_exists($responsejson, 'exception')) {
-                        echo "{$responsejson->message}\n" .
-                            "Not deleted\n";
-                    } else {
-                        echo "Deleted\n";
-                        // Update manifest file. Do we want to do this even if user chooses not to delete.
-                        unset($existingentries["{$question->questionbankentryid}"]);
-                    }
-                } else {
-                    echo "Not deleted\n";
+                $wasdeleted = $this->handle_delete($question);
+                if ($wasdeleted) {
+                    unset($existingentries["{$question->questionbankentryid}"]);
                 }
-                fclose($handle);
             }
             $this->manifestcontents->questions = array_values($existingentries);
             file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
@@ -491,23 +477,36 @@ class import_repo {
             $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
             foreach ($questionstodelete as $question) {
                 echo "\nDelete {$question->questioncategory} - {$question->name} from Moodle? y/n\n";
-                $handle = fopen ("php://stdin", "r");
-                $line = fgets($handle);
-                if (trim($line) === 'y') {
-                    $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
-                    $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
-                    $responsejson = json_decode($this->deletecurlrequest->execute());
-                    if (property_exists($responsejson, 'exception')) {
-                        echo "{$responsejson->message}\n" .
-                            "Not deleted\n";
-                    } else {
-                        echo "Deleted\n";
-                    }
-                } else {
-                    echo "Not deleted\n";
-                }
-                fclose($handle);
+                $this->handle_delete($question);
             }
         }
+    }
+
+    /**
+     * Prompt user whether to delete question
+     *
+     * @param object \stdClass $question question to be deleted
+     * @return bool Was the question deleted
+     */
+    public function handle_delete(object $question):bool {
+        $deleted = false;
+        $handle = fopen ("php://stdin", "r");
+        $line = fgets($handle);
+        if (trim($line) === 'y') {
+            $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
+            $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
+            $responsejson = json_decode($this->deletecurlrequest->execute());
+            if (property_exists($responsejson, 'exception')) {
+                echo "{$responsejson->message}\n" .
+                    "Not deleted\n";
+            } else {
+                echo "Deleted\n";
+                $deleted = true;
+            }
+        } else {
+            echo "Not deleted\n";
+        }
+        fclose($handle);
+        return $deleted;
     }
 }
