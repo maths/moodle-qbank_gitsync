@@ -28,6 +28,7 @@ $string['pluginname'] = 'Gitsync';
 $string['gitsync:exportquestions'] = 'Export';
 $string['gitsync:importquestions'] = 'Import';
 $string['gitsync:deletequestions'] = 'Delete';
+$string['gitsync:listquestions'] = 'List';
 $string['exporterror'] = 'Could not export question id: {$a}';
 $string['importerror'] = 'Could not import question from file: {$a}';
 $string['noquestionerror'] = 'Question does not exist. Questionbankentryid: {$a}';
