@@ -66,9 +66,9 @@ class delete_question extends external_api {
      * Deletes all versions of a single question.
      *
      * @param string $questionbankentryid questionbankentry id
-     * @return array success: true or exception
+     * @return object \stdClass success: true or exception
      */
-    public static function execute(string $questionbankentryid):array {
+    public static function execute(string $questionbankentryid):object {
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,
         ]);
@@ -81,9 +81,8 @@ class delete_question extends external_api {
         require_capability('qbank/gitsync:deletequestions', $thiscontext);
         \qbank_deletequestion\helper::delete_questions([$questiondata->questionid], true);
 
-        $response = [
-            'success' => true,
-        ];
+        $response = new \stdClass();
+        $response->success = true;
 
         return $response;
     }
