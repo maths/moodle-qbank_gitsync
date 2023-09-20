@@ -92,11 +92,11 @@ class import_question extends external_api {
      * @param string|null $coursename Unique course name (optional unless course or module context level)
      * @param string|null $modulename Unique (within course) module name (optional unless module context level)
      * @param string|null $coursecategory course category name (optional unless course catgeory context level)
-     * @return array ['questionbankentryid']
+     * @return object \stdClass with property questionbankentryid'
      */
     public static function execute(?string $questionbankentryid, ?string $qcategoryname, array $fileinfo,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
-                                    ?string $coursecategory = null):array {
+                                    ?string $coursecategory = null):object {
         global $CFG, $DB, $USER;
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,
@@ -189,9 +189,8 @@ class import_question extends external_api {
         }
 
         $file->delete();
-        $response = [
-            'questionbankentryid' => null,
-        ];
+        $response = new \stdClass();
+        $response->questionbankentryid = null;
         // Log imported question and return id of new question ready to make manifest file.
         if (!$params['questionbankentryid'] && !$iscategory) {
             $eventparams = [
@@ -210,10 +209,10 @@ class import_question extends external_api {
                     WHERE q.modifiedby = :user",
                 ['user' => $USER->id],
                 MUST_EXIST);
-            $response['questionbankentryid'] = $newquestionbankentryid;
+                $response->questionbankentryid = $newquestionbankentryid;
         }
         if ($params['questionbankentryid']) {
-            $response['questionbankentryid'] = $params['questionbankentryid'];
+            $response->questionbankentryid = $params['questionbankentryid'];
         }
         return $response;
     }

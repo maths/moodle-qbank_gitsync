@@ -71,9 +71,9 @@ class export_question extends external_api {
      * Will need to add metadata and be packaged properly.
      *
      * @param string $questionbankentryid questionbankentry id
-     * @return array question details
+     * @return object \stdClass question details
      */
-    public static function execute(string $questionbankentryid):array {
+    public static function execute(string $questionbankentryid):object {
         global $DB, $SITE;
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,
@@ -130,9 +130,8 @@ class export_question extends external_api {
         $event = \core\event\questions_exported::create($eventparams);
         $event->trigger();
 
-        $response = [
-            'question' => $question,
-        ];
+        $response = new \stdClass();
+        $response->question = $question;
 
         return $response;
     }

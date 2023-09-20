@@ -55,6 +55,11 @@ class cli_helper {
      */
     public const MANIFEST_FILE = '_question_manifest.json';
     /**
+     * TEMP_MANIFEST_FILE - File name ending for temporary manifest file.
+     * Appended to name of moodle instance.
+     */
+    public const TEMP_MANIFEST_FILE = '_manifest_update.tmp';
+    /**
      * Constructor
      *
      * @param array $options

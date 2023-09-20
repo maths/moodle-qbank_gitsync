@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for export_question function of gitsync webservice
+ * Unit tests for get_question_list function of gitsync webservice
  *
  * @package    qbank_gitsync
  * @copyright  2023 The Open University
@@ -38,11 +38,11 @@ use require_login_exception;
 use moodle_exception;
 
 /**
- * Test the export_question webservice function.
+ * Test the get_question_list webservice function.
  *
- * @covers \gitsync\external\export_question::execute
+ * @covers \gitsync\external\get_question_list::execute
  */
-class export_question_test extends externallib_advanced_testcase {
+class get_question_list_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */
     protected \core_question_generator  $generator;
     /** @var \stdClass generated course object */
@@ -55,7 +55,7 @@ class export_question_test extends externallib_advanced_testcase {
     protected int $qbankentryid;
     /** @var \stdClass generated user object */
     protected \stdClass $user;
-    /** Name of question to be generated and exported. */
+    /** Name of question to be generated and listed. */
     const QNAME = 'Example STACK question';
 
     public function setUp(): void {
@@ -80,17 +80,17 @@ class export_question_test extends externallib_advanced_testcase {
      */
     public function test_capabilities(): void {
         global $DB;
-        // Set the required capabilities - webservice access and export rights on course.
+        // Set the required capabilities - webservice access and list rights on course.
         $context = context_course::instance($this->course->id);
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
 
-        $returnvalue = export_question::execute($this->qbankentryid);
+        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null);
 
         // We need to execute the return values cleaning process to simulate
         // the web service server.
         $returnvalue = external_api::clean_returnvalue(
-            export_question::execute_returns(),
+            get_question_list::execute_returns(),
             $returnvalue
         );
 
@@ -108,30 +108,30 @@ class export_question_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        export_question::execute($this->qbankentryid);
+        get_question_list::execute('top', 50, $this->course->fullname, null, null);
     }
 
     /**
-     * Test the execute function fails when no webservice export capability assigned.
+     * Test the execute function fails when no webservice list capability assigned.
      */
     public function test_no_webservice_access(): void {
         global $DB;
         $context = context_course::instance($this->course->id);
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
-        $this->unassignUserCapability('qbank/gitsync:exportquestions', \context_system::instance()->id, $managerroleid);
+        $this->unassignUserCapability('qbank/gitsync:listquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
-        $this->expectExceptionMessage('you do not currently have permissions to do that (Export)');
-        export_question::execute($this->qbankentryid);
+        $this->expectExceptionMessage('you do not currently have permissions to do that (List)');
+        get_question_list::execute('top', 50, $this->course->fullname, null, null);
     }
 
     /**
      * Test the execute function fails when user has no access to supplied context.
      */
-    public function test_export_capability(): void {
+    public function test_list_capability(): void {
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        export_question::execute($this->qbankentryid);
+        get_question_list::execute('top', 50, $this->course->fullname, null, null);
     }
 
     /**
@@ -151,33 +151,51 @@ class export_question_test extends externallib_advanced_testcase {
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->expectException(moodle_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        // Trying to export question from course 2 using context of course 1.
-        // User has export capability on course 1 but not course 2.
-        export_question::execute($qbankentryid2);
+        // Trying to list question from course 2 using context of course 1.
+        // User has list capability on course 1 but not course 2.
+        get_question_list::execute('top', 50, $course2->fullname, null, null);
     }
 
     /**
      * Test output of execute function.
      */
-    public function test_export(): void {
+    public function test_list(): void {
         global $DB;
-        // Set the required capabilities - webservice access and export rights on course.
+        // Set the required capabilities - webservice access and list rights on course.
         $context = context_course::instance($this->course->id);
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
+        $qcategory2 = $this->generator->create_question_category(
+            ['contextid' => \context_course::instance($this->course->id)->id]);
+        $q2 = $this->generator->create_question('stack', 'test3',
+                                                ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
+        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
+                             ['questionid' => $q2->id], $strictness = MUST_EXIST);
         $sink = $this->redirectEvents();
-        $returnvalue = export_question::execute($this->qbankentryid);
+        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null);
 
         $returnvalue = external_api::clean_returnvalue(
-            export_question::execute_returns(),
+            get_question_list::execute_returns(),
             $returnvalue
         );
 
-        $this->assertStringContainsString("question: {$this->q->id}", $returnvalue['question']);
-        $this->assertStringContainsString(self::QNAME, $returnvalue['question']);
+        $returnedq1 = [];
+        $returnedq2 = [];
+        $this->assertEquals(count($returnvalue), 2);
+        foreach ($returnvalue as $returnedq) {
+            if ($returnedq['questionbankentryid'] === $this->q->questionbankentryid) {
+                $returnedq1 = $returnedq;
+            } else if ($returnedq['questionbankentryid'] === $qbankentryid2) {
+                $returnedq2 = $returnedq;
+            }
+        }
+
+        $this->assertEquals($this->q->name, $returnedq1['name']);
+        $this->assertEquals($q2->name, $returnedq2['name']);
+        $this->assertEquals($this->qcategory->name, $returnedq1['questioncategory']);
+        $this->assertEquals($qcategory2->name, $returnedq2['questioncategory']);
 
         $events = $sink->get_events();
-        $this->assertEquals(count($events), 1);
-        $this->assertInstanceOf('\core\event\questions_exported', $events['0']);
+        $this->assertEquals(count($events), 0);
     }
 }

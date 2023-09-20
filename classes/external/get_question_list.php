@@ -81,7 +81,7 @@ class get_question_list extends external_api {
     public static function execute(?string $qcategoryname,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null):array {
-        global $CFG, $DB, $USER;
+        global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'qcategoryname' => $qcategoryname,
             'contextlevel' => $contextlevel,
