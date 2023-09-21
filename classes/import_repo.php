@@ -155,22 +155,11 @@ class import_repo {
 
         $moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $moodleurl . '/webservice/rest/server.php';
-        $filenamemod = '_' . $contextlevel;
-        switch ($contextlevel) {
-            case 'coursecategory':
-                $filenamemod = $filenamemod . '_' . $coursecategory;
-                break;
-            case 'course':
-                $filenamemod = $filenamemod . '_' . $coursename;
-                break;
-            case 'module':
-                $filenamemod = $filenamemod . '_' . $coursename . '_' . $modulename;
-                break;
-        }
 
-        $this->manifestpath = $this->directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
+        $this->manifestpath = get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
+                                                $coursename, $modulename, $this->directory);
         $this->tempfilepath = $this->directory . $this->subdirectory . '/' .
-                              $moodleinstance . $filenamemod . cli_helper::TEMP_MANIFEST_FILE;
+                              $moodleinstance . '_' . $contextlevel . cli_helper::TEMP_MANIFEST_FILE;
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
         fclose($manifestfile);

@@ -169,4 +169,33 @@ class cli_helper {
                 throw new \Exception("Context level '{$level}' is not valid.");
         }
     }
+
+    /**
+     * Create manifest path
+     *
+     * @param string $moodleinstance
+     * @param string $contextlevel
+     * @param string|null $coursecategory
+     * @param string|null $coursename
+     * @param string|null $modulename
+     * @param string $directory
+     * @return string
+     */
+    public static function get_manifest_path(string $moodleinstance, string $contextlevel, ?string $coursecategory,
+                            ?string $coursename, ?string $modulename, string $directory):string {
+        $filenamemod = '_' . $contextlevel;
+        switch ($contextlevel) {
+            case 'coursecategory':
+                $filenamemod = $filenamemod . '_' . $coursecategory;
+                break;
+            case 'course':
+                $filenamemod = $filenamemod . '_' . $coursename;
+                break;
+            case 'module':
+                $filenamemod = $filenamemod . '_' . $coursename . '_' . $modulename;
+                break;
+        }
+
+        return $directory . '/' . $moodleinstance . $filenamemod . self::MANIFEST_FILE;
+    }
 }

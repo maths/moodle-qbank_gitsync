@@ -112,7 +112,7 @@ function get_question_data(string $questionbankentryid):stdClass {
         JOIN {question} q ON qv.questionid = q.id
         JOIN {context} c on qc.contextid = c.id
         WHERE qbe.id = :questionbankentryid1
-        AND qv.version = (SELECT MAX(version) FROM phpu_question_versions WHERE questionbankentryid = :questionbankentryid2)",
+        AND qv.version = (SELECT MAX(version) FROM {question_versions} WHERE questionbankentryid = :questionbankentryid2)",
     ['questionbankentryid1' => $questionbankentryid, 'questionbankentryid2' => $questionbankentryid],
     MUST_EXIST);
 
@@ -133,10 +133,9 @@ function get_minimal_question_data(string $questionbankentryid):stdClass {
         JOIN {question_versions} qv ON qv.questionid = q.id
         JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
         WHERE qbe.id = :questionbankentryid1
-        AND qv.version = (SELECT MAX(version) FROM phpu_question_versions WHERE questionbankentryid = :questionbankentryid2)",
+        AND qv.version = (SELECT MAX(version) FROM {question_versions} WHERE questionbankentryid = :questionbankentryid2)",
     ['questionbankentryid1' => $questionbankentryid, 'questionbankentryid2' => $questionbankentryid],
     MUST_EXIST);
 
     return $questiondata;
 }
-

@@ -15,9 +15,9 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Wrapper class for processing performed by command line interface for exporting a repo from Moodle.
+ * Wrapper class for processing performed by command line interface for creating a repo from Moodle.
  *
- * Utilised in cli\exportrepo.php
+ * Utilised in cli\createrepo.php
  *
  * Allows mocking and unit testing via PHPUnit.
  * Used outside Moodle.
@@ -27,11 +27,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace qbank_gitsync;
-
 /**
  * Export a Git repo.
  */
-class export_repo {
+class create_repo {
     /**
      * Settings for POST request
      *
@@ -47,15 +46,34 @@ class export_repo {
      */
     public curl_request $curlrequest;
     /**
-     * Full path to manifest file
+     * cURL request handle for question list retrieve
+     *
+     * @var curl_request
+     */
+    public curl_request $listcurlrequest;
+    /**
+     * Relative path of subdirectory to import.
+     *
+     * @var string
+     */
+    public string $subdirectory;
+    /**
+     * Path to actual manifest file
      *
      * @var string
      */
     public string $manifestpath;
+    /**
+     * Path of root of repo
+     * i.e. folder containing manifest
+     *
+     * @var string
+     */
+    public string $directory;
 
     /**
-     * Iterate through the manifest file, request up to date versions via
-     * the webservice and update local files.
+     * Obtain a list of questions and categories from Moodle, iterate through them and
+     * export them one at a time. Create repo directories and files.
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
@@ -66,8 +84,18 @@ class export_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->manifestpath = $arguments['manifestpath'];
+        $this->directory = $arguments['directory'];
+        $this->subdirectory = '';
+        if ($arguments['subdirectory']) {
+            $this->subdirectory = $arguments['subdirectory'];
+        }
         $token = $arguments['token'];
+        $contextlevel = $arguments['contextlevel'];
+        $coursename = $arguments['coursename'];
+        $modulename = $arguments['modulename'];
+        $coursecategory = $arguments['coursecategory'];
+        $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
+                                                $coursename, $modulename, $this->directory);
         $help = $arguments['help'];
 
         if ($help) {
@@ -84,10 +112,24 @@ class export_repo {
             'wsfunction' => 'qbank_gitsync_export_question',
             'moodlewsrestformat' => 'json',
             'questionbankentryid' => null,
-            'includecategory' => false,
+            'includecategory' => true,
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
+        $this->listcurlrequest = $this->get_curl_request($wsurl);
+        $listpostsettings = [
+            'wstoken' => $token,
+            'wsfunction' => 'qbank_gitsync_get_question_list',
+            'moodlewsrestformat' => 'json',
+            'contextlevel' => cli_helper::get_context_level($contextlevel),
+            'coursename' => $coursename,
+            'modulename' => $modulename,
+            'coursecategory' => $coursecategory,
+            'qcategoryname' => substr($this->subdirectory, 1)
+        ];
+        $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+        $this->listcurlrequest->set_option(CURLOPT_POST, 1);
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $listpostsettings);
 
         $this->export_to_repo();
 
@@ -110,8 +152,12 @@ class export_repo {
      * @return void
      */
     public function export_to_repo() {
-        $manifestcontents = json_decode(file_get_contents($this->manifestpath));
-        foreach ($manifestcontents->questions as $questioninfo) {
+        // Create manifest file.
+        $manifestfile = fopen($this->manifestpath, 'a+');
+        fclose($manifestfile);
+        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $manifestcontents = new \stdClass;
+        foreach ($questionsinmoodle as $questioninfo) {
             $this->postsettings['questionbankentryid'] = $questioninfo->questionbankentryid;
             $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
             $responsejson = json_decode($this->curlrequest->execute());
@@ -120,10 +166,30 @@ class export_repo {
                 if (property_exists($responsejson, 'debuginfo')) {
                     echo "{$responsejson->debuginfo}\n";
                 }
-                echo "{$questioninfo->filepath} not updated.\n";
+                echo "{$questioninfo->categoryname} - {$questioninfo->name} not downloaded.\n";
             } else {
-                $question = $this->reformat_question($responsejson->question);
-                file_put_contents($questioninfo->filepath, $question);
+                $categoryxml = simplexml_load_string($responsejson->question);
+                unset($categoryxml->question[1]);
+                $categorypath = $categoryxml->question->category->text->__toString();
+                $questionxml = simplexml_load_string($responsejson->question);
+                unset($questionxml->question[0]);
+                $qname = $questionxml->question->name->text->__toString();
+                $category = $this->reformat_question($categoryxml->asXML());
+                $question = $this->reformat_question($questionxml->asXML());
+
+                //TODO Is this needed?
+                $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
+                $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
+                $categorysofar = '';
+                foreach ($directorylist as $categorydirectory) {
+                    $categorysofar .= "/{$categorydirectory}";
+                    $currentdirectory = $this->directory . $categorysofar;
+                    if (!is_dir($currentdirectory)) {
+                        mkdir($currentdirectory);
+                    }
+                }
+                file_put_contents($currentdirectory . "/" . cli_helper::CATEGORY_FILE . "xml", $category);
+                file_put_contents($currentdirectory . "/{$qname}.xml", $question);
             }
         }
 
@@ -189,7 +255,7 @@ class export_repo {
 
         $noidxml = $xml->asXML();
 
-        // Tidy the whole thing, cluding indenting CDATA as a whole.
+        // Tidy the whole thing, including indenting CDATA as a whole.
         $tidyoptions = array_merge($sharedoptions, [
             'input-xml' => true,
             'output-xml' => true,
