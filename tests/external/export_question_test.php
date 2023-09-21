@@ -122,7 +122,7 @@ class export_question_test extends externallib_advanced_testcase {
         $this->unassignUserCapability('qbank/gitsync:exportquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
         $this->expectExceptionMessage('you do not currently have permissions to do that (Export)');
-        export_question::$this->qbankentryid, false);
+        export_question::execute($this->qbankentryid, false);
     }
 
     /**

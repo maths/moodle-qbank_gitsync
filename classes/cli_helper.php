@@ -198,4 +198,120 @@ class cli_helper {
 
         return $directory . '/' . $moodleinstance . $filenamemod . self::MANIFEST_FILE;
     }
+
+    /**
+     * Create manifest file from temporary file.
+     *
+     * @param object stdClass $manifestcontents Current contents of manifest file
+     * @param string $tempfilepath
+     * @param string $manifestpath
+     * @return object
+     */
+    public static function create_manifest_file(object $manifestcontents, string $tempfilepath, string $manifestpath):object {
+        // Read in temp file a question at a time, process and add to manifest.
+        // No actual processing at the moment so could simplify to write straight
+        // to manifest in the first place if no processing materialises.
+        $tempfile = fopen($tempfilepath, 'r');
+        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        while (!feof($tempfile)) {
+            $questioninfo = json_decode(fgets($tempfile));
+            if ($questioninfo) {
+                $existingentry = $existingentries["{$questioninfo->questionbankentryid}"] ?? false;
+                if (!$existingentry) {
+                    $questionentry = new \stdClass();
+                    $questionentry->questionbankentryid = $questioninfo->questionbankentryid;
+                    $questionentry->filepath = $questioninfo->filepath;
+                    $questionentry->format = $questioninfo->format;
+                    array_push($manifestcontents->questions, $questionentry);
+                }
+                if ($manifestcontents->context === null) {
+                    $manifestcontents->context = new \stdClass();
+                    $manifestcontents->context->contextlevel = $questioninfo->contextlevel;
+                    $manifestcontents->context->coursename = $questioninfo->coursename;
+                    $manifestcontents->context->modulename = $questioninfo->modulename;
+                    $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
+                }
+            }
+        }
+        file_put_contents($manifestpath, json_encode($manifestcontents));
+
+        fclose($tempfile);
+        unlink($tempfilepath);
+        return $manifestcontents;
+    }
+
+    /**
+     * Tidy up question formatting and remove unwanted comment
+     *
+     * @param string $question original question XML
+     * @return string tidied question XML
+     */
+    public static function reformat_question(string $question):string {
+        $locale = setlocale(LC_ALL, 0);
+        // Options for HTML Tidy.
+        // If in doubt, set to false to avoid unexpected 'repairs'.
+        $sharedoptions = [
+            'break-before-br' => true,
+            'show-body-only' => true,
+            'wrap' => '0',
+            'indent' => true,
+            'coerce-endtags' => false,
+            'drop-empty-elements' => false,
+            'drop-empty-paras' => false,
+            'fix-backslash' => false,
+            'fix-bad-comments' => false,
+            'merge-emphasis' => false,
+            'quote-ampersand' => false,
+            'quote-nbsp' => false,
+        ];
+        if (!function_exists('tidy_repair_string')) {
+            // Tidy not installed.
+            return $question;
+        }
+        $dom = new \DOMDocument('1.0');
+        $dom->preserveWhiteSpace = true;
+        $dom->formatOutput = true;
+        $dom->loadXML($question);
+
+        $xpath = new \DOMXpath($dom);
+        $tidyoptions = array_merge($sharedoptions, [
+            'output-xhtml' => true
+        ]);
+        $tidy = new \tidy();
+
+        // Find CDATA sections and format nicely.
+        foreach ($xpath->evaluate("//*[@format='html']/text/text()") as $cdata) {
+            if ($cdata->data) {
+                $tidy->parseString($cdata->data, $tidyoptions);
+                $tidy->cleanRepair();
+                $output = tidy_get_output($tidy);
+                $cdata->data = "\n{$output}\n";
+            }
+        }
+
+        $cdataprettyxml = $dom->saveXML();
+
+        // Remove question id comment.
+        $xml = simplexml_load_string($cdataprettyxml);
+        if (get_class($xml->comment) === 'SimpleXMLElement') {
+            unset($xml->comment);
+        }
+
+        $noidxml = $xml->asXML();
+
+        // Tidy the whole thing, cluding indenting CDATA as a whole.
+        $tidyoptions = array_merge($sharedoptions, [
+            'input-xml' => true,
+            'output-xml' => true,
+            'indent-cdata' => true
+        ]);
+        $tidy->parseString($noidxml, $tidyoptions);
+        $tidy->cleanRepair();
+        $result = tidy_get_output($tidy);
+        // HTML Tidy switches to the default locale for the system. PHPUnit uses en_AU.
+        // PHPUnit throws a warning unless we switch back to en_AU.
+        setlocale(LC_ALL, $locale);
+
+        return $result;
+    }
 }

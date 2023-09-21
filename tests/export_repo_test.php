@@ -103,22 +103,4 @@ class export_repo_test extends advanced_testcase {
         $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
         $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
     }
-
-    public function test_check_formatting(): void {
-        $xml = '<?xml version="1.0" encoding="UTF-8"?><quiz><!-- Unwanted comment --><question><questiontext format="html">' .
-            '<text><![CDATA[<p>Paragraph 1<br><ul><li>Item 1</li><li>Item 2</li></ul></p>]]>' .
-            '</text></questiontext></question></quiz>';
-        $expectedresult = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<quiz>\n  <question>\n    <questiontext format=\"html\">" .
-            "\n      <text>\n        <![CDATA[\n        <p>\n          Paragraph 1\n          <br />\n        </p>\n        <ul>" .
-            "\n          <li>Item 1\n          </li>\n          <li>Item 2\n          </li>\n        </ul>\n        <p></p>" .
-            "\n        ]]>\n      </text>\n    </questiontext>\n  </question>\n</quiz>";
-        $result = $this->exportrepo->reformat_question($xml);
-
-        // Output will depend on Tidy being installed.
-        if (!function_exists('tidy_repair_string')) {
-            $this->assertEquals($result, $xml);
-        } else {
-            $this->assertEquals($result, $expectedresult);
-        }
-    }
 }

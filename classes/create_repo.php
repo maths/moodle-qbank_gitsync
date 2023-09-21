@@ -40,6 +40,14 @@ class create_repo {
      */
     public array $postsettings;
     /**
+     * Settings for list POST request
+     *
+     * These are the parameters for the webservice call.
+     *
+     * @var array
+     */
+    public array $listpostsettings;
+    /**
      * cURL request handle for file upload
      *
      * @var curl_request
@@ -63,6 +71,12 @@ class create_repo {
      * @var string
      */
     public string $manifestpath;
+    /**
+     * Path to temporary manifest file
+     *
+     * @var string
+     */
+    public string $tempfilepath;
     /**
      * Path of root of repo
      * i.e. folder containing manifest
@@ -96,6 +110,8 @@ class create_repo {
         $coursecategory = $arguments['coursecategory'];
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
+        $this->tempfilepath = $this->directory . '/' .
+                              $moodleinstance . '_' . $contextlevel . cli_helper::TEMP_MANIFEST_FILE;
         $help = $arguments['help'];
 
         if ($help) {
@@ -117,7 +133,7 @@ class create_repo {
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest = $this->get_curl_request($wsurl);
-        $listpostsettings = [
+        $this->listpostsettings = [
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_get_question_list',
             'moodlewsrestformat' => 'json',
@@ -129,9 +145,13 @@ class create_repo {
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
-        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $listpostsettings);
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
 
         $this->export_to_repo();
+        $manifestcontents = new \stdClass();
+        $manifestcontents->context = null;
+        $manifestcontents->questions = [];
+        cli_helper::create_manifest_file($manifestcontents, $this->tempfilepath, $this->manifestpath);
 
         return;
     }
@@ -156,7 +176,7 @@ class create_repo {
         $manifestfile = fopen($this->manifestpath, 'a+');
         fclose($manifestfile);
         $questionsinmoodle = json_decode($this->listcurlrequest->execute());
-        $manifestcontents = new \stdClass;
+        $tempfile = fopen($this->tempfilepath, 'a+');
         foreach ($questionsinmoodle as $questioninfo) {
             $this->postsettings['questionbankentryid'] = $questioninfo->questionbankentryid;
             $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
@@ -174,8 +194,8 @@ class create_repo {
                 $questionxml = simplexml_load_string($responsejson->question);
                 unset($questionxml->question[0]);
                 $qname = $questionxml->question->name->text->__toString();
-                $category = $this->reformat_question($categoryxml->asXML());
-                $question = $this->reformat_question($questionxml->asXML());
+                $category = cli_helper::reformat_question($categoryxml->asXML());
+                $question = cli_helper::reformat_question($questionxml->asXML());
 
                 //TODO Is this needed?
                 $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
@@ -190,6 +210,16 @@ class create_repo {
                 }
                 file_put_contents($currentdirectory . "/" . cli_helper::CATEGORY_FILE . "xml", $category);
                 file_put_contents($currentdirectory . "/{$qname}.xml", $question);
+                $fileoutput = [
+                    'questionbankentryid' => $questioninfo->questionbankentryid,
+                    'contextlevel' => $this->listpostsettings['contextlevel'],
+                    'filepath' => $currentdirectory . "/{$qname}.xml",
+                    'coursename' => $this->listpostsettings['coursename'],
+                    'modulename' => $this->listpostsettings['modulename'],
+                    'coursecategory' => $this->listpostsettings['coursecategory'],
+                    'format' => 'xml',
+                ];
+                fwrite($tempfile, json_encode($fileoutput) . "\n");
             }
         }
 

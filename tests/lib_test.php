@@ -41,7 +41,7 @@ class lib_test extends \advanced_testcase {
      * Test the category path is split correctly.
      * @covers \gitsync\lib.php\split_category_path()
      */
-    public function xtest_split_category_path() {
+    public function test_split_category_path() {
         $path = '$course$/Tim\'s questions/Tricky things like // //// ' .
                 'and so on/Category name ending in // / // and one that ' .
                 'starts with one/<span lang="en" class="multilang">Matematically<//span> ' .
@@ -61,7 +61,7 @@ class lib_test extends \advanced_testcase {
      * Test the category path is cleaned correctly.
      * @covers \gitsync\lib.php\split_category_path()
      */
-    public function xtest_split_category_path_cleans() {
+    public function test_split_category_path_cleans() {
         $path = '<evil>Nasty <virus //> thing<//evil>';
         $this->assertEquals(['Nasty  thing'], split_category_path($path));
     }
@@ -70,7 +70,7 @@ class lib_test extends \advanced_testcase {
      * Test the correct context is returned at each level
      * @covers \gitsync\lib.php\get_context()
      */
-    public function xtest_get_context() {
+    public function test_get_context() {
         define('QUIZ_TEST', 'Quiz test');
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();

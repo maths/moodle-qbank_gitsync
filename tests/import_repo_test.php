@@ -329,7 +329,7 @@ class import_repo_test extends advanced_testcase {
 
     /**
      * Test creation of manifest file.
-     * @covers \gitsync\import_repo\create_manifest_file()
+     * @covers \gitsync\cli_helper\create_manifest_file()
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
@@ -381,7 +381,7 @@ class import_repo_test extends advanced_testcase {
 
     /**
      * Test update of manifest file.
-     * @covers \gitsync\import_repo\create_manifest_file()
+     * @covers \gitsync\cli_helper\create_manifest_file()
      */
     public function test_manifest_file_update(): void {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
@@ -413,7 +413,8 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->tempfilepath, $tempcontents);
 
-        $this->importrepo->create_manifest_file();
+        cli_helper::create_manifest_file($this->importrepo->manifestcontents,
+                                        $this->importrepo->tempfilepath, $this->importrepo->manifestpath);
 
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertEquals(4, count($manifestcontents->questions));
