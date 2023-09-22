@@ -139,4 +139,3 @@ function get_minimal_question_data(string $questionbankentryid):stdClass {
 
     return $questiondata;
 }
-

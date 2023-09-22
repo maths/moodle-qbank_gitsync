@@ -155,22 +155,11 @@ class import_repo {
 
         $moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $moodleurl . '/webservice/rest/server.php';
-        $filenamemod = '_' . $contextlevel;
-        switch ($contextlevel) {
-            case 'coursecategory':
-                $filenamemod = $filenamemod . '_' . $coursecategory;
-                break;
-            case 'course':
-                $filenamemod = $filenamemod . '_' . $coursename;
-                break;
-            case 'module':
-                $filenamemod = $filenamemod . '_' . $coursename . '_' . $modulename;
-                break;
-        }
 
-        $this->manifestpath = $this->directory . '/' . $moodleinstance . $filenamemod . cli_helper::MANIFEST_FILE;
+        $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
+                                                $coursename, $modulename, $this->directory);
         $this->tempfilepath = $this->directory . $this->subdirectory . '/' .
-                              $moodleinstance . $filenamemod . cli_helper::TEMP_MANIFEST_FILE;
+                              $moodleinstance . '_' . $contextlevel . cli_helper::TEMP_MANIFEST_FILE;
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
         fclose($manifestfile);
@@ -230,7 +219,10 @@ class import_repo {
         $this->import_categories();
         $this->import_questions();
         $this->curlrequest->close();
-        $this->create_manifest_file();
+        $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
+                                                                   $this->tempfilepath,
+                                                                   $this->manifestpath);
+        unlink($this->tempfilepath);
         $this->delete_no_file_questions();
         $this->delete_no_record_questions();
     }
@@ -341,8 +333,13 @@ class import_repo {
                             $this->postsettings['questionbankentryid'] = null;
                         }
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-                        $responsejson = json_decode($this->curlrequest->execute());
-                        if (property_exists($responsejson, 'exception')) {
+                        $response = $this->curlrequest->execute();
+                        $responsejson = json_decode($response);
+                        if (!$responsejson) {
+                            echo "Broken JSON returned from Moodle:\n";
+                            echo $response . "\n";
+                            continue;
+                        } else if (property_exists($responsejson, 'exception')) {
                             echo "{$responsejson->message}\n";
                             if (property_exists($responsejson, 'debuginfo')) {
                                 echo "{$responsejson->debuginfo}\n";
@@ -370,43 +367,6 @@ class import_repo {
         }
         fclose($tempfile);
         return $tempfile;
-    }
-
-    /**
-     * Create manifest file from temporary file.
-     *
-     * @return void
-     */
-    public function create_manifest_file():void {
-        // Read in temp file a question at a time, process and add to manifest.
-        // No actual processing at the moment so could simplify to write straight
-        // to manifest in the first place if no processing materialises.
-        $tempfile = fopen($this->tempfilepath, 'r');
-        $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
-        while (!feof($tempfile)) {
-            $questioninfo = json_decode(fgets($tempfile));
-            if ($questioninfo) {
-                $existingentry = $existingentries["{$questioninfo->questionbankentryid}"] ?? false;
-                if (!$existingentry) {
-                    $questionentry = new stdClass();
-                    $questionentry->questionbankentryid = $questioninfo->questionbankentryid;
-                    $questionentry->filepath = $questioninfo->filepath;
-                    $questionentry->format = $questioninfo->format;
-                    array_push($this->manifestcontents->questions, $questionentry);
-                }
-                if ($this->manifestcontents->context === null) {
-                    $this->manifestcontents->context = new stdClass();
-                    $this->manifestcontents->context->contextlevel = $questioninfo->contextlevel;
-                    $this->manifestcontents->context->coursename = $questioninfo->coursename;
-                    $this->manifestcontents->context->modulename = $questioninfo->modulename;
-                    $this->manifestcontents->context->coursecategory = $questioninfo->coursecategory;
-                }
-            }
-        }
-        file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
-
-        fclose($tempfile);
-        unlink($this->tempfilepath);
     }
 
     /**
@@ -495,8 +455,12 @@ class import_repo {
         if (trim($line) === 'y') {
             $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
             $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
-            $responsejson = json_decode($this->deletecurlrequest->execute());
-            if (property_exists($responsejson, 'exception')) {
+            $response = $this->deletecurlrequest->execute();
+            $responsejson = json_decode($response);
+            if (!$responsejson) {
+                echo "Broken JSON returned from Moodle:\n";
+                echo $response . "\n";
+            } else if (property_exists($responsejson, 'exception')) {
                 echo "{$responsejson->message}\n" .
                     "Not deleted\n";
             } else {

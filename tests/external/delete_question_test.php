@@ -41,6 +41,7 @@ use moodle_exception;
  * Test the delete_question webservice function.
  *
  * @covers \gitsync\external\delete_question::execute
+ * @group qbank_gitsync
  */
 class delete_question_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */

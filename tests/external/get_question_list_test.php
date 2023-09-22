@@ -39,6 +39,7 @@ use moodle_exception;
 
 /**
  * Test the get_question_list webservice function.
+ * @group qbank_gitsync
  *
  * @covers \gitsync\external\get_question_list::execute
  */

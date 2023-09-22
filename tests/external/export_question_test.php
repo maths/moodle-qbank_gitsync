@@ -39,6 +39,7 @@ use moodle_exception;
 
 /**
  * Test the export_question webservice function.
+ * @group qbank_gitsync
  *
  * @covers \gitsync\external\export_question::execute
  */
@@ -85,7 +86,7 @@ class export_question_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
 
-        $returnvalue = export_question::execute($this->qbankentryid);
+        $returnvalue = export_question::execute($this->qbankentryid, false);
 
         // We need to execute the return values cleaning process to simulate
         // the web service server.
@@ -108,7 +109,7 @@ class export_question_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        export_question::execute($this->qbankentryid);
+        export_question::execute($this->qbankentryid, false);
     }
 
     /**
@@ -122,7 +123,7 @@ class export_question_test extends externallib_advanced_testcase {
         $this->unassignUserCapability('qbank/gitsync:exportquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
         $this->expectExceptionMessage('you do not currently have permissions to do that (Export)');
-        export_question::execute($this->qbankentryid);
+        export_question::execute($this->qbankentryid, false);
     }
 
     /**
@@ -131,7 +132,7 @@ class export_question_test extends externallib_advanced_testcase {
     public function test_export_capability(): void {
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        export_question::execute($this->qbankentryid);
+        export_question::execute($this->qbankentryid, false);
     }
 
     /**
@@ -153,7 +154,7 @@ class export_question_test extends externallib_advanced_testcase {
         $this->expectExceptionMessage('Not enrolled');
         // Trying to export question from course 2 using context of course 1.
         // User has export capability on course 1 but not course 2.
-        export_question::execute($qbankentryid2);
+        export_question::execute($qbankentryid2, false);
     }
 
     /**
@@ -166,7 +167,7 @@ class export_question_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
         $sink = $this->redirectEvents();
-        $returnvalue = export_question::execute($this->qbankentryid);
+        $returnvalue = export_question::execute($this->qbankentryid, false);
 
         $returnvalue = external_api::clean_returnvalue(
             export_question::execute_returns(),

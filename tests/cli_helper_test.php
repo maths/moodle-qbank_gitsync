@@ -31,6 +31,7 @@ use advanced_testcase;
 
 /**
  * Test cli_helper function.
+ * @group qbank_gitsync
  *
  * @covers \gitsync\cli_helper::class
  */
@@ -137,5 +138,28 @@ class cli_helper_test extends advanced_testcase {
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage("Context level 'wrong' is not valid.");
         cli_helper::get_context_level('wrong');
+    }
+
+    /**
+     * Check XML formatted properly
+     *
+     * @return void
+     */
+    public function test_check_formatting(): void {
+        $xml = '<?xml version="1.0" encoding="UTF-8"?><quiz><!-- Unwanted comment --><question><questiontext format="html">' .
+            '<text><![CDATA[<p>Paragraph 1<br><ul><li>Item 1</li><li>Item 2</li></ul></p>]]>' .
+            '</text></questiontext></question></quiz>';
+        $expectedresult = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<quiz>\n  <question>\n    <questiontext format=\"html\">" .
+            "\n      <text>\n        <![CDATA[\n        <p>\n          Paragraph 1\n          <br />\n        </p>\n        <ul>" .
+            "\n          <li>Item 1\n          </li>\n          <li>Item 2\n          </li>\n        </ul>\n        <p></p>" .
+            "\n        ]]>\n      </text>\n    </questiontext>\n  </question>\n</quiz>";
+        $result = cli_helper::reformat_question($xml);
+
+        // Output will depend on Tidy being installed.
+        if (!function_exists('tidy_repair_string')) {
+            $this->assertEquals($result, $xml);
+        } else {
+            $this->assertEquals($result, $expectedresult);
+        }
     }
 }

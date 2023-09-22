@@ -53,6 +53,7 @@ class export_question extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle question questionbankentryid'),
+            'includecategory' => new external_value(PARAM_BOOL, 'Include category?'),
         ]);
     }
 
@@ -73,10 +74,11 @@ class export_question extends external_api {
      * @param string $questionbankentryid questionbankentry id
      * @return object \stdClass question details
      */
-    public static function execute(string $questionbankentryid):object {
+    public static function execute(string $questionbankentryid, bool $includecategory):object {
         global $DB, $SITE;
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,
+            'includecategory' => $includecategory,
         ]);
         $questiondata = get_question_data($params['questionbankentryid']);
 
@@ -113,7 +115,7 @@ class export_question extends external_api {
         $contexts = new question_edit_contexts($thiscontext);
         // Checks user has export permission for the supplied context.
         $qformat->setContexts($contexts->having_one_edit_tab_cap('export'));
-        $qformat->setCattofile(false);
+        $qformat->setCattofile($params['includecategory']);
         $qformat->setContexttofile(false);
         if (!$qformat->exportpreprocess()) {
             throw new moodle_exception(get_string('exporterror', 'qbank_gitsync', $questiondata->questionid));
