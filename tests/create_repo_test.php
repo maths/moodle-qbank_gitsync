@@ -90,19 +90,9 @@ class create_repo_test extends advanced_testcase {
             $this->curl, $this->listcurl
         );
 
-        $this->createrepo->postsettings = ['contextlevel' => null, 'coursename' => null, 'modulename' => null,
-                                           'directory' => '', 'subdirectory' => '',
-                                           'fileinfo[contextid]' => '', 'fileinfo[userid]' => '',
-                                           'fileinfo[component]' => '', 'fileinfo[filearea]' => '',
-                                           'fileinfo[itemid]' => '', 'fileinfo[filepath]' => '',
-                                           'fileinfo[filename]' => '',
-                                           'coursecategory' => ''];
-    }
-
-    /**
-     * Test the full process.
-     */
-    public function test_process(): void {
+        $this->createrepo->listpostsettings = ['contextlevel' => '50', 'coursename' => 'Course 1',
+                                               'modulename' => 'Module 1', 'coursecategory' => null];
+        $this->createrepo->postsettings = [];
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '[{"questionbankentryid": "1", "name": "One", "questioncategory": ""},
               {"questionbankentryid": "2", "name": "Two", "questioncategory": ""},
@@ -119,7 +109,12 @@ class create_repo_test extends advanced_testcase {
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2</text></category></question>' .
                           '<question><name><text>Four</text></name></question></quiz>"}',
         );
+    }
 
+    /**
+     * Test the full process.
+     */
+    public function test_process(): void {
         $this->createrepo->process($this->clihelper, $this->moodleinstances);
 
         // Check question files exist.
@@ -127,5 +122,36 @@ class create_repo_test extends advanced_testcase {
         $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/Default for Test 1/sub 1/Two.xml'));
         $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/Three.xml'));
         $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/Four.xml'));
+
+        // Check category files exist.
+        $this->assertStringContainsString('top', file_get_contents($this->rootpath . '/top/'. cli_helper::CATEGORY_FILE . '.xml'));
+        $this->assertStringContainsString('top/Default for Test 1/sub 1',
+                    file_get_contents($this->rootpath . '/top/Default for Test 1/sub 1/' . cli_helper::CATEGORY_FILE . '.xml'));
+        $this->assertStringContainsString('top/Default for Test 1/sub 2',
+                    file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
+        $this->assertStringContainsString('top/Default for Test 1/sub 2',
+                    file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
+    }
+
+    /**
+     * Test temp file creation.
+     */
+    public function test_tenp_file_creation(): void {
+        $this->createrepo->tempfilepath = $this->rootpath . '/' . 'test' . cli_helper::TEMP_MANIFEST_FILE;
+        $this->createrepo->listcurlrequest = $this->listcurl;
+        $this->createrepo->curlrequest = $this->curl;
+        $this->createrepo->directory = $this->rootpath;
+        $this->createrepo->export_to_repo();
+
+        $tempfile = fopen($this->createrepo->tempfilepath, 'r');
+        $firstline = json_decode(fgets($tempfile));
+        $this->assertEquals('1', $firstline->questionbankentryid);
+        $this->assertEquals($firstline->contextlevel, '50');
+        $this->assertEquals($this->rootpath . '/top/One.xml', $firstline->filepath);
+        $this->assertEquals($firstline->coursename, 'Course 1');
+        $this->assertEquals($firstline->modulename, 'Module 1');
+        $this->assertEquals($firstline->coursecategory, null);
+        $this->assertEquals($firstline->format, 'xml');
+
     }
 }

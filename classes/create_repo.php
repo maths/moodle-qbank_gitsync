@@ -152,6 +152,7 @@ class create_repo {
         $manifestcontents->context = null;
         $manifestcontents->questions = [];
         cli_helper::create_manifest_file($manifestcontents, $this->tempfilepath, $this->manifestpath);
+        unlink($this->tempfilepath);
 
         return;
     }
@@ -172,9 +173,6 @@ class create_repo {
      * @return void
      */
     public function export_to_repo() {
-        // Create manifest file.
-        $manifestfile = fopen($this->manifestpath, 'a+');
-        fclose($manifestfile);
         $questionsinmoodle = json_decode($this->listcurlrequest->execute());
         $tempfile = fopen($this->tempfilepath, 'a+');
         foreach ($questionsinmoodle as $questioninfo) {
@@ -212,7 +210,7 @@ class create_repo {
                         mkdir($currentdirectory);
                     }
                 }
-                file_put_contents($currentdirectory . "/" . cli_helper::CATEGORY_FILE . "xml", $category);
+                file_put_contents($currentdirectory . "/" . cli_helper::CATEGORY_FILE . ".xml", $category);
                 file_put_contents($currentdirectory . "/{$qname}.xml", $question);
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,

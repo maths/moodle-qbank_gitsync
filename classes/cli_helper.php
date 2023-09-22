@@ -236,7 +236,6 @@ class cli_helper {
         file_put_contents($manifestpath, json_encode($manifestcontents));
 
         fclose($tempfile);
-        unlink($tempfilepath);
         return $manifestcontents;
     }
 
