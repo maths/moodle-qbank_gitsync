@@ -200,16 +200,9 @@ class import_question extends external_api {
             $event = \core\event\questions_imported::create($eventparams);
             $event->trigger();
 
-            // This is a problem if two people using the webservice at the same time unless
-            // using different webservice users.
-            $newquestionbankentryid = $DB->get_field_sql("
-                    SELECT MAX(qv.questionbankentryid)
-                        FROM {question} q
-                        JOIN {question_versions} qv ON q.id = qv.questionid
-                    WHERE q.modifiedby = :user",
-                ['user' => $USER->id],
-                MUST_EXIST);
-                $response->questionbankentryid = $newquestionbankentryid;
+            $newquestionbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
+                            ['questionid' => $qformat->questionids[0]], $strictness = MUST_EXIST);
+            $response->questionbankentryid = $newquestionbankentryid;
         }
         if ($params['questionbankentryid']) {
             $response->questionbankentryid = $params['questionbankentryid'];

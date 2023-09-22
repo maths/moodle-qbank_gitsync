@@ -202,7 +202,7 @@ class cli_helper {
     /**
      * Create manifest file from temporary file.
      *
-     * @param object stdClass $manifestcontents Current contents of manifest file
+     * @param object $manifestcontents \stdClass Current contents of manifest file
      * @param string $tempfilepath
      * @param string $manifestpath
      * @return object
