@@ -332,8 +332,13 @@ class import_repo {
                             $this->postsettings['questionbankentryid'] = null;
                         }
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-                        $responsejson = json_decode($this->curlrequest->execute());
-                        if (property_exists($responsejson, 'exception')) {
+                        $response = $this->curlrequest->execute();
+                        $responsejson = json_decode($response);
+                        if (!$responsejson) {
+                            echo "Broken JSON returned from Moodle:\n";
+                            echo $response . "\n";
+                            continue;
+                        } else if (property_exists($responsejson, 'exception')) {
                             echo "{$responsejson->message}\n";
                             if (property_exists($responsejson, 'debuginfo')) {
                                 echo "{$responsejson->debuginfo}\n";
@@ -449,8 +454,12 @@ class import_repo {
         if (trim($line) === 'y') {
             $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
             $this->deletecurlrequest->set_option(CURLOPT_POSTFIELDS, $this->deletepostsettings);
-            $responsejson = json_decode($this->deletecurlrequest->execute());
-            if (property_exists($responsejson, 'exception')) {
+            $response = $this->deletecurlrequest->execute();
+            $responsejson = json_decode($response);
+            if (!$responsejson) {
+                echo "Broken JSON returned from Moodle:\n";
+                echo $response . "\n";
+            } else if (property_exists($responsejson, 'exception')) {
                 echo "{$responsejson->message}\n" .
                     "Not deleted\n";
             } else {

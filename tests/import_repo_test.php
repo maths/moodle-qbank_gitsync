@@ -32,6 +32,7 @@ use org\bovigo\vfs\vfsStream;
 
 /**
  * Test the CLI script for importing a repo to Moodle.
+ * @group qbank_gitsync
  *
  * @covers \gitsync\import_repo::class
  */

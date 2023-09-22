@@ -114,8 +114,12 @@ class export_repo {
         foreach ($manifestcontents->questions as $questioninfo) {
             $this->postsettings['questionbankentryid'] = $questioninfo->questionbankentryid;
             $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-            $responsejson = json_decode($this->curlrequest->execute());
-            if (property_exists($responsejson, 'exception')) {
+            $response = $this->curlrequest->execute();
+            $responsejson = json_decode($response);
+            if (!$responsejson) {
+                echo "Broken JSON returned from Moodle:\n";
+                echo $response . "\n";
+            } else if (property_exists($responsejson, 'exception')) {
                 echo "{$responsejson->message}\n";
                 if (property_exists($responsejson, 'debuginfo')) {
                     echo "{$responsejson->debuginfo}\n";

@@ -41,6 +41,7 @@ use core_files_external;
 
 /**
  * Test the export_question webservice function.
+ * @group qbank_gitsync
  *
  * @covers \gitsync\external\import_question::execute
  */

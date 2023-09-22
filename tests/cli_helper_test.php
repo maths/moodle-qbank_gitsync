@@ -31,6 +31,7 @@ use advanced_testcase;
 
 /**
  * Test cli_helper function.
+ * @group qbank_gitsync
  *
  * @covers \gitsync\cli_helper::class
  */

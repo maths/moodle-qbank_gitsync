@@ -35,6 +35,7 @@ use context_module;
 
 /**
  * Tests for library function in lib.php
+ * @group qbank_gitsync
  */
 class lib_test extends \advanced_testcase {
     /**

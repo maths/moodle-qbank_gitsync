@@ -31,6 +31,7 @@ use org\bovigo\vfs\vfsStream;
 
 /**
  * Test the CLI script for exporting a repo from Moodle.
+ * @group qbank_gitsync
  *
  * @covers \gitsync\export_repo::class
  */

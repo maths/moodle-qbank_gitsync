@@ -180,8 +180,12 @@ class create_repo {
         foreach ($questionsinmoodle as $questioninfo) {
             $this->postsettings['questionbankentryid'] = $questioninfo->questionbankentryid;
             $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-            $responsejson = json_decode($this->curlrequest->execute());
-            if (property_exists($responsejson, 'exception')) {
+            $response = $this->curlrequest->execute();
+            $responsejson = json_decode($response);
+            if (!$responsejson) {
+                echo "Broken JSON returned from Moodle:\n";
+                echo $response . "\n";
+            } else if (property_exists($responsejson, 'exception')) {
                 echo "{$responsejson->message}\n";
                 if (property_exists($responsejson, 'debuginfo')) {
                     echo "{$responsejson->debuginfo}\n";
@@ -224,80 +228,5 @@ class create_repo {
         }
 
         return;
-    }
-
-    /**
-     * Tidy up question formatting and remove unwanted comment
-     *
-     * @param string $question original question XML
-     * @return string tidied question XML
-     */
-    public function reformat_question(string $question):string {
-        $locale = setlocale(LC_ALL, 0);
-        // Options for HTML Tidy.
-        // If in doubt, set to false to avoid unexpected 'repairs'.
-        $sharedoptions = [
-            'break-before-br' => true,
-            'show-body-only' => true,
-            'wrap' => '0',
-            'indent' => true,
-            'coerce-endtags' => false,
-            'drop-empty-elements' => false,
-            'drop-empty-paras' => false,
-            'fix-backslash' => false,
-            'fix-bad-comments' => false,
-            'merge-emphasis' => false,
-            'quote-ampersand' => false,
-            'quote-nbsp' => false,
-        ];
-        if (!function_exists('tidy_repair_string')) {
-            // Tidy not installed.
-            return $question;
-        }
-        $dom = new \DOMDocument('1.0');
-        $dom->preserveWhiteSpace = true;
-        $dom->formatOutput = true;
-        $dom->loadXML($question);
-
-        $xpath = new \DOMXpath($dom);
-        $tidyoptions = array_merge($sharedoptions, [
-            'output-xhtml' => true
-        ]);
-        $tidy = new \tidy();
-
-        // Find CDATA sections and format nicely.
-        foreach ($xpath->evaluate("//*[@format='html']/text/text()") as $cdata) {
-            if ($cdata->data) {
-                $tidy->parseString($cdata->data, $tidyoptions);
-                $tidy->cleanRepair();
-                $output = tidy_get_output($tidy);
-                $cdata->data = "\n{$output}\n";
-            }
-        }
-
-        $cdataprettyxml = $dom->saveXML();
-
-        // Remove question id comment.
-        $xml = simplexml_load_string($cdataprettyxml);
-        if (get_class($xml->comment) === 'SimpleXMLElement') {
-            unset($xml->comment);
-        }
-
-        $noidxml = $xml->asXML();
-
-        // Tidy the whole thing, including indenting CDATA as a whole.
-        $tidyoptions = array_merge($sharedoptions, [
-            'input-xml' => true,
-            'output-xml' => true,
-            'indent-cdata' => true
-        ]);
-        $tidy->parseString($noidxml, $tidyoptions);
-        $tidy->cleanRepair();
-        $result = tidy_get_output($tidy);
-        // HTML Tidy switches to the default locale for the system. PHPUnit uses en_AU.
-        // PHPUnit throws a warning unless we switch back to en_AU.
-        setlocale(LC_ALL, $locale);
-
-        return $result;
     }
 }
