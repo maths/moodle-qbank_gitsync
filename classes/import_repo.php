@@ -445,7 +445,7 @@ class import_repo {
     /**
      * Prompt user whether to delete question
      *
-     * @param object \stdClass $question question to be deleted
+     * @param object $question \stdClass question to be deleted
      * @return bool Was the question deleted
      */
     public function handle_delete(object $question):bool {

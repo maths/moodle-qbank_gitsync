@@ -199,7 +199,7 @@ class create_repo {
                 $category = cli_helper::reformat_question($categoryxml->asXML());
                 $question = cli_helper::reformat_question($questionxml->asXML());
 
-                //TODO Is this needed?
+                // TODO Is this needed?
                 $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
                 $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
                 $categorysofar = '';

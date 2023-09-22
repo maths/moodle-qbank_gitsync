@@ -72,6 +72,7 @@ class export_question extends external_api {
      * Will need to add metadata and be packaged properly.
      *
      * @param string $questionbankentryid questionbankentry id
+     * @param bool $includecategory Include a 'category' question
      * @return object \stdClass question details
      */
     public static function execute(string $questionbankentryid, bool $includecategory):object {
