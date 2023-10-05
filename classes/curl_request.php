@@ -54,8 +54,6 @@ class curl_request {
 
     /**
      * Wrap curl_exec
-     *
-     * @return void
      */
     public function execute() {
         return curl_exec($this->curlhandle);
@@ -65,7 +63,6 @@ class curl_request {
      * Wrap curl_getinfo
      *
      * @param [type] $name
-     * @return void
      */
     public function get_info($name) {
         return curl_getinfo($this->curlhandle, $name);

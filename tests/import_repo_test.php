@@ -415,7 +415,8 @@ class import_repo_test extends advanced_testcase {
         file_put_contents($this->importrepo->tempfilepath, $tempcontents);
 
         cli_helper::create_manifest_file($this->importrepo->manifestcontents,
-                                        $this->importrepo->tempfilepath, $this->importrepo->manifestpath);
+                                        $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
+                                        'www.moodle');
 
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertEquals(4, count($manifestcontents->questions));

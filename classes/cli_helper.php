@@ -205,9 +205,11 @@ class cli_helper {
      * @param object $manifestcontents \stdClass Current contents of manifest file
      * @param string $tempfilepath
      * @param string $manifestpath
+     * @param string $moodleurl
      * @return object
      */
-    public static function create_manifest_file(object $manifestcontents, string $tempfilepath, string $manifestpath):object {
+    public static function create_manifest_file(object $manifestcontents, string $tempfilepath,
+                                                string $manifestpath, string $moodleurl):object {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
@@ -230,6 +232,7 @@ class cli_helper {
                     $manifestcontents->context->coursename = $questioninfo->coursename;
                     $manifestcontents->context->modulename = $questioninfo->modulename;
                     $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
+                    $manifestcontents->context->moodleurl = $moodleurl;
                 }
             }
         }

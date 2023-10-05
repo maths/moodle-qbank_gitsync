@@ -221,7 +221,8 @@ class import_repo {
         $this->curlrequest->close();
         $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
                                                                    $this->tempfilepath,
-                                                                   $this->manifestpath);
+                                                                   $this->manifestpath,
+                                                                   $moodleurl);
         unlink($this->tempfilepath);
         $this->delete_no_file_questions();
         $this->delete_no_record_questions();

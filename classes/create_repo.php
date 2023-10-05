@@ -103,7 +103,11 @@ class create_repo {
         if ($arguments['subdirectory']) {
             $this->subdirectory = $arguments['subdirectory'];
         }
-        $token = $arguments['token'];
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
+        }
         $contextlevel = $arguments['contextlevel'];
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
@@ -151,7 +155,7 @@ class create_repo {
         $manifestcontents = new \stdClass();
         $manifestcontents->context = null;
         $manifestcontents->questions = [];
-        cli_helper::create_manifest_file($manifestcontents, $this->tempfilepath, $this->manifestpath);
+        cli_helper::create_manifest_file($manifestcontents, $this->tempfilepath, $this->manifestpath, $moodleurl);
         unlink($this->tempfilepath);
 
         return;
@@ -190,28 +194,58 @@ class create_repo {
                 }
                 echo "{$questioninfo->categoryname} - {$questioninfo->name} not downloaded.\n";
             } else {
-                $categoryxml = simplexml_load_string($responsejson->question);
-                unset($categoryxml->question[1]);
-                $categorypath = $categoryxml->question->category->text->__toString();
+                // XML will have a category question for each level of category below top + the actual question.
+                // There should always be at least one category, if only default.
                 $questionxml = simplexml_load_string($responsejson->question);
-                unset($questionxml->question[0]);
+                $numcategories = count($questionxml->question) - 1;
+                // We want to isolate the real question but keep surrounding structure
+                // so unset all the categories.
+                for ($i = 0; $i < $numcategories; $i++) {
+                    unset($questionxml->question[0]);
+                }
                 $qname = $questionxml->question->name->text->__toString();
-                $category = cli_helper::reformat_question($categoryxml->asXML());
                 $question = cli_helper::reformat_question($questionxml->asXML());
+                $bottomdirectory = '';
 
-                // TODO Is this needed?
-                $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
-                $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
-                $categorysofar = '';
-                foreach ($directorylist as $categorydirectory) {
-                    $categorysofar .= "/{$categorydirectory}";
-                    $currentdirectory = $this->directory . $categorysofar;
-                    if (!is_dir($currentdirectory)) {
-                        mkdir($currentdirectory);
+                // Create directory for each category and add category question file.
+                for ($j = 0; $j < $numcategories; $j++) {
+                    $categoryxml = simplexml_load_string($responsejson->question);
+                    // Isolate each category in turn.
+                    for ($k = 0; $k < $numcategories + 1; $k++) {
+                        if ($k < $j) {
+                            unset($categoryxml->question[0]);
+                        } else if ($k > $j) {
+                            unset($categoryxml->question[count($categoryxml->question) - 1]);
+                        }
+                    }
+                    $categorypath = $categoryxml->question->category->text->__toString();
+
+                    // TODO Is this needed?
+                    $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
+                    $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
+                    $categorysofar = '';
+                    // Create directory structure for category if it doesn't.
+                    foreach ($directorylist as $categorydirectory) {
+                        $categorysofar .= "/{$categorydirectory}";
+                        $currentdirectory = $this->directory . $categorysofar;
+                        if (!is_dir($currentdirectory)) {
+                            mkdir($currentdirectory);
+                        }
+                    }
+                    $catfilepath = $currentdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
+                    // We're liable to get lots of repeats of categories between questions
+                    // so only create and add file if it doesn't exist already.
+                    if (!is_file($catfilepath)) {
+                        $category = cli_helper::reformat_question($categoryxml->asXML());
+                        file_put_contents($catfilepath, $category);
+                    }
+                    // Question will always be placed at the bottom category level so save
+                    // that location for later.
+                    if ($currentdirectory > $bottomdirectory) {
+                        $bottomdirectory = $currentdirectory;
                     }
                 }
-                file_put_contents($currentdirectory . "/" . cli_helper::CATEGORY_FILE . ".xml", $category);
-                file_put_contents($currentdirectory . "/{$qname}.xml", $question);
+                file_put_contents($bottomdirectory . "/{$qname}.xml", $question);
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'contextlevel' => $this->listpostsettings['contextlevel'],
