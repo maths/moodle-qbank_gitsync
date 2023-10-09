@@ -27,11 +27,7 @@ define('CLI_SCRIPT', true);
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/export_repo.php');
-
-$moodleinstances = [
-    'edmundlocal' => 'http://stack.stack.virtualbox.org/edmundlocal',
-    'other' => 'http:localhost:8888'
-];
+require_once('./config.php');
 
 $options = [
     [
@@ -39,15 +35,23 @@ $options = [
         'shortopt' => 'i',
         'description' => 'Key of Moodle instance in $moodleinstances to use. ' .
                         'Should match end of instance URL.',
-        'default' => 'edmundlocal',
+        'default' => $instance,
         'variable' => 'moodleinstance',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'rootdirectory',
+        'shortopt' => 'r',
+        'description' => "Directory on user's computer containing repos.",
+        'default' => $rootdirectory,
+        'variable' => 'rootdirectory',
         'valuerequired' => true,
     ],
     [
         'longopt' => 'manifestpath',
         'shortopt' => 'f',
-        'description' => 'Filepath of manifest file.',
-        'default' => '/home/efarrow1/gitquestions/source_2/edmundlocal_module_Course 1_Test 1_question_manifest.json',
+        'description' => 'Filepath of manifest file relative to root directory including leading slash.',
+        'default' => '',
         'variable' => 'manifestpath',
         'valuerequired' => true,
     ],
@@ -55,7 +59,7 @@ $options = [
         'longopt' => 'token',
         'shortopt' => 't',
         'description' => 'Security token for webservice.',
-        'default' => '4ec7cd3f62e08f595df5e9c90ea7cfcd',
+        'default' => $token,
         'variable' => 'token',
         'valuerequired' => true,
     ],
@@ -76,8 +80,8 @@ if (!function_exists('tidy_repair_string')) {
 $clihelper = new cli_helper($options);
 $arguments = $clihelper->get_arguments();
 $manifestpath = $arguments['manifestpath'];
-$dirname = dirname($manifestpath);
-if (chdir($dirname)) {
+$manifestdirname = $arguments['rootdirectory'] . dirname($manifestpath);
+if (chdir($manifestdirname)) {
     exec('git add .'); // Make sure everything changed has been staged.
     exec('git update-index --refresh'); // Removes false positives due to timestamp changes.
     if (exec('git diff-index --quiet HEAD -- || echo "changes"')) {
@@ -90,7 +94,7 @@ if (chdir($dirname)) {
     exit;
 }
 $exportrepo = new export_repo;
-// $exportrepo->process($clihelper, $moodleinstances);
+$exportrepo->process($clihelper, $moodleinstances);
 
 
 

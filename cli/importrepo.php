@@ -27,6 +27,7 @@ define('CLI_SCRIPT', true);
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/import_repo.php');
+require_once('./config.php');
 
 $moodleinstances = [
     'edmundlocal' => 'http://stack.stack.virtualbox.org/edmundlocal',
@@ -39,15 +40,24 @@ $options = [
         'shortopt' => 'i',
         'description' => 'Key of Moodle instance in $moodleinstances to use. ' .
                          'Should match end of instance URL.',
-        'default' => 'edmundlocal',
+        'default' => $instance,
         'variable' => 'moodleinstance',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'rootdirectory',
+        'shortopt' => 'r',
+        'description' => "Directory on user's computer containing repos.",
+        'default' => $rootdirectory,
+        'variable' => 'rootdirectory',
         'valuerequired' => true,
     ],
     [
         'longopt' => 'directory',
         'shortopt' => 'd',
-        'description' => 'Directory of repo on users computer, containing "top" folder',
-        'default' => '/home/efarrow1/question_repos/first/questions',
+        'description' => 'Directory of repo on users computer, containing "top" folder,' .
+                         'relative to root directory and including leading slash.',
+        'default' => '',
         'variable' => 'directory',
         'valuerequired' => true,
     ],
@@ -95,7 +105,7 @@ $options = [
         'longopt' => 'token',
         'shortopt' => 't',
         'description' => 'Security token for webservice.',
-        'default' => '4ec7cd3f62e08f595df5e9c90ea7cfcd',
+        'default' => $token,
         'variable' => 'token',
         'valuerequired' => true,
     ],

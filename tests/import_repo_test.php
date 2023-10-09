@@ -71,8 +71,9 @@ class import_repo_test extends advanced_testcase {
         // Mock the combined output of command line options and defaults.
         $this->options = [
             'moodleinstance' => self::MOODLE,
-            'directory' => $this->rootpath,
-            'subdirectory' => '',
+            'rootdirectory' => $this->rootpath,
+            'directory' => '',
+            'subdirectory' => '/top',
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
@@ -171,6 +172,7 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_questions(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": 35001}',
@@ -221,6 +223,7 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_subdirectory_questions(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $this->results = [];
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": 35001}',
@@ -269,14 +272,15 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_existing_questions(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat 1/First Question.xml",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"2",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "format":"xml"
                             }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
@@ -319,6 +323,7 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_questions_wrong_directory(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $this->curl->expects($this->any())->method('execute')->will($this->returnValue('{"questionbankentryid": 35001}'));
         $this->importrepo->curlrequest = $this->curl;
         $wrongfile = fopen($this->rootpath . '\wrong.xml', 'a+');
@@ -376,7 +381,7 @@ class import_repo_test extends advanced_testcase {
             return $q->questionbankentryid === 35004;
         });
         $samplerecord = reset($samplerecords);
-        $this->assertStringContainsString($this->rootpath . '/top/cat ', $samplerecord->filepath);
+        $this->assertStringContainsString('/top/cat ', $samplerecord->filepath);
         $this->assertEquals($samplerecord->format, 'xml');
     }
 
@@ -392,24 +397,24 @@ class import_repo_test extends advanced_testcase {
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat 1/First Question.xml",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"2",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "format":"xml"
                             }]}';
         $tempcontents = '{"questionbankentryid":"1",' .
-                          '"filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",' .
+                          '"filepath":"/top/cat 1/First Question.xml",' .
                           '"format":"xml"}' . "\n" .
                         '{"questionbankentryid":"3",' .
-                          '"filepath":"' . $this->rootpath . '/top/cat 2/Second Question.xml",' .
+                          '"filepath":"/top/cat 2/Second Question.xml",' .
                           '"format":"xml"}' . "\n" .
                         '{"questionbankentryid":"2",' .
-                          '"filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",' .
+                          '"filepath":"/top/cat 2/subcat 2_1/Third Question.xml",' .
                           '"format":"xml"}' . "\n" .
                         '{"questionbankentryid":"4",' .
-                          '"filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml",' .
+                          '"filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",' .
                           '"format":"xml"}' . "\n";
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->tempfilepath, $tempcontents);
@@ -439,7 +444,7 @@ class import_repo_test extends advanced_testcase {
             return $q->questionbankentryid === '1';
         });
         $samplerecord = reset($samplerecords);
-        $this->assertEquals($this->rootpath . '/top/cat 1/First Question.xml', $samplerecord->filepath);
+        $this->assertEquals('/top/cat 1/First Question.xml', $samplerecord->filepath);
     }
 
     /**
@@ -452,19 +457,19 @@ class import_repo_test extends advanced_testcase {
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat 1/First Question.xml",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"2",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"3",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/Second Question.xml",
+                                "filepath":"/top/cat 2/Second Question.xml",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"4",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",
                                 "format":"xml"
                             }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
@@ -505,11 +510,11 @@ class import_repo_test extends advanced_testcase {
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat 1/First Question.xml",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"2",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "format":"xml"
                             }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);

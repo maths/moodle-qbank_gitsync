@@ -221,6 +221,7 @@ class cli_helper {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
+        $manifestdir = dirname($manifestpath);
         $tempfile = fopen($tempfilepath, 'r');
         $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
         while (!feof($tempfile)) {
@@ -230,7 +231,7 @@ class cli_helper {
                 if (!$existingentry) {
                     $questionentry = new \stdClass();
                     $questionentry->questionbankentryid = $questioninfo->questionbankentryid;
-                    $questionentry->filepath = $questioninfo->filepath;
+                    $questionentry->filepath = str_replace($manifestdir, '', $questioninfo->filepath);
                     $questionentry->format = $questioninfo->format;
                     array_push($manifestcontents->questions, $questionentry);
                 }

@@ -98,7 +98,7 @@ class create_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->directory = $arguments['directory'];
+        $this->directory = $arguments['rootdirectory'] . $arguments['directory'];
         $this->subdirectory = '';
         if ($arguments['subdirectory']) {
             $this->subdirectory = $arguments['subdirectory'];
@@ -132,7 +132,7 @@ class create_repo {
             'wsfunction' => 'qbank_gitsync_export_question',
             'moodlewsrestformat' => 'json',
             'questionbankentryid' => null,
-            'includecategory' => true,
+            'includecategory' => 1,
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);

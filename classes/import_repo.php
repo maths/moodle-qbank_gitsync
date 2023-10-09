@@ -136,12 +136,16 @@ class import_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->directory = $arguments['directory'];
+        $this->directory = $arguments['rootdirectory'] . $arguments['directory'];
         $this->subdirectory = '';
         if ($arguments['subdirectory']) {
             $this->subdirectory = $arguments['subdirectory'];
         }
-        $token = $arguments['token'];
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
+        }
         $contextlevel = $arguments['contextlevel'];
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
@@ -327,7 +331,8 @@ class import_repo {
                         if (!$this->upload_file($repoitem)) {
                             continue;
                         };
-                        $existingentry = $existingentries["{$repoitem->getPathname()}"] ?? false;
+                        $relpath = str_replace(dirname($this->manifestpath), '', $repoitem->getPathname());
+                        $existingentry = $existingentries["{$relpath}"] ?? false;
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
                         } else {
@@ -379,13 +384,13 @@ class import_repo {
     public function delete_no_file_questions():void {
         // Get all manifest entries for imported subdirectory.
         $manifestentries = array_filter($this->manifestcontents->questions, function($value) {
-            $subdirectorypath = $this->directory . $this->subdirectory;
-            return (substr($value->filepath, 0, strlen($subdirectorypath)) === $subdirectorypath);
+            return (substr($value->filepath, 0, strlen($this->subdirectory)) === $this->subdirectory);
         });
         // Check to see there is a matching file in the repo still.
         $questionstodelete = [];
+        $manifestdir = dirname($this->manifestpath);
         foreach ($manifestentries as $manifestentry) {
-            if (!file_exists($manifestentry->filepath)) {
+            if (!file_exists($manifestdir . $manifestentry->filepath)) {
                 array_push($questionstodelete, $manifestentry);
             }
         }

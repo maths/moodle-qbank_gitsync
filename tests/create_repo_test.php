@@ -62,7 +62,8 @@ class create_repo_test extends advanced_testcase {
         // Mock the combined output of command line options and defaults.
         $this->options = [
             'moodleinstance' => self::MOODLE,
-            'directory' => $this->rootpath,
+            'rootdirectory' => $this->rootpath,
+            'directory' => '',
             'subdirectory' => '',
             'contextlevel' => 'system',
             'coursename' => 'Course 1',

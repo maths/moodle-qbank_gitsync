@@ -62,7 +62,8 @@ class export_repo_test extends advanced_testcase {
         // Mock the combined output of command line options and defaults.
         $this->options = [
             'moodleinstance' => self::MOODLE,
-            'manifestpath' => $this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
+            'rootdirectory' => $this->rootpath,
+            'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
             'token' => 'XXXXXX',
             'help' => false
         ];

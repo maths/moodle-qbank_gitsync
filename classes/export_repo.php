@@ -66,8 +66,12 @@ class export_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->manifestpath = $arguments['manifestpath'];
-        $token = $arguments['token'];
+        $this->manifestpath = $arguments['rootdirectory'] . $arguments['manifestpath'];
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
+        }
         $help = $arguments['help'];
 
         if ($help) {
@@ -84,7 +88,7 @@ class export_repo {
             'wsfunction' => 'qbank_gitsync_export_question',
             'moodlewsrestformat' => 'json',
             'questionbankentryid' => null,
-            'includecategory' => false,
+            'includecategory' => 0,
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
@@ -127,7 +131,7 @@ class export_repo {
                 echo "{$questioninfo->filepath} not updated.\n";
             } else {
                 $question = cli_helper::reformat_question($responsejson->question);
-                file_put_contents($questioninfo->filepath, $question);
+                file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
             }
         }
 
