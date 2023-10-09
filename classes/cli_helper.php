@@ -46,6 +46,10 @@ class cli_helper {
      */
     protected array $options;
     /**
+     * @var array|null Full set of options combining command line and defaults
+     */
+    protected ?array $processedoptions = null;
+    /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
     public const CATEGORY_FILE = 'gitsync_category';
@@ -75,11 +79,15 @@ class cli_helper {
      * @return array of options and values.
      */
     public function get_arguments(): array {
+        if ($this->processedoptions) {
+            return $this->processedoptions;
+        }
         $parsed = $this->parse_options();
         $shortopts = $parsed['shortopts'];
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
-        return $this->prioritise_options($commandlineargs);
+        $this->processedoptions = $this->prioritise_options($commandlineargs);
+        return $this->processedoptions;
     }
 
     /**

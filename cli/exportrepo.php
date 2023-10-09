@@ -47,7 +47,7 @@ $options = [
         'longopt' => 'manifestpath',
         'shortopt' => 'f',
         'description' => 'Filepath of manifest file.',
-        'default' => '/home/efarrow1/question_repos/first/questions/edmundlocal_module_Course 1_Test 1_question_manifest.json',
+        'default' => '/home/efarrow1/gitquestions/source_2/edmundlocal_module_Course 1_Test 1_question_manifest.json',
         'variable' => 'manifestpath',
         'valuerequired' => true,
     ],
@@ -74,8 +74,23 @@ if (!function_exists('tidy_repair_string')) {
     exit;
 }
 $clihelper = new cli_helper($options);
+$arguments = $clihelper->get_arguments();
+$manifestpath = $arguments['manifestpath'];
+$dirname = dirname($manifestpath);
+if (chdir($dirname)) {
+    exec('git add .'); // Make sure everything changed has been staged.
+    exec('git update-index --refresh'); // Removes false positives due to timestamp changes.
+    if (exec('git diff-index --quiet HEAD -- || echo "changes"')) {
+        echo "There are changes to the repository.\n";
+        echo "Either commit these or revert them before proceeding.\n";
+        exit;
+    }
+} else {
+    echo "Cannot find the directory of the manifest file.";
+    exit;
+}
 $exportrepo = new export_repo;
-$exportrepo->process($clihelper, $moodleinstances);
+// $exportrepo->process($clihelper, $moodleinstances);
 
 
 
