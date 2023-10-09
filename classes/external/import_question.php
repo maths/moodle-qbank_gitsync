@@ -76,6 +76,7 @@ class import_question extends external_api {
     public static function execute_returns() {
         return new external_single_structure([
             'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'questionbankentry id'),
+            'version' => new external_value(PARAM_SEQUENCE, 'question version'),
         ]);
     }
 
@@ -191,6 +192,7 @@ class import_question extends external_api {
         $file->delete();
         $response = new \stdClass();
         $response->questionbankentryid = null;
+        $response->version = null;
         // Log imported question and return id of new question ready to make manifest file.
         if (!$params['questionbankentryid'] && !$iscategory) {
             $eventparams = [
@@ -206,6 +208,12 @@ class import_question extends external_api {
         }
         if ($params['questionbankentryid']) {
             $response->questionbankentryid = $params['questionbankentryid'];
+        }
+        if ($response->questionbankentryid) {
+            $response->version = $DB->get_field_sql(
+                'SELECT MAX(version) FROM {question_versions} WHERE questionbankentryid = :questionbankentryid',
+                ['questionbankentryid' => $response->questionbankentryid]
+            );
         }
         return $response;
     }

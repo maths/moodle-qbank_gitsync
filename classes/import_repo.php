@@ -348,6 +348,7 @@ class import_repo {
                         } else if ($responsejson->questionbankentryid) {
                             $fileoutput = [
                                 'questionbankentryid' => $responsejson->questionbankentryid,
+                                'version' => $responsejson->version,
                                 // Questions can be imported in multiple contexts.
                                 'contextlevel' => $this->postsettings['contextlevel'],
                                 'filepath' => $repoitem->getPathname(),

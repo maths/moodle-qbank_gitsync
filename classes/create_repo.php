@@ -242,6 +242,7 @@ class create_repo {
                 file_put_contents($bottomdirectory . "/{$qname}.xml", $question);
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
+                    'version' => $responsejson->version,
                     'contextlevel' => $this->listpostsettings['contextlevel'],
                     'filepath' => $currentdirectory . "/{$qname}.xml",
                     'coursename' => $this->listpostsettings['coursename'],

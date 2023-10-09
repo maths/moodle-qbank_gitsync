@@ -237,7 +237,10 @@ class cli_helper {
                     $questionentry->questionbankentryid = $questioninfo->questionbankentryid;
                     $questionentry->filepath = str_replace($manifestdir, '', $questioninfo->filepath);
                     $questionentry->format = $questioninfo->format;
+                    $questionentry->version = $questioninfo->version;
                     array_push($manifestcontents->questions, $questionentry);
+                } else {
+                    $existingentries["{$questioninfo->questionbankentryid}"]->version = $questioninfo->version;
                 }
                 if ($manifestcontents->context === null) {
                     $manifestcontents->context = new \stdClass();
