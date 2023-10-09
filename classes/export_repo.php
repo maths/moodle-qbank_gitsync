@@ -72,12 +72,6 @@ class export_repo {
         } else {
             $token = $arguments['token'];
         }
-        $help = $arguments['help'];
-
-        if ($help) {
-            $clihelper->showhelp();
-            exit;
-        }
 
         $moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $moodleurl . '/webservice/rest/server.php';

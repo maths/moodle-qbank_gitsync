@@ -116,12 +116,6 @@ class create_repo {
                                                 $coursename, $modulename, $this->directory);
         $this->tempfilepath = $this->directory . '/' .
                               $moodleinstance . '_' . $contextlevel . cli_helper::TEMP_MANIFEST_FILE;
-        $help = $arguments['help'];
-
-        if ($help) {
-            $clihelper->showhelp();
-            exit;
-        }
 
         $moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $moodleurl . '/webservice/rest/server.php';

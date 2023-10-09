@@ -50,7 +50,7 @@ $options = [
     [
         'longopt' => 'directory',
         'shortopt' => 'd',
-        'description' => 'Directory of repo on users computer, containing "top" folder,' .
+        'description' => 'Directory of repo on users computer, containing "top" folder, ' .
                          'relative to root directory and including leading slash.',
         'default' => '',
         'variable' => 'directory',
@@ -67,7 +67,7 @@ $options = [
     [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
-        'description' => 'Context in which to place questions. Set to system, coursecategory, course or module',
+        'description' => 'Context from which to extract questions. Set to system, coursecategory, course or module',
         'default' => null,
         'variable' => 'contextlevel',
         'valuerequired' => true,

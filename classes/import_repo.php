@@ -150,12 +150,6 @@ class import_repo {
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
-        $help = $arguments['help'];
-
-        if ($help) {
-            $clihelper->showhelp();
-            exit;
-        }
 
         $moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $moodleurl . '/webservice/rest/server.php';

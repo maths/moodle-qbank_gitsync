@@ -87,6 +87,10 @@ class cli_helper {
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
         $this->processedoptions = $this->prioritise_options($commandlineargs);
+        if ($this->processedoptions['help']) {
+            $this->show_help();
+            exit;
+        }
         return $this->processedoptions;
     }
 
@@ -150,7 +154,7 @@ class cli_helper {
      *
      * @return void
      */
-    public function showhelp() {
+    public function show_help() {
         foreach ($this->options as $option) {
             echo "-{$option['shortopt']} --{$option['longopt']}  \t{$option['description']}\n";
         }
