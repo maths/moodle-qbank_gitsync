@@ -84,7 +84,7 @@ class export_repo {
             'wsfunction' => 'qbank_gitsync_export_question',
             'moodlewsrestformat' => 'json',
             'questionbankentryid' => null,
-            'includecategory' => false,
+            'includecategory' => 0,
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
