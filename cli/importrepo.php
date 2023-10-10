@@ -120,5 +120,7 @@ $options = [
 ];
 
 $clihelper = new cli_helper($options);
-$importrepo = new import_repo;
-$importrepo->process($clihelper, $moodleinstances);
+$importrepo = new import_repo($clihelper, $moodleinstances);
+$clihelper->check_for_changes($importrepo->manifestpath);
+$clihelper->commit_hash_update($importrepo->manifestpath);
+$importrepo->process();

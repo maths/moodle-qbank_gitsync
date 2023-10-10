@@ -78,24 +78,6 @@ if (!function_exists('tidy_repair_string')) {
     exit;
 }
 $clihelper = new cli_helper($options);
-$arguments = $clihelper->get_arguments();
-$manifestpath = $arguments['manifestpath'];
-$manifestdirname = $arguments['rootdirectory'] . dirname($manifestpath);
-if (chdir($manifestdirname)) {
-    exec('git add .'); // Make sure everything changed has been staged.
-    exec('git update-index --refresh'); // Removes false positives due to timestamp changes.
-    if (exec('git diff-index --quiet HEAD -- || echo "changes"')) {
-        echo "There are changes to the repository.\n";
-        echo "Either commit these or revert them before proceeding.\n";
-        exit;
-    }
-} else {
-    echo "Cannot find the directory of the manifest file.";
-    exit;
-}
-$exportrepo = new export_repo;
-$exportrepo->process($clihelper, $moodleinstances);
-
-
-
-
+$exportrepo = new export_repo($clihelper, $moodleinstances);
+$clihelper->check_for_changes($exportrepo->manifestpath);
+$exportrepo->process();

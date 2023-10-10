@@ -78,8 +78,8 @@ class export_repo_test extends advanced_testcase {
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
             'get_curl_request'
-        ])->getMock();
-        $this->exportrepo->expects($this->any())->method('get_curl_request')->will($this->returnValue($this->curl));
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->exportrepo->curlrequest = $this->curl;
 
         $this->exportrepo->postsettings = ['questionbankentryid' => null];
     }
@@ -97,7 +97,7 @@ class export_repo_test extends advanced_testcase {
             '{"question": "<Question><Name>Two</Name></Question>"}'
         );
 
-        $this->exportrepo->process($this->clihelper, $this->moodleinstances);
+        $this->exportrepo->process();
 
         // Check question files updated.
         $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat 1/First Question.xml'));

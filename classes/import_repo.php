@@ -105,6 +105,12 @@ class import_repo {
      */
     public string $manifestpath;
     /**
+     * URL of Moodle instance
+     *
+     * @var string
+     */
+    public string $moodleurl;
+    /**
      * Path of root of repo
      * i.e. folder containing manifest
      *
@@ -131,7 +137,7 @@ class import_repo {
      * @param array $moodleinstances pairs of names and URLs
      * @return void
      */
-    public function process(cli_helper $clihelper, array $moodleinstances):void {
+    public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
@@ -151,8 +157,8 @@ class import_repo {
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
 
-        $moodleurl = $moodleinstances[$moodleinstance];
-        $wsurl = $moodleurl . '/webservice/rest/server.php';
+        $this->moodleurl = $moodleinstances[$moodleinstance];
+        $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
@@ -172,7 +178,7 @@ class import_repo {
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->deletecurlrequest = $this->get_curl_request($wsurl);
         $this->listcurlrequest = $this->get_curl_request($wsurl);
-        $this->uploadcurlrequest = $this->get_curl_request($moodleurl . '/webservice/upload.php');
+        $this->uploadcurlrequest = $this->get_curl_request($this->moodleurl . '/webservice/upload.php');
 
         $this->postsettings = [
             'wstoken' => $token,
@@ -213,14 +219,16 @@ class import_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $listpostsettings);
+    }
 
+    public function process():void {
         $this->import_categories();
         $this->import_questions();
         $this->curlrequest->close();
         $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
                                                                    $this->tempfilepath,
                                                                    $this->manifestpath,
-                                                                   $moodleurl);
+                                                                   $this->moodleurl);
         unlink($this->tempfilepath);
         $this->delete_no_file_questions();
         $this->delete_no_record_questions();
@@ -322,16 +330,24 @@ class import_repo {
                     $this->postsettings['qcategoryname'] = str_replace( '\\', '/',
                                         $qcategory);
                     if ($this->postsettings['qcategoryname']) {
-                        if (!$this->upload_file($repoitem)) {
-                            continue;
-                        };
                         $relpath = str_replace(dirname($this->manifestpath), '', $repoitem->getPathname());
                         $existingentry = $existingentries["{$relpath}"] ?? false;
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
+                            if (
+                                isset($existingentry->currentcommit)
+                                && isset($existingentry->moodlecommit)
+                                && $existingentry->currentcommit === $existingentry->moodlecommit
+                               )
+                            {
+                                continue;
+                            }
                         } else {
                             $this->postsettings['questionbankentryid'] = null;
                         }
+                        if (!$this->upload_file($repoitem)) {
+                            continue;
+                        };
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                         $response = $this->curlrequest->execute();
                         $responsejson = json_decode($response);
@@ -357,6 +373,9 @@ class import_repo {
                                 'coursecategory' => $this->postsettings['coursecategory'],
                                 'format' => 'xml',
                             ];
+                            if ($existingentry && isset($existingentry->currentcommit)) {
+                                $fileoutput['moodlecommit'] = $existingentry->currentcommit;
+                            }
                             fwrite($tempfile, json_encode($fileoutput) . "\n");
                         }
                     } else {

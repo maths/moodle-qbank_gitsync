@@ -61,7 +61,7 @@ class export_repo {
      * @param array $moodleinstances pairs of names and URLs
      * @return void
      */
-    public function process(cli_helper $clihelper, array $moodleinstances):void {
+    public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
@@ -86,10 +86,10 @@ class export_repo {
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
+    }
 
+    public function process():void {
         $this->export_to_repo();
-
-        return;
     }
 
     /**

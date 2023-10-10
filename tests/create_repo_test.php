@@ -102,13 +102,13 @@ class create_repo_test extends advanced_testcase {
         );
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category><text>top</text></category></question>' .
-                          '<question><name><text>One</text></name></question></quiz>"}',
+                          '<question><name><text>One</text></name></question></quiz>", "version": "1"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 1' .
-                          '</text></category></question><question><name><text>Two</text></name></question></quiz>"}',
+                          '</text></category></question><question><name><text>Two</text></name></question></quiz>", "version": "1"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
-                          '</text></category></question><question><name><text>Three</text></name></question></quiz>"}',
+                          '</text></category></question><question><name><text>Three</text></name></question></quiz>", "version": "1"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
-                          '</text></category></question><question><name><text>Four</text></name></question></quiz>"}',
+                          '</text></category></question><question><name><text>Four</text></name></question></quiz>", "version": "1"}',
         );
     }
 

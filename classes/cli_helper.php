@@ -238,9 +238,15 @@ class cli_helper {
                     $questionentry->filepath = str_replace($manifestdir, '', $questioninfo->filepath);
                     $questionentry->format = $questioninfo->format;
                     $questionentry->version = $questioninfo->version;
+                    if (isset($questioninfo->moodlecommit)) {
+                        $questionentry->moodlecommit = $questioninfo->moodlecommit;
+                    }
                     array_push($manifestcontents->questions, $questionentry);
                 } else {
                     $existingentries["{$questioninfo->questionbankentryid}"]->version = $questioninfo->version;
+                    if (isset($questioninfo->moodlecommit)) {
+                        $existingentries["{$questioninfo->questionbankentryid}"]->moodlecommit = $questioninfo->moodlecommit;
+                    }
                 }
                 if ($manifestcontents->context === null) {
                     $manifestcontents->context = new \stdClass();
@@ -331,5 +337,59 @@ class cli_helper {
         setlocale(LC_ALL, $locale);
 
         return $result;
+    }
+
+    /**
+     * Updates the manifest file with the current commit hashes of question files in the repo.
+     *
+     * @param string $manifestpath
+     * @return void
+     */
+    public function commit_hash_update(string $manifestpath):void {
+        $manifestdirname = dirname($manifestpath);
+        chdir($manifestdirname);
+        $manifestcontents = json_decode(file_get_contents($manifestpath));
+        foreach($manifestcontents->questions as $question) {
+            $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
+            $question->currentcommit = $commithash;
+        }
+        file_put_contents($manifestpath, json_encode($manifestcontents));
+    }
+
+    /**
+     * Updates the manifest file with the current commit hashes of question files in the repo.
+     * Used on initial repo creation so also sets the moodle commit to be the same.
+     *
+     * @param string $manifestpath
+     * @return void
+     */
+    public function commit_hash_setup(string $manifestpath):void {
+        $manifestdirname = dirname($manifestpath);
+        chdir($manifestdirname);
+        $manifestcontents = json_decode(file_get_contents($manifestpath));
+        exec('touch .gitignore');
+        exec("cat >> .gitignore << EOF\n/*_question_manifest.json\nEOF\ngit add .\ngit commit -m 'Initial contents'");
+        foreach($manifestcontents->questions as $question) {
+            $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
+            $question->currentcommit = $commithash;
+            $question->moodlecommit = $commithash;
+        }
+        file_put_contents($manifestpath, json_encode($manifestcontents));
+    }
+
+    public function check_for_changes($fullmanifestpath) {
+        $manifestdirname = dirname($fullmanifestpath);
+        if (chdir($manifestdirname)) {
+            exec('git add .'); // Make sure everything changed has been staged.
+            exec('git update-index --refresh'); // Removes false positives due to timestamp changes.
+            if (exec('git diff-index --quiet HEAD -- || echo "changes"')) {
+                echo "There are changes to the repository.\n";
+                echo "Either commit these or revert them before proceeding.\n";
+                exit;
+            }
+        } else {
+            echo "Cannot find the directory of the manifest file.";
+            exit;
+        }
     }
 }
