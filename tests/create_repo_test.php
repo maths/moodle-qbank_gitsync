@@ -92,7 +92,8 @@ class create_repo_test extends advanced_testcase {
         );
 
         $this->createrepo->listpostsettings = ['contextlevel' => '50', 'coursename' => 'Course 1',
-                                               'modulename' => 'Module 1', 'coursecategory' => null];
+                                               'modulename' => 'Module 1', 'coursecategory' => null,
+                                               'qcategoryname' => '/top'];
         $this->createrepo->postsettings = [];
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '[{"questionbankentryid": "1", "name": "One", "questioncategory": ""},
@@ -137,11 +138,14 @@ class create_repo_test extends advanced_testcase {
     /**
      * Test temp file creation.
      */
-    public function test_tenp_file_creation(): void {
+    public function test_temp_file_creation(): void {
         $this->createrepo->tempfilepath = $this->rootpath . '/' . 'test' . cli_helper::TEMP_MANIFEST_FILE;
         $this->createrepo->listcurlrequest = $this->listcurl;
         $this->createrepo->curlrequest = $this->curl;
         $this->createrepo->directory = $this->rootpath;
+        $this->createrepo->manifestcontents = new \stdClass();
+        $this->createrepo->manifestcontents->context = null;
+        $this->createrepo->manifestcontents->questions = [];
         $this->createrepo->export_to_repo();
 
         $tempfile = fopen($this->createrepo->tempfilepath, 'r');

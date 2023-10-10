@@ -26,6 +26,7 @@ namespace qbank_gitsync;
 define('CLI_SCRIPT', true);
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
+require_once('../classes/export_trait.php');
 require_once('../classes/export_repo.php');
 require_once('./config.php');
 

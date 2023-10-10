@@ -31,6 +31,7 @@ namespace qbank_gitsync;
  * Export a Git repo.
  */
 class create_repo {
+    use export_trait;
     /**
      * Settings for POST request
      *
@@ -84,6 +85,12 @@ class create_repo {
      * @var string
      */
     public string $directory;
+    /**
+     * Parsed content of JSON manifest file
+     *
+     * @var \stdClass|null
+     */
+    public ?\stdClass $manifestcontents;
 
     /**
      * Obtain a list of questions and categories from Moodle, iterate through them and
@@ -145,14 +152,12 @@ class create_repo {
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
 
+        $this->manifestcontents = new \stdClass();
+        $this->manifestcontents->context = null;
+        $this->manifestcontents->questions = [];
         $this->export_to_repo();
-        $manifestcontents = new \stdClass();
-        $manifestcontents->context = null;
-        $manifestcontents->questions = [];
-        cli_helper::create_manifest_file($manifestcontents, $this->tempfilepath, $this->manifestpath, $moodleurl);
+        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath, $this->manifestpath, $moodleurl);
         unlink($this->tempfilepath);
-
-        return;
     }
 
     /**
@@ -163,98 +168,5 @@ class create_repo {
      */
     public function get_curl_request($wsurl):curl_request {
         return new \qbank_gitsync\curl_request($wsurl);
-    }
-
-    /**
-     * Loop through questions in manifest file, export each from Moodle and update local copy
-     *
-     * @return void
-     */
-    public function export_to_repo() {
-        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
-        $tempfile = fopen($this->tempfilepath, 'a+');
-        foreach ($questionsinmoodle as $questioninfo) {
-            $this->postsettings['questionbankentryid'] = $questioninfo->questionbankentryid;
-            $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-            $response = $this->curlrequest->execute();
-            $responsejson = json_decode($response);
-            if (!$responsejson) {
-                echo "Broken JSON returned from Moodle:\n";
-                echo $response . "\n";
-            } else if (property_exists($responsejson, 'exception')) {
-                echo "{$responsejson->message}\n";
-                if (property_exists($responsejson, 'debuginfo')) {
-                    echo "{$responsejson->debuginfo}\n";
-                }
-                echo "{$questioninfo->categoryname} - {$questioninfo->name} not downloaded.\n";
-            } else {
-                // XML will have a category question for each level of category below top + the actual question.
-                // There should always be at least one category, if only default.
-                $questionxml = simplexml_load_string($responsejson->question);
-                $numcategories = count($questionxml->question) - 1;
-                // We want to isolate the real question but keep surrounding structure
-                // so unset all the categories.
-                for ($i = 0; $i < $numcategories; $i++) {
-                    unset($questionxml->question[0]);
-                }
-                $qname = $questionxml->question->name->text->__toString();
-                $question = cli_helper::reformat_question($questionxml->asXML());
-                $bottomdirectory = '';
-
-                // Create directory for each category and add category question file.
-                for ($j = 0; $j < $numcategories; $j++) {
-                    $categoryxml = simplexml_load_string($responsejson->question);
-                    // Isolate each category in turn.
-                    for ($k = 0; $k < $numcategories + 1; $k++) {
-                        if ($k < $j) {
-                            unset($categoryxml->question[0]);
-                        } else if ($k > $j) {
-                            unset($categoryxml->question[count($categoryxml->question) - 1]);
-                        }
-                    }
-                    $categorypath = $categoryxml->question->category->text->__toString();
-
-                    // TODO Is this needed?
-                    $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
-                    $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
-                    $categorysofar = '';
-                    // Create directory structure for category if it doesn't.
-                    foreach ($directorylist as $categorydirectory) {
-                        $categorysofar .= "/{$categorydirectory}";
-                        $currentdirectory = $this->directory . $categorysofar;
-                        if (!is_dir($currentdirectory)) {
-                            mkdir($currentdirectory);
-                        }
-                    }
-                    $catfilepath = $currentdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
-                    // We're liable to get lots of repeats of categories between questions
-                    // so only create and add file if it doesn't exist already.
-                    if (!is_file($catfilepath)) {
-                        $category = cli_helper::reformat_question($categoryxml->asXML());
-                        file_put_contents($catfilepath, $category);
-                    }
-                    // Question will always be placed at the bottom category level so save
-                    // that location for later.
-                    if ($currentdirectory > $bottomdirectory) {
-                        $bottomdirectory = $currentdirectory;
-                    }
-                }
-                file_put_contents($bottomdirectory . "/{$qname}.xml", $question);
-                $fileoutput = [
-                    'questionbankentryid' => $questioninfo->questionbankentryid,
-                    'version' => $responsejson->version,
-                    'exportedversion' => $responsejson->version,
-                    'contextlevel' => $this->listpostsettings['contextlevel'],
-                    'filepath' => $currentdirectory . "/{$qname}.xml",
-                    'coursename' => $this->listpostsettings['coursename'],
-                    'modulename' => $this->listpostsettings['modulename'],
-                    'coursecategory' => $this->listpostsettings['coursecategory'],
-                    'format' => 'xml',
-                ];
-                fwrite($tempfile, json_encode($fileoutput) . "\n");
-            }
-        }
-
-        return;
     }
 }

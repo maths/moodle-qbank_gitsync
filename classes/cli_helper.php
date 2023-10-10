@@ -254,6 +254,7 @@ class cli_helper {
                     $manifestcontents->context->coursename = $questioninfo->coursename;
                     $manifestcontents->context->modulename = $questioninfo->modulename;
                     $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
+                    $manifestcontents->context->qcategoryname = $questioninfo->qcategoryname;
                     $manifestcontents->context->moodleurl = $moodleurl;
                 }
             }

@@ -334,11 +334,9 @@ class import_repo {
                         $existingentry = $existingentries["{$relpath}"] ?? false;
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
-                            if (
-                                isset($existingentry->currentcommit)
+                            if (isset($existingentry->currentcommit)
                                 && isset($existingentry->moodlecommit)
-                                && $existingentry->currentcommit === $existingentry->moodlecommit
-                               )
+                                && $existingentry->currentcommit === $existingentry->moodlecommit)
                             {
                                 continue;
                             }
@@ -371,6 +369,7 @@ class import_repo {
                                 'coursename' => $this->postsettings['coursename'],
                                 'modulename' => $this->postsettings['modulename'],
                                 'coursecategory' => $this->postsettings['coursecategory'],
+                                'qcategoryname' => substr($this->subdirectory, 1),
                                 'format' => 'xml',
                             ];
                             if ($existingentry && isset($existingentry->currentcommit)) {
@@ -509,8 +508,7 @@ class import_repo {
         // all the changes locally. Instruct user to export.
         foreach($questionsinmoodle as $moodleq) {
             if ($moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->version
-                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->exportedversion
-               ) {
+                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->exportedversion) {
                 echo "{$moodleq->questionbankentryid} - {$moodleq->questioncategory} - {$moodleq->name}\n";
                 echo "Moodle question version: {$moodleq->version}\n";
                 echo "Version on last import to Moodle: {$manifestentries[$moodleq->questionbankentryid]->version}\n";

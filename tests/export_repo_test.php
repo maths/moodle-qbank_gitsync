@@ -76,10 +76,14 @@ class export_repo_test extends advanced_testcase {
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();
+        $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute'
+        ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
             'get_curl_request'
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
+        $this->exportrepo->listcurlrequest = $this->listcurl;
 
         $this->exportrepo->postsettings = ['questionbankentryid' => null];
     }
@@ -95,6 +99,10 @@ class export_repo_test extends advanced_testcase {
             '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
             '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}',
             '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '[]',
         );
 
         $this->exportrepo->process();
