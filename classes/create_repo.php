@@ -243,6 +243,7 @@ class create_repo {
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
+                    'exportedversion' => $responsejson->version,
                     'contextlevel' => $this->listpostsettings['contextlevel'],
                     'filepath' => $currentdirectory . "/{$qname}.xml",
                     'coursename' => $this->listpostsettings['coursename'],

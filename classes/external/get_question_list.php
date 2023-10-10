@@ -64,6 +64,7 @@ class get_question_list extends external_api {
                 'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'questionbankentry id'),
                 'name' => new external_value(PARAM_TEXT, 'question name'),
                 'questioncategory' => new external_value(PARAM_TEXT, 'question category'),
+                'version' => new external_value(PARAM_SEQUENCE, 'version'),
             ])
         );
     }
@@ -122,6 +123,7 @@ class get_question_list extends external_api {
             $qinfo->questionbankentryid = $qbe->id;
             $qinfo->name = $mindata->name;
             $qinfo->questioncategory = $categories[$qbe->questioncategoryid]->name;
+            $qinfo->version = $mindata->version;
             array_push($response, $qinfo);
         }
 

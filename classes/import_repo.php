@@ -493,4 +493,35 @@ class import_repo {
         fclose($handle);
         return $deleted;
     }
+
+    /**
+     * Check if the question versions in Moodle and the manifest match.
+     *
+     * @return void
+     */
+    public function check_question_versions(): void {
+        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+        $changes = false;
+        // If the version in Moodle and in the manifest don't match, the question has been updated in Moodle
+        // since we created the repo or last imported to Moodle.
+        // If the last exportedversion doesn't match what's in the manifest we haven't dealt with
+        // all the changes locally. Instruct user to export.
+        foreach($questionsinmoodle as $moodleq) {
+            if ($moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->version
+                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->exportedversion
+               ) {
+                echo "{$moodleq->questionbankentryid} - {$moodleq->questioncategory} - {$moodleq->name}\n";
+                echo "Moodle question version: {$moodleq->version}\n";
+                echo "Version on last import to Moodle: {$manifestentries[$moodleq->questionbankentryid]->version}\n";
+                echo "Version on last export from Moodle: {$manifestentries[$moodleq->questionbankentryid]->exportedversion}\n";
+                $changes = true;
+            }
+        }
+        if ($changes) {
+            echo "Export questions from Moodle before proceeding.\n";
+            exit;
+        }
+
+    }
 }

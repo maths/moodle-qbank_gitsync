@@ -125,9 +125,11 @@ class export_repo {
                 echo "{$questioninfo->filepath} not updated.\n";
             } else {
                 $question = cli_helper::reformat_question($responsejson->question);
+                $questioninfo->exportedversion = $responsejson->version;
                 file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
             }
         }
+        file_put_contents($this->manifestpath, json_encode($manifestcontents));
 
         return;
     }

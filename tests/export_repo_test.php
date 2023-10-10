@@ -91,10 +91,10 @@ class export_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<Question><Name>One</Name></Question>"}',
-            '{"question": "<Question><Name>Three</Name></Question>"}',
-            '{"question": "<Question><Name>Four</Name></Question>"}',
-            '{"question": "<Question><Name>Two</Name></Question>"}'
+            '{"question": "<Question><Name>One</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
         );
 
         $this->exportrepo->process();
