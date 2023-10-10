@@ -126,6 +126,7 @@ class export_repo {
         $this->export_questions_in_manifest();
         $this->export_to_repo();
         unlink($this->tempfilepath);
+        $this->tidy_manifest();
     }
 
     /**
@@ -165,7 +166,28 @@ class export_repo {
             }
         }
         file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+    }
 
-        return;
+    public function tidy_manifest() {
+        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        if (!$questionsinmoodle) {
+            echo "Broken JSON returned from Moodle:\n";
+            echo $questionsinmoodle . "\n";
+        } else if (!is_array($questionsinmoodle)) {
+            if (property_exists($questionsinmoodle, 'exception')) {
+                echo "{$questionsinmoodle->message}\n";
+            }
+            echo "Failed to tidy manifest.\n";
+        } else {
+            $existingquestions = array_column($questionsinmoodle, null, 'questionbankentryid');
+            $newentrylist = [];
+            foreach ($this->manifestcontents->questions as $currententry) {
+                if (isset($existingquestions[$currententry->questionbankentryid])) {
+                    array_push($newentrylist, $currententry);
+                }
+            }
+            $this->manifestcontents->questions = $newentrylist;
+            file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+        }
     }
 }
