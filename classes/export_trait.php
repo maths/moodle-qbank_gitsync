@@ -42,6 +42,12 @@ trait export_trait {
      */
     public function export_to_repo() {
         $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        if (!is_array($questionsinmoodle)) {
+            if (property_exists($questionsinmoodle, 'exception')) {
+                print_r($questionsinmoodle);
+                die();
+            }
+        }
         $this->postsettings['includecategory'] = 1;
         $tempfile = fopen($this->tempfilepath, 'a+');
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
