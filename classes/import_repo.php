@@ -511,7 +511,8 @@ class import_repo {
         // If the last exportedversion doesn't match what's in the manifest we haven't dealt with
         // all the changes locally. Instruct user to export.
         foreach ($questionsinmoodle as $moodleq) {
-            if ($moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->version
+            if (isset($manifestentries[$moodleq->questionbankentryid])
+                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->version
                     && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->exportedversion) {
                 echo "{$moodleq->questionbankentryid} - {$moodleq->questioncategory} - {$moodleq->name}\n";
                 echo "Moodle question version: {$moodleq->version}\n";
