@@ -71,8 +71,9 @@ class import_repo_test extends advanced_testcase {
         // Mock the combined output of command line options and defaults.
         $this->options = [
             'moodleinstance' => self::MOODLE,
-            'directory' => $this->rootpath,
-            'subdirectory' => '',
+            'rootdirectory' => $this->rootpath,
+            'directory' => '',
+            'subdirectory' => '/top',
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
@@ -88,22 +89,23 @@ class import_repo_test extends advanced_testcase {
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
-        ])->setConstructorArgs(['xxxx'])->getMock();;
+        ])->setConstructorArgs(['xxxx'])->getMock();
         $this->uploadcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
-        ])->setConstructorArgs(['xxxx'])->getMock();;
+        ])->setConstructorArgs(['xxxx'])->getMock();
         $this->deletecurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
-        ])->setConstructorArgs(['xxxx'])->getMock();;
+        ])->setConstructorArgs(['xxxx'])->getMock();
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
-        ])->setConstructorArgs(['xxxx'])->getMock();;
+        ])->setConstructorArgs(['xxxx'])->getMock();
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'upload_file', 'handle_delete'
-        ])->getMock();
-        $this->importrepo->expects($this->any())->method('get_curl_request')->willReturnOnConsecutiveCalls(
-            $this->curl, $this->deletecurl, $this->listcurl, $this->uploadcurl
-        );
+            'upload_file', 'handle_delete'
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->importrepo->curlrequest = $this->curl;
+        $this->importrepo->deletecurlrequest = $this->deletecurl;
+        $this->importrepo->listcurlrequest = $this->listcurl;
+        $this->importrepo->uploadcurlrequest = $this->uploadcurl;
         $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
 
         $this->importrepo->directory = $this->rootpath;
@@ -111,13 +113,6 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->manifestcontents = new \StdClass();
         $this->importrepo->manifestcontents->context = null;
         $this->importrepo->manifestcontents->questions = [];
-        $this->importrepo->postsettings = ['contextlevel' => null, 'coursename' => null, 'modulename' => null,
-                                           'directory' => '', 'subdirectory' => '',
-                                           'fileinfo[contextid]' => '', 'fileinfo[userid]' => '',
-                                           'fileinfo[component]' => '', 'fileinfo[filearea]' => '',
-                                           'fileinfo[itemid]' => '', 'fileinfo[filepath]' => '',
-                                           'fileinfo[filename]' => '',
-                                           'coursecategory' => ''];
     }
 
     /**
@@ -130,17 +125,17 @@ class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": null}',
             '{"questionbankentryid": null}',
             '{"questionbankentryid": null}',
-            '{"questionbankentryid": 35001}',
-            '{"questionbankentryid": 35002}',
-            '{"questionbankentryid": 35004}',
-            '{"questionbankentryid": 35003}',
+            '{"questionbankentryid": "35001", "version": "2"}',
+            '{"questionbankentryid": "35002", "version": "2"}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '{}',
+            '[]',
         );
 
-        $this->importrepo->process($this->clihelper, $this->moodleinstances);
+        $this->importrepo->process();
 
         // Check manifest file created.
         $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
@@ -171,12 +166,13 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_questions(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": 35001}',
-            '{"questionbankentryid": 35002}',
-            '{"questionbankentryid": 35004}',
-            '{"questionbankentryid": 35003}',
+            '{"questionbankentryid": "35001", "version": "2"}',
+            '{"questionbankentryid": "35002", "version": "2"}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
         );
         $this->curl->expects($this->exactly(4))->method('execute')->will($this->returnCallback(
             function() {
@@ -221,10 +217,11 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_subdirectory_questions(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $this->results = [];
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": 35001}',
-            '{"questionbankentryid": 35002}',
+            '{"questionbankentryid": "35001", "version": "2"}',
+            '{"questionbankentryid": "35002", "version": "2"}',
         );
         $this->curl->expects($this->exactly(2))->method('execute')->will($this->returnCallback(
             function() {
@@ -269,23 +266,24 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_existing_questions(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat 1/First Question.xml",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"2",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "format":"xml"
                             }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": 35001}',
-            '{"questionbankentryid": 35002}',
-            '{"questionbankentryid": 1}',
-            '{"questionbankentryid": 2}',
+            '{"questionbankentryid": "35001", "version": "2"}',
+            '{"questionbankentryid": "35002", "version": "2"}',
+            '{"questionbankentryid": "1", "version": "2"}',
+            '{"questionbankentryid": "2", "version": "2"}',
         );
         $this->curl->expects($this->exactly(4))->method('execute')->will($this->returnCallback(
             function() {
@@ -319,7 +317,9 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_questions_wrong_directory(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
-        $this->curl->expects($this->any())->method('execute')->will($this->returnValue('{"questionbankentryid": 35001}'));
+        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
+        $this->curl->expects($this->any())->method('execute')->will(
+            $this->returnValue('{"questionbankentryid": "35001", "version": "2"}'));
         $this->importrepo->curlrequest = $this->curl;
         $wrongfile = fopen($this->rootpath . '\wrong.xml', 'a+');
         fclose($wrongfile);
@@ -337,21 +337,21 @@ class import_repo_test extends advanced_testcase {
     public function test_manifest_file(): void {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
-        $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
+        $this->importrepo->curlrequest->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": null}',
             '{"questionbankentryid": null}',
             '{"questionbankentryid": null}',
-            '{"questionbankentryid": 35001}',
-            '{"questionbankentryid": 35002}',
-            '{"questionbankentryid": 35004}',
-            '{"questionbankentryid": 35003}',
+            '{"questionbankentryid": "35001", "version": "2"}',
+            '{"questionbankentryid": "35002", "version": "2"}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
         );
 
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+        $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{}',
         );
 
-        $this->importrepo->process($this->clihelper, $this->moodleinstances);
+        $this->importrepo->process();
 
         // Manifest file is a single array.
         $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
@@ -361,10 +361,10 @@ class import_repo_test extends advanced_testcase {
             return $q->questionbankentryid;
         }, $manifestcontents->questions);
         $this->assertEquals(4, count($questionbankentryids));
-        $this->assertContains(35001, $questionbankentryids);
-        $this->assertContains(35002, $questionbankentryids);
-        $this->assertContains(35003, $questionbankentryids);
-        $this->assertContains(35004, $questionbankentryids);
+        $this->assertContains('35001', $questionbankentryids);
+        $this->assertContains('35002', $questionbankentryids);
+        $this->assertContains('35003', $questionbankentryids);
+        $this->assertContains('35004', $questionbankentryids);
 
         $context = $manifestcontents->context;
         $this->assertEquals($context->contextlevel, '10');
@@ -373,10 +373,10 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($context->coursecategory, 'Cat 1');
 
         $samplerecords = array_filter($manifestcontents->questions, function($q) {
-            return $q->questionbankentryid === 35004;
+            return $q->questionbankentryid === '35004';
         });
         $samplerecord = reset($samplerecords);
-        $this->assertStringContainsString($this->rootpath . '/top/cat ', $samplerecord->filepath);
+        $this->assertStringContainsString('/top/cat ', $samplerecord->filepath);
         $this->assertEquals($samplerecord->format, 'xml');
     }
 
@@ -389,27 +389,38 @@ class import_repo_test extends advanced_testcase {
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
-        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
+        $manifestcontents = '{"context":{"contextlevel":70,
+                                "coursename":"Course 1",
+                                "modulename":"Test 1",
+                                "coursecategory":null,
+                                "qcategoryname":"/top"
+                             },
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat 1/First Question.xml",
+                                "version": "1",
                                 "format":"xml"
-                            }, {
+                             }, {
                                 "questionbankentryid":"2",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
+                                "version": "1",
                                 "format":"xml"
-                            }]}';
+                             }]}';
         $tempcontents = '{"questionbankentryid":"1",' .
-                          '"filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",' .
+                          '"filepath":"/top/cat 1/First Question.xml",' .
+                          '"version": "5",' .
                           '"format":"xml"}' . "\n" .
                         '{"questionbankentryid":"3",' .
-                          '"filepath":"' . $this->rootpath . '/top/cat 2/Second Question.xml",' .
+                          '"filepath":"/top/cat 2/Second Question.xml",' .
+                          '"version": "6",' .
                           '"format":"xml"}' . "\n" .
                         '{"questionbankentryid":"2",' .
-                          '"filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",' .
+                          '"filepath":"/top/cat 2/subcat 2_1/Third Question.xml",' .
+                          '"version": "7",' .
                           '"format":"xml"}' . "\n" .
                         '{"questionbankentryid":"4",' .
-                          '"filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml",' .
+                          '"filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",' .
+                          '"version": "8",' .
                           '"format":"xml"}' . "\n";
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->tempfilepath, $tempcontents);
@@ -439,7 +450,7 @@ class import_repo_test extends advanced_testcase {
             return $q->questionbankentryid === '1';
         });
         $samplerecord = reset($samplerecords);
-        $this->assertEquals($this->rootpath . '/top/cat 1/First Question.xml', $samplerecord->filepath);
+        $this->assertEquals('/top/cat 1/First Question.xml', $samplerecord->filepath);
     }
 
     /**
@@ -449,24 +460,30 @@ class import_repo_test extends advanced_testcase {
     public function test_delete_no_file_questions(): void {
         $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         // 4 files in the manifest.
-        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
+        $manifestcontents = '{"context":{
+                                "contextlevel":70,
+                                "coursename":"Course 1",
+                                "modulename":"Test 1",
+                                "coursecategory":null,
+                                "qcategoryname":"/top"
+                             },
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat 1/First Question.xml",
                                 "format":"xml"
-                            }, {
+                             }, {
                                 "questionbankentryid":"2",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "format":"xml"
-                            }, {
+                             }, {
                                 "questionbankentryid":"3",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/Second Question.xml",
+                                "filepath":"/top/cat 2/Second Question.xml",
                                 "format":"xml"
-                            }, {
+                             }, {
                                 "questionbankentryid":"4",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",
                                 "format":"xml"
-                            }]}';
+                             }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->manifestpath, $manifestcontents);
 
@@ -502,16 +519,22 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_delete_no_record_questions(): void {
         // 2 records in the manifest.
-        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
-                             "questions":[{
+        $manifestcontents = '{"context":{
+                                "contextlevel":70,
+                                "coursename":"Course 1",
+                                "modulename":"Test 1",
+                                "coursecategory":null,
+                                "qcategoryname":"/top"
+                              },
+                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"' . $this->rootpath . '/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat 1/First Question.xml",
                                 "format":"xml"
-                            }, {
+                              }, {
                                 "questionbankentryid":"2",
-                                "filepath":"' . $this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "format":"xml"
-                            }]}';
+                              }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         $this->importrepo->listcurlrequest = $this->listcurl;
         // One question deleted of two that no longer have files.

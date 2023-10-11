@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for export repo command line script for gitsync
+ * Unit tests for create repo command line script for gitsync
  *
  * @package    qbank_gitsync
  * @copyright  2023 The Open University
@@ -62,7 +62,8 @@ class create_repo_test extends advanced_testcase {
         // Mock the combined output of command line options and defaults.
         $this->options = [
             'moodleinstance' => self::MOODLE,
-            'directory' => $this->rootpath,
+            'rootdirectory' => $this->rootpath,
+            'directory' => '',
             'subdirectory' => '',
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
@@ -85,13 +86,13 @@ class create_repo_test extends advanced_testcase {
         ])->setConstructorArgs(['xxxx'])->getMock();;
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
             'get_curl_request'
-        ])->getMock();
-        $this->createrepo->expects($this->any())->method('get_curl_request')->willReturnOnConsecutiveCalls(
-            $this->curl, $this->listcurl
-        );
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->createrepo->curlrequest = $this->curl;
+        $this->createrepo->listcurlrequest = $this->listcurl;
 
         $this->createrepo->listpostsettings = ['contextlevel' => '50', 'coursename' => 'Course 1',
-                                               'modulename' => 'Module 1', 'coursecategory' => null];
+                                               'modulename' => 'Module 1', 'coursecategory' => null,
+                                               'qcategoryname' => '/top'];
         $this->createrepo->postsettings = [];
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '[{"questionbankentryid": "1", "name": "One", "questioncategory": ""},
@@ -101,13 +102,16 @@ class create_repo_test extends advanced_testcase {
         );
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category><text>top</text></category></question>' .
-                          '<question><name><text>One</text></name></question></quiz>"}',
+                          '<question><name><text>One</text></name></question></quiz>", "version": "1"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 1' .
-                          '</text></category></question><question><name><text>Two</text></name></question></quiz>"}',
+                          '</text></category></question><question><name><text>Two</text></name></question></quiz>"' .
+                          ', "version": "1"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
-                          '</text></category></question><question><name><text>Three</text></name></question></quiz>"}',
+                          '</text></category></question><question><name><text>Three</text></name></question></quiz>"' .
+                          ', "version": "1"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
-                          '</text></category></question><question><name><text>Four</text></name></question></quiz>"}',
+                          '</text></category></question><question><name><text>Four</text></name></question></quiz>"' .
+                          ', "version": "1"}',
         );
     }
 
@@ -136,11 +140,14 @@ class create_repo_test extends advanced_testcase {
     /**
      * Test temp file creation.
      */
-    public function test_tenp_file_creation(): void {
+    public function test_temp_file_creation(): void {
         $this->createrepo->tempfilepath = $this->rootpath . '/' . 'test' . cli_helper::TEMP_MANIFEST_FILE;
         $this->createrepo->listcurlrequest = $this->listcurl;
         $this->createrepo->curlrequest = $this->curl;
         $this->createrepo->directory = $this->rootpath;
+        $this->createrepo->manifestcontents = new \stdClass();
+        $this->createrepo->manifestcontents->context = null;
+        $this->createrepo->manifestcontents->questions = [];
         $this->createrepo->export_to_repo();
 
         $tempfile = fopen($this->createrepo->tempfilepath, 'r');

@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Ixport a git repo containing questions from Moodle.
+ * Import a git repo containing questions from Moodle.
  *
  * @package    qbank_gitsync
  * @copyright  2023 University of Edinburgh
@@ -26,12 +26,9 @@ namespace qbank_gitsync;
 define('CLI_SCRIPT', true);
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
+require_once('../classes/export_trait.php');
 require_once('../classes/create_repo.php');
-
-$moodleinstances = [
-    'edmundlocal' => 'http://stack.stack.virtualbox.org/edmundlocal',
-    'other' => 'http:localhost:8888'
-];
+require_once('./config.php');
 
 $options = [
     [
@@ -39,15 +36,24 @@ $options = [
         'shortopt' => 'i',
         'description' => 'Key of Moodle instance in $moodleinstances to use. ' .
                          'Should match end of instance URL.',
-        'default' => 'edmundlocal',
+        'default' => $instance,
         'variable' => 'moodleinstance',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'rootdirectory',
+        'shortopt' => 'r',
+        'description' => "Directory on user's computer containing repos.",
+        'default' => $rootdirectory,
+        'variable' => 'rootdirectory',
         'valuerequired' => true,
     ],
     [
         'longopt' => 'directory',
         'shortopt' => 'd',
-        'description' => 'Directory of repo on users computer, containing "top" folder',
-        'default' => '/home/efarrow1/question_repos/first/questions',
+        'description' => 'Directory of repo on users computer, containing "top" folder, ' .
+                         'relative to root directory and including leading slash.',
+        'default' => '',
         'variable' => 'directory',
         'valuerequired' => true,
     ],
@@ -62,7 +68,7 @@ $options = [
     [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
-        'description' => 'Context in which to place questions. Set to system, coursecategory, course or module',
+        'description' => 'Context from which to extract questions. Set to system, coursecategory, course or module',
         'default' => null,
         'variable' => 'contextlevel',
         'valuerequired' => true,
@@ -95,7 +101,7 @@ $options = [
         'longopt' => 'token',
         'shortopt' => 't',
         'description' => 'Security token for webservice.',
-        'default' => '4ec7cd3f62e08f595df5e9c90ea7cfcd',
+        'default' => $token,
         'variable' => 'token',
         'valuerequired' => true,
     ],
@@ -110,6 +116,6 @@ $options = [
 ];
 
 $clihelper = new cli_helper($options);
-$createrepo = new create_repo;
-$createrepo->process($clihelper, $moodleinstances);
-
+$createrepo = new create_repo($clihelper, $moodleinstances);
+$createrepo->process();
+$clihelper->commit_hash_setup($createrepo->manifestpath);

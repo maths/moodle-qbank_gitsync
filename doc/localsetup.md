@@ -25,7 +25,7 @@
 
 ## Setup
 - Open a terminal and clone this repository `git clone https://github.com/maths/moodle-qbank_gitsync.git gitsync`. The repository will be downloaded in a folder `gitsync` inside your current folder.
-- In the `cli` folder within `gitsync`, update `$moodleinstances` in `importrepo.php` with the URL and name of your Moodle instance.
-- In the same file add any defaults for command line options such as `token`. (See Setting up the Webservice for token creation.)
-- Repeat for other scripts in the CLI folder.
+- In the `cli` folder within `gitsync`, make a copy of `config_sample.php` and name it `config.php`.
+- Update `config.php` with the URLs and names of your Moodle instances.
+- In the same file add tokens for each of your Moodle instances and set a default instance. (See Setting up the Webservice for token creation.)
 

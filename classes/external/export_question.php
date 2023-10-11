@@ -64,6 +64,7 @@ class export_question extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'question' => new external_value(PARAM_RAW, 'question'),
+            'version' => new external_value(PARAM_SEQUENCE, 'question version'),
         ]);
     }
 
@@ -135,6 +136,10 @@ class export_question extends external_api {
 
         $response = new \stdClass();
         $response->question = $question;
+        $response->version = $DB->get_field_sql(
+            'SELECT MAX(version) FROM {question_versions} WHERE questionbankentryid = :questionbankentryid',
+            ['questionbankentryid' => $params['questionbankentryid']]
+        );
 
         return $response;
     }

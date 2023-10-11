@@ -62,7 +62,8 @@ class export_repo_test extends advanced_testcase {
         // Mock the combined output of command line options and defaults.
         $this->options = [
             'moodleinstance' => self::MOODLE,
-            'manifestpath' => $this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
+            'rootdirectory' => $this->rootpath,
+            'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
             'token' => 'XXXXXX',
             'help' => false
         ];
@@ -75,10 +76,14 @@ class export_repo_test extends advanced_testcase {
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();
+        $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute'
+        ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
             'get_curl_request'
-        ])->getMock();
-        $this->exportrepo->expects($this->any())->method('get_curl_request')->will($this->returnValue($this->curl));
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->exportrepo->curlrequest = $this->curl;
+        $this->exportrepo->listcurlrequest = $this->listcurl;
 
         $this->exportrepo->postsettings = ['questionbankentryid' => null];
     }
@@ -90,13 +95,17 @@ class export_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<Question><Name>One</Name></Question>"}',
-            '{"question": "<Question><Name>Three</Name></Question>"}',
-            '{"question": "<Question><Name>Four</Name></Question>"}',
-            '{"question": "<Question><Name>Two</Name></Question>"}'
+            '{"question": "<Question><Name>One</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
         );
 
-        $this->exportrepo->process($this->clihelper, $this->moodleinstances);
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '[]', '[]',
+        );
+
+        $this->exportrepo->process();
 
         // Check question files updated.
         $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat 1/First Question.xml'));

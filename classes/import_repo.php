@@ -105,6 +105,12 @@ class import_repo {
      */
     public string $manifestpath;
     /**
+     * URL of Moodle instance
+     *
+     * @var string
+     */
+    public string $moodleurl;
+    /**
      * Path of root of repo
      * i.e. folder containing manifest
      *
@@ -124,37 +130,33 @@ class import_repo {
      */
     public ?\stdClass $manifestcontents;
     /**
-     * Iterate through the directory structure and call the web service
-     * to create categories and questions.
+     * Constructor
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
-     * @return void
      */
-    public function process(cli_helper $clihelper, array $moodleinstances):void {
+    public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->directory = $arguments['directory'];
+        $this->directory = $arguments['rootdirectory'] . $arguments['directory'];
         $this->subdirectory = '';
         if ($arguments['subdirectory']) {
             $this->subdirectory = $arguments['subdirectory'];
         }
-        $token = $arguments['token'];
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
+        }
         $contextlevel = $arguments['contextlevel'];
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
-        $help = $arguments['help'];
 
-        if ($help) {
-            $clihelper->showhelp();
-            exit;
-        }
-
-        $moodleurl = $moodleinstances[$moodleinstance];
-        $wsurl = $moodleurl . '/webservice/rest/server.php';
+        $this->moodleurl = $moodleinstances[$moodleinstance];
+        $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
@@ -174,7 +176,7 @@ class import_repo {
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->deletecurlrequest = $this->get_curl_request($wsurl);
         $this->listcurlrequest = $this->get_curl_request($wsurl);
-        $this->uploadcurlrequest = $this->get_curl_request($moodleurl . '/webservice/upload.php');
+        $this->uploadcurlrequest = $this->get_curl_request($this->moodleurl . '/webservice/upload.php');
 
         $this->postsettings = [
             'wstoken' => $token,
@@ -215,14 +217,22 @@ class import_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $listpostsettings);
+    }
 
+    /**
+     * Iterate through the directory structure and call the web service
+     * to create categories and questions.
+     *
+     * @return void
+     */
+    public function process():void {
         $this->import_categories();
         $this->import_questions();
         $this->curlrequest->close();
         $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
                                                                    $this->tempfilepath,
                                                                    $this->manifestpath,
-                                                                   $moodleurl);
+                                                                   $this->moodleurl);
         unlink($this->tempfilepath);
         $this->delete_no_file_questions();
         $this->delete_no_record_questions();
@@ -324,15 +334,22 @@ class import_repo {
                     $this->postsettings['qcategoryname'] = str_replace( '\\', '/',
                                         $qcategory);
                     if ($this->postsettings['qcategoryname']) {
-                        if (!$this->upload_file($repoitem)) {
-                            continue;
-                        };
-                        $existingentry = $existingentries["{$repoitem->getPathname()}"] ?? false;
+                        $relpath = str_replace(dirname($this->manifestpath), '', $repoitem->getPathname());
+                        $relpath = str_replace( '\\', '/', $relpath);
+                        $existingentry = $existingentries["{$relpath}"] ?? false;
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
+                            if (isset($existingentry->currentcommit)
+                                    && isset($existingentry->moodlecommit)
+                                    && $existingentry->currentcommit === $existingentry->moodlecommit) {
+                                continue;
+                            }
                         } else {
                             $this->postsettings['questionbankentryid'] = null;
                         }
+                        if (!$this->upload_file($repoitem)) {
+                            continue;
+                        };
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                         $response = $this->curlrequest->execute();
                         $responsejson = json_decode($response);
@@ -349,14 +366,19 @@ class import_repo {
                         } else if ($responsejson->questionbankentryid) {
                             $fileoutput = [
                                 'questionbankentryid' => $responsejson->questionbankentryid,
+                                'version' => $responsejson->version,
                                 // Questions can be imported in multiple contexts.
                                 'contextlevel' => $this->postsettings['contextlevel'],
                                 'filepath' => $repoitem->getPathname(),
                                 'coursename' => $this->postsettings['coursename'],
                                 'modulename' => $this->postsettings['modulename'],
                                 'coursecategory' => $this->postsettings['coursecategory'],
+                                'qcategoryname' => substr($this->subdirectory, 1),
                                 'format' => 'xml',
                             ];
+                            if ($existingentry && isset($existingentry->currentcommit)) {
+                                $fileoutput['moodlecommit'] = $existingentry->currentcommit;
+                            }
                             fwrite($tempfile, json_encode($fileoutput) . "\n");
                         }
                     } else {
@@ -379,13 +401,13 @@ class import_repo {
     public function delete_no_file_questions():void {
         // Get all manifest entries for imported subdirectory.
         $manifestentries = array_filter($this->manifestcontents->questions, function($value) {
-            $subdirectorypath = $this->directory . $this->subdirectory;
-            return (substr($value->filepath, 0, strlen($subdirectorypath)) === $subdirectorypath);
+            return (substr($value->filepath, 0, strlen($this->subdirectory)) === $this->subdirectory);
         });
         // Check to see there is a matching file in the repo still.
         $questionstodelete = [];
+        $manifestdir = dirname($this->manifestpath);
         foreach ($manifestentries as $manifestentry) {
-            if (!file_exists($manifestentry->filepath)) {
+            if (!file_exists($manifestdir . $manifestentry->filepath)) {
                 array_push($questionstodelete, $manifestentry);
             }
         }
@@ -473,5 +495,36 @@ class import_repo {
         }
         fclose($handle);
         return $deleted;
+    }
+
+    /**
+     * Check if the question versions in Moodle and the manifest match.
+     *
+     * @return void
+     */
+    public function check_question_versions(): void {
+        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+        $changes = false;
+        // If the version in Moodle and in the manifest don't match, the question has been updated in Moodle
+        // since we created the repo or last imported to Moodle.
+        // If the last exportedversion doesn't match what's in the manifest we haven't dealt with
+        // all the changes locally. Instruct user to export.
+        foreach ($questionsinmoodle as $moodleq) {
+            if (isset($manifestentries[$moodleq->questionbankentryid])
+                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->version
+                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->exportedversion) {
+                echo "{$moodleq->questionbankentryid} - {$moodleq->questioncategory} - {$moodleq->name}\n";
+                echo "Moodle question version: {$moodleq->version}\n";
+                echo "Version on last import to Moodle: {$manifestentries[$moodleq->questionbankentryid]->version}\n";
+                echo "Version on last export from Moodle: {$manifestentries[$moodleq->questionbankentryid]->exportedversion}\n";
+                $changes = true;
+            }
+        }
+        if ($changes) {
+            echo "Export questions from Moodle before proceeding.\n";
+            exit;
+        }
+
     }
 }

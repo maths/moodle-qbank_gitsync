@@ -32,6 +32,7 @@ namespace qbank_gitsync;
  * Export a Git repo.
  */
 class export_repo {
+    use export_trait;
     /**
      * Settings for POST request
      *
@@ -47,34 +48,50 @@ class export_repo {
      */
     public curl_request $curlrequest;
     /**
+     * cURL request handle for question list retrieve
+     *
+     * @var curl_request
+     */
+    public curl_request $listcurlrequest;
+    /**
      * Full path to manifest file
      *
      * @var string
      */
     public string $manifestpath;
+    /**
+     * Path to temporary manifest file
+     *
+     * @var string
+     */
+    public string $tempfilepath;
+    /**
+     * Parsed content of JSON manifest file
+     *
+     * @var \stdClass|null
+     */
+    public ?\stdClass $manifestcontents;
 
     /**
-     * Iterate through the manifest file, request up to date versions via
-     * the webservice and update local files.
+     * Constructor
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
-     * @return void
      */
-    public function process(cli_helper $clihelper, array $moodleinstances):void {
+    public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->manifestpath = $arguments['manifestpath'];
-        $token = $arguments['token'];
-        $help = $arguments['help'];
-
-        if ($help) {
-            $clihelper->showhelp();
-            exit;
+        $this->manifestpath = $arguments['rootdirectory'] . $arguments['manifestpath'];
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
         }
-
+        $this->manifestcontents = json_decode(file_get_contents($this->manifestpath));
+        $this->tempfilepath = dirname($this->manifestpath) . '/' . $this->manifestcontents->context->qcategoryname . '/' .
+            $moodleinstance . '_' . $this->manifestcontents->context->contextlevel . cli_helper::TEMP_MANIFEST_FILE;
         $moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $moodleurl . '/webservice/rest/server.php';
 
@@ -88,10 +105,37 @@ class export_repo {
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
+        $this->listcurlrequest = $this->get_curl_request($wsurl);
+        $this->listpostsettings = [
+            'wstoken' => $token,
+            'wsfunction' => 'qbank_gitsync_get_question_list',
+            'moodlewsrestformat' => 'json',
+            'contextlevel' => $this->manifestcontents->context->contextlevel,
+            'coursename' => $this->manifestcontents->context->coursename,
+            'modulename' => $this->manifestcontents->context->modulename,
+            'coursecategory' => $this->manifestcontents->context->coursecategory,
+            'qcategoryname' => $this->manifestcontents->context->qcategoryname
+        ];
+        $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+        $this->listcurlrequest->set_option(CURLOPT_POST, 1);
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+    }
 
+    /**
+     * Iterate through the manifest file, request up to date versions via
+     * the webservice and update local files.
+     *
+     * @return void
+     */
+    public function process():void {
+        // Export latest versions of questions in manifest from Moodle.
+        $this->export_questions_in_manifest();
+        // Export any questions that are in Moodle but not in the manifest.
         $this->export_to_repo();
-
-        return;
+        unlink($this->tempfilepath);
+        // Remove questions from manifest that are no longer in Moodle.
+        // Will be restored from repo on next import if file is still there.
+        $this->tidy_manifest();
     }
 
     /**
@@ -109,9 +153,8 @@ class export_repo {
      *
      * @return void
      */
-    public function export_to_repo() {
-        $manifestcontents = json_decode(file_get_contents($this->manifestpath));
-        foreach ($manifestcontents->questions as $questioninfo) {
+    public function export_questions_in_manifest() {
+        foreach ($this->manifestcontents->questions as $questioninfo) {
             $this->postsettings['questionbankentryid'] = $questioninfo->questionbankentryid;
             $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
             $response = $this->curlrequest->execute();
@@ -127,10 +170,39 @@ class export_repo {
                 echo "{$questioninfo->filepath} not updated.\n";
             } else {
                 $question = cli_helper::reformat_question($responsejson->question);
-                file_put_contents($questioninfo->filepath, $question);
+                $questioninfo->exportedversion = $responsejson->version;
+                file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
             }
         }
+        file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+    }
 
-        return;
+    /**
+     * Loop through questions in manifest file and
+     * remove from file if the matching question is no longer in Moodle.
+     *
+     * @return void
+     */
+    public function tidy_manifest():void {
+        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        if (is_null($questionsinmoodle)) {
+            echo "Broken JSON returned from Moodle:\n";
+            echo $questionsinmoodle . "\n";
+        } else if (!is_array($questionsinmoodle)) {
+            if (property_exists($questionsinmoodle, 'exception')) {
+                echo "{$questionsinmoodle->message}\n";
+            }
+            echo "Failed to tidy manifest.\n";
+        } else {
+            $existingquestions = array_column($questionsinmoodle, null, 'questionbankentryid');
+            $newentrylist = [];
+            foreach ($this->manifestcontents->questions as $currententry) {
+                if (isset($existingquestions[$currententry->questionbankentryid])) {
+                    array_push($newentrylist, $currententry);
+                }
+            }
+            $this->manifestcontents->questions = $newentrylist;
+            file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+        }
     }
 }

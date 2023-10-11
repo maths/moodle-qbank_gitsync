@@ -46,6 +46,10 @@ class cli_helper {
      */
     protected array $options;
     /**
+     * @var array|null Full set of options combining command line and defaults
+     */
+    protected ?array $processedoptions = null;
+    /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
     public const CATEGORY_FILE = 'gitsync_category';
@@ -75,11 +79,19 @@ class cli_helper {
      * @return array of options and values.
      */
     public function get_arguments(): array {
+        if ($this->processedoptions) {
+            return $this->processedoptions;
+        }
         $parsed = $this->parse_options();
         $shortopts = $parsed['shortopts'];
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
-        return $this->prioritise_options($commandlineargs);
+        $this->processedoptions = $this->prioritise_options($commandlineargs);
+        if ($this->processedoptions['help']) {
+            $this->show_help();
+            exit;
+        }
+        return $this->processedoptions;
     }
 
     /**
@@ -142,7 +154,7 @@ class cli_helper {
      *
      * @return void
      */
-    public function showhelp() {
+    public function show_help() {
         foreach ($this->options as $option) {
             echo "-{$option['shortopt']} --{$option['longopt']}  \t{$option['description']}\n";
         }
@@ -213,6 +225,7 @@ class cli_helper {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
+        $manifestdir = dirname($manifestpath);
         $tempfile = fopen($tempfilepath, 'r');
         $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
         while (!feof($tempfile)) {
@@ -222,9 +235,18 @@ class cli_helper {
                 if (!$existingentry) {
                     $questionentry = new \stdClass();
                     $questionentry->questionbankentryid = $questioninfo->questionbankentryid;
-                    $questionentry->filepath = $questioninfo->filepath;
+                    $questionentry->filepath = str_replace($manifestdir, '', $questioninfo->filepath);
                     $questionentry->format = $questioninfo->format;
+                    $questionentry->version = $questioninfo->version;
+                    if (isset($questioninfo->moodlecommit)) {
+                        $questionentry->moodlecommit = $questioninfo->moodlecommit;
+                    }
                     array_push($manifestcontents->questions, $questionentry);
+                } else {
+                    $existingentries["{$questioninfo->questionbankentryid}"]->version = $questioninfo->version;
+                    if (isset($questioninfo->moodlecommit)) {
+                        $existingentries["{$questioninfo->questionbankentryid}"]->moodlecommit = $questioninfo->moodlecommit;
+                    }
                 }
                 if ($manifestcontents->context === null) {
                     $manifestcontents->context = new \stdClass();
@@ -232,6 +254,7 @@ class cli_helper {
                     $manifestcontents->context->coursename = $questioninfo->coursename;
                     $manifestcontents->context->modulename = $questioninfo->modulename;
                     $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
+                    $manifestcontents->context->qcategoryname = $questioninfo->qcategoryname;
                     $manifestcontents->context->moodleurl = $moodleurl;
                 }
             }
@@ -315,5 +338,68 @@ class cli_helper {
         setlocale(LC_ALL, $locale);
 
         return $result;
+    }
+
+    /**
+     * Updates the manifest file with the current commit hashes of question files in the repo.
+     *
+     * @param string $manifestpath
+     * @return void
+     */
+    public function commit_hash_update(string $manifestpath):void {
+        $manifestdirname = dirname($manifestpath);
+        chdir($manifestdirname);
+        $manifestcontents = json_decode(file_get_contents($manifestpath));
+        foreach ($manifestcontents->questions as $question) {
+            $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
+            $question->currentcommit = $commithash;
+        }
+        file_put_contents($manifestpath, json_encode($manifestcontents));
+    }
+
+    /**
+     * Updates the manifest file with the current commit hashes of question files in the repo.
+     * Used on initial repo creation so also sets the moodle commit to be the same.
+     *
+     * @param string $manifestpath
+     * @return void
+     */
+    public function commit_hash_setup(string $manifestpath):void {
+        $manifestdirname = dirname($manifestpath);
+        chdir($manifestdirname);
+        $manifestcontents = json_decode(file_get_contents($manifestpath));
+        exec('touch .gitignore');
+        exec("echo /*_question_manifest.json > .gitignore");
+        exec("git add .");
+        exec('git commit -m "Initial Commit"');
+        foreach ($manifestcontents->questions as $question) {
+            $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
+            $question->currentcommit = $commithash;
+            $question->moodlecommit = $commithash;
+        }
+        file_put_contents($manifestpath, json_encode($manifestcontents));
+    }
+
+    /**
+     * Check the git repo containing the manifest file to see if there
+     * are any uncommited changes and stop if there are.
+     *
+     * @param string $fullmanifestpath
+     * @return void
+     */
+    public function check_for_changes($fullmanifestpath) {
+        $manifestdirname = dirname($fullmanifestpath);
+        if (chdir($manifestdirname)) {
+            exec('git add .'); // Make sure everything changed has been staged.
+            exec('git update-index --refresh'); // Removes false positives due to timestamp changes.
+            if (exec('git diff-index --quiet HEAD -- || echo "changes"')) {
+                echo "There are changes to the repository.\n";
+                echo "Either commit these or revert them before proceeding.\n";
+                exit;
+            }
+        } else {
+            echo "Cannot find the directory of the manifest file.";
+            exit;
+        }
     }
 }

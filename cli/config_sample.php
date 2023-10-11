@@ -15,22 +15,26 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for GitSync question bank plugin.
+ * Sample config file. Copy, update and rename config.php
  *
- * @package   qbank_gitsync
- * @copyright 2023 The Open University
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    qbank_gitsync
+ * @copyright  2023 University of Edinburgh
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+// Array of moodleinstnce nicknames and URLs.
+$moodleinstances = [
+    'instance1' => 'http://stack.org/instance1',
+    'instance2' => 'http:localhost:8888'
+];
 
-$plugin->version   = 2023101000;
-// Question versions functionality of Moodle 4 required.
-$plugin->requires  = 2022041900;
-$plugin->component = 'qbank_gitsync';
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0 for Moodle 4.0+';
+// Array of moodleinstnce nicknames and tokens.
+$token = [
+    'instance1' => '4ec...cfcd',
+    'instance2' => '6ae...abcd'
+];
 
-$plugin->dependencies = array(
-    'qbank_importasversion'     => 2023061400
-);
+$instance = 'instance1';
+
+// Root directory.
+$rootdirectory = '/home/user/questions';
