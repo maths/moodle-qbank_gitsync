@@ -101,8 +101,8 @@ class export_repo_test extends advanced_testcase {
             '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
         );
 
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[]',
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '[]', '[]',
         );
 
         $this->exportrepo->process();

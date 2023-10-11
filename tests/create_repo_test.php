@@ -86,10 +86,9 @@ class create_repo_test extends advanced_testcase {
         ])->setConstructorArgs(['xxxx'])->getMock();;
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
             'get_curl_request'
-        ])->getMock();
-        $this->createrepo->expects($this->any())->method('get_curl_request')->willReturnOnConsecutiveCalls(
-            $this->curl, $this->listcurl
-        );
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->createrepo->curlrequest = $this->curl;
+        $this->createrepo->listcurlrequest = $this->listcurl;
 
         $this->createrepo->listpostsettings = ['contextlevel' => '50', 'coursename' => 'Course 1',
                                                'modulename' => 'Module 1', 'coursecategory' => null,

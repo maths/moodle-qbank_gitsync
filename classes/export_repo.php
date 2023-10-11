@@ -170,7 +170,7 @@ class export_repo {
 
     public function tidy_manifest() {
         $questionsinmoodle = json_decode($this->listcurlrequest->execute());
-        if (!$questionsinmoodle) {
+        if (is_null($questionsinmoodle)) {
             echo "Broken JSON returned from Moodle:\n";
             echo $questionsinmoodle . "\n";
         } else if (!is_array($questionsinmoodle)) {

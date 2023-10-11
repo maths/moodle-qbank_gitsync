@@ -91,6 +91,12 @@ class create_repo {
      * @var \stdClass|null
      */
     public ?\stdClass $manifestcontents;
+    /**
+     * URL of Moodle instance
+     *
+     * @var string
+     */
+    public string $moodleurl;
 
     /**
      * Obtain a list of questions and categories from Moodle, iterate through them and
@@ -98,9 +104,8 @@ class create_repo {
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
-     * @return void
      */
-    public function process(cli_helper $clihelper, array $moodleinstances):void {
+    public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
@@ -124,8 +129,8 @@ class create_repo {
         $this->tempfilepath = $this->directory . '/' .
                               $moodleinstance . '_' . $contextlevel . cli_helper::TEMP_MANIFEST_FILE;
 
-        $moodleurl = $moodleinstances[$moodleinstance];
-        $wsurl = $moodleurl . '/webservice/rest/server.php';
+        $this->moodleurl = $moodleinstances[$moodleinstance];
+        $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->postsettings = [
@@ -151,12 +156,14 @@ class create_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+    }
 
+    public function process():void {
         $this->manifestcontents = new \stdClass();
         $this->manifestcontents->context = null;
         $this->manifestcontents->questions = [];
         $this->export_to_repo();
-        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath, $this->manifestpath, $moodleurl);
+        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath, $this->manifestpath, $this->moodleurl);
         unlink($this->tempfilepath);
     }
 
