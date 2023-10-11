@@ -335,6 +335,7 @@ class import_repo {
                                         $qcategory);
                     if ($this->postsettings['qcategoryname']) {
                         $relpath = str_replace(dirname($this->manifestpath), '', $repoitem->getPathname());
+                        $relpath = str_replace( '\\', '/', $relpath);
                         $existingentry = $existingentries["{$relpath}"] ?? false;
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;

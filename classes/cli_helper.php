@@ -369,7 +369,9 @@ class cli_helper {
         chdir($manifestdirname);
         $manifestcontents = json_decode(file_get_contents($manifestpath));
         exec('touch .gitignore');
-        exec("cat >> .gitignore << EOF\n/*_question_manifest.json\nEOF\ngit add .\ngit commit -m 'Initial contents'");
+        exec("echo /*_question_manifest.json > .gitignore");
+        exec("git add .");
+        exec('git commit -m "Initial Commit"');
         foreach ($manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
