@@ -350,7 +350,7 @@ class cli_helper {
         $manifestdirname = dirname($manifestpath);
         chdir($manifestdirname);
         $manifestcontents = json_decode(file_get_contents($manifestpath));
-        foreach($manifestcontents->questions as $question) {
+        foreach ($manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
         }
@@ -370,7 +370,7 @@ class cli_helper {
         $manifestcontents = json_decode(file_get_contents($manifestpath));
         exec('touch .gitignore');
         exec("cat >> .gitignore << EOF\n/*_question_manifest.json\nEOF\ngit add .\ngit commit -m 'Initial contents'");
-        foreach($manifestcontents->questions as $question) {
+        foreach ($manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
             $question->moodlecommit = $commithash;
@@ -378,6 +378,13 @@ class cli_helper {
         file_put_contents($manifestpath, json_encode($manifestcontents));
     }
 
+    /**
+     * Check the git repo containing the manifest file to see if there
+     * are any uncommited changes and stop if there are.
+     *
+     * @param string $fullmanifestpath
+     * @return void
+     */
     public function check_for_changes($fullmanifestpath) {
         $manifestdirname = dirname($fullmanifestpath);
         if (chdir($manifestdirname)) {

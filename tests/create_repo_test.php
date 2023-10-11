@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for export repo command line script for gitsync
+ * Unit tests for create repo command line script for gitsync
  *
  * @package    qbank_gitsync
  * @copyright  2023 The Open University
@@ -104,11 +104,14 @@ class create_repo_test extends advanced_testcase {
             '{"question": "<quiz><question type=\"category\"><category><text>top</text></category></question>' .
                           '<question><name><text>One</text></name></question></quiz>", "version": "1"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 1' .
-                          '</text></category></question><question><name><text>Two</text></name></question></quiz>", "version": "1"}',
+                          '</text></category></question><question><name><text>Two</text></name></question></quiz>"' .
+                          ', "version": "1"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
-                          '</text></category></question><question><name><text>Three</text></name></question></quiz>", "version": "1"}',
+                          '</text></category></question><question><name><text>Three</text></name></question></quiz>"' .
+                          ', "version": "1"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
-                          '</text></category></question><question><name><text>Four</text></name></question></quiz>", "version": "1"}',
+                          '</text></category></question><question><name><text>Four</text></name></question></quiz>"' .
+                          ', "version": "1"}',
         );
     }
 

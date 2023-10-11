@@ -15,8 +15,10 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Trait to re-use code for cycling through questions from Moodle when creating
- * and exporting the repository.
+ * Trait to re-use code for cycling through questions from Moodle.
+ *
+ * Used when creating and exporting the repository for the first export
+ * of each question.
  *
  * Used in import_repo and create_repo
  *
@@ -26,15 +28,27 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace qbank_gitsync;
+/**
+ * Code used for both repo creation and exporting new questions.
+ *
+ * Uses quite a few internal properties of export_repo and create_repo
+ * so probably clearer to use a trait than add to cli_helper.
+ */
 trait export_trait {
+    /**
+     * Obtain a list of questions from Moodle and loop through them.
+     * If the question is not already in the manifest then create any necessary folders
+     * and create the question file.
+     */
     public function export_to_repo() {
         $questionsinmoodle = json_decode($this->listcurlrequest->execute());
         $this->postsettings['includecategory'] = 1;
         $tempfile = fopen($this->tempfilepath, 'a+');
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         foreach ($questionsinmoodle as $questioninfo) {
-            // This makes the difference between create and export.
-            // Only questions not already in the manifest are exported here.
+            // This is the difference between create and export.
+            // Only questions not already in the manifest are exported.
+            // Export updates questions already in the manifest in export_repo->export_questions_in_manifest().
             if (isset($existingentries["{$questioninfo->questionbankentryid}"])) {
                 continue;
             }

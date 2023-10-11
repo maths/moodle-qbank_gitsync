@@ -130,12 +130,10 @@ class import_repo {
      */
     public ?\stdClass $manifestcontents;
     /**
-     * Iterate through the directory structure and call the web service
-     * to create categories and questions.
+     * Constructor
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
-     * @return void
      */
     public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
@@ -221,6 +219,12 @@ class import_repo {
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $listpostsettings);
     }
 
+    /**
+     * Iterate through the directory structure and call the web service
+     * to create categories and questions.
+     *
+     * @return void
+     */
     public function process():void {
         $this->import_categories();
         $this->import_questions();
@@ -335,9 +339,8 @@ class import_repo {
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
                             if (isset($existingentry->currentcommit)
-                                && isset($existingentry->moodlecommit)
-                                && $existingentry->currentcommit === $existingentry->moodlecommit)
-                            {
+                                    && isset($existingentry->moodlecommit)
+                                    && $existingentry->currentcommit === $existingentry->moodlecommit) {
                                 continue;
                             }
                         } else {
@@ -506,7 +509,7 @@ class import_repo {
         // since we created the repo or last imported to Moodle.
         // If the last exportedversion doesn't match what's in the manifest we haven't dealt with
         // all the changes locally. Instruct user to export.
-        foreach($questionsinmoodle as $moodleq) {
+        foreach ($questionsinmoodle as $moodleq) {
             if ($moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->version
                     && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->exportedversion) {
                 echo "{$moodleq->questionbankentryid} - {$moodleq->questioncategory} - {$moodleq->name}\n";

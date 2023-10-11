@@ -64,20 +64,19 @@ class export_repo {
      *
      * @var string
      */
-    public string $tempfilepath;/**
-    * Parsed content of JSON manifest file
-    *
-    * @var \stdClass|null
-    */
+    public string $tempfilepath;
+    /**
+     * Parsed content of JSON manifest file
+     *
+     * @var \stdClass|null
+     */
     public ?\stdClass $manifestcontents;
 
     /**
-     * Iterate through the manifest file, request up to date versions via
-     * the webservice and update local files.
+     * Constructor
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
-     * @return void
      */
     public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
@@ -122,10 +121,20 @@ class export_repo {
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
     }
 
+    /**
+     * Iterate through the manifest file, request up to date versions via
+     * the webservice and update local files.
+     *
+     * @return void
+     */
     public function process():void {
+        // Export latest versions of questions in manifest from Moodle.
         $this->export_questions_in_manifest();
+        // Export any questions that are in Moodle but not in the manifest.
         $this->export_to_repo();
         unlink($this->tempfilepath);
+        // Remove questions from manifest that are no longer in Moodle.
+        // Will be restored from repo on next import if file is still there.
         $this->tidy_manifest();
     }
 
@@ -168,7 +177,13 @@ class export_repo {
         file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
     }
 
-    public function tidy_manifest() {
+    /**
+     * Loop through questions in manifest file and
+     * remove from file if the matching question is no longer in Moodle.
+     *
+     * @return void
+     */
+    public function tidy_manifest():void {
         $questionsinmoodle = json_decode($this->listcurlrequest->execute());
         if (is_null($questionsinmoodle)) {
             echo "Broken JSON returned from Moodle:\n";

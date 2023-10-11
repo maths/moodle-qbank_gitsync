@@ -99,8 +99,7 @@ class create_repo {
     public string $moodleurl;
 
     /**
-     * Obtain a list of questions and categories from Moodle, iterate through them and
-     * export them one at a time. Create repo directories and files.
+     * Constructor
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
@@ -158,6 +157,12 @@ class create_repo {
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
     }
 
+    /**
+     * Obtain a list of questions and categories from Moodle, iterate through them and
+     * export them one at a time. Create repo directories and files.
+     *
+     * @return void
+     */
     public function process():void {
         $this->manifestcontents = new \stdClass();
         $this->manifestcontents->context = null;

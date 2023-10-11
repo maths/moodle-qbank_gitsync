@@ -318,7 +318,8 @@ class import_repo_test extends advanced_testcase {
     public function test_import_questions_wrong_directory(): void {
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
         $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
-        $this->curl->expects($this->any())->method('execute')->will($this->returnValue('{"questionbankentryid": "35001", "version": "2"}'));
+        $this->curl->expects($this->any())->method('execute')->will(
+            $this->returnValue('{"questionbankentryid": "35001", "version": "2"}'));
         $this->importrepo->curlrequest = $this->curl;
         $wrongfile = fopen($this->rootpath . '\wrong.xml', 'a+');
         fclose($wrongfile);
@@ -388,18 +389,23 @@ class import_repo_test extends advanced_testcase {
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
-        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null,"qcategoryname":"/top"},
+        $manifestcontents = '{"context":{"contextlevel":70,
+                                "coursename":"Course 1",
+                                "modulename":"Test 1",
+                                "coursecategory":null,
+                                "qcategoryname":"/top"
+                             },
                              "questions":[{
                                 "questionbankentryid":"1",
                                 "filepath":"/top/cat 1/First Question.xml",
                                 "version": "1",
                                 "format":"xml"
-                            }, {
+                             }, {
                                 "questionbankentryid":"2",
                                 "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "version": "1",
                                 "format":"xml"
-                            }]}';
+                             }]}';
         $tempcontents = '{"questionbankentryid":"1",' .
                           '"filepath":"/top/cat 1/First Question.xml",' .
                           '"version": "5",' .
@@ -454,24 +460,30 @@ class import_repo_test extends advanced_testcase {
     public function test_delete_no_file_questions(): void {
         $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         // 4 files in the manifest.
-        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null,"qcategoryname":"/top"},
+        $manifestcontents = '{"context":{
+                                "contextlevel":70,
+                                "coursename":"Course 1",
+                                "modulename":"Test 1",
+                                "coursecategory":null,
+                                "qcategoryname":"/top"
+                             },
                              "questions":[{
                                 "questionbankentryid":"1",
                                 "filepath":"/top/cat 1/First Question.xml",
                                 "format":"xml"
-                            }, {
+                             }, {
                                 "questionbankentryid":"2",
                                 "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "format":"xml"
-                            }, {
+                             }, {
                                 "questionbankentryid":"3",
                                 "filepath":"/top/cat 2/Second Question.xml",
                                 "format":"xml"
-                            }, {
+                             }, {
                                 "questionbankentryid":"4",
                                 "filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",
                                 "format":"xml"
-                            }]}';
+                             }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->manifestpath, $manifestcontents);
 
@@ -507,16 +519,22 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_delete_no_record_questions(): void {
         // 2 records in the manifest.
-        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null,"qcategoryname":"/top"},
-                             "questions":[{
+        $manifestcontents = '{"context":{
+                                "contextlevel":70,
+                                "coursename":"Course 1",
+                                "modulename":"Test 1",
+                                "coursecategory":null,
+                                "qcategoryname":"/top"
+                              },
+                              "questions":[{
                                 "questionbankentryid":"1",
                                 "filepath":"/top/cat 1/First Question.xml",
                                 "format":"xml"
-                            }, {
+                              }, {
                                 "questionbankentryid":"2",
                                 "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "format":"xml"
-                            }]}';
+                              }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         $this->importrepo->listcurlrequest = $this->listcurl;
         // One question deleted of two that no longer have files.

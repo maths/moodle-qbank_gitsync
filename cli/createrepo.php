@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Ixport a git repo containing questions from Moodle.
+ * Import a git repo containing questions from Moodle.
  *
  * @package    qbank_gitsync
  * @copyright  2023 University of Edinburgh
