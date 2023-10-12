@@ -58,7 +58,7 @@ class import_repo_test extends advanced_testcase {
     /** @var array used to store output of multiple calls to a function */
     public array $results;
     /** name of moodle instance for purpose of tests */
-    const MOODLE = 'fake';
+    const MOODLE = 'fakeexport';
 
     public function setUp(): void {
         global $CFG;
@@ -108,11 +108,7 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->uploadcurlrequest = $this->uploadcurl;
         $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
 
-        $this->importrepo->directory = $this->rootpath;
-        $this->importrepo->subdirectory = '';
-        $this->importrepo->manifestcontents = new \StdClass();
-        $this->importrepo->manifestcontents->context = null;
-        $this->importrepo->manifestcontents->questions = [];
+
     }
 
     /**
@@ -151,6 +147,7 @@ class import_repo_test extends advanced_testcase {
         $this->curl->expects($this->exactly(3))->method('execute')->will($this->returnCallback(
             function() {
                 $this->results[] = $this->importrepo->repoiterator->getPathname();
+                return '{"questionbankentryid": null, "version" : null}';
             })
         );
         $this->importrepo->curlrequest = $this->curl;
@@ -165,8 +162,6 @@ class import_repo_test extends advanced_testcase {
      * @covers \gitsync\import_repo\import_questions()
      */
     public function test_import_questions(): void {
-        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
-        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": "35001", "version": "2"}',
@@ -216,8 +211,6 @@ class import_repo_test extends advanced_testcase {
      * @covers \gitsync\import_repo\import_questions()
      */
     public function test_import_subdirectory_questions(): void {
-        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
-        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         $this->results = [];
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": "35001", "version": "2"}',
@@ -265,9 +258,7 @@ class import_repo_test extends advanced_testcase {
      * @covers \gitsync\import_repo\import_questions()
      */
     public function test_import_existing_questions(): void {
-        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
-        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
-        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
+       $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
                                 "filepath":"/top/cat 1/First Question.xml",
@@ -316,8 +307,8 @@ class import_repo_test extends advanced_testcase {
      * @covers \gitsync\import_repo\import_questions()
      */
     public function test_import_questions_wrong_directory(): void {
-        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
-        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
+        $this->importrepo->directory = $this->rootpath;
+        $this->importrepo->subdirectory = '';
         $this->curl->expects($this->any())->method('execute')->will(
             $this->returnValue('{"questionbankentryid": "35001", "version": "2"}'));
         $this->importrepo->curlrequest = $this->curl;
@@ -348,7 +339,7 @@ class import_repo_test extends advanced_testcase {
         );
 
         $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '{}',
+            '[]',
         );
 
         $this->importrepo->process();
@@ -356,28 +347,27 @@ class import_repo_test extends advanced_testcase {
         // Manifest file is a single array.
         $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
-        $this->assertEquals(4, count($manifestcontents->questions));
-        $questionbankentryids = array_map(function($q) {
-            return $q->questionbankentryid;
-        }, $manifestcontents->questions);
-        $this->assertEquals(4, count($questionbankentryids));
-        $this->assertContains('35001', $questionbankentryids);
-        $this->assertContains('35002', $questionbankentryids);
-        $this->assertContains('35003', $questionbankentryids);
-        $this->assertContains('35004', $questionbankentryids);
+        $this->assertCount(4, $manifestcontents->questions);
+
+        $manifestentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertArrayHasKey('35001', $manifestentries);
+        $this->assertArrayHasKey('35002', $manifestentries);
+        $this->assertArrayHasKey('35003', $manifestentries);
+        $this->assertArrayHasKey('35004', $manifestentries);
 
         $context = $manifestcontents->context;
         $this->assertEquals($context->contextlevel, '10');
-        $this->assertEquals($context->coursename, 'Course 1');
-        $this->assertEquals($context->modulename, 'Test 1');
-        $this->assertEquals($context->coursecategory, 'Cat 1');
+        $this->assertEquals($context->coursename, '');
+        $this->assertEquals($context->modulename, '');
+        $this->assertEquals($context->coursecategory, '');
 
-        $samplerecords = array_filter($manifestcontents->questions, function($q) {
-            return $q->questionbankentryid === '35004';
-        });
-        $samplerecord = reset($samplerecords);
+        $samplerecord = $manifestentries['35004'];
         $this->assertStringContainsString('/top/cat ', $samplerecord->filepath);
         $this->assertEquals($samplerecord->format, 'xml');
+        $this->assertEquals($samplerecord->moodlecommit, '35004test');
+
+        $samplerecord = $manifestentries['35001'];
+        $this->assertEquals(false, isset($samplerecord->moodlecommit));
     }
 
     /**
@@ -385,10 +375,6 @@ class import_repo_test extends advanced_testcase {
      * @covers \gitsync\cli_helper\create_manifest_file()
      */
     public function test_manifest_file_update(): void {
-        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
-        // We expect 3 category calls to the webservice and 4 question calls.
-        $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
-        $this->importrepo->tempfilepath = $this->rootpath . '/' . self::MOODLE . cli_helper::TEMP_MANIFEST_FILE;
         $manifestcontents = '{"context":{"contextlevel":70,
                                 "coursename":"Course 1",
                                 "modulename":"Test 1",
@@ -399,11 +385,14 @@ class import_repo_test extends advanced_testcase {
                                 "questionbankentryid":"1",
                                 "filepath":"/top/cat 1/First Question.xml",
                                 "version": "1",
+                                "exportedversion": "1",
                                 "format":"xml"
                              }, {
                                 "questionbankentryid":"2",
                                 "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
                                 "version": "1",
+                                "exportedversion": "1",
+                                "currentcommit": "test",
                                 "format":"xml"
                              }]}';
         $tempcontents = '{"questionbankentryid":"1",' .
@@ -421,6 +410,7 @@ class import_repo_test extends advanced_testcase {
                         '{"questionbankentryid":"4",' .
                           '"filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",' .
                           '"version": "8",' .
+                          '"moodlecommit": "test",' .
                           '"format":"xml"}' . "\n";
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->tempfilepath, $tempcontents);
@@ -430,27 +420,27 @@ class import_repo_test extends advanced_testcase {
                                         'www.moodle');
 
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
-        $this->assertEquals(4, count($manifestcontents->questions));
-        $questionbankentryids = array_map(function($q) {
-            return $q->questionbankentryid;
-        }, $manifestcontents->questions);
-        $this->assertEquals(4, count($questionbankentryids));
-        $this->assertContains('1', $questionbankentryids);
-        $this->assertContains('2', $questionbankentryids);
-        $this->assertContains('3', $questionbankentryids);
-        $this->assertContains('4', $questionbankentryids);
+        $this->assertCount(4, $manifestcontents->questions);
 
+        $manifestentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertArrayHasKey('1', $manifestentries);
+        $this->assertArrayHasKey('2', $manifestentries);
+        $this->assertArrayHasKey('3', $manifestentries);
+        $this->assertArrayHasKey('4', $manifestentries);
+
+        $this->assertEquals('5', $manifestentries['1']->version);
+        $this->assertEquals('1', $manifestentries['1']->exportedversion);
         $context = $manifestcontents->context;
         $this->assertEquals($context->contextlevel, '70');
         $this->assertEquals($context->coursename, 'Course 1');
         $this->assertEquals($context->modulename, 'Test 1');
         $this->assertEquals($context->coursecategory, null);
 
-        $samplerecords = array_filter($manifestcontents->questions, function($q) {
-            return $q->questionbankentryid === '1';
-        });
-        $samplerecord = reset($samplerecords);
+        $samplerecord = $manifestentries['1'];
         $this->assertEquals('/top/cat 1/First Question.xml', $samplerecord->filepath);
+
+        $samplerecord = $manifestentries['4'];
+        $this->assertEquals('test', $samplerecord->moodlecommit);
     }
 
     /**

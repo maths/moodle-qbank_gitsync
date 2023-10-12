@@ -184,10 +184,11 @@ class export_repo {
      * @return void
      */
     public function tidy_manifest():void {
-        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $response = $this->listcurlrequest->execute();
+        $questionsinmoodle = json_decode($response);
         if (is_null($questionsinmoodle)) {
             echo "Broken JSON returned from Moodle:\n";
-            echo $questionsinmoodle . "\n";
+            echo $response . "\n";
         } else if (!is_array($questionsinmoodle)) {
             if (property_exists($questionsinmoodle, 'exception')) {
                 echo "{$questionsinmoodle->message}\n";

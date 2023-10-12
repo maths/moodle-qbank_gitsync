@@ -268,7 +268,21 @@ class import_repo {
                     $this->postsettings['qcategoryname'] = '';
                     $this->upload_file($repoitem);
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-                    $this->curlrequest->execute();
+                    $response = $this->curlrequest->execute();
+                    $responsejson = json_decode($response);
+                    if (!$responsejson) {
+                        echo "Broken JSON returned from Moodle:\n";
+                        echo $response . "\n";
+                        continue;
+                    } else if (property_exists($responsejson, 'exception')) {
+                        echo "{$responsejson->message}\n";
+                        if (property_exists($responsejson, 'debuginfo')) {
+                            echo "{$responsejson->debuginfo}\n";
+                        }
+                        echo "{$repoitem->getPathname()} not imported.\n";
+                        echo "Stopping before trying to import questions.";
+                        exit;
+                    }
                 }
             }
         }
@@ -440,7 +454,18 @@ class import_repo {
      */
     public function delete_no_record_questions():void {
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
-        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $response = $this->listcurlrequest->execute();
+        $questionsinmoodle = json_decode($response);
+        if (is_null($questionsinmoodle)) {
+            echo "Broken JSON returned from Moodle:\n";
+            echo $response . "\n";
+        } else if (!is_array($questionsinmoodle)) {
+            if (property_exists($questionsinmoodle, 'exception')) {
+                echo "{$questionsinmoodle->message}\n";
+            }
+            echo "Failed to check questions for deletion.\n";
+            return;
+        }
         $questionstodelete = [];
         // Check each question in Moodle to see if there is a corresponding entry
         // in the manifest for that questionbankentryid.
@@ -503,7 +528,18 @@ class import_repo {
      * @return void
      */
     public function check_question_versions(): void {
-        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $response = $this->listcurlrequest->execute();
+        $questionsinmoodle = json_decode($response);
+        if (is_null($questionsinmoodle)) {
+            echo "Broken JSON returned from Moodle:\n";
+            echo $response . "\n";
+        } else if (!is_array($questionsinmoodle)) {
+            if (property_exists($questionsinmoodle, 'exception')) {
+                echo "{$questionsinmoodle->message}\n";
+            }
+            echo "Failed to check question versions.\n";
+            exit;
+        }
         $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $changes = false;
         // If the version in Moodle and in the manifest don't match, the question has been updated in Moodle

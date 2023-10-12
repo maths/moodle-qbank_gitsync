@@ -41,7 +41,18 @@ trait export_trait {
      * and create the question file.
      */
     public function export_to_repo() {
-        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $response = $this->listcurlrequest->execute();
+        $questionsinmoodle = json_decode($response);
+        if (is_null($questionsinmoodle)) {
+            echo "Broken JSON returned from Moodle:\n";
+            echo $response . "\n";
+        } else if (!is_array($questionsinmoodle)) {
+            if (property_exists($questionsinmoodle, 'exception')) {
+                echo "{$questionsinmoodle->message}\n";
+            }
+            echo "Failed to get list of questions from Moodle.\n";
+            exit;
+        }
         $this->postsettings['includecategory'] = 1;
         $tempfile = fopen($this->tempfilepath, 'a+');
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
