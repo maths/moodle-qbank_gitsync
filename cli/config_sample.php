@@ -28,7 +28,7 @@ $moodleinstances = [
     'instance2' => 'http:localhost:8888'
 ];
 
-// Array of moodleinstnce nicknames and tokens.
+// Array of moodleinstance nicknames and tokens.
 $token = [
     'instance1' => '4ec...cfcd',
     'instance2' => '6ae...abcd'
@@ -36,5 +36,6 @@ $token = [
 
 $instance = 'instance1';
 
-// Root directory.
+// Root directory on the local file system.
+// This directory stores all git repros associated with the gitsync.
 $rootdirectory = '/home/user/questions';

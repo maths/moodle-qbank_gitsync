@@ -29,11 +29,6 @@ require_once('../classes/cli_helper.php');
 require_once('../classes/import_repo.php');
 require_once('./config.php');
 
-$moodleinstances = [
-    'edmundlocal' => 'http://stack.stack.virtualbox.org/edmundlocal',
-    'other' => 'http:localhost:8888'
-];
-
 $options = [
     [
         'longopt' => 'moodleinstance',
