@@ -46,13 +46,27 @@ trait export_trait {
         if (is_null($questionsinmoodle)) {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
+            $this->call_exit();
+            $questionsinmoodle = []; // For unit test purposes.
         } else if (!is_array($questionsinmoodle)) {
             if (property_exists($questionsinmoodle, 'exception')) {
                 echo "{$questionsinmoodle->message}\n";
             }
             echo "Failed to get list of questions from Moodle.\n";
-            exit;
+            $this->call_exit();
+            $questionsinmoodle = []; // For unit test purposes.
         }
+        $this->export_to_repo_main_process($questionsinmoodle);
+    }
+
+    /**
+     * Main export processing
+     * Separated out so can be mocked in unit tests.
+     *
+     * @param array $questionsinmoodle
+     * @return void
+     */
+    public function export_to_repo_main_process(array $questionsinmoodle):void {
         $this->postsettings['includecategory'] = 1;
         $tempfile = fopen($this->tempfilepath, 'a+');
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
@@ -70,12 +84,13 @@ trait export_trait {
             if (!$responsejson) {
                 echo "Broken JSON returned from Moodle:\n";
                 echo $response . "\n";
+                echo "{$questioninfo->questioncategory} - {$questioninfo->name} not downloaded.\n";
             } else if (property_exists($responsejson, 'exception')) {
                 echo "{$responsejson->message}\n";
                 if (property_exists($responsejson, 'debuginfo')) {
                     echo "{$responsejson->debuginfo}\n";
                 }
-                echo "{$questioninfo->categoryname} - {$questioninfo->name} not downloaded.\n";
+                echo "{$questioninfo->questioncategory} - {$questioninfo->name} not downloaded.\n";
             } else {
                 // XML will have a category question for each level of category below top + the actual question.
                 // There should always be at least one category, if only default.
@@ -144,5 +159,16 @@ trait export_trait {
                 fwrite($tempfile, json_encode($fileoutput) . "\n");
             }
         }
+    }
+
+    /**
+     * Mockable function that just exits code.
+     *
+     * Required to stop PHPUnit displaying output after exit.
+     *
+     * @return void
+     */
+    public function call_exit():void {
+        exit;
     }
 }

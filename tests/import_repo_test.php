@@ -107,8 +107,6 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->listcurlrequest = $this->listcurl;
         $this->importrepo->uploadcurlrequest = $this->uploadcurl;
         $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
-
-
     }
 
     /**
@@ -150,11 +148,35 @@ class import_repo_test extends advanced_testcase {
                 return '{"questionbankentryid": null, "version" : null}';
             })
         );
-        $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->import_categories();
         $this->assertContains($this->rootpath . '/top/cat 1/gitsync_category.xml', $this->results);
         $this->assertContains($this->rootpath . '/top/cat 2/gitsync_category.xml', $this->results);
         $this->assertContains($this->rootpath . '/top/cat 2/subcat 2_1/gitsync_category.xml', $this->results);
+    }
+
+    /**
+     * Test importing categories broken JSON.
+     * @covers \gitsync\import_repo\import_categories()
+     */
+    public function test_import_categories_broken_JSON(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{broken'
+        );
+        $this->importrepo->import_categories();
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*{broken/s');
+    }
+
+    /**
+     * Test importing categories exception.
+     * @covers \gitsync\import_repo\import_categories()
+     */
+    public function test_import_categories_exception(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+        $this->importrepo->import_categories();
+        $this->expectOutputRegex('/No token/');
     }
 
     /**
@@ -177,7 +199,6 @@ class import_repo_test extends advanced_testcase {
                                    ];
             })
         );
-        $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
             'coursename' => 'Course 1',
@@ -207,6 +228,31 @@ class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test importing questions broken JSON.
+     * @covers \gitsync\import_repo\import_questions()
+     */
+    public function test_import_questions_broken_JSON(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{broken'
+        );
+        $this->importrepo->import_questions();
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*{broken/s');
+    }
+
+    /**
+     * Test importing questions exception.
+     * @covers \gitsync\import_repo\import_questions()
+     */
+    public function test_import_questions_exception(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+        $this->importrepo->import_questions();
+        $this->expectOutputRegex('/No token/');
+    }
+
+    /**
      * Test importing questions from only a subdirectory of questions
      * @covers \gitsync\import_repo\import_questions()
      */
@@ -225,8 +271,6 @@ class import_repo_test extends advanced_testcase {
             })
         );
         $this->importrepo->subdirectory = '/top/cat 2/subcat 2_1';
-        $this->importrepo->curlrequest = $this->curl;
-
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
             'coursename' => 'Course 1',
@@ -285,7 +329,6 @@ class import_repo_test extends advanced_testcase {
                                    ];
             })
         );
-        $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
             'coursename' => 'Course 1',
@@ -342,7 +385,6 @@ class import_repo_test extends advanced_testcase {
                                 ];
             })
         );
-        $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
             'coursename' => 'Course 1',
@@ -369,7 +411,6 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->subdirectory = '';
         $this->curl->expects($this->any())->method('execute')->will(
             $this->returnValue('{"questionbankentryid": "35001", "version": "2"}'));
-        $this->importrepo->curlrequest = $this->curl;
         $wrongfile = fopen($this->rootpath . '\wrong.xml', 'a+');
         fclose($wrongfile);
 
@@ -605,6 +646,31 @@ class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test deleting questions broken JSON.
+     * @covers \gitsync\import_repo\delete_no_record_questions()
+     */
+    public function test_delete_questions_broken_JSON(): void {
+        $this->listcurl->expects($this->any())->method('execute')->willReturn(
+            '{broken'
+        );
+        $this->importrepo->delete_no_record_questions();
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*{broken/s');
+    }
+
+    /**
+     * Test deleting questions exception.
+     * @covers \gitsync\import_repo\delete_no_record_questions()
+     */
+    public function test_delete_questions_exception(): void {
+        $this->listcurl->expects($this->any())->method('execute')->willReturn(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+        $this->importrepo->delete_no_record_questions();
+        $this->expectOutputRegex('/No token/');
+    }
+
+    /**
      * Check abort if question version in Moodle doesn't match a version in manifest.
      * @covers \gitsync\export_repo\tidy_manifest()
      */
@@ -654,5 +720,30 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->check_question_versions();
 
         $this->expectOutputString('');
+    }
+
+    /**
+     * Test version check broken JSON.
+     * @covers \gitsync\import_repo\check_question_versions()
+     */
+    public function test_check_versions_broken_JSON(): void {
+        $this->listcurl->expects($this->any())->method('execute')->willReturn(
+            '{broken'
+        );
+        $this->importrepo->check_question_versions();
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*{broken/s');
+    }
+
+    /**
+     * Test version check exception.
+     * @covers \gitsync\import_repo\check_question_versions()
+     */
+    public function test_check_version_exception(): void {
+        $this->listcurl->expects($this->any())->method('execute')->willReturn(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+        $this->importrepo->check_question_versions();
+        $this->expectOutputRegex('/No token/');
     }
 }

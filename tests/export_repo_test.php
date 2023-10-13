@@ -177,4 +177,59 @@ class export_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('35003', $existingentries);
         $this->assertArrayHasKey('35004', $existingentries);
     }
+
+    /**
+     * Test message if import JSON broken.
+     */
+    public function test_broken_json_on_import(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"question": <Question><Name>One</Name></Question>", "version": "10"}'
+        );
+
+        $this->exportrepo->export_questions_in_manifest();
+
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*{"question": <Question><Name>One<\/Name><\/Question>", "version": "10"}/s');
+    }
+
+    /**
+     * Test message if import exception.
+     */
+    public function test_exception_on_import(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+
+        $this->exportrepo->export_questions_in_manifest();
+
+        $this->expectOutputRegex('/No token/');
+    }
+
+    /**
+     * Test message if tidy JSON broken.
+     */
+    public function test_broken_json_on_tidy(): void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]'
+        );
+
+        $this->exportrepo->tidy_manifest();
+
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]/s');
+    }
+
+    /**
+     * Test message if tidy exception.
+     */
+    public function test_exception_on_tidy(): void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+
+        $this->exportrepo->tidy_manifest();
+
+        $this->expectOutputRegex('/No token/');
+    }
+
 }

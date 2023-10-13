@@ -273,7 +273,9 @@ class import_repo {
                     if (!$responsejson) {
                         echo "Broken JSON returned from Moodle:\n";
                         echo $response . "\n";
-                        continue;
+                        echo "{$repoitem->getPathname()} not imported?\n";
+                        echo "Stopping before trying to import questions.";
+                        $this->call_exit();;
                     } else if (property_exists($responsejson, 'exception')) {
                         echo "{$responsejson->message}\n";
                         if (property_exists($responsejson, 'debuginfo')) {
@@ -281,7 +283,7 @@ class import_repo {
                         }
                         echo "{$repoitem->getPathname()} not imported.\n";
                         echo "Stopping before trying to import questions.";
-                        exit;
+                        $this->call_exit();;
                     }
                 }
             }
@@ -372,7 +374,7 @@ class import_repo {
                         if (!$responsejson) {
                             echo "Broken JSON returned from Moodle:\n";
                             echo $response . "\n";
-                            continue;
+                            echo "{$repoitem->getPathname()} not imported.\n";
                         } else if (property_exists($responsejson, 'exception')) {
                             echo "{$responsejson->message}\n";
                             if (property_exists($responsejson, 'debuginfo')) {
@@ -461,6 +463,8 @@ class import_repo {
         if (is_null($questionsinmoodle)) {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
+            echo "Failed to check questions for deletion.\n";
+            return;
         } else if (!is_array($questionsinmoodle)) {
             if (property_exists($questionsinmoodle, 'exception')) {
                 echo "{$questionsinmoodle->message}\n";
@@ -510,6 +514,7 @@ class import_repo {
             if (!$responsejson) {
                 echo "Broken JSON returned from Moodle:\n";
                 echo $response . "\n";
+                echo 'Not deleted?';
             } else if (property_exists($responsejson, 'exception')) {
                 echo "{$responsejson->message}\n" .
                     "Not deleted\n";
@@ -535,12 +540,16 @@ class import_repo {
         if (is_null($questionsinmoodle)) {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
+            echo "Failed to check question versions.\n";
+            $this->call_exit();
+            $questionsinmoodle = []; // Required for unit tests.
         } else if (!is_array($questionsinmoodle)) {
             if (property_exists($questionsinmoodle, 'exception')) {
                 echo "{$questionsinmoodle->message}\n";
             }
             echo "Failed to check question versions.\n";
-            exit;
+            $this->call_exit();
+            $questionsinmoodle = []; // Required for unit tests.
         }
         $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $changes = false;

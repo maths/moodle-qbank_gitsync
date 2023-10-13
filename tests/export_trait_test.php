@@ -80,7 +80,7 @@ class export_trait_test extends advanced_testcase {
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request'
+            'get_curl_request', 'call_exit'
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -138,4 +138,64 @@ class export_trait_test extends advanced_testcase {
         $this->assertEquals($firstline->version, '10');
         $this->assertEquals($firstline->exportedversion, '10');
     }
+
+    /**
+     * Test message if export JSON broken.
+     */
+    public function test_broken_json_on_import(): void {
+        $questions = json_decode('[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]');
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"question": <Question><Name>One</Name></Question>", "version": "10"}'
+        );
+
+        $this->exportrepo->export_to_repo_main_process($questions);
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*{"question": <Question><Name>One<\/Name><\/Question>", "version": "10"}/s');
+    }
+
+    /**
+     * Test message if export exception.
+     */
+    public function test_exception_on_import(): void {
+        $questions = json_decode('[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]');
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+
+        $this->exportrepo->export_to_repo_main_process($questions);
+        $this->expectOutputRegex('/No token/');
+    }
+
+    /**
+     * Test message if list JSON broken.
+     */
+    public function test_broken_json_on_get_list(): void {
+        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'export_to_repo_main_process'
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->exportrepo->listcurlrequest = $this->listcurl;
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]'
+        );
+
+        $this->exportrepo->export_to_repo();
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]/s');
+    }
+
+    /**
+     * Test message if list retrieve exception.
+     */
+    public function test_exception_on_get_list(): void {
+        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'export_to_repo_main_process'
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->exportrepo->listcurlrequest = $this->listcurl;
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+        $this->exportrepo->export_to_repo();
+        $this->expectOutputRegex('/No token/');
+    }
+
 }
