@@ -162,6 +162,7 @@ class export_repo {
             if (!$responsejson) {
                 echo "Broken JSON returned from Moodle:\n";
                 echo $response . "\n";
+                echo "{$questioninfo->filepath} not updated.\n";
             } else if (property_exists($responsejson, 'exception')) {
                 echo "{$responsejson->message}\n";
                 if (property_exists($responsejson, 'debuginfo')) {
@@ -174,6 +175,8 @@ class export_repo {
                 file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
             }
         }
+        // Will not be updated properly if there is an error but this is no loss.
+        // Process can simply be run again from start.
         file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
     }
 
@@ -184,10 +187,12 @@ class export_repo {
      * @return void
      */
     public function tidy_manifest():void {
-        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $response = $this->listcurlrequest->execute();
+        $questionsinmoodle = json_decode($response);
         if (is_null($questionsinmoodle)) {
             echo "Broken JSON returned from Moodle:\n";
-            echo $questionsinmoodle . "\n";
+            echo $response . "\n";
+            echo "Failed to tidy manifest.\n";
         } else if (!is_array($questionsinmoodle)) {
             if (property_exists($questionsinmoodle, 'exception')) {
                 echo "{$questionsinmoodle->message}\n";

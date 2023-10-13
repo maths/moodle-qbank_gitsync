@@ -268,7 +268,23 @@ class import_repo {
                     $this->postsettings['qcategoryname'] = '';
                     $this->upload_file($repoitem);
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-                    $this->curlrequest->execute();
+                    $response = $this->curlrequest->execute();
+                    $responsejson = json_decode($response);
+                    if (!$responsejson) {
+                        echo "Broken JSON returned from Moodle:\n";
+                        echo $response . "\n";
+                        echo "{$repoitem->getPathname()} not imported?\n";
+                        echo "Stopping before trying to import questions.";
+                        $this->call_exit();;
+                    } else if (property_exists($responsejson, 'exception')) {
+                        echo "{$responsejson->message}\n";
+                        if (property_exists($responsejson, 'debuginfo')) {
+                            echo "{$responsejson->debuginfo}\n";
+                        }
+                        echo "{$repoitem->getPathname()} not imported.\n";
+                        echo "Stopping before trying to import questions.";
+                        $this->call_exit();;
+                    }
                 }
             }
         }
@@ -348,6 +364,8 @@ class import_repo {
                             $this->postsettings['questionbankentryid'] = null;
                         }
                         if (!$this->upload_file($repoitem)) {
+                            echo 'File upload problem.\n';
+                            echo "{$repoitem->getPathname()} not imported.\n";
                             continue;
                         };
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
@@ -356,7 +374,7 @@ class import_repo {
                         if (!$responsejson) {
                             echo "Broken JSON returned from Moodle:\n";
                             echo $response . "\n";
-                            continue;
+                            echo "{$repoitem->getPathname()} not imported.\n";
                         } else if (property_exists($responsejson, 'exception')) {
                             echo "{$responsejson->message}\n";
                             if (property_exists($responsejson, 'debuginfo')) {
@@ -440,7 +458,20 @@ class import_repo {
      */
     public function delete_no_record_questions():void {
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
-        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $response = $this->listcurlrequest->execute();
+        $questionsinmoodle = json_decode($response);
+        if (is_null($questionsinmoodle)) {
+            echo "Broken JSON returned from Moodle:\n";
+            echo $response . "\n";
+            echo "Failed to check questions for deletion.\n";
+            return;
+        } else if (!is_array($questionsinmoodle)) {
+            if (property_exists($questionsinmoodle, 'exception')) {
+                echo "{$questionsinmoodle->message}\n";
+            }
+            echo "Failed to check questions for deletion.\n";
+            return;
+        }
         $questionstodelete = [];
         // Check each question in Moodle to see if there is a corresponding entry
         // in the manifest for that questionbankentryid.
@@ -483,6 +514,7 @@ class import_repo {
             if (!$responsejson) {
                 echo "Broken JSON returned from Moodle:\n";
                 echo $response . "\n";
+                echo 'Not deleted?';
             } else if (property_exists($responsejson, 'exception')) {
                 echo "{$responsejson->message}\n" .
                     "Not deleted\n";
@@ -503,7 +535,22 @@ class import_repo {
      * @return void
      */
     public function check_question_versions(): void {
-        $questionsinmoodle = json_decode($this->listcurlrequest->execute());
+        $response = $this->listcurlrequest->execute();
+        $questionsinmoodle = json_decode($response);
+        if (is_null($questionsinmoodle)) {
+            echo "Broken JSON returned from Moodle:\n";
+            echo $response . "\n";
+            echo "Failed to check question versions.\n";
+            $this->call_exit();
+            $questionsinmoodle = []; // Required for unit tests.
+        } else if (!is_array($questionsinmoodle)) {
+            if (property_exists($questionsinmoodle, 'exception')) {
+                echo "{$questionsinmoodle->message}\n";
+            }
+            echo "Failed to check question versions.\n";
+            $this->call_exit();
+            $questionsinmoodle = []; // Required for unit tests.
+        }
         $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $changes = false;
         // If the version in Moodle and in the manifest don't match, the question has been updated in Moodle
@@ -523,8 +570,18 @@ class import_repo {
         }
         if ($changes) {
             echo "Export questions from Moodle before proceeding.\n";
-            exit;
+            $this->call_exit();
         }
+    }
 
+    /**
+     * Mockable function that just exits code.
+     *
+     * Required to stop PHPUnit displaying output after exit.
+     *
+     * @return void
+     */
+    public function call_exit():void {
+        exit;
     }
 }
