@@ -362,6 +362,8 @@ class import_repo {
                             $this->postsettings['questionbankentryid'] = null;
                         }
                         if (!$this->upload_file($repoitem)) {
+                            echo 'File upload problem.\n';
+                            echo "{$repoitem->getPathname()} not imported.\n";
                             continue;
                         };
                         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
@@ -559,8 +561,18 @@ class import_repo {
         }
         if ($changes) {
             echo "Export questions from Moodle before proceeding.\n";
-            exit;
+            $this->call_exit();
         }
+    }
 
+    /**
+     * Mockable function that just exits code.
+     *
+     * Required to stop PHPUnit displaying output after exit.
+     *
+     * @return void
+     */
+    public function call_exit():void {
+        exit;
     }
 }

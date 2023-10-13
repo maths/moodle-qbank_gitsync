@@ -100,7 +100,7 @@ class import_repo_test extends advanced_testcase {
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'upload_file', 'handle_delete'
+            'upload_file', 'handle_delete', 'call_exit'
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->deletecurlrequest = $this->deletecurl;
@@ -303,6 +303,64 @@ class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test importing existing questions only occurs if commit hashes don't match.
+     * @covers \gitsync\import_repo\import_questions()
+     */
+    public function test_import_with_commit_hashes(): void {
+        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
+                              "questions":[{
+                                 "questionbankentryid":"1",
+                                 "currentcommit":"matched",
+                                 "moodlecommit":"matched",
+                                 "filepath":"/top/cat 1/First Question.xml",
+                                 "format":"xml"
+                             }, {
+                                "questionbankentryid":"2",
+                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
+                                "currentcommit":"notmatched",
+                                "format":"xml"
+                            }, {
+                                "questionbankentryid":"3",
+                                "filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",
+                                "currentcommit":"notmatched",
+                                "moodlecommit":"notmatched!",
+                                "format":"xml"
+                            }]}';
+        $this->importrepo->manifestcontents = json_decode($manifestcontents);
+        $this->results = [];
+        $this->curl->expects($this->exactly(3))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": "35002", "version": "2"}',
+            '{"questionbankentryid": "2", "version": "2"}',
+            '{"questionbankentryid": "3", "version": "2"}',
+        );
+        $this->curl->expects($this->exactly(3))->method('execute')->will($this->returnCallback(
+            function() {
+                $this->results[] = [
+                                    $this->importrepo->subdirectoryiterator->getPathname(),
+                                    $this->importrepo->postsettings['qcategoryname'],
+                                    $this->importrepo->postsettings['questionbankentryid']
+                                ];
+            })
+        );
+        $this->importrepo->curlrequest = $this->curl;
+        $this->importrepo->postsettings = [
+            'contextlevel' => '10',
+            'coursename' => 'Course 1',
+            'modulename' => 'Test 1',
+            'coursecategory' => 'Cat 1',
+        ];
+        $this->importrepo->import_questions();
+        // Check question with matching hashes wasn't imported.
+        $this->assertNotContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1', '1'], $this->results);
+        $this->assertContains([$this->rootpath .
+                            '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1', '2'], $this->results);
+        $this->assertContains([$this->rootpath .
+                            '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', '3'], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
+     }
+
+
+    /**
      * Test message displayed when an invalid directory is used.
      * @covers \gitsync\import_repo\import_questions()
      */
@@ -498,9 +556,11 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains('1', $questionbankentryids);
         $this->assertContains('4', $questionbankentryids);
 
-        $this->expectOutputRegex('/^\nThese questions are listed in the manifest but there is no longer a matching file/');
-        $this->expectOutputRegex('/top\/cat 2\/subcat 2_1\/Third Question.xml+/');
-        $this->expectOutputRegex('/top\/cat 2\/Second Question.xml+/');
+        // Performing expectOutputRegex multiple times causes them all to pass regardless of content.
+        // Modifier 's' handles line breaks within match any characters '.*'.
+        $this->expectOutputRegex('/These questions are listed in the manifest but there is no longer a matching file' .
+                                 '.*top\/cat 2\/subcat 2_1\/Third Question.xml' .
+                                 '.*top\/cat 2\/Second Question.xml/s');
     }
 
     /**
@@ -539,8 +599,60 @@ class import_repo_test extends advanced_testcase {
         );
         $this->importrepo->delete_no_record_questions();
 
-        $this->expectOutputRegex('/^\nThese questions are in Moodle but not linked to your repository:/');
-        $this->expectOutputRegex('/cat 1 - Second Question+/');
-        $this->expectOutputRegex('/cat 1 - Fourth Question+/');
+        $this->expectOutputRegex('/These questions are in Moodle but not linked to your repository:' .
+                                 '.*cat 1 - Second Question' .
+                                 '.*cat 1 - Fourth Question/s');
+    }
+
+    /**
+     * Check abort if question version in Moodle doesn't match a version in manifest.
+     * @covers \gitsync\export_repo\tidy_manifest()
+     */
+    public function test_check_question_versions():void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "2"},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]'
+            );
+        $this->importrepo->check_question_versions();
+
+        $this->expectOutputRegex('/35002 - TestC - Two' .
+                                 '.*Moodle question version: 2' .
+                                 '.*Version on last import to Moodle: 6' .
+                                 '.*Version on last export from Moodle: 7' .
+                                 '.*Export questions from Moodle before proceeding/s');
+    }
+
+    /**
+     * Test version check passes if exported version matches.
+     * @covers \gitsync\export_repo\tidy_manifest()
+     */
+    public function test_check_question_export_version_success():void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "7"},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]'
+            );
+        $this->importrepo->check_question_versions();
+
+        $this->expectOutputString('');
+    }
+
+    /**
+     * Test version check passes if imported version matches.
+     * @covers \gitsync\export_repo\tidy_manifest()
+     */
+    public function test_check_question_import_version_success():void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "6"},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]'
+            );
+        $this->importrepo->check_question_versions();
+
+        $this->expectOutputString('');
     }
 }

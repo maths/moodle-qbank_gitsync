@@ -155,4 +155,26 @@ class export_repo_test extends advanced_testcase {
         $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
         $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
     }
+
+    /**
+     * Check entry is removed from manifest if question no longer in Moodle.
+     * @covers \gitsync\export_repo\tidy_manifest()
+     */
+    public function test_tidy_manifest():void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]'
+            );
+
+        $this->exportrepo->tidy_manifest();
+
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->assertCount(3, $manifestcontents->questions);
+
+        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertArrayHasKey('35001', $existingentries);
+        $this->assertArrayHasKey('35003', $existingentries);
+        $this->assertArrayHasKey('35004', $existingentries);
+    }
 }
