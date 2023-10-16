@@ -46,6 +46,7 @@
  - Double repo.
  - Multiple users.
  - How do we effectively handle deletion of questions from Moodle source but not the master branch?
+- Test exception recovery.
 - Thorough testing of different context levels.
 - Thorough testing of using subdirectories.
 - Is there any directory structure weirdness thrown up by using subdirectories?

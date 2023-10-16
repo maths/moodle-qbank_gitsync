@@ -126,7 +126,7 @@ class create_repo {
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
         $this->tempfilepath = $this->directory . '/' .
-                              $moodleinstance . '_' . $contextlevel . cli_helper::TEMP_MANIFEST_FILE;
+                              $moodleinstance . '_' . $contextlevel . '_export' . cli_helper::TEMP_MANIFEST_FILE;
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';

@@ -160,8 +160,8 @@ class import_repo {
 
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
-        $this->tempfilepath = $this->directory . $this->subdirectory . '/' .
-                              $moodleinstance . '_' . $contextlevel . cli_helper::TEMP_MANIFEST_FILE;
+        $this->tempfilepath = $this->directory . '/' . $moodleinstance .
+                              '_' . $contextlevel . '_import' . cli_helper::TEMP_MANIFEST_FILE;
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
         fclose($manifestfile);
@@ -332,7 +332,7 @@ class import_repo {
             new \RecursiveDirectoryIterator($this->directory . $this->subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
-        $tempfile = fopen($this->tempfilepath, 'a+');
+        $tempfile = fopen($this->tempfilepath, 'w+');
         $existingentries = array_column($this->manifestcontents->questions, null, 'filepath');
         // Find all the question files and import them. Order is uncertain.
         foreach ($this->subdirectoryiterator as $repoitem) {
@@ -408,6 +408,21 @@ class import_repo {
         }
         fclose($tempfile);
         return $tempfile;
+    }
+
+    /**
+     * Use to update manifest file after CLI failure.
+     *
+     * @return void
+     */
+    public function recovery():void {
+        if (file_exists($this->tempfilepath)) {
+            $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
+                                                                    $this->tempfilepath,
+                                                                    $this->manifestpath,
+                                                                    $this->moodleurl);
+            unlink($this->tempfilepath);
+        }
     }
 
     /**

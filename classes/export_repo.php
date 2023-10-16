@@ -90,8 +90,8 @@ class export_repo {
             $token = $arguments['token'];
         }
         $this->manifestcontents = json_decode(file_get_contents($this->manifestpath));
-        $this->tempfilepath = dirname($this->manifestpath) . '/' . $this->manifestcontents->context->qcategoryname . '/' .
-            $moodleinstance . '_' . $this->manifestcontents->context->contextlevel . cli_helper::TEMP_MANIFEST_FILE;
+        $this->tempfilepath = dirname($this->manifestpath) . '/' . $moodleinstance . '_' .
+            $this->manifestcontents->context->contextlevel . '_export' . cli_helper::TEMP_MANIFEST_FILE;
         $moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $moodleurl . '/webservice/rest/server.php';
 

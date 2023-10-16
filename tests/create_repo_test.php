@@ -141,7 +141,6 @@ class create_repo_test extends advanced_testcase {
      * Test temp file creation.
      */
     public function test_temp_file_creation(): void {
-        $this->createrepo->tempfilepath = $this->rootpath . '/' . 'test' . cli_helper::TEMP_MANIFEST_FILE;
         $this->createrepo->listcurlrequest = $this->listcurl;
         $this->createrepo->curlrequest = $this->curl;
         $this->createrepo->directory = $this->rootpath;

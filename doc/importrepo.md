@@ -33,3 +33,6 @@ This sets the token, the Moodle instance and the location of the repository to u
 This will use the default token, instance and location values in `importrepo.php` but create the categories in quiz 'Test 1' of 'Course 1'.
 
 - Importing will create a manifest file specific to the Moodle instance and context in the root of the repo. This links files in the repo to specific questionbankentries in the Moodle instance.
+
+On failure:
+- If the script fails, it can be safely run again once the issue has been dealt with. Pending updates to the manifest file are stored in a temporary file in the root directory and these will be picked up at the start of the new run, avoiding multiple new versions of a question being created in Moodle.

@@ -116,7 +116,7 @@ class export_repo_test extends advanced_testcase {
         $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
         $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
 
-        // Check manifest file updated
+        // Check manifest file updated.
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->assertCount(4, $manifestcontents->questions);
 
