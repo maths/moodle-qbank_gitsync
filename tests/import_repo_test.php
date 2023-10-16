@@ -585,7 +585,7 @@ class import_repo_test extends advanced_testcase {
             true, false
         );
 
-        $this->importrepo->delete_no_file_questions();
+        $this->importrepo->delete_no_file_questions(true);
 
         // One manifest record removed.
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
@@ -638,7 +638,7 @@ class import_repo_test extends advanced_testcase {
               {"questionbankentryid": "3", "name": "Second Question", "questioncategory": "cat 1"},
               {"questionbankentryid": "4", "name": "Fourth Question", "questioncategory": "cat 1"}]'
         );
-        $this->importrepo->delete_no_record_questions();
+        $this->importrepo->delete_no_record_questions(true);
 
         $this->expectOutputRegex('/These questions are in Moodle but not linked to your repository:' .
                                  '.*cat 1 - Second Question' .
@@ -653,7 +653,7 @@ class import_repo_test extends advanced_testcase {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
-        $this->importrepo->delete_no_record_questions();
+        $this->importrepo->delete_no_record_questions(true);
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
                                  '.*{broken/s');
     }
@@ -666,7 +666,7 @@ class import_repo_test extends advanced_testcase {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
-        $this->importrepo->delete_no_record_questions();
+        $this->importrepo->delete_no_record_questions(true);
         $this->expectOutputRegex('/No token/');
     }
 

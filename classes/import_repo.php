@@ -234,8 +234,8 @@ class import_repo {
                                                                    $this->manifestpath,
                                                                    $this->moodleurl);
         unlink($this->tempfilepath);
-        $this->delete_no_file_questions();
-        $this->delete_no_record_questions();
+        $this->delete_no_file_questions(false);
+        $this->delete_no_record_questions(false);
     }
 
     /**
@@ -429,9 +429,10 @@ class import_repo {
      * Offer to delete questions from Moodle/manifest where the question is in the manifest
      * but there is no file in the repo.
      *
+     * @param bool $deleenabled Allows question delete if true, otherwise just lists applicable questions
      * @return void
      */
-    public function delete_no_file_questions():void {
+    public function delete_no_file_questions($deleteenabled=false):void {
         // Get all manifest entries for imported subdirectory.
         $manifestentries = array_filter($this->manifestcontents->questions, function($value) {
             return (substr($value->filepath, 0, strlen($this->subdirectory)) === $this->subdirectory);
@@ -452,16 +453,20 @@ class import_repo {
                 echo $question->filepath . "\n";
             }
             unset($question);
-            $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
-            foreach ($questionstodelete as $question) {
-                echo "\nDelete {$question->filepath} from Moodle? y/n\n";
-                $wasdeleted = $this->handle_delete($question);
-                if ($wasdeleted) {
-                    unset($existingentries["{$question->questionbankentryid}"]);
+            if ($deleteenabled) {
+                $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+                foreach ($questionstodelete as $question) {
+                    echo "\nDelete {$question->filepath} from Moodle? y/n\n";
+                    $wasdeleted = $this->handle_delete($question);
+                    if ($wasdeleted) {
+                        unset($existingentries["{$question->questionbankentryid}"]);
+                    }
                 }
+                $this->manifestcontents->questions = array_values($existingentries);
+                file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+            } else {
+                echo "Run deletefrommoodle for the option to delete.\n";
             }
-            $this->manifestcontents->questions = array_values($existingentries);
-            file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
         }
     }
 
@@ -469,9 +474,10 @@ class import_repo {
      * Offer to delete questions from Moodle where the question is in Moodle
      * but not in the manifest.
      *
+     * @param bool $deleenabled Allows question delete if true, otherwise just lists applicable questions
      * @return void
      */
-    public function delete_no_record_questions():void {
+    public function delete_no_record_questions($deleteenabled=false):void {
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $response = $this->listcurlrequest->execute();
         $questionsinmoodle = json_decode($response);
@@ -503,10 +509,14 @@ class import_repo {
                 echo "{$question->questionbankentryid} - {$question->questioncategory} - {$question->name}\n";
             }
             unset($question);
-            $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
-            foreach ($questionstodelete as $question) {
-                echo "\nDelete {$question->questioncategory} - {$question->name} from Moodle? y/n\n";
-                $this->handle_delete($question);
+            if ($deleteenabled) {
+                $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+                foreach ($questionstodelete as $question) {
+                    echo "\nDelete {$question->questioncategory} - {$question->name} from Moodle? y/n\n";
+                    $this->handle_delete($question);
+                }
+            } else {
+                echo "Run deletefrommoodle for the option to delete.\n";
             }
         }
     }
