@@ -160,8 +160,9 @@ class import_repo {
 
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
-        $this->tempfilepath = $this->directory . '/' . $moodleinstance .
-                              '_' . $contextlevel . '_import' . cli_helper::TEMP_MANIFEST_FILE;
+        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
+                                          '_import' . cli_helper::TEMP_MANIFEST_FILE,
+                                           $this->manifestpath);
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
         fclose($manifestfile);

@@ -119,5 +119,5 @@ $importrepo = new import_repo($clihelper, $moodleinstances);
 $clihelper->check_for_changes($importrepo->manifestpath);
 $importrepo->recovery();
 $importrepo->check_question_versions();
-$clihelper->commit_hash_update($importrepo->manifestpath);
+$clihelper->commit_hash_update($importrepo);
 $importrepo->process();

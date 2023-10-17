@@ -158,7 +158,6 @@ class create_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->modulename, 'Module 1');
         $this->assertEquals($firstline->coursecategory, null);
         $this->assertEquals($firstline->version, '10');
-        $this->assertEquals($firstline->exportedversion, '10');
         $this->assertEquals($firstline->format, 'xml');
 
     }

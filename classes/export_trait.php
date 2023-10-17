@@ -147,7 +147,6 @@ trait export_trait {
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
-                    'exportedversion' => $responsejson->version,
                     'contextlevel' => $this->listpostsettings['contextlevel'],
                     'filepath' => $bottomdirectory . "/{$qname}.xml",
                     'coursename' => $this->listpostsettings['coursename'],

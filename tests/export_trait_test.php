@@ -137,7 +137,6 @@ class export_trait_test extends advanced_testcase {
         $this->assertEquals('5', $firstline->questionbankentryid);
         $this->assertEquals($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Five.xml', $firstline->filepath);
         $this->assertEquals($firstline->version, '10');
-        $this->assertEquals($firstline->exportedversion, '10');
     }
 
     /**

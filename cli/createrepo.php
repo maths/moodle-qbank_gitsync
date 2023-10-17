@@ -118,4 +118,4 @@ $options = [
 $clihelper = new cli_helper($options);
 $createrepo = new create_repo($clihelper, $moodleinstances);
 $createrepo->process();
-$clihelper->commit_hash_setup($createrepo->manifestpath);
+$clihelper->commit_hash_setup($createrepo);
