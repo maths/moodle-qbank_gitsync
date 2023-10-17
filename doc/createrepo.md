@@ -23,3 +23,6 @@
 Examples:
 
 `php createrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "\source_1" --contextlevel system`
+
+On failure:
+- If the script fails, it can be safely run again once the issue has been dealt with. (You may get instructions to delete a manifest file. If so, delete the file and run again.)

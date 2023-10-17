@@ -10,6 +10,7 @@
 - Sort out the issues with slashes in Windows. Double-check what's happening when categories are split and slashes are replaced, particularly with categories/courses with slashes in the name.
 - Refactor the code to avoid having to add/remove slashes at the start of directories (or at least make it clearer what's going on).
 - Validate command line arguments and return useful error messages. Some of this can be done on the client, some will need to be done on the server e.g. more gracefully dealing with non-existent courses, etc.
+- Have option to take context from manifest file.
 
 ## Config
 - Flag whether Git is being used. Can then skip sections of CLIs if not.
@@ -46,6 +47,7 @@
  - Double repo.
  - Multiple users.
  - How do we effectively handle deletion of questions from Moodle source but not the master branch?
+- Test exception recovery.
 - Thorough testing of different context levels.
 - Thorough testing of using subdirectories.
 - Is there any directory structure weirdness thrown up by using subdirectories?

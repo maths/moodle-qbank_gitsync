@@ -68,7 +68,7 @@ trait export_trait {
      */
     public function export_to_repo_main_process(array $questionsinmoodle):void {
         $this->postsettings['includecategory'] = 1;
-        $tempfile = fopen($this->tempfilepath, 'a+');
+        $tempfile = fopen($this->tempfilepath, 'w+');
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         foreach ($questionsinmoodle as $questioninfo) {
             // This is the difference between create and export.
@@ -147,7 +147,6 @@ trait export_trait {
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
-                    'exportedversion' => $responsejson->version,
                     'contextlevel' => $this->listpostsettings['contextlevel'],
                     'filepath' => $bottomdirectory . "/{$qname}.xml",
                     'coursename' => $this->listpostsettings['coursename'],

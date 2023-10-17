@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import a git repo containing questions into Moodle.
+ * Delete questions from Moodle that are not linked to a file in the repo.
  *
  * @package    qbank_gitsync
  * @copyright  2023 University of Edinburgh
@@ -118,6 +118,5 @@ $clihelper = new cli_helper($options);
 $importrepo = new import_repo($clihelper, $moodleinstances);
 $clihelper->check_for_changes($importrepo->manifestpath);
 $importrepo->recovery();
-$importrepo->check_question_versions();
-$clihelper->commit_hash_update($importrepo);
-$importrepo->process();
+$importrepo->delete_no_file_questions(true);
+$importrepo->delete_no_record_questions(true);

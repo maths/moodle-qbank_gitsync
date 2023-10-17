@@ -238,6 +238,7 @@ class cli_helper {
                     $questionentry->filepath = str_replace($manifestdir, '', $questioninfo->filepath);
                     $questionentry->format = $questioninfo->format;
                     $questionentry->version = $questioninfo->version;
+                    $questionentry->exportedversion = $questioninfo->version;
                     if (isset($questioninfo->moodlecommit)) {
                         $questionentry->moodlecommit = $questioninfo->moodlecommit;
                     }
@@ -343,41 +344,37 @@ class cli_helper {
     /**
      * Updates the manifest file with the current commit hashes of question files in the repo.
      *
-     * @param string $manifestpath
+     * @param object export_repo
      * @return void
      */
-    public function commit_hash_update(string $manifestpath):void {
-        $manifestdirname = dirname($manifestpath);
-        chdir($manifestdirname);
-        $manifestcontents = json_decode(file_get_contents($manifestpath));
-        foreach ($manifestcontents->questions as $question) {
+    public function commit_hash_update(object $export_repo):void {
+        foreach ($export_repo->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
         }
-        file_put_contents($manifestpath, json_encode($manifestcontents));
+        file_put_contents($export_repo->manifestpath, json_encode($export_repo->manifestcontents));
     }
 
     /**
      * Updates the manifest file with the current commit hashes of question files in the repo.
      * Used on initial repo creation so also sets the moodle commit to be the same.
      *
-     * @param string $manifestpath
+     * @param object create_repo
      * @return void
      */
-    public function commit_hash_setup(string $manifestpath):void {
-        $manifestdirname = dirname($manifestpath);
+    public function commit_hash_setup(object $create_repo):void {
+        $manifestdirname = dirname($create_repo->manifestpath);
         chdir($manifestdirname);
-        $manifestcontents = json_decode(file_get_contents($manifestpath));
         exec('touch .gitignore');
-        exec("echo /*_question_manifest.json > .gitignore");
+        exec("printf '%s\n' '/*_question_manifest.json' '/*_manifest_update.tmp' > .gitignore");
         exec("git add .");
         exec('git commit -m "Initial Commit"');
-        foreach ($manifestcontents->questions as $question) {
+        foreach ($create_repo->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
             $question->moodlecommit = $commithash;
         }
-        file_put_contents($manifestpath, json_encode($manifestcontents));
+        file_put_contents($create_repo->manifestpath, json_encode($create_repo->manifestcontents));
     }
 
     /**

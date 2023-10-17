@@ -19,3 +19,6 @@
 Examples:
 
 `php exportrepo.php -r "C:\question_repos" -f "\source_1\edmundlocal_system_question_manifest.json"`
+
+On failure:
+- If the script fails, discard changes in the repository and run again once the issue has been dealt with. All questions will be exported afresh.

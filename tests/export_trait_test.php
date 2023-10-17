@@ -94,7 +94,8 @@ class export_trait_test extends advanced_testcase {
      */
     public function test_export_to_repo(): void {
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
+            '{"question": "<quiz><question type=\"category\"><category>' .
+                          '<text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
                           '<question><name><text>Five</text></name></question></quiz>", "version": "10"}',
             '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2/cat 3</text></category></question>' .
                           '<question><name><text>Six</text></name></question></quiz>"' .
@@ -130,13 +131,12 @@ class export_trait_test extends advanced_testcase {
         // New question in new folder - 2 category questions.
         $this->assertStringContainsString('Eight', file_get_contents($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Eight.xml'));
 
-        // Check temp file
+        // Check temp file.
         $tempfile = fopen($this->exportrepo->tempfilepath, 'r');
         $firstline = json_decode(fgets($tempfile));
         $this->assertEquals('5', $firstline->questionbankentryid);
         $this->assertEquals($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Five.xml', $firstline->filepath);
         $this->assertEquals($firstline->version, '10');
-        $this->assertEquals($firstline->exportedversion, '10');
     }
 
     /**

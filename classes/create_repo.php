@@ -125,8 +125,14 @@ class create_repo {
         $coursecategory = $arguments['coursecategory'];
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
-        $this->tempfilepath = $this->directory . '/' .
-                              $moodleinstance . '_' . $contextlevel . cli_helper::TEMP_MANIFEST_FILE;
+        if (file_exists($this->manifestpath)) {
+            echo 'The manifest file already exists. Please delete if you really want to continue.';
+            echo "\n $this->manifestpath \n";
+            $this->call_exit();
+        }
+        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
+                                          '_export' . cli_helper::TEMP_MANIFEST_FILE,
+                                          $this->manifestpath);
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';

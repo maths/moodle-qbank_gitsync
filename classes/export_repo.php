@@ -71,6 +71,12 @@ class export_repo {
      * @var \stdClass|null
      */
     public ?\stdClass $manifestcontents;
+    /**
+     * URL of Moodle instance
+     *
+     * @var string
+     */
+    public string $moodleurl;
 
     /**
      * Constructor
@@ -90,10 +96,11 @@ class export_repo {
             $token = $arguments['token'];
         }
         $this->manifestcontents = json_decode(file_get_contents($this->manifestpath));
-        $this->tempfilepath = dirname($this->manifestpath) . '/' . $this->manifestcontents->context->qcategoryname . '/' .
-            $moodleinstance . '_' . $this->manifestcontents->context->contextlevel . cli_helper::TEMP_MANIFEST_FILE;
-        $moodleurl = $moodleinstances[$moodleinstance];
-        $wsurl = $moodleurl . '/webservice/rest/server.php';
+        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
+                                          '_export' . cli_helper::TEMP_MANIFEST_FILE,
+                                          $this->manifestpath);
+        $this->moodleurl = $moodleinstances[$moodleinstance];
+        $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->postsettings = [
@@ -132,6 +139,7 @@ class export_repo {
         $this->export_questions_in_manifest();
         // Export any questions that are in Moodle but not in the manifest.
         $this->export_to_repo();
+        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath, $this->manifestpath, $this->moodleurl);
         unlink($this->tempfilepath);
         // Remove questions from manifest that are no longer in Moodle.
         // Will be restored from repo on next import if file is still there.

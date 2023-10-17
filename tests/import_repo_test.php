@@ -158,7 +158,7 @@ class import_repo_test extends advanced_testcase {
      * Test importing categories broken JSON.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories_broken_JSON(): void {
+    public function test_import_categories_broken_json(): void {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
@@ -231,7 +231,7 @@ class import_repo_test extends advanced_testcase {
      * Test importing questions broken JSON.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_broken_JSON(): void {
+    public function test_import_questions_broken_json(): void {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
@@ -302,7 +302,7 @@ class import_repo_test extends advanced_testcase {
      * @covers \gitsync\import_repo\import_questions()
      */
     public function test_import_existing_questions(): void {
-       $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
+        $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
                                 "filepath":"/top/cat 1/First Question.xml",
@@ -399,7 +399,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains([$this->rootpath .
                             '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', '3'], $this->results);
         $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
-     }
+    }
 
 
     /**
@@ -585,7 +585,7 @@ class import_repo_test extends advanced_testcase {
             true, false
         );
 
-        $this->importrepo->delete_no_file_questions();
+        $this->importrepo->delete_no_file_questions(true);
 
         // One manifest record removed.
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
@@ -638,7 +638,7 @@ class import_repo_test extends advanced_testcase {
               {"questionbankentryid": "3", "name": "Second Question", "questioncategory": "cat 1"},
               {"questionbankentryid": "4", "name": "Fourth Question", "questioncategory": "cat 1"}]'
         );
-        $this->importrepo->delete_no_record_questions();
+        $this->importrepo->delete_no_record_questions(true);
 
         $this->expectOutputRegex('/These questions are in Moodle but not linked to your repository:' .
                                  '.*cat 1 - Second Question' .
@@ -649,11 +649,11 @@ class import_repo_test extends advanced_testcase {
      * Test deleting questions broken JSON.
      * @covers \gitsync\import_repo\delete_no_record_questions()
      */
-    public function test_delete_questions_broken_JSON(): void {
+    public function test_delete_questions_broken_json(): void {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
-        $this->importrepo->delete_no_record_questions();
+        $this->importrepo->delete_no_record_questions(true);
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
                                  '.*{broken/s');
     }
@@ -666,7 +666,7 @@ class import_repo_test extends advanced_testcase {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
-        $this->importrepo->delete_no_record_questions();
+        $this->importrepo->delete_no_record_questions(true);
         $this->expectOutputRegex('/No token/');
     }
 
@@ -726,7 +726,7 @@ class import_repo_test extends advanced_testcase {
      * Test version check broken JSON.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_versions_broken_JSON(): void {
+    public function test_check_versions_broken_json(): void {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
