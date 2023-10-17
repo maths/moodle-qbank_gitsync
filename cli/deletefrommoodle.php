@@ -26,6 +26,7 @@ namespace qbank_gitsync;
 define('CLI_SCRIPT', true);
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
+require_once('../classes/tidy_trait.php');
 require_once('../classes/import_repo.php');
 require_once('./config.php');
 
@@ -117,6 +118,12 @@ $options = [
 $clihelper = new cli_helper($options);
 $importrepo = new import_repo($clihelper, $moodleinstances);
 $clihelper->check_for_changes($importrepo->manifestpath);
+$clihelper->backup_manifest($importrepo->manifestpath);
+// Add any updates from temp file into manifest in case this is being
+// run after an unresolved import failure because someone is bound to try.
 $importrepo->recovery();
+// Tidy manifest in case this job has previously failed halfway through leaving
+// questions deleted from Moodle but still in manifest.
+$importrepo->tidy_manifest();
 $importrepo->delete_no_file_questions(true);
 $importrepo->delete_no_record_questions(true);

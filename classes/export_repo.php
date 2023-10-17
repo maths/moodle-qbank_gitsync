@@ -33,6 +33,7 @@ namespace qbank_gitsync;
  */
 class export_repo {
     use export_trait;
+    use tidy_trait;
     /**
      * Settings for POST request
      *
@@ -186,36 +187,5 @@ class export_repo {
         // Will not be updated properly if there is an error but this is no loss.
         // Process can simply be run again from start.
         file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
-    }
-
-    /**
-     * Loop through questions in manifest file and
-     * remove from file if the matching question is no longer in Moodle.
-     *
-     * @return void
-     */
-    public function tidy_manifest():void {
-        $response = $this->listcurlrequest->execute();
-        $questionsinmoodle = json_decode($response);
-        if (is_null($questionsinmoodle)) {
-            echo "Broken JSON returned from Moodle:\n";
-            echo $response . "\n";
-            echo "Failed to tidy manifest.\n";
-        } else if (!is_array($questionsinmoodle)) {
-            if (property_exists($questionsinmoodle, 'exception')) {
-                echo "{$questionsinmoodle->message}\n";
-            }
-            echo "Failed to tidy manifest.\n";
-        } else {
-            $existingquestions = array_column($questionsinmoodle, null, 'questionbankentryid');
-            $newentrylist = [];
-            foreach ($this->manifestcontents->questions as $currententry) {
-                if (isset($existingquestions[$currententry->questionbankentryid])) {
-                    array_push($newentrylist, $currententry);
-                }
-            }
-            $this->manifestcontents->questions = $newentrylist;
-            file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
-        }
     }
 }

@@ -366,7 +366,7 @@ class cli_helper {
         $manifestdirname = dirname($create_repo->manifestpath);
         chdir($manifestdirname);
         exec('touch .gitignore');
-        exec("printf '%s\n' '/*_question_manifest.json' '/*_manifest_update.tmp' > .gitignore");
+        exec("printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' > .gitignore");
         exec("git add .");
         exec('git commit -m "Initial Commit"');
         foreach ($create_repo->manifestcontents->questions as $question) {
@@ -398,5 +398,21 @@ class cli_helper {
             echo "Cannot find the directory of the manifest file.";
             exit;
         }
+    }
+
+    /**
+     * Make a copy of the manifest file.
+     *
+     * @param string $fullmanifestpath
+     * @return void
+     */
+    public function backup_manifest($fullmanifestpath) {
+        $manifestdirname = dirname($fullmanifestpath);
+        $manifestfilename = basename($fullmanifestpath);
+        $backupdir = $manifestdirname . '/manifest_backups';
+        if (!file_exists($backupdir)) {
+            mkdir($backupdir);
+        }
+        copy($fullmanifestpath, $backupdir . '/' . date('YmdHis', time()) . '_' . $manifestfilename);
     }
 }

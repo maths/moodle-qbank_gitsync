@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for export repo command line script for gitsync
+ * Unit tests for trait which tidies manifest
  *
  * @package    qbank_gitsync
  * @copyright  2023 The Open University
@@ -35,7 +35,7 @@ use org\bovigo\vfs\vfsStream;
  *
  * @covers \gitsync\export_repo::class
  */
-class export_repo_test extends advanced_testcase {
+class tidy_trait_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -89,97 +89,54 @@ class export_repo_test extends advanced_testcase {
     }
 
     /**
-     * Test the full process.
+     * Check entry is removed from manifest if question no longer in Moodle.
+     * @covers \gitsync\tidy_trait\tidy_manifest()
      */
-    public function test_process(): void {
-        // Will get questions in order from manifest file in testrepo.
-        $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<Question><Name>One</Name></Question>", "version": "10"}',
-            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
-        );
-
-        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '[]',
+    public function test_tidy_manifest():void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '[{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]'
             );
-        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
-        $this->exportrepo->process();
 
-        // Check question files updated.
-        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat 1/First Question.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat 2/Second Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
+        $this->exportrepo->tidy_manifest();
 
-        // Check manifest file updated.
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
-        $this->assertCount(4, $manifestcontents->questions);
+        $this->assertCount(3, $manifestcontents->questions);
 
         $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
         $this->assertArrayHasKey('35001', $existingentries);
-        $this->assertArrayHasKey('35002', $existingentries);
         $this->assertArrayHasKey('35003', $existingentries);
         $this->assertArrayHasKey('35004', $existingentries);
-
-        $this->assertEquals('1', $existingentries['35001']->version);
-        $this->assertEquals('10', $existingentries['35001']->exportedversion);
     }
 
     /**
-     * Test the export of questions which aren't in the manifest
-     * @covers \gitsync\export_trait\export_to_repo()
+     * Test message if tidy JSON broken.
+     * @covers \gitsync\tidy_trait\tidy_manifest()
      */
-    public function test_export_to_repo(): void {
-        // Will get questions in order from manifest file in testrepo.
-        $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<Question><Name>One</Name></Question>", "version": "10"}',
-            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
+    public function test_broken_json_on_tidy(): void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]'
         );
 
-        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '[]', '[]',
-        );
-
-        $this->exportrepo->process();
-
-        // Check question files updated.
-        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat 1/First Question.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat 2/Second Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
-    }
-
-    /**
-     * Test message if import JSON broken.
-     */
-    public function test_broken_json_on_import(): void {
-        $this->curl->expects($this->any())->method('execute')->willReturn(
-            '{"question": <Question><Name>One</Name></Question>", "version": "10"}'
-        );
-
-        $this->exportrepo->export_questions_in_manifest();
+        $this->exportrepo->tidy_manifest();
 
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
-                                 '.*{"question": <Question><Name>One<\/Name><\/Question>", "version": "10"}/s');
+                                 '.*[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]/s');
     }
 
     /**
-     * Test message if import exception.
+     * Test message if tidy exception.
+     * @covers \gitsync\tidy_trait\tidy_manifest()
      */
-    public function test_exception_on_import(): void {
-        $this->curl->expects($this->any())->method('execute')->willReturn(
+    public function test_exception_on_tidy(): void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"exception":"moodle_exception","message":"No token"}'
         );
 
-        $this->exportrepo->export_questions_in_manifest();
+        $this->exportrepo->tidy_manifest();
 
         $this->expectOutputRegex('/No token/');
     }
+
 }

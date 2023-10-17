@@ -672,7 +672,7 @@ class import_repo_test extends advanced_testcase {
 
     /**
      * Check abort if question version in Moodle doesn't match a version in manifest.
-     * @covers \gitsync\export_repo\tidy_manifest()
+     * @covers \gitsync\import_repo\check_question_versions()
      */
     public function test_check_question_versions():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
@@ -692,7 +692,7 @@ class import_repo_test extends advanced_testcase {
 
     /**
      * Test version check passes if exported version matches.
-     * @covers \gitsync\export_repo\tidy_manifest()
+     * @covers \gitsync\import_repo\check_question_versions()
      */
     public function test_check_question_export_version_success():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
@@ -708,7 +708,7 @@ class import_repo_test extends advanced_testcase {
 
     /**
      * Test version check passes if imported version matches.
-     * @covers \gitsync\export_repo\tidy_manifest()
+     * @covers \gitsync\import_repo\check_question_versions()
      */
     public function test_check_question_import_version_success():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(

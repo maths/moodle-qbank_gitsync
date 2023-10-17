@@ -27,6 +27,7 @@ define('CLI_SCRIPT', true);
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/export_trait.php');
+require_once('../classes/tidy_trait.php');
 require_once('../classes/export_repo.php');
 require_once('./config.php');
 
@@ -81,4 +82,5 @@ if (!function_exists('tidy_repair_string')) {
 $clihelper = new cli_helper($options);
 $exportrepo = new export_repo($clihelper, $moodleinstances);
 $clihelper->check_for_changes($exportrepo->manifestpath);
+$clihelper->backup_manifest($exportrepo->manifestpath);
 $exportrepo->process();

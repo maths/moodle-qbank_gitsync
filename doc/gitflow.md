@@ -60,16 +60,12 @@ For Windows we have slash issues! Works like this but obviously not ideal:
 Set up ignore manifest file and do initial commit of each source (now done by createrepo script):  
 In source_1:  
 `touch .gitignore`  
-`cat >> .gitignore << EOF`  
-`/*_question_manifest.json`  
-`EOF`  
+`printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' > .gitignore`  
 `git add .`  
 `git commit -m "Initial contents"`  
 In source_2:  
 `touch .gitignore`  
-`cat >> .gitignore << EOF`  
-`/*_question_manifest.json`  
-`EOF `  
+`printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' > .gitignore`  
 `git add .`  
 `git commit -m "Initial contents"`  
 

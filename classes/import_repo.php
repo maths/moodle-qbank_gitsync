@@ -32,6 +32,7 @@ use stdClass;
  * Import a Git repo.
  */
 class import_repo {
+    use tidy_trait;
     /**
      * File system iterator for categories
      *
