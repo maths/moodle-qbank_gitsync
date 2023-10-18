@@ -179,7 +179,12 @@ class export_repo {
                 }
                 echo "{$questioninfo->filepath} not updated.\n";
             } else {
-                $question = cli_helper::reformat_question($responsejson->question);
+                try {
+                    $question = cli_helper::reformat_question($responsejson->question);
+                } catch (\Exception $e) {
+                    echo "\n{$e->message}\n";
+                    echo "{$questioninfo->filepath} not updated.\n";
+                }
                 $questioninfo->exportedversion = $responsejson->version;
                 file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
             }

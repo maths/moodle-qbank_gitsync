@@ -95,6 +95,11 @@ trait export_trait {
                 // XML will have a category question for each level of category below top + the actual question.
                 // There should always be at least one category, if only default.
                 $questionxml = simplexml_load_string($responsejson->question);
+                if ($questionxml === false) {
+                    echo "\nBroken XML.\n";
+                    echo "{$questioninfo->questioncategory} - {$questioninfo->name} not downloaded.\n";
+                    continue;
+                }
                 $numcategories = count($questionxml->question) - 1;
                 // We want to isolate the real question but keep surrounding structure
                 // so unset all the categories.
@@ -102,7 +107,13 @@ trait export_trait {
                     unset($questionxml->question[0]);
                 }
                 $qname = $questionxml->question->name->text->__toString();
-                $question = cli_helper::reformat_question($questionxml->asXML());
+                try {
+                    $question = cli_helper::reformat_question($questionxml->asXML());
+                } catch (\Exception $e) {
+                    echo "\n{$e->message}\n";
+                    echo "{$questioninfo->questioncategory} - {$questioninfo->name} not downloaded.\n";
+                    continue;
+                }
                 $bottomdirectory = '';
 
                 // Create directory for each category and add category question file.
@@ -134,7 +145,12 @@ trait export_trait {
                     // We're liable to get lots of repeats of categories between questions
                     // so only create and add file if it doesn't exist already.
                     if (!is_file($catfilepath)) {
-                        $category = cli_helper::reformat_question($categoryxml->asXML());
+                        try {
+                            $category = cli_helper::reformat_question($categoryxml->asXML());
+                        } catch (\Exception $e) {
+                            echo "\n{$e->message}\n";
+                            echo "{$catfilepath} not created.\n";
+                        }
                         file_put_contents($catfilepath, $category);
                     }
                     // Question will always be placed at the bottom category level so save

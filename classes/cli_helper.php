@@ -319,6 +319,9 @@ class cli_helper {
 
         // Remove question id comment.
         $xml = simplexml_load_string($cdataprettyxml);
+        if ($xml === false) {
+            throw new \Exception('Broken XML');
+        }
         if (get_class($xml->comment) === 'SimpleXMLElement') {
             unset($xml->comment);
         }
@@ -344,37 +347,37 @@ class cli_helper {
     /**
      * Updates the manifest file with the current commit hashes of question files in the repo.
      *
-     * @param object export_repo
+     * @param object activity e.g. import_repo
      * @return void
      */
-    public function commit_hash_update(object $export_repo):void {
-        foreach ($export_repo->manifestcontents->questions as $question) {
+    public function commit_hash_update(object $activity):void {
+        foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
         }
-        file_put_contents($export_repo->manifestpath, json_encode($export_repo->manifestcontents));
+        file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
     }
 
     /**
      * Updates the manifest file with the current commit hashes of question files in the repo.
      * Used on initial repo creation so also sets the moodle commit to be the same.
      *
-     * @param object create_repo
+     * @param object activity e.g. create_repo
      * @return void
      */
-    public function commit_hash_setup(object $create_repo):void {
-        $manifestdirname = dirname($create_repo->manifestpath);
+    public function commit_hash_setup(object $activity):void {
+        $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
         exec('touch .gitignore');
         exec("printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' > .gitignore");
         exec("git add .");
         exec('git commit -m "Initial Commit"');
-        foreach ($create_repo->manifestcontents->questions as $question) {
+        foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
             $question->moodlecommit = $commithash;
         }
-        file_put_contents($create_repo->manifestpath, json_encode($create_repo->manifestcontents));
+        file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
     }
 
     /**

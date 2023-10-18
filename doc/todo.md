@@ -12,6 +12,12 @@
 - Validate command line arguments and return useful error messages. Some of this can be done on the client, some will need to be done on the server e.g. more gracefully dealing with non-existent courses, etc.
 - Have option to take context from manifest file.
 
+## Creating the manifest on an import
+We're currently set up for extracting question from Moodle as the first step. What about importing an existing repo?
+- This may require more manual steps e.g. adding/committing manifest and temp file to .gitignore. Attempting to do it entirely automatically to a mature repo would be problematic.
+- What about commit hashes? Will need to set Moodle and current hashes after first run.
+- What about future runs? User could be importing subdirectory - can we determine which manifest entries have been imported on a run in order to add hashes? (In manifest but no hashes and no exportedversion?)
+
 ## Config
 - Flag whether Git is being used. Can then skip sections of CLIs if not.
 

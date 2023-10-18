@@ -129,7 +129,16 @@ class import_repo {
      *
      * @var \stdClass|null
      */
+
     public ?\stdClass $manifestcontents;
+    /**
+     * Are we creating the manifest file?
+     * i.e. we're linking Moodle and the repo via an import rather
+     * than a create_repo export.
+     *
+     * @var boolean
+     */
+    public bool $isfirstrun = false;
     /**
      * Constructor
      *
@@ -166,6 +175,10 @@ class import_repo {
                                            $this->manifestpath);
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
+        if ($manifestfile === false) {
+            echo "\nUnable to access manifest file. Aborting.\n";
+            $this->call_exit();
+        }
         fclose($manifestfile);
         $manifestcontents = json_decode(file_get_contents($this->manifestpath));
         if (!$manifestcontents) {
@@ -174,6 +187,16 @@ class import_repo {
             $this->manifestcontents->questions = [];
         } else {
             $this->manifestcontents = $manifestcontents;
+        }
+        if (count($this->manifestcontents->questions) === 0) {
+            echo "\nManifest file is empty. This should only be the case if you are importing ";
+            echo "questions for the first time into a Moodle context where they don't already exist.\n";
+            echo "Moodle URL: {$this->moodleurl}\n";
+            echo "Course category: {$arguments['coursecategory']}\n";
+            echo "Course name: {$arguments['coursename']}\n";
+            echo "Module name: {$arguments['modulename']}\n";
+            $this->handle_abort();
+            $this->isfirstrun = true;
         }
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->deletecurlrequest = $this->get_curl_request($wsurl);
@@ -480,6 +503,10 @@ class import_repo {
      * @return void
      */
     public function delete_no_record_questions($deleteenabled=false):void {
+        if (count($this->manifestcontents->questions) === 0 && $deleteenabled) {
+            echo 'Manifest file is empty or inaccessible. You probably want to abort.\n';
+            $this->handle_abort();
+        }
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $response = $this->listcurlrequest->execute();
         $questionsinmoodle = json_decode($response);
@@ -554,6 +581,21 @@ class import_repo {
         }
         fclose($handle);
         return $deleted;
+    }
+
+    /**
+     * Prompt user whether they want to continue.
+     *
+     * @return void
+     */
+    public function handle_abort():void {
+        echo "Abort? y/n\n";
+        $handle = fopen ("php://stdin", "r");
+        $line = fgets($handle);
+        if (trim($line) === 'y') {
+            $this->call_exit();
+        }
+        fclose($handle);
     }
 
     /**
