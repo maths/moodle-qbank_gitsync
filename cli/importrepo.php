@@ -112,6 +112,14 @@ $options = [
         'default' => false,
         'variable' => 'help',
         'valuerequired' => false,
+    ],
+    [
+        'longopt' => 'usegit',
+        'shortopt' => 'u',
+        'description' => 'Is the repo controlled using Git?',
+        'default' => $usegit,
+        'variable' => 'usegit',
+        'valuerequired' => false,
     ]
 ];
 

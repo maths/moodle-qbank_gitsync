@@ -125,25 +125,25 @@ class import_repo {
      */
     public string $subdirectory;
     /**
+     * Are we using git?.
+     * Set in config. Adds commit hash to manifest.
+     * @var bool
+     */
+    public bool $usegit;
+    /**
      * Parsed content of JSON manifest file
      *
      * @var \stdClass|null
      */
 
     public ?\stdClass $manifestcontents;
-    /**
-     * Are we creating the manifest file?
-     * i.e. we're linking Moodle and the repo via an import rather
-     * than a create_repo export.
-     *
-     * @var boolean
-     */
-    public bool $isfirstrun = false;
+
     /**
      * Constructor
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
+     * @param bool $usegit
      */
     public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
@@ -164,6 +164,8 @@ class import_repo {
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
+
+        $this->usegit = $arguments['usegit'];
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
@@ -196,7 +198,6 @@ class import_repo {
             echo "Course name: {$arguments['coursename']}\n";
             echo "Module name: {$arguments['modulename']}\n";
             $this->handle_abort();
-            $this->isfirstrun = true;
         }
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->deletecurlrequest = $this->get_curl_request($wsurl);
@@ -421,6 +422,13 @@ class import_repo {
                             ];
                             if ($existingentry && isset($existingentry->currentcommit)) {
                                 $fileoutput['moodlecommit'] = $existingentry->currentcommit;
+                            }
+                            if ($this->usegit && !$existingentry) {
+                                $manifestdirname = dirname($this->manifestpath);
+                                chdir($manifestdirname);
+                                $commithash = exec('git log -n 1 --pretty=format:%H -- "' . $repoitem->getPathname() . '"');
+                                $fileoutput['moodlecommit'] = $commithash;
+                                $fileoutput['currentcommit'] = $commithash;
                             }
                             fwrite($tempfile, json_encode($fileoutput) . "\n");
                         }

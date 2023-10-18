@@ -140,7 +140,7 @@ class cli_helper {
                 if (isset($commandlineargs[$option['longopt']]) || isset($commandlineargs[$option['shortopt']])) {
                     $variables[$variablename] = true;
                 } else {
-                    $variables[$variablename] = false;
+                    $variables[$variablename] = $option['default'];
                 }
             }
         }
@@ -241,6 +241,9 @@ class cli_helper {
                     $questionentry->exportedversion = $questioninfo->version;
                     if (isset($questioninfo->moodlecommit)) {
                         $questionentry->moodlecommit = $questioninfo->moodlecommit;
+                    }
+                    if (isset($questioninfo->moodlecommit)) {
+                        $questionentry->currentcommit = $questioninfo->currentcommit;
                     }
                     array_push($manifestcontents->questions, $questionentry);
                 } else {
@@ -351,6 +354,9 @@ class cli_helper {
      * @return void
      */
     public function commit_hash_update(object $activity):void {
+        if (!$this->get_arguments()['usegit']) {
+            return;
+        }
         foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
@@ -366,10 +372,13 @@ class cli_helper {
      * @return void
      */
     public function commit_hash_setup(object $activity):void {
+        if (!$this->get_arguments()['usegit']) {
+            return;
+        }
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
         exec('touch .gitignore');
-        exec("printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' > .gitignore");
+        exec("printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' >> .gitignore");
         exec("git add .");
         exec('git commit -m "Initial Commit"');
         foreach ($activity->manifestcontents->questions as $question) {
@@ -388,6 +397,9 @@ class cli_helper {
      * @return void
      */
     public function check_for_changes($fullmanifestpath) {
+        if (!$this->get_arguments()['usegit']) {
+            return;
+        }
         $manifestdirname = dirname($fullmanifestpath);
         if (chdir($manifestdirname)) {
             exec('git add .'); // Make sure everything changed has been staged.

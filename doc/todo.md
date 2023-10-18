@@ -14,24 +14,26 @@
 
 ## Creating the manifest on an import
 We're currently set up for extracting question from Moodle as the first step. What about importing an existing repo?
-- This may require more manual steps e.g. adding/committing manifest and temp file to .gitignore. Attempting to do it entirely automatically to a mature repo would be problematic.
-- What about commit hashes? Will need to set Moodle and current hashes after first run.
-- What about future runs? User could be importing subdirectory - can we determine which manifest entries have been imported on a run in order to add hashes? (In manifest but no hashes and no exportedversion?)
+- (Done) This may require more manual steps e.g. adding/committing manifest and temp file to .gitignore. Attempting to do it entirely automatically to a mature repo would be problematic.
+- (Done) What about commit hashes? Will need to set Moodle and current hashes after first run. Update: We absolutely have to get the commit hash at time of import and add to temp file for this to work and be resilient for recovery purposes. `usegit` config/argument added to CLIs to trigger the (minimal) git specific code in classes.
+- (Done) What about future runs? User could be importing subdirectory - can we determine which manifest entries have been imported on a run in order to add hashes? (In manifest but no hashes and no exportedversion?) Update: see above.
+- If the top category doesn't exist, import currently fails. Should be created instead (with warning and chance to abort). This is an issue with the question version checking code, not the import itself.
 
 ## Config
-- Flag whether Git is being used. Can then skip sections of CLIs if not.
+- (Done) Flag whether Git is being used. Can then skip sections of CLIs if not.
 
 ## Exception handling
 - (Done) Make sure there is error handling around all webserver access and exit/continue as appropriate.
 - Add try/catch around file access.
-- Add try/catch around XML/String conversion.
+- (Done) Add try/catch around XML/String conversion. Update: It's not errors that are thrown - have to check for functions returning false.
 - Investigate what's needed around DB calls.
 
 ## Crash recovery
-- Check what currently happens if there is an error or network failure.
-- Use temporary file to ensure manifest is synced properly. (Can fresh run just add to existing temp file or should it be dealt with and emptied first?)
-- Do we need to read the temp file to prevent any actions being done a second time?
-- What can be left 'as is' to be corrected on a second run?
+- (Done) Check what currently happens if there is an error or network failure.
+- (Done) Use temporary file to ensure manifest is synced properly. (Can fresh run just add to existing temp file or should it be dealt with and emptied first?)
+- (Done) Do we need to read the temp file to prevent any actions being done a second time?
+- (Done) What can be left 'as is' to be corrected on a second run?  
+See markup files for each CLI for re-run instructions.
 
 ## Guidance
 - Further instructions for config setup, defaults and setting command line arguments.
@@ -39,8 +41,8 @@ We're currently set up for extracting question from Moodle as the first step. Wh
 - Instructions for day-to-day Git use.
 
 ## Deletion or overwrite of questions in Moodle
-- Separate out deletion steps from import script.
-- Consider what could result in data loss during import/delete and mitigate.
+- (Done) Separate out deletion steps from import script.
+- (Started) Consider what could result in data loss during import/delete and mitigate.
 
 ## Concurrency
 - What are the scenarios?

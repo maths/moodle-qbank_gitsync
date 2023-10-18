@@ -7,6 +7,11 @@
 ## Importing
 - Create a repository of questions with a folder hierarchy akin to question categories i.e. top/category/subcategory or use `createrepo.php` to create a repo from existing questions on Moodle.
 - Each category below top should have a `gitsync_category.xml` file containing a 'category question' with the details of he category. See the `testrepo` folder in this repository for an example.
+- If you have created a repository (or copied one) make sure you have a `.gitignore` file and it ignores gitsync's manifest and temporary files.  
+`touch .gitignore`  
+`printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' >> .gitignore`  
+Commit this update.  
+(This will be done automatically when using `createrepo.php`.)
 - From the commandline in the `cli` folder run `importrepo.php`. There are a number of options you can input. List them all with `php importrepo.php -h`. You can use -shortname or --longname on the command line followed by a space and the value.
 
 |Short|Long|Required value|

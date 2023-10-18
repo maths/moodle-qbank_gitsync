@@ -39,3 +39,5 @@ $instance = 'instance1';
 // Root directory on the local file system.
 // This directory stores all git repros associated with the gitsync.
 $rootdirectory = '/home/user/questions';
+
+$usegit = true;
