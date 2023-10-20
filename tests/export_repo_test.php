@@ -80,7 +80,7 @@ class export_repo_test extends advanced_testcase {
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request'
+            'get_curl_request', 'call_exit'
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -157,31 +157,9 @@ class export_repo_test extends advanced_testcase {
     }
 
     /**
-     * Check entry is removed from manifest if question no longer in Moodle.
-     * @covers \gitsync\export_repo\tidy_manifest()
+     * Test message if export JSON broken.
      */
-    public function test_tidy_manifest():void {
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]'
-            );
-
-        $this->exportrepo->tidy_manifest();
-
-        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
-        $this->assertCount(3, $manifestcontents->questions);
-
-        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
-        $this->assertArrayHasKey('35001', $existingentries);
-        $this->assertArrayHasKey('35003', $existingentries);
-        $this->assertArrayHasKey('35004', $existingentries);
-    }
-
-    /**
-     * Test message if import JSON broken.
-     */
-    public function test_broken_json_on_import(): void {
+    public function test_broken_json_on_export(): void {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"question": <Question><Name>One</Name></Question>", "version": "10"}'
         );
@@ -193,9 +171,9 @@ class export_repo_test extends advanced_testcase {
     }
 
     /**
-     * Test message if import exception.
+     * Test message if export exception.
      */
-    public function test_exception_on_import(): void {
+    public function test_exception_on_export(): void {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -206,30 +184,57 @@ class export_repo_test extends advanced_testcase {
     }
 
     /**
-     * Test message if tidy JSON broken.
+     * Test message if manifest file update issue.
      */
-    public function test_broken_json_on_tidy(): void {
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]'
+    public function test_manifest_file_update_error(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"question": "<Question><Name>One</Name></Question>", "version": "10"}'
         );
 
-        $this->exportrepo->tidy_manifest();
+        chmod($this->exportrepo->manifestpath, 0000);
 
-        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
-                                 '.*[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]/s');
+        @$this->exportrepo->export_questions_in_manifest();
+        $this->expectOutputRegex('/^\nUnable to update manifest file.*Aborting.\n$/s');
     }
 
     /**
-     * Test message if tidy exception.
+     * Test message if manifest file open issue.
      */
-    public function test_exception_on_tidy(): void {
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"exception":"moodle_exception","message":"No token"}'
-        );
-
-        $this->exportrepo->tidy_manifest();
-
-        $this->expectOutputRegex('/No token/');
+    public function test_manifest_file_open_error(): void {
+        chmod($this->exportrepo->manifestpath, 0000);
+        @$this->exportrepo->__construct($this->clihelper, $this->moodleinstances);
+        $this->expectOutputRegex('/^\nUnable to access or parse manifest file.*Aborting.\n$/s');
     }
 
+    /**
+     * Test message if question file update issue.
+     */
+    public function test_question_file_update_error(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"question": "<Question><Name>One</Name></Question>", "version": "10"}'
+        );
+
+        chmod($this->rootpath . '/top/cat 1/First Question.xml', 0000);
+
+        @$this->exportrepo->export_questions_in_manifest();
+        $this->expectOutputRegex('/^\nAccess issue.\n\/top\/cat 1\/First Question.xml not updated.\n$/s');
+    }
+
+    /**
+     * Test message if question reformat issue.
+     */
+    public function test_reformat_error(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<Question><Name>One</Question>", "version": "10"}', // Broken.
+            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}',
+        );
+
+        // Make sure no attempt is made to update first file.
+        chmod($this->rootpath . '/top/cat 1/First Question.xml', 0000);
+
+        @$this->exportrepo->export_questions_in_manifest();
+        $this->expectOutputRegex('/^\nBroken XML\n\/top\/cat 1\/First Question.xml not updated.\n$/s');
+    }
 }

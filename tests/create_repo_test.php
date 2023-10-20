@@ -135,6 +135,7 @@ class create_repo_test extends advanced_testcase {
                     file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 2',
                     file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -159,6 +160,7 @@ class create_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->coursecategory, null);
         $this->assertEquals($firstline->version, '10');
         $this->assertEquals($firstline->format, 'xml');
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
 
     }
 }

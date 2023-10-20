@@ -24,10 +24,11 @@
 
 namespace qbank_gitsync;
 define('CLI_SCRIPT', true);
+require_once('./config.php');
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
+require_once('../classes/tidy_trait.php');
 require_once('../classes/import_repo.php');
-require_once('./config.php');
 
 $options = [
     [
@@ -111,12 +112,21 @@ $options = [
         'default' => false,
         'variable' => 'help',
         'valuerequired' => false,
+    ],
+    [
+        'longopt' => 'usegit',
+        'shortopt' => 'u',
+        'description' => 'Is the repo controlled using Git?',
+        'default' => $usegit,
+        'variable' => 'usegit',
+        'valuerequired' => false,
     ]
 ];
 
 $clihelper = new cli_helper($options);
 $importrepo = new import_repo($clihelper, $moodleinstances);
 $clihelper->check_for_changes($importrepo->manifestpath);
+$clihelper->backup_manifest($importrepo->manifestpath);
 $importrepo->recovery();
 $importrepo->check_question_versions();
 $clihelper->commit_hash_update($importrepo);

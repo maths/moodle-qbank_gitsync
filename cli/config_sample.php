@@ -22,6 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// Remove this line in actual config file for running on your local computer.
+defined('MOODLE_INTERNAL') || die();
+
 // Array of moodleinstnce nicknames and URLs.
 $moodleinstances = [
     'instance1' => 'http://stack.org/instance1',
@@ -39,3 +42,5 @@ $instance = 'instance1';
 // Root directory on the local file system.
 // This directory stores all git repros associated with the gitsync.
 $rootdirectory = '/home/user/questions';
+
+$usegit = true;

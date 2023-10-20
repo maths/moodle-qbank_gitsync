@@ -123,6 +123,15 @@ class create_repo {
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
+
+        $this->moodleurl = $moodleinstances[$moodleinstance];
+
+        echo "\nMoodle URL: {$this->moodleurl}\n";
+        echo "Context level: {$arguments['contextlevel']}\n";
+        echo "Course category: {$arguments['coursecategory']}\n";
+        echo "Course name: {$arguments['coursename']}\n";
+        echo "Module name: {$arguments['modulename']}\n";
+
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
         if (file_exists($this->manifestpath)) {
@@ -134,7 +143,6 @@ class create_repo {
                                           '_export' . cli_helper::TEMP_MANIFEST_FILE,
                                           $this->manifestpath);
 
-        $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
         $this->curlrequest = $this->get_curl_request($wsurl);

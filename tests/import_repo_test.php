@@ -31,6 +31,15 @@ use advanced_testcase;
 use org\bovigo\vfs\vfsStream;
 
 /**
+ * Allows testing of errors that lead to an exit.
+ */
+class fake_helper extends cli_helper {
+    public static function call_exit():void {
+        return;
+    }
+}
+
+/**
  * Test the CLI script for importing a repo to Moodle.
  * @group qbank_gitsync
  *
@@ -79,10 +88,11 @@ class import_repo_test extends advanced_testcase {
             'modulename' => 'Test 1',
             'coursecategory' => 'Cat 1',
             'token' => 'XXXXXX',
-            'help' => false
+            'help' => false,
+            'usegit' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments'
+            'get_arguments', 'call_exit'
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
 
@@ -133,6 +143,7 @@ class import_repo_test extends advanced_testcase {
 
         // Check manifest file created.
         $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
 
@@ -152,6 +163,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains($this->rootpath . '/top/cat 1/gitsync_category.xml', $this->results);
         $this->assertContains($this->rootpath . '/top/cat 2/gitsync_category.xml', $this->results);
         $this->assertContains($this->rootpath . '/top/cat 2/subcat 2_1/gitsync_category.xml', $this->results);
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -225,6 +237,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->modulename, 'Test 1');
         $this->assertEquals($firstline->coursecategory, 'Cat 1');
         $this->assertEquals($firstline->format, 'xml');
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -295,6 +308,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->modulename, 'Test 1');
         $this->assertEquals($firstline->coursecategory, 'Cat 1');
         $this->assertEquals($firstline->format, 'xml');
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -343,6 +357,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains([$this->rootpath .
                                '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', null], $this->results);
         $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -399,6 +414,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains([$this->rootpath .
                             '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', '3'], $this->results);
         $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
 
@@ -415,7 +431,7 @@ class import_repo_test extends advanced_testcase {
         fclose($wrongfile);
 
         $this->importrepo->import_questions();
-        $this->expectOutputRegex('/^Root directory should not contain XML files/');
+        $this->expectOutputRegex('/Root directory should not contain XML files/');
     }
 
     /**
@@ -467,6 +483,7 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['35001'];
         $this->assertEquals(false, isset($samplerecord->moodlecommit));
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -540,6 +557,71 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['4'];
         $this->assertEquals('test', $samplerecord->moodlecommit);
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
+    }
+
+    /**
+     * Test update of manifest file temp file error.
+     * @covers \gitsync\cli_helper\create_manifest_file()
+     */
+    public function test_manifest_temp_file_error(): void {
+        $manifestcontents = '{"context":{"contextlevel":70,
+                                "coursename":"Course 1",
+                                "modulename":"Test 1",
+                                "coursecategory":null,
+                                "qcategoryname":"/top"
+                             },
+                             "questions":[{
+                                "questionbankentryid":"1",
+                                "filepath":"/top/cat 1/First Question.xml",
+                                "version": "1",
+                                "exportedversion": "1",
+                                "format":"xml"
+                             }]}';
+        $tempcontents = '{"questionbankentryid":"1",' .
+                          '"filepath":"/top/cat 1/First Question.xml",' .
+                          '"version": "5",' .
+                          '"format":"xml"}' . "\n";
+        $this->importrepo->manifestcontents = json_decode($manifestcontents);
+        file_put_contents($this->importrepo->tempfilepath, $tempcontents);
+        chmod($this->importrepo->tempfilepath, 0000);
+        @fake_helper::create_manifest_file($this->importrepo->manifestcontents,
+                                        $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
+                                        'www.moodle');
+        $this->expectOutputRegex('/^\nMoodle URL.*Module name: Test 1\n\n' .
+                                 'Unable to access temp file.*Aborting.\n$/s');
+    }
+
+    /**
+     * Test update of manifest file manifest file error.
+     * @covers \gitsync\cli_helper\create_manifest_file()
+     */
+    public function test_manifest_manifest_file_error(): void {
+        $manifestcontents = '{"context":{"contextlevel":70,
+                                "coursename":"Course 1",
+                                "modulename":"Test 1",
+                                "coursecategory":null,
+                                "qcategoryname":"/top"
+                             },
+                             "questions":[{
+                                "questionbankentryid":"1",
+                                "filepath":"/top/cat 1/First Question.xml",
+                                "version": "1",
+                                "exportedversion": "1",
+                                "format":"xml"
+                             }]}';
+        $tempcontents = '{"questionbankentryid":"1",' .
+                          '"filepath":"/top/cat 1/First Question.xml",' .
+                          '"version": "5",' .
+                          '"format":"xml"}' . "\n";
+        $this->importrepo->manifestcontents = json_decode($manifestcontents);
+        file_put_contents($this->importrepo->tempfilepath, $tempcontents);
+        chmod($this->importrepo->manifestpath, 0000);
+        @fake_helper::create_manifest_file($this->importrepo->manifestcontents,
+                                        $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
+                                        'www.moodle');
+        $this->expectOutputRegex('/^\nMoodle URL.*Module name: Test 1\n\n' .
+                                 'Unable to update manifest file.*Aborting.\n$/s');
     }
 
     /**
@@ -672,7 +754,7 @@ class import_repo_test extends advanced_testcase {
 
     /**
      * Check abort if question version in Moodle doesn't match a version in manifest.
-     * @covers \gitsync\export_repo\tidy_manifest()
+     * @covers \gitsync\import_repo\check_question_versions()
      */
     public function test_check_question_versions():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
@@ -692,7 +774,7 @@ class import_repo_test extends advanced_testcase {
 
     /**
      * Test version check passes if exported version matches.
-     * @covers \gitsync\export_repo\tidy_manifest()
+     * @covers \gitsync\import_repo\check_question_versions()
      */
     public function test_check_question_export_version_success():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
@@ -702,13 +784,12 @@ class import_repo_test extends advanced_testcase {
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]'
             );
         $this->importrepo->check_question_versions();
-
-        $this->expectOutputString('');
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
      * Test version check passes if imported version matches.
-     * @covers \gitsync\export_repo\tidy_manifest()
+     * @covers \gitsync\import_repo\check_question_versions()
      */
     public function test_check_question_import_version_success():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
@@ -718,8 +799,7 @@ class import_repo_test extends advanced_testcase {
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]'
             );
         $this->importrepo->check_question_versions();
-
-        $this->expectOutputString('');
+        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**

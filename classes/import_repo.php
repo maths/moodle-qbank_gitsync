@@ -32,6 +32,7 @@ use stdClass;
  * Import a Git repo.
  */
 class import_repo {
+    use tidy_trait;
     /**
      * File system iterator for categories
      *
@@ -124,16 +125,25 @@ class import_repo {
      */
     public string $subdirectory;
     /**
+     * Are we using git?.
+     * Set in config. Adds commit hash to manifest.
+     * @var bool
+     */
+    public bool $usegit;
+    /**
      * Parsed content of JSON manifest file
      *
      * @var \stdClass|null
      */
+
     public ?\stdClass $manifestcontents;
+
     /**
      * Constructor
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
+     * @param bool $usegit
      */
     public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
@@ -155,8 +165,16 @@ class import_repo {
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
 
+        $this->usegit = $arguments['usegit'];
+
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
+
+        echo "\nMoodle URL: {$this->moodleurl}\n";
+        echo "Context level: {$arguments['contextlevel']}\n";
+        echo "Course category: {$arguments['coursecategory']}\n";
+        echo "Course name: {$arguments['coursename']}\n";
+        echo "Module name: {$arguments['modulename']}\n";
 
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
@@ -165,14 +183,28 @@ class import_repo {
                                            $this->manifestpath);
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
+        if ($manifestfile === false) {
+            echo "\nUnable to access manifest file: {$this->manifestpath}\n Aborting.\n";
+            $this->call_exit();
+            return; // Required for PHPUnit.
+        }
         fclose($manifestfile);
         $manifestcontents = json_decode(file_get_contents($this->manifestpath));
+        if ($manifestcontents === null) {
+            echo "\nUnable to parse manifest file: {$this->manifestpath}\nAborting.\n";
+            $this->call_exit();
+        }
         if (!$manifestcontents) {
             $this->manifestcontents = new \stdClass();
             $this->manifestcontents->context = null;
             $this->manifestcontents->questions = [];
         } else {
             $this->manifestcontents = $manifestcontents;
+        }
+        if (count($this->manifestcontents->questions) === 0) {
+            echo "\nManifest file is empty. This should only be the case if you are importing ";
+            echo "questions for the first time into a Moodle context where they don't already exist.\n";
+            $this->handle_abort();
         }
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->deletecurlrequest = $this->get_curl_request($wsurl);
@@ -334,6 +366,10 @@ class import_repo {
             \RecursiveIteratorIterator::SELF_FIRST
         );
         $tempfile = fopen($this->tempfilepath, 'w+');
+        if ($tempfile === false) {
+            echo "\nUnable to access temp file: {$this->tempfilepath}\nAborting.\n";
+            $this->call_exit();
+        }
         $existingentries = array_column($this->manifestcontents->questions, null, 'filepath');
         // Find all the question files and import them. Order is uncertain.
         foreach ($this->subdirectoryiterator as $repoitem) {
@@ -397,6 +433,13 @@ class import_repo {
                             ];
                             if ($existingentry && isset($existingentry->currentcommit)) {
                                 $fileoutput['moodlecommit'] = $existingentry->currentcommit;
+                            }
+                            if ($this->usegit && !$existingentry) {
+                                $manifestdirname = dirname($this->manifestpath);
+                                chdir($manifestdirname);
+                                $commithash = exec('git log -n 1 --pretty=format:%H -- "' . $repoitem->getPathname() . '"');
+                                $fileoutput['moodlecommit'] = $commithash;
+                                $fileoutput['currentcommit'] = $commithash;
                             }
                             fwrite($tempfile, json_encode($fileoutput) . "\n");
                         }
@@ -464,6 +507,7 @@ class import_repo {
                     }
                 }
                 $this->manifestcontents->questions = array_values($existingentries);
+                // On file failure will be picked up next time.
                 file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
             } else {
                 echo "Run deletefrommoodle for the option to delete.\n";
@@ -479,6 +523,10 @@ class import_repo {
      * @return void
      */
     public function delete_no_record_questions($deleteenabled=false):void {
+        if (count($this->manifestcontents->questions) === 0 && $deleteenabled) {
+            echo 'Manifest file is empty or inaccessible. You probably want to abort.\n';
+            $this->handle_abort();
+        }
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $response = $this->listcurlrequest->execute();
         $questionsinmoodle = json_decode($response);
@@ -553,6 +601,21 @@ class import_repo {
         }
         fclose($handle);
         return $deleted;
+    }
+
+    /**
+     * Prompt user whether they want to continue.
+     *
+     * @return void
+     */
+    public function handle_abort():void {
+        echo "Abort? y/n\n";
+        $handle = fopen ("php://stdin", "r");
+        $line = fgets($handle);
+        if (trim($line) === 'y') {
+            $this->call_exit();
+        }
+        fclose($handle);
     }
 
     /**

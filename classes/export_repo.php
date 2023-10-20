@@ -33,6 +33,7 @@ namespace qbank_gitsync;
  */
 class export_repo {
     use export_trait;
+    use tidy_trait;
     /**
      * Settings for POST request
      *
@@ -96,6 +97,10 @@ class export_repo {
             $token = $arguments['token'];
         }
         $this->manifestcontents = json_decode(file_get_contents($this->manifestpath));
+        if (!$this->manifestcontents) {
+            echo "\nUnable to access or parse manifest file: {$this->manifestpath}\nAborting.\n";
+            $this->call_exit();
+        }
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
                                           '_export' . cli_helper::TEMP_MANIFEST_FILE,
                                           $this->manifestpath);
@@ -178,44 +183,28 @@ class export_repo {
                 }
                 echo "{$questioninfo->filepath} not updated.\n";
             } else {
-                $question = cli_helper::reformat_question($responsejson->question);
-                $questioninfo->exportedversion = $responsejson->version;
-                file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
+                try {
+                    $question = cli_helper::reformat_question($responsejson->question);
+                } catch (\Exception $e) {
+                    echo "\n{$e->getmessage()}\n";
+                    echo "{$questioninfo->filepath} not updated.\n";
+                    continue;
+                }
+                $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
+                if ($success === false) {
+                    echo "\nAccess issue.\n";
+                    echo "{$questioninfo->filepath} not updated.\n";
+                } else {
+                    $questioninfo->exportedversion = $responsejson->version;
+                }
             }
         }
         // Will not be updated properly if there is an error but this is no loss.
         // Process can simply be run again from start.
-        file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
-    }
-
-    /**
-     * Loop through questions in manifest file and
-     * remove from file if the matching question is no longer in Moodle.
-     *
-     * @return void
-     */
-    public function tidy_manifest():void {
-        $response = $this->listcurlrequest->execute();
-        $questionsinmoodle = json_decode($response);
-        if (is_null($questionsinmoodle)) {
-            echo "Broken JSON returned from Moodle:\n";
-            echo $response . "\n";
-            echo "Failed to tidy manifest.\n";
-        } else if (!is_array($questionsinmoodle)) {
-            if (property_exists($questionsinmoodle, 'exception')) {
-                echo "{$questionsinmoodle->message}\n";
-            }
-            echo "Failed to tidy manifest.\n";
-        } else {
-            $existingquestions = array_column($questionsinmoodle, null, 'questionbankentryid');
-            $newentrylist = [];
-            foreach ($this->manifestcontents->questions as $currententry) {
-                if (isset($existingquestions[$currententry->questionbankentryid])) {
-                    array_push($newentrylist, $currententry);
-                }
-            }
-            $this->manifestcontents->questions = $newentrylist;
-            file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+        $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+        if ($success === false) {
+            echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
+            $this->call_exit();
         }
     }
 }

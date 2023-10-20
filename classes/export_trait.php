@@ -69,6 +69,11 @@ trait export_trait {
     public function export_to_repo_main_process(array $questionsinmoodle):void {
         $this->postsettings['includecategory'] = 1;
         $tempfile = fopen($this->tempfilepath, 'w+');
+        if ($tempfile === false) {
+            echo "\nUnable to access temp file: {$this->tempfilepath}\nAborting.\n";
+            $this->call_exit();
+            return; // Required for PHPUnit.
+        }
         $existingentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         foreach ($questionsinmoodle as $questioninfo) {
             // This is the difference between create and export.
@@ -95,6 +100,11 @@ trait export_trait {
                 // XML will have a category question for each level of category below top + the actual question.
                 // There should always be at least one category, if only default.
                 $questionxml = simplexml_load_string($responsejson->question);
+                if ($questionxml === false) {
+                    echo "\nBroken XML.\n";
+                    echo "{$questioninfo->questioncategory} - {$questioninfo->name} not downloaded.\n";
+                    continue;
+                }
                 $numcategories = count($questionxml->question) - 1;
                 // We want to isolate the real question but keep surrounding structure
                 // so unset all the categories.
@@ -102,11 +112,18 @@ trait export_trait {
                     unset($questionxml->question[0]);
                 }
                 $qname = $questionxml->question->name->text->__toString();
-                $question = cli_helper::reformat_question($questionxml->asXML());
+                try {
+                    $question = cli_helper::reformat_question($questionxml->asXML());
+                } catch (\Exception $e) {
+                    echo "\n{$e->getmessage()}\n";
+                    echo "{$questioninfo->questioncategory} - {$questioninfo->name} not downloaded.\n";
+                    continue;
+                }
                 $bottomdirectory = '';
 
                 // Create directory for each category and add category question file.
                 for ($j = 0; $j < $numcategories; $j++) {
+                    // No need to catch issues here - already checked above.
                     $categoryxml = simplexml_load_string($responsejson->question);
                     // Isolate each category in turn.
                     for ($k = 0; $k < $numcategories + 1; $k++) {
@@ -131,19 +148,35 @@ trait export_trait {
                         }
                     }
                     $catfilepath = $currentdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
-                    // We're liable to get lots of repeats of categories between questions
-                    // so only create and add file if it doesn't exist already.
-                    if (!is_file($catfilepath)) {
-                        $category = cli_helper::reformat_question($categoryxml->asXML());
-                        file_put_contents($catfilepath, $category);
-                    }
                     // Question will always be placed at the bottom category level so save
                     // that location for later.
                     if ($currentdirectory > $bottomdirectory) {
                         $bottomdirectory = $currentdirectory;
                     }
+                    // We're liable to get lots of repeats of categories between questions
+                    // so only create and add file if it doesn't exist already.
+                    if (!is_file($catfilepath)) {
+                        try {
+                            $category = cli_helper::reformat_question($categoryxml->asXML());
+                        } catch (\Exception $e) {
+                            echo "\n{$e->getmessage()}\n";
+                            echo "{$catfilepath} not created.\n";
+                            continue;
+                        }
+                        $success = file_put_contents($catfilepath, $category);
+                        if ($success === false) {
+                            echo "\nFile creation unsuccessful:\n";
+                            echo "{$catfilepath}";
+                            continue;
+                        }
+                    }
                 }
-                file_put_contents($bottomdirectory . "/{$qname}.xml", $question);
+                $success = file_put_contents("{$bottomdirectory}/{$qname}.xml", $question);
+                if ($success === false) {
+                    echo "\nFile creation or update unsuccessful:\n";
+                    echo "{$bottomdirectory}/{$qname}.xml";
+                    continue;
+                }
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,

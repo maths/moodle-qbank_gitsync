@@ -140,7 +140,7 @@ class cli_helper {
                 if (isset($commandlineargs[$option['longopt']]) || isset($commandlineargs[$option['shortopt']])) {
                     $variables[$variablename] = true;
                 } else {
-                    $variables[$variablename] = false;
+                    $variables[$variablename] = $option['default'];
                 }
             }
         }
@@ -227,6 +227,11 @@ class cli_helper {
         // to manifest in the first place if no processing materialises.
         $manifestdir = dirname($manifestpath);
         $tempfile = fopen($tempfilepath, 'r');
+        if ($tempfile === false) {
+            echo "\nUnable to access temp file: {$tempfilepath}\n Aborting.\n";
+            static::call_exit();
+            return new \stdClass(); // Required for PHPUnit.
+        }
         $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
         while (!feof($tempfile)) {
             $questioninfo = json_decode(fgets($tempfile));
@@ -241,6 +246,9 @@ class cli_helper {
                     $questionentry->exportedversion = $questioninfo->version;
                     if (isset($questioninfo->moodlecommit)) {
                         $questionentry->moodlecommit = $questioninfo->moodlecommit;
+                    }
+                    if (isset($questioninfo->currentcommit)) {
+                        $questionentry->currentcommit = $questioninfo->currentcommit;
                     }
                     array_push($manifestcontents->questions, $questionentry);
                 } else {
@@ -260,8 +268,11 @@ class cli_helper {
                 }
             }
         }
-        file_put_contents($manifestpath, json_encode($manifestcontents));
-
+        $success = file_put_contents($manifestpath, json_encode($manifestcontents));
+        if ($success === false) {
+            echo "\nUnable to update manifest file: {$manifestpath}\n Aborting.\n";
+            static::call_exit();
+        }
         fclose($tempfile);
         return $manifestcontents;
     }
@@ -319,6 +330,10 @@ class cli_helper {
 
         // Remove question id comment.
         $xml = simplexml_load_string($cdataprettyxml);
+        if ($xml === false) {
+            setlocale(LC_ALL, $locale);
+            throw new \Exception('Broken XML');
+        }
         if (get_class($xml->comment) === 'SimpleXMLElement') {
             unset($xml->comment);
         }
@@ -344,37 +359,48 @@ class cli_helper {
     /**
      * Updates the manifest file with the current commit hashes of question files in the repo.
      *
-     * @param object export_repo
+     * @param object activity e.g. import_repo
      * @return void
      */
-    public function commit_hash_update(object $export_repo):void {
-        foreach ($export_repo->manifestcontents->questions as $question) {
+    public function commit_hash_update(object $activity):void {
+        if (!$this->get_arguments()['usegit']) {
+            return;
+        }
+        foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
         }
-        file_put_contents($export_repo->manifestpath, json_encode($export_repo->manifestcontents));
+        $success = file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
+        if ($success === false) {
+            echo "\nUnable to update manifest file: {$activity->manifestpath}\n Aborting.\n";
+            exit;
+        }
     }
 
     /**
      * Updates the manifest file with the current commit hashes of question files in the repo.
      * Used on initial repo creation so also sets the moodle commit to be the same.
      *
-     * @param object create_repo
+     * @param object activity e.g. create_repo
      * @return void
      */
-    public function commit_hash_setup(object $create_repo):void {
-        $manifestdirname = dirname($create_repo->manifestpath);
+    public function commit_hash_setup(object $activity):void {
+        if (!$this->get_arguments()['usegit']) {
+            return;
+        }
+        $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
         exec('touch .gitignore');
-        exec("printf '%s\n' '/*_question_manifest.json' '/*_manifest_update.tmp' > .gitignore");
+        exec("printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' >> .gitignore");
         exec("git add .");
         exec('git commit -m "Initial Commit"');
-        foreach ($create_repo->manifestcontents->questions as $question) {
+        foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
             $question->moodlecommit = $commithash;
         }
-        file_put_contents($create_repo->manifestpath, json_encode($create_repo->manifestcontents));
+        // Happens last so no need to abort on failure.
+        file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
     }
 
     /**
@@ -385,6 +411,9 @@ class cli_helper {
      * @return void
      */
     public function check_for_changes($fullmanifestpath) {
+        if (!$this->get_arguments()['usegit']) {
+            return;
+        }
         $manifestdirname = dirname($fullmanifestpath);
         if (chdir($manifestdirname)) {
             exec('git add .'); // Make sure everything changed has been staged.
@@ -398,5 +427,32 @@ class cli_helper {
             echo "Cannot find the directory of the manifest file.";
             exit;
         }
+    }
+
+    /**
+     * Make a copy of the manifest file.
+     *
+     * @param string $fullmanifestpath
+     * @return void
+     */
+    public function backup_manifest($fullmanifestpath) {
+        $manifestdirname = dirname($fullmanifestpath);
+        $manifestfilename = basename($fullmanifestpath);
+        $backupdir = $manifestdirname . '/manifest_backups';
+        if (!file_exists($backupdir)) {
+            mkdir($backupdir);
+        }
+        copy($fullmanifestpath, $backupdir . '/' . date('YmdHis', time()) . '_' . $manifestfilename);
+    }
+
+    /**
+     * Mockable function that just exits code.
+     *
+     * Required to stop PHPUnit displaying output after exit.
+     *
+     * @return void
+     */
+    public static function call_exit():void {
+        exit;
     }
 }
