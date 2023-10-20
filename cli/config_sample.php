@@ -22,6 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// Remove this line in actual config file for running on your local computer.
+defined('MOODLE_INTERNAL') || die();
+
 // Array of moodleinstnce nicknames and URLs.
 $moodleinstances = [
     'instance1' => 'http://stack.org/instance1',

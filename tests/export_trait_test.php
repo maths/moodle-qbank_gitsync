@@ -89,10 +89,11 @@ class export_trait_test extends advanced_testcase {
     }
 
     /**
-     * Test the export of questions which aren't in the manifest
-     * @covers \gitsync\export_trait\export_to_repo()
+     * Set valid output for web service calls.
+     *
+     * @return void
      */
-    public function test_export_to_repo(): void {
+    public function set_curl_output():void {
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
@@ -116,7 +117,14 @@ class export_trait_test extends advanced_testcase {
               {"questionbankentryid": "7", "name": "Fifth Question", "questioncategory": "cat 3"},
               {"questionbankentryid": "8", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]'
         );
+    }
 
+    /**
+     * Test the export of questions which aren't in the manifest
+     * @covers \gitsync\export_trait\export_to_repo()
+     */
+    public function test_export_to_repo(): void {
+        $this->set_curl_output();
         $this->exportrepo->export_to_repo();
 
         // Check question files created.
@@ -142,7 +150,7 @@ class export_trait_test extends advanced_testcase {
     /**
      * Test message if export JSON broken.
      */
-    public function test_broken_json_on_import(): void {
+    public function test_broken_json_on_export(): void {
         $questions = json_decode('[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]');
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"question": <Question><Name>One</Name></Question>", "version": "10"}'
@@ -156,7 +164,7 @@ class export_trait_test extends advanced_testcase {
     /**
      * Test message if export exception.
      */
-    public function test_exception_on_import(): void {
+    public function test_exception_on_export(): void {
         $questions = json_decode('[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]');
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
@@ -198,4 +206,64 @@ class export_trait_test extends advanced_testcase {
         $this->expectOutputRegex('/No token/');
     }
 
+    /**
+     * Test message if temp file error.
+     */
+    public function test_temp_file_open(): void {
+        $questions = json_decode('[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]');
+        $tempfile = fopen($this->exportrepo->tempfilepath, 'w+');
+        fclose($tempfile);
+        chmod($this->exportrepo->tempfilepath, 0000);
+
+        @$this->exportrepo->export_to_repo_main_process($questions);
+        $this->expectOutputRegex('/^\nUnable to access temp file.*Aborting.\n$/s');
+    }
+
+    /**
+     * Test message if question file update issue.
+     */
+    public function test_question_file_update_error(): void {
+        $questions = json_decode('[{"questionbankentryid": "5", "name": "Third Question", "questioncategory": "subcat 2_1"}]');
+        $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<quiz><question type=\"category\"><category>' .
+                          '<text>top/cat 2/subcat 2_1</text></category></question>' .
+                          '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
+        );
+
+        chmod($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 0000);
+        @$this->exportrepo->export_to_repo_main_process($questions);
+        $this->expectOutputRegex('/^\nFile creation or update unsuccessful:.*Third Question.xml$/s');
+    }
+
+    /**
+     * Test message if category file creation issue.
+     */
+    public function test_category_file_creation_error(): void {
+        $questions = json_decode('[{"questionbankentryid": "5", "name": "Third Question", "questioncategory": "subcat 2_1"}]');
+        $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<quiz><question type=\"category\"><category>' .
+                          '<text>top/cat 2/subcat 2_1</text></category></question>' .
+                          '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
+        );
+
+        unlink($this->rootpath . '/top/cat 2/subcat 2_1/' . cli_helper::CATEGORY_FILE . '.xml');
+        chmod($this->rootpath . '/top/cat 2/subcat 2_1', 0000);
+        @$this->exportrepo->export_to_repo_main_process($questions);
+        $this->expectOutputRegex('/^\nFile creation unsuccessful:.*subcat 2_1\/' . cli_helper::CATEGORY_FILE . '.xml$/s');
+    }
+
+    /**
+     * Test message if category file XML issue.
+     */
+    public function test_category_xml_error(): void {
+        $questions = json_decode('[{"questionbankentryid": "5", "name": "Third Question", "questioncategory": "subcat 2_1"}]');
+        $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<quiz><question type=\"category\"><category>' .
+                          '<text>top/Source 2/cat 2/subcat 2_1</category></question>' .
+                          '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
+        );
+
+        @$this->exportrepo->export_to_repo_main_process($questions);
+        $this->expectOutputRegex('/^\nBroken XML.\nsubcat 2_1 - Third Question not downloaded.\n$/s');
+    }
 }

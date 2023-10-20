@@ -97,6 +97,10 @@ class export_repo {
             $token = $arguments['token'];
         }
         $this->manifestcontents = json_decode(file_get_contents($this->manifestpath));
+        if (!$this->manifestcontents) {
+            echo "\nUnable to access or parse manifest file: {$this->manifestpath}\nAborting.\n";
+            $this->call_exit();
+        }
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
                                           '_export' . cli_helper::TEMP_MANIFEST_FILE,
                                           $this->manifestpath);
@@ -182,15 +186,25 @@ class export_repo {
                 try {
                     $question = cli_helper::reformat_question($responsejson->question);
                 } catch (\Exception $e) {
-                    echo "\n{$e->message}\n";
+                    echo "\n{$e->getmessage()}\n";
                     echo "{$questioninfo->filepath} not updated.\n";
+                    continue;
                 }
-                $questioninfo->exportedversion = $responsejson->version;
-                file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
+                $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
+                if ($success === false) {
+                    echo "\nAccess issue.\n";
+                    echo "{$questioninfo->filepath} not updated.\n";
+                } else {
+                    $questioninfo->exportedversion = $responsejson->version;
+                }
             }
         }
         // Will not be updated properly if there is an error but this is no loss.
         // Process can simply be run again from start.
-        file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+        $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+        if ($success === false) {
+            echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
+            $this->call_exit();
+        }
     }
 }

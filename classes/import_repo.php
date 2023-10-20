@@ -170,6 +170,12 @@ class import_repo {
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
+        echo "\nMoodle URL: {$this->moodleurl}\n";
+        echo "Context level: {$arguments['contextlevel']}\n";
+        echo "Course category: {$arguments['coursecategory']}\n";
+        echo "Course name: {$arguments['coursename']}\n";
+        echo "Module name: {$arguments['modulename']}\n";
+
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
@@ -178,11 +184,16 @@ class import_repo {
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
         if ($manifestfile === false) {
-            echo "\nUnable to access manifest file. Aborting.\n";
+            echo "\nUnable to access manifest file: {$this->manifestpath}\n Aborting.\n";
             $this->call_exit();
+            return; // Required for PHPUnit.
         }
         fclose($manifestfile);
         $manifestcontents = json_decode(file_get_contents($this->manifestpath));
+        if ($manifestcontents === null) {
+            echo "\nUnable to parse manifest file: {$this->manifestpath}\nAborting.\n";
+            $this->call_exit();
+        }
         if (!$manifestcontents) {
             $this->manifestcontents = new \stdClass();
             $this->manifestcontents->context = null;
@@ -193,10 +204,6 @@ class import_repo {
         if (count($this->manifestcontents->questions) === 0) {
             echo "\nManifest file is empty. This should only be the case if you are importing ";
             echo "questions for the first time into a Moodle context where they don't already exist.\n";
-            echo "Moodle URL: {$this->moodleurl}\n";
-            echo "Course category: {$arguments['coursecategory']}\n";
-            echo "Course name: {$arguments['coursename']}\n";
-            echo "Module name: {$arguments['modulename']}\n";
             $this->handle_abort();
         }
         $this->curlrequest = $this->get_curl_request($wsurl);
@@ -359,6 +366,10 @@ class import_repo {
             \RecursiveIteratorIterator::SELF_FIRST
         );
         $tempfile = fopen($this->tempfilepath, 'w+');
+        if ($tempfile === false) {
+            echo "\nUnable to access temp file: {$this->tempfilepath}\nAborting.\n";
+            $this->call_exit();
+        }
         $existingentries = array_column($this->manifestcontents->questions, null, 'filepath');
         // Find all the question files and import them. Order is uncertain.
         foreach ($this->subdirectoryiterator as $repoitem) {
@@ -496,6 +507,7 @@ class import_repo {
                     }
                 }
                 $this->manifestcontents->questions = array_values($existingentries);
+                // On file failure will be picked up next time.
                 file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
             } else {
                 echo "Run deletefrommoodle for the option to delete.\n";

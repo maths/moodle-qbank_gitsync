@@ -227,6 +227,11 @@ class cli_helper {
         // to manifest in the first place if no processing materialises.
         $manifestdir = dirname($manifestpath);
         $tempfile = fopen($tempfilepath, 'r');
+        if ($tempfile === false) {
+            echo "\nUnable to access temp file: {$tempfilepath}\n Aborting.\n";
+            static::call_exit();
+            return new \stdClass(); // Required for PHPUnit.
+        }
         $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
         while (!feof($tempfile)) {
             $questioninfo = json_decode(fgets($tempfile));
@@ -242,7 +247,7 @@ class cli_helper {
                     if (isset($questioninfo->moodlecommit)) {
                         $questionentry->moodlecommit = $questioninfo->moodlecommit;
                     }
-                    if (isset($questioninfo->moodlecommit)) {
+                    if (isset($questioninfo->currentcommit)) {
                         $questionentry->currentcommit = $questioninfo->currentcommit;
                     }
                     array_push($manifestcontents->questions, $questionentry);
@@ -263,8 +268,11 @@ class cli_helper {
                 }
             }
         }
-        file_put_contents($manifestpath, json_encode($manifestcontents));
-
+        $success = file_put_contents($manifestpath, json_encode($manifestcontents));
+        if ($success === false) {
+            echo "\nUnable to update manifest file: {$manifestpath}\n Aborting.\n";
+            static::call_exit();
+        }
         fclose($tempfile);
         return $manifestcontents;
     }
@@ -323,6 +331,7 @@ class cli_helper {
         // Remove question id comment.
         $xml = simplexml_load_string($cdataprettyxml);
         if ($xml === false) {
+            setlocale(LC_ALL, $locale);
             throw new \Exception('Broken XML');
         }
         if (get_class($xml->comment) === 'SimpleXMLElement') {
@@ -361,7 +370,11 @@ class cli_helper {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             $question->currentcommit = $commithash;
         }
-        file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
+        $success = file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
+        if ($success === false) {
+            echo "\nUnable to update manifest file: {$activity->manifestpath}\n Aborting.\n";
+            exit;
+        }
     }
 
     /**
@@ -386,6 +399,7 @@ class cli_helper {
             $question->currentcommit = $commithash;
             $question->moodlecommit = $commithash;
         }
+        // Happens last so no need to abort on failure.
         file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
     }
 
@@ -429,5 +443,16 @@ class cli_helper {
             mkdir($backupdir);
         }
         copy($fullmanifestpath, $backupdir . '/' . date('YmdHis', time()) . '_' . $manifestfilename);
+    }
+
+    /**
+     * Mockable function that just exits code.
+     *
+     * Required to stop PHPUnit displaying output after exit.
+     *
+     * @return void
+     */
+    public static function call_exit():void {
+        exit;
     }
 }

@@ -59,7 +59,11 @@ trait tidy_trait {
                 }
             }
             $this->manifestcontents->questions = $newentrylist;
-            file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+            $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+            if ($success === false) {
+                echo "\nUnable to update manifest file: {$this->manifestpath}\n";
+                echo "Failed to tidy manifest\n";
+            }
         }
     }
 }
