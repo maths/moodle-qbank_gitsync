@@ -18,7 +18,7 @@ Commit this update.
 |-|-|-|
 |i|moodleinstance|Key of Moodle instance in  moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
-|d|directory|Directory of repo on users computer, containing "top" folder,relative to root directory and including leading slash.|
+|d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
 |s|subdirectory|Relative subdirectory of repo to actually import.|
 |l|contextlevel|Context in which to place questions. Set to system, coursecategory, course or module
 |c|coursename|Unique course name for course or module context.
@@ -29,7 +29,7 @@ Commit this update.
 
 Examples:
 
-`php importrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "\source_1" --contextlevel system`
+`php importrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" --contextlevel system`
 
 This sets the token, the Moodle instance and the location of the repository to upload. Categories will be created at the system level.
 
@@ -37,7 +37,13 @@ This sets the token, the Moodle instance and the location of the repository to u
 
 This will use the default token, instance and location values in `importrepo.php` but create the categories in quiz 'Test 1' of 'Course 1'.
 
+`php importrepo.php -i edmundlocal -r "C:\question_repos" -d "source_1" -s "top/My course/My category" --contextlevel system`
+
+This will only import the questions in the 'My category' folder and below.
+
 - Importing will create a manifest file specific to the Moodle instance and context in the root of the repo. This links files in the repo to specific questionbankentries in the Moodle instance.
+
+
 
 On failure:
 - If the script fails, it can be safely run again once the issue has been dealt with. Pending updates to the manifest file are stored in a temporary file in the root directory and these will be picked up at the start of the new run, avoiding multiple new versions of a question being created in Moodle.

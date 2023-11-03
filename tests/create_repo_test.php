@@ -69,6 +69,8 @@ class create_repo_test extends advanced_testcase {
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
             'coursecategory' => 'Cat 1',
+            'qcategoryid' => null,
+            'instanceid' => null,
             'token' => 'XXXXXX',
             'help' => false
         ];
@@ -85,20 +87,24 @@ class create_repo_test extends advanced_testcase {
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();;
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
-            'get_curl_request'
+            'get_curl_request', 'handle_abort'
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->createrepo->curlrequest = $this->curl;
         $this->createrepo->listcurlrequest = $this->listcurl;
 
         $this->createrepo->listpostsettings = ['contextlevel' => '50', 'coursename' => 'Course 1',
                                                'modulename' => 'Module 1', 'coursecategory' => null,
-                                               'qcategoryname' => '/top'];
+                                               'qcategoryname' => 'top', 'qcategoryid' => '',
+                                               'instanceid' => '',
+                                               'contextonly' => 0,];
         $this->createrepo->postsettings = [];
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "1", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "2", "name": "Two", "questioncategory": ""},
-              {"questionbankentryid": "3", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "4", "name": "Four", "questioncategory": ""}]'
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "1", "name": "One", "questioncategory": ""},
+                            {"questionbankentryid": "2", "name": "Two", "questioncategory": ""},
+                            {"questionbankentryid": "3", "name": "Three", "questioncategory": ""},
+                            {"questionbankentryid": "4", "name": "Four", "questioncategory": ""}]}'
         );
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category><text>top</text></category></question>' .
@@ -135,7 +141,7 @@ class create_repo_test extends advanced_testcase {
                     file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 2',
                     file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
+        $this->expectOutputRegex('/^\nAbout to export.*Question category: top\n$/s');
     }
 
     /**
@@ -160,7 +166,6 @@ class create_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->coursecategory, null);
         $this->assertEquals($firstline->version, '10');
         $this->assertEquals($firstline->format, 'xml');
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
-
+        $this->expectOutputRegex('/^\nAbout to export.*Question category: top\n$/s');
     }
 }

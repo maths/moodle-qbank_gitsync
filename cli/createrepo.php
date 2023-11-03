@@ -52,7 +52,7 @@ $options = [
         'longopt' => 'directory',
         'shortopt' => 'd',
         'description' => 'Directory of repo on users computer, containing "top" folder, ' .
-                         'relative to root directory and including leading slash.',
+                         'relative to root directory.',
         'default' => '',
         'variable' => 'directory',
         'valuerequired' => true,
@@ -60,8 +60,8 @@ $options = [
     [
         'longopt' => 'subdirectory',
         'shortopt' => 's',
-        'description' => 'Relative subdirectory of repo to actually import.',
-        'default' => '/top',
+        'description' => 'Relative subdirectory of repo to actually export.',
+        'default' => '',
         'variable' => 'subdirectory',
         'valuerequired' => true,
     ],
@@ -95,6 +95,22 @@ $options = [
         'description' => 'Unique course category name for coursecategory context.',
         'default' => null,
         'variable' => 'coursecategory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'questioncategoryid',
+        'shortopt' => 'q',
+        'description' => 'Numerical id of subdirectory to actually export.',
+        'default' => null,
+        'variable' => 'qcategoryid',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'instanceid',
+        'shortopt' => 'n',
+        'description' => 'Numerical id of the course, module of course category.',
+        'default' => null,
+        'variable' => 'instanceid',
         'valuerequired' => true,
     ],
     [

@@ -82,11 +82,13 @@ class import_repo_test extends advanced_testcase {
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
             'directory' => '',
-            'subdirectory' => '/top',
+            'subdirectory' => 'top',
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
             'coursecategory' => 'Cat 1',
+            'qcategoryid' => null,
+            'instanceid' => null,
             'token' => 'XXXXXX',
             'help' => false,
             'usegit' => false,
@@ -110,7 +112,7 @@ class import_repo_test extends advanced_testcase {
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'upload_file', 'handle_delete', 'call_exit'
+            'upload_file', 'handle_delete', 'call_exit', 'handle_abort'
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->deletecurlrequest = $this->deletecurl;
@@ -135,15 +137,17 @@ class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": "35003", "version": "2"}',
         );
 
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[]',
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}',
         );
 
         $this->importrepo->process();
 
         // Check manifest file created.
         $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
+        $this->expectOutputRegex('/^\nAbout to import.*Question category: top\n$/s');
     }
 
 
@@ -163,7 +167,6 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains($this->rootpath . '/top/cat 1/gitsync_category.xml', $this->results);
         $this->assertContains($this->rootpath . '/top/cat 2/gitsync_category.xml', $this->results);
         $this->assertContains($this->rootpath . '/top/cat 2/subcat 2_1/gitsync_category.xml', $this->results);
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -237,7 +240,6 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->modulename, 'Test 1');
         $this->assertEquals($firstline->coursecategory, 'Cat 1');
         $this->assertEquals($firstline->format, 'xml');
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -283,7 +285,7 @@ class import_repo_test extends advanced_testcase {
                                    ];
             })
         );
-        $this->importrepo->subdirectory = '/top/cat 2/subcat 2_1';
+        $this->importrepo->subdirectory = 'top/cat 2/subcat 2_1';
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
             'coursename' => 'Course 1',
@@ -308,7 +310,6 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->modulename, 'Test 1');
         $this->assertEquals($firstline->coursecategory, 'Cat 1');
         $this->assertEquals($firstline->format, 'xml');
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -357,7 +358,6 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains([$this->rootpath .
                                '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', null], $this->results);
         $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -414,7 +414,6 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains([$this->rootpath .
                             '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', '3'], $this->results);
         $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
 
@@ -453,8 +452,10 @@ class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": "35003", "version": "2"}',
         );
 
-        $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[]',
+        $this->importrepo->listcurlrequest->expects($this->exactly(2))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}'
         );
 
         $this->importrepo->process();
@@ -483,7 +484,7 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['35001'];
         $this->assertEquals(false, isset($samplerecord->moodlecommit));
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
+        $this->expectOutputRegex('/^\nAbout to import.*Question category: top\n$/s');
     }
 
     /**
@@ -557,7 +558,6 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['4'];
         $this->assertEquals('test', $samplerecord->moodlecommit);
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -588,8 +588,7 @@ class import_repo_test extends advanced_testcase {
         @fake_helper::create_manifest_file($this->importrepo->manifestcontents,
                                         $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
                                         'www.moodle');
-        $this->expectOutputRegex('/^\nMoodle URL.*Module name: Test 1\n\n' .
-                                 'Unable to access temp file.*Aborting.\n$/s');
+        $this->expectOutputRegex('/^\nUnable to access temp file.*Aborting.\n$/s');
     }
 
     /**
@@ -620,8 +619,7 @@ class import_repo_test extends advanced_testcase {
         @fake_helper::create_manifest_file($this->importrepo->manifestcontents,
                                         $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
                                         'www.moodle');
-        $this->expectOutputRegex('/^\nMoodle URL.*Module name: Test 1\n\n' .
-                                 'Unable to update manifest file.*Aborting.\n$/s');
+        $this->expectOutputRegex('/^\nUnable to update manifest file.*Aborting.\n$/s');
     }
 
     /**
@@ -715,10 +713,12 @@ class import_repo_test extends advanced_testcase {
             true, false
         );
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "1", "name": "First Question", "questioncategory": "cat 1"},
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+               "questions": [{"questionbankentryid": "1", "name": "First Question", "questioncategory": "cat 1"},
               {"questionbankentryid": "2", "name": "Third Question", "questioncategory": "subcat 2_1"},
               {"questionbankentryid": "3", "name": "Second Question", "questioncategory": "cat 1"},
-              {"questionbankentryid": "4", "name": "Fourth Question", "questioncategory": "cat 1"}]'
+              {"questionbankentryid": "4", "name": "Fourth Question", "questioncategory": "cat 1"}]}'
         );
         $this->importrepo->delete_no_record_questions(true);
 
@@ -758,10 +758,12 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_check_question_versions():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+               "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "2"},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]'
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]}'
             );
         $this->importrepo->check_question_versions();
 
@@ -778,13 +780,14 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_check_question_export_version_success():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "7"},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]'
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]}'
             );
         $this->importrepo->check_question_versions();
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**
@@ -793,13 +796,14 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_check_question_import_version_success():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "6"},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]'
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]}'
             );
         $this->importrepo->check_question_versions();
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
     }
 
     /**

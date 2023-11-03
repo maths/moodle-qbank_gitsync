@@ -86,7 +86,8 @@ class get_question_list_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
         role_assign($managerroleid, $this->user->id, $context->id);
 
-        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null);
+        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
+                                                  null, null, false);
 
         // We need to execute the return values cleaning process to simulate
         // the web service server.
@@ -109,7 +110,8 @@ class get_question_list_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        get_question_list::execute('top', 50, $this->course->fullname, null, null);
+        get_question_list::execute('top', 50, $this->course->fullname, null, null,
+                                   null, null, false);
     }
 
     /**
@@ -123,7 +125,8 @@ class get_question_list_test extends externallib_advanced_testcase {
         $this->unassignUserCapability('qbank/gitsync:listquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
         $this->expectExceptionMessage('you do not currently have permissions to do that (List)');
-        get_question_list::execute('top', 50, $this->course->fullname, null, null);
+        get_question_list::execute('top', 50, $this->course->fullname, null, null,
+                                   null, null, false);
     }
 
     /**
@@ -132,7 +135,8 @@ class get_question_list_test extends externallib_advanced_testcase {
     public function test_list_capability(): void {
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        get_question_list::execute('top', 50, $this->course->fullname, null, null);
+        get_question_list::execute('top', 50, $this->course->fullname, null, null,
+                                   null, null, false);
     }
 
     /**
@@ -154,7 +158,8 @@ class get_question_list_test extends externallib_advanced_testcase {
         $this->expectExceptionMessage('Not enrolled');
         // Trying to list question from course 2 using context of course 1.
         // User has list capability on course 1 but not course 2.
-        get_question_list::execute('top', 50, $course2->fullname, null, null);
+        get_question_list::execute('top', 50, $course2->fullname, null, null,
+                                   null, null, false);
     }
 
     /**
@@ -173,7 +178,8 @@ class get_question_list_test extends externallib_advanced_testcase {
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null);
+        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
+                                                  null, null, false);
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),
@@ -182,8 +188,8 @@ class get_question_list_test extends externallib_advanced_testcase {
 
         $returnedq1 = [];
         $returnedq2 = [];
-        $this->assertEquals(count($returnvalue), 2);
-        foreach ($returnvalue as $returnedq) {
+        $this->assertEquals(count($returnvalue['questions']), 2);
+        foreach ($returnvalue['questions'] as $returnedq) {
             if ($returnedq['questionbankentryid'] === $this->q->questionbankentryid) {
                 $returnedq1 = $returnedq;
             } else if ($returnedq['questionbankentryid'] === $qbankentryid2) {

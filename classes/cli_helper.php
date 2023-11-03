@@ -91,6 +91,7 @@ class cli_helper {
             $this->show_help();
             exit;
         }
+        $this->validate_and_clean_args();
         return $this->processedoptions;
     }
 
@@ -115,6 +116,115 @@ class cli_helper {
         }
 
         return ['shortopts' => $shortopts, 'longopts' => $longopts];
+    }
+
+    public function validate_and_clean_args(): void {
+        $cliargs = $this->processedoptions;
+        if (!isset($cliargs['token'])) {
+            echo "\nYou will need a security token (--token).\n";
+            static::call_exit();
+        }
+        if (isset($cliargs['rootdirectory'])) {
+            $cliargs['rootdirectory'] = $this->trim_slashes($cliargs['rootdirectory']);
+        }
+        if (isset($cliargs['directory'])) {
+            $cliargs['directory'] = $this->trim_slashes($cliargs['directory']);
+        }
+        if (isset($cliargs['subdirectory'])) {
+            if (strlen($cliargs['subdirectory']) > 0 && isset($cliargs['questioncategoryid'])) {
+                echo "\nYou have supplied a subdirectory to identify the required question category " .
+                     "and a question category id. Please use only one.\n";
+                static::call_exit();
+            }
+            if (strlen($cliargs['subdirectory']) > 0) {
+                $cliargs['subdirectory'] = $this->trim_slashes($cliargs['subdirectory']);
+                if (strlen($cliargs['subdirectory']) > 0 && substr($cliargs['subdirectory'], 0, 3) !== 'top') {
+                    $cliargs['subdirectory'] = 'top/' . $cliargs['subdirectory'];
+                }
+            }
+            if (strlen($cliargs['subdirectory']) === 0) {
+                $cliargs['subdirectory'] = 'top';
+            }
+        }
+        if (isset($cliargs['manifestpath'])) {
+            $cliargs['manifestpath'] = $this->trim_slashes($cliargs['manifestpath']);
+        }
+        if (isset($cliargs['instanceid'])) {
+            if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
+                    || isset($cliargs['coursecategory'])) {
+                echo "\nIf instanceid is supplied, you do not require " .
+                     "course name, module name and/or course category.\n";
+                static::call_exit();
+            }
+        }
+        if (isset($cliargs['contextlevel'])) {
+            if ($cliargs['contextlevel'] === 'system') {
+                if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
+                        || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid']))) {
+                    echo "\nYou have specified system level context. Instance id, " .
+                         "course name, module name and/or course category are not needed.\n";
+                    static::call_exit();
+                }
+            }
+            if ($cliargs['contextlevel'] === 'coursecategory') {
+                if (isset($cliargs['coursename']) || isset($cliargs['modulename'])) {
+                    echo "\nYou have specified course category level context. " .
+                         "Course name and/or module name are not needed.\n";
+                    static::call_exit();
+                }
+                if (!isset($cliargs['coursecategory']) && !isset($cliargs['instanceid'])) {
+                    echo "\nYou have specified course category level context. " .
+                         "You must specify the category name (--coursecategory) or \n" .
+                         "its Moodle id (--instanceid).";
+                static::call_exit();
+                }
+            }
+            if ($cliargs['contextlevel'] === 'course') {
+                if (isset($cliargs['coursecategory']) || isset($cliargs['modulename'])) {
+                    echo "\nYou have specified course level context. " .
+                         "Course category name and/or module name are not needed.\n";
+                    static::call_exit();
+                }
+                if (!isset($cliargs['coursename']) && !isset($cliargs['instanceid'])) {
+                    echo "\nYou have specified course level context. " .
+                         "You must specify the full course name (--coursename) or \n" .
+                         "its Moodle id (--instanceid).";
+                static::call_exit();
+                }
+            }
+            if ($cliargs['contextlevel'] === 'module') {
+                if (isset($cliargs['coursecategory'])) {
+                    echo "\nYou have specified module level context. " .
+                         "Course category name is not needed.\n";
+                    static::call_exit();
+                }
+                if ((!isset($cliargs['coursename']) || !isset($cliargs['modulename']))
+                            && !isset($cliargs['instanceid'])) {
+                    echo "\nYou have specified module level context. " .
+                         "You must specify the full course name (--coursename) and \n" .
+                         "module name (--modulename) or give the module Moodle id (--instanceid).";
+                static::call_exit();
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove beginning and end slashes from a path.
+     * Convert all slashes to unix-friendly.
+     *
+     * @param string $path
+     * @return string
+     */
+    public function trim_slashes(string $path):string {
+        $path = str_replace( '\\', '/', $path);
+        if (substr($path, 0, 1) === '/') {
+            $path = substr($path, 1);
+        }
+        if (substr($path, strlen($path) - 1, 1) === '/') {
+            $path = substr($path, 0, strlen($path) - 1);
+        }
+        return $path;
     }
 
     /**
@@ -263,7 +373,6 @@ class cli_helper {
                     $manifestcontents->context->coursename = $questioninfo->coursename;
                     $manifestcontents->context->modulename = $questioninfo->modulename;
                     $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
-                    $manifestcontents->context->qcategoryname = $questioninfo->qcategoryname;
                     $manifestcontents->context->moodleurl = $moodleurl;
                 }
             }

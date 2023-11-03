@@ -79,17 +79,17 @@ class lib_test extends \advanced_testcase {
         $module = $this->getDataGenerator()->create_module('quiz', array('course' => $course->id, 'name' => QUIZ_TEST));
 
         // System.
-        $context = get_context(10, $category->name, $course->fullname, QUIZ_TEST);
-        $this->assertEquals($context, context_system::instance());
+        $context = get_context(10, $category->name, $course->fullname, QUIZ_TEST, null);
+        $this->assertEquals($context->context, context_system::instance());
         // Course category.
-        $context = get_context(40, $category->name, $course->fullname, QUIZ_TEST);
-        $this->assertEquals($context, context_coursecat::instance($category->id));
+        $context = get_context(40, $category->name, $course->fullname, QUIZ_TEST, null);
+        $this->assertEquals($context->context, context_coursecat::instance($category->id));
         // Course.
-        $context = get_context(50, $category->name, $course->fullname, QUIZ_TEST);
-        $this->assertEquals($context, context_course::instance($course->id));
+        $context = get_context(50, $category->name, $course->fullname, QUIZ_TEST, null);
+        $this->assertEquals($context->context, context_course::instance($course->id));
         // Module.
-        $context = get_context(70, $category->name, $course->fullname, QUIZ_TEST);
-        $this->assertEquals($context, context_module::instance($module->cmid));
+        $context = get_context(70, $category->name, $course->fullname, QUIZ_TEST, null);
+        $this->assertEquals($context->context, context_module::instance($module->cmid));
     }
 
     /**

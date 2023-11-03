@@ -80,7 +80,7 @@ class export_repo_test extends advanced_testcase {
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit'
+            'get_curl_request', 'call_exit', 'handle_abort'
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -101,11 +101,15 @@ class export_repo_test extends advanced_testcase {
         );
 
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '[]',
-            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname": "top"},
+              "questions": []}',
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]'
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
             );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
@@ -128,6 +132,7 @@ class export_repo_test extends advanced_testcase {
 
         $this->assertEquals('1', $existingentries['35001']->version);
         $this->assertEquals('10', $existingentries['35001']->exportedversion);
+        $this->expectOutputRegex('/^\nAbout to export.*Question category: top\n$/s');
     }
 
     /**
@@ -143,8 +148,10 @@ class export_repo_test extends advanced_testcase {
             '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
         );
 
-        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '[]', '[]',
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}'
         );
 
         $this->exportrepo->process();
@@ -154,6 +161,7 @@ class export_repo_test extends advanced_testcase {
         $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat 2/Second Question.xml'));
         $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
         $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
+        $this->expectOutputRegex('/^\nAbout to export.*Question category: top\n$/s');
     }
 
     /**

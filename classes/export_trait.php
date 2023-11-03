@@ -47,16 +47,25 @@ trait export_trait {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
             $this->call_exit();
-            $questionsinmoodle = []; // For unit test purposes.
-        } else if (!is_array($questionsinmoodle)) {
-            if (property_exists($questionsinmoodle, 'exception')) {
-                echo "{$questionsinmoodle->message}\n";
-            }
+            $questionsinmoodle = json_decode('{"questions": []}'); // For unit test purposes.
+        } else if (property_exists($questionsinmoodle, 'exception')) {
+            echo "{$questionsinmoodle->message}\n";
             echo "Failed to get list of questions from Moodle.\n";
             $this->call_exit();
-            $questionsinmoodle = []; // For unit test purposes.
+        } else {
+            echo "\nAbout to export questions from:\n";
+            echo "Moodle URL: {$this->moodleurl}\n";
+            echo "Context level: {$questionsinmoodle->contextinfo->contextlevel}\n";
+            if ($questionsinmoodle->contextinfo->categoryname || $questionsinmoodle->contextinfo->coursename) {
+                echo "Instance: {$questionsinmoodle->contextinfo->categoryname}{$questionsinmoodle->contextinfo->coursename}\n";
+            }
+            if ($questionsinmoodle->contextinfo->modulename) {
+                echo "{$questionsinmoodle->contextinfo->modulename}\n";
+            }
+            echo "Question category: {$questionsinmoodle->contextinfo->qcategoryname}\n";
+            $this->handle_abort();
+            $this->export_to_repo_main_process($questionsinmoodle->questions);
         }
-        $this->export_to_repo_main_process($questionsinmoodle);
     }
 
     /**
@@ -185,12 +194,26 @@ trait export_trait {
                     'coursename' => $this->listpostsettings['coursename'],
                     'modulename' => $this->listpostsettings['modulename'],
                     'coursecategory' => $this->listpostsettings['coursecategory'],
-                    'qcategoryname' => $this->listpostsettings['qcategoryname'],
                     'format' => 'xml',
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");
             }
         }
+    }
+
+    /**
+     * Prompt user whether they want to continue.
+     *
+     * @return void
+     */
+    public function handle_abort():void {
+        echo "Abort? y/n\n";
+        $handle = fopen ("php://stdin", "r");
+        $line = fgets($handle);
+        if (trim($line) === 'y') {
+            $this->call_exit();
+        }
+        fclose($handle);
     }
 
     /**

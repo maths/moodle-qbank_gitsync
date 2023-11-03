@@ -90,7 +90,7 @@ class export_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->manifestpath = $arguments['rootdirectory'] . $arguments['manifestpath'];
+        $this->manifestpath = $arguments['rootdirectory'] . '/' . $arguments['manifestpath'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -126,7 +126,10 @@ class export_repo {
             'coursename' => $this->manifestcontents->context->coursename,
             'modulename' => $this->manifestcontents->context->modulename,
             'coursecategory' => $this->manifestcontents->context->coursecategory,
-            'qcategoryname' => $this->manifestcontents->context->qcategoryname
+            'qcategoryname' => null,
+            'qcategoryid' => null,
+            'instanceid' => $this->manifestcontents->context->instanceid,
+            'contextonly' => 0,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);

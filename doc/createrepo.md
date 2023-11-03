@@ -11,7 +11,7 @@
 |-|-|-|
 |i|moodleinstance|Key of Moodle instance in  moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
-|d|directory|Directory of repo on users computer, containing "top" folder, relative to root directory and including leading slash.|
+|d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
 |s|subdirectory|Relative subdirectory of repo to actually import.|
 |l|contextlevel|Context from which to extract questions. Set to system, coursecategory, course or module
 |c|coursename|Unique course name for course or module context.
@@ -22,7 +22,7 @@
 
 Examples:
 
-`php createrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "\source_1" --contextlevel system`
+`php createrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" --contextlevel system`
 
 On failure:
 - If the script fails, it can be safely run again once the issue has been dealt with. (You may get instructions to delete a manifest file. If so, delete the file and run again.)

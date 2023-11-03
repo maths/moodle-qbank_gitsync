@@ -80,7 +80,7 @@ class export_trait_test extends advanced_testcase {
             'execute'
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit'
+            'get_curl_request', 'call_exit', 'handle_abort'
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -112,10 +112,12 @@ class export_trait_test extends advanced_testcase {
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"},
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"},
               {"questionbankentryid": "6", "name": "Fifth Question", "questioncategory": "cat 3"},
               {"questionbankentryid": "7", "name": "Fifth Question", "questioncategory": "cat 3"},
-              {"questionbankentryid": "8", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]'
+              {"questionbankentryid": "8", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]}'
         );
     }
 
@@ -145,6 +147,7 @@ class export_trait_test extends advanced_testcase {
         $this->assertEquals('5', $firstline->questionbankentryid);
         $this->assertEquals($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Five.xml', $firstline->filepath);
         $this->assertEquals($firstline->version, '10');
+        $this->expectOutputRegex('/^\nAbout to export.*Question category: top\n$/s');
     }
 
     /**

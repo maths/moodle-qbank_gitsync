@@ -109,11 +109,12 @@ class create_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->directory = $arguments['rootdirectory'] . $arguments['directory'];
-        $this->subdirectory = '';
-        if ($arguments['subdirectory']) {
-            $this->subdirectory = $arguments['subdirectory'];
+        if ($arguments['directory']) {
+            $this->directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+        } else {
+            $this->directory = $arguments['rootdirectory'];
         }
+        $this->subdirectory = $arguments['subdirectory'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -123,14 +124,10 @@ class create_repo {
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
+        $qcategoryid = $arguments['qcategoryid'];
+        $instanceid = $arguments['instanceid'];
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
-
-        echo "\nMoodle URL: {$this->moodleurl}\n";
-        echo "Context level: {$arguments['contextlevel']}\n";
-        echo "Course category: {$arguments['coursecategory']}\n";
-        echo "Course name: {$arguments['coursename']}\n";
-        echo "Module name: {$arguments['modulename']}\n";
 
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
                                                 $coursename, $modulename, $this->directory);
@@ -164,7 +161,10 @@ class create_repo {
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
-            'qcategoryname' => substr($this->subdirectory, 1)
+            'qcategoryname' => $this->subdirectory,
+            'qcategoryid' => $qcategoryid,
+            'instanceid' => $instanceid,
+            'contextonly' => 0,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);

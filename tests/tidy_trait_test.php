@@ -94,9 +94,11 @@ class tidy_trait_test extends advanced_testcase {
      */
     public function test_tidy_manifest():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]'
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+                            {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+                            {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
             );
 
         $this->exportrepo->tidy_manifest();
