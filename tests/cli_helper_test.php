@@ -86,7 +86,7 @@ class cli_helper_test extends advanced_testcase {
             'default' => false,
             'variable' => 'fake',
             'valuerequired' => false,
-        ]
+        ],
     ];
 
     /**

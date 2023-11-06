@@ -144,7 +144,7 @@ $options = [
         'default' => $usegit,
         'variable' => 'usegit',
         'valuerequired' => false,
-    ]
+    ],
 ];
 
 $clihelper = new cli_helper($options);

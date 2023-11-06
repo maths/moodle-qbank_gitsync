@@ -30,36 +30,37 @@ $functions = [
         'classname'   => 'qbank_gitsync\external\export_question',
         'description' => 'Exports a question and separate metadata.',
         'type'        => 'read',
-        'ajax'        => true
+        'ajax'        => true,
     ],
     'qbank_gitsync_import_question' => [
         'classname'   => 'qbank_gitsync\external\import_question',
         'description' => 'Imports a question and separate metadata.',
         'type'        => 'write',
-        'ajax'        => true
+        'ajax'        => true,
     ],
     'qbank_gitsync_delete_question' => [
         'classname'   => 'qbank_gitsync\external\delete_question',
         'description' => 'Deletes all versions of a question',
         'type'        => 'write',
-        'ajax'        => true
+        'ajax'        => true,
     ],
     'qbank_gitsync_get_question_list' => [
         'classname'   => 'qbank_gitsync\external\get_question_list',
         'description' => 'Get list of questions for a context',
         'type'        => 'read',
-        'ajax'        => true
+        'ajax'        => true,
     ],
 ];
 
-$services = array(
-    'qbank_gitsync' => array(
+$services = [
+    'qbank_gitsync' => [
             'functions' => ['qbank_gitsync_export_question',
                             'qbank_gitsync_import_question',
                             'qbank_gitsync_delete_question',
-                            'qbank_gitsync_get_question_list'],
+                            'qbank_gitsync_get_question_list',
+                        ],
             'restrictedusers' => 0,
             'enabled' => 1,
-            'shortname' => 'qbank_gitsync_ws'
-    )
-);
+            'shortname' => 'qbank_gitsync_ws',
+    ],
+];

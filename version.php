@@ -31,6 +31,6 @@ $plugin->component = 'qbank_gitsync';
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->release   = '0.1.0 for Moodle 4.0+';
 
-$plugin->dependencies = array(
-    'qbank_importasversion'     => 2023061400
-);
+$plugin->dependencies = [
+    'qbank_importasversion'     => 2023061400,
+];

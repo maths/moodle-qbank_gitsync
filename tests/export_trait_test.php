@@ -65,10 +65,10 @@ class export_trait_test extends advanced_testcase {
             'rootdirectory' => $this->rootpath,
             'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
             'token' => 'XXXXXX',
-            'help' => false
+            'help' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context'
+            'get_arguments', 'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->any())->method('check_context')->willReturn(
@@ -78,13 +78,13 @@ class export_trait_test extends advanced_testcase {
         );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'handle_abort'
+            'get_curl_request', 'call_exit', 'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -189,7 +189,7 @@ class export_trait_test extends advanced_testcase {
      */
     public function test_broken_json_on_get_list(): void {
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'export_to_repo_main_process'
+            'get_curl_request', 'call_exit', 'export_to_repo_main_process',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->listcurlrequest = $this->listcurl;
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
@@ -206,7 +206,7 @@ class export_trait_test extends advanced_testcase {
      */
     public function test_exception_on_get_list(): void {
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'export_to_repo_main_process'
+            'get_curl_request', 'call_exit', 'export_to_repo_main_process',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->listcurlrequest = $this->listcurl;
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(

@@ -72,10 +72,10 @@ class create_repo_test extends advanced_testcase {
             'qcategoryid' => null,
             'instanceid' => null,
             'token' => 'XXXXXX',
-            'help' => false
+            'help' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context'
+            'get_arguments', 'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->exactly(1))->method('check_context')->willReturn(
@@ -85,13 +85,13 @@ class create_repo_test extends advanced_testcase {
         );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();;
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
-            'get_curl_request', 'handle_abort'
+            'get_curl_request', 'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->createrepo->curlrequest = $this->curl;
         $this->createrepo->listcurlrequest = $this->listcurl;
@@ -100,7 +100,8 @@ class create_repo_test extends advanced_testcase {
                                                'modulename' => 'Module 1', 'coursecategory' => null,
                                                'qcategoryname' => 'top', 'qcategoryid' => '',
                                                'instanceid' => '',
-                                               'contextonly' => 0,];
+                                               'contextonly' => 0,
+                                            ];
         $this->createrepo->postsettings = [];
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",

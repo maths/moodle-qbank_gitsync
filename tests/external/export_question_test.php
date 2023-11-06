@@ -83,7 +83,7 @@ class export_question_test extends externallib_advanced_testcase {
         global $DB;
         // Set the required capabilities - webservice access and export rights on course.
         $context = context_course::instance($this->course->id);
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
 
         $returnvalue = export_question::execute($this->qbankentryid, false);
@@ -118,7 +118,7 @@ class export_question_test extends externallib_advanced_testcase {
     public function test_no_webservice_access(): void {
         global $DB;
         $context = context_course::instance($this->course->id);
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->unassignUserCapability('qbank/gitsync:exportquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
@@ -148,7 +148,7 @@ class export_question_test extends externallib_advanced_testcase {
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                                         ['questionid' => $qincourse2->id], $strictness = MUST_EXIST);
 
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->expectException(moodle_exception::class);
         $this->expectExceptionMessage('Not enrolled');
@@ -164,7 +164,7 @@ class export_question_test extends externallib_advanced_testcase {
         global $DB;
         // Set the required capabilities - webservice access and export rights on course.
         $context = context_course::instance($this->course->id);
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $sink = $this->redirectEvents();
         $returnvalue = export_question::execute($this->qbankentryid, false);

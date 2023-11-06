@@ -83,7 +83,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         global $DB;
         // Set the required capabilities - webservice access and list rights on course.
         $context = context_course::instance($this->course->id);
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
 
         $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
@@ -120,7 +120,7 @@ class get_question_list_test extends externallib_advanced_testcase {
     public function test_no_webservice_access(): void {
         global $DB;
         $context = context_course::instance($this->course->id);
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->unassignUserCapability('qbank/gitsync:listquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
@@ -152,7 +152,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                                         ['questionid' => $qincourse2->id], $strictness = MUST_EXIST);
 
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->expectException(moodle_exception::class);
         $this->expectExceptionMessage('Not enrolled');
@@ -169,7 +169,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         global $DB;
         // Set the required capabilities - webservice access and list rights on course.
         $context = context_course::instance($this->course->id);
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $qcategory2 = $this->generator->create_question_category(
             ['contextid' => \context_course::instance($this->course->id)->id]);

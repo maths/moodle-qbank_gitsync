@@ -54,7 +54,7 @@ class lib_test extends \advanced_testcase {
                     'Category name ending in /',
                     '/ and one that starts with one',
                     '<span lang="en" class="multilang">Matematically</span> ' .
-                    '<span lang="sv" class="multilang">Matematiskt (svenska)</span>'
+                    '<span lang="sv" class="multilang">Matematiskt (svenska)</span>',
                 ], split_category_path($path));
     }
 
@@ -75,8 +75,8 @@ class lib_test extends \advanced_testcase {
         define('QUIZ_TEST', 'Quiz test');
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
-        $category = core_course_category::create(array('name' => 'Cat1'));
-        $module = $this->getDataGenerator()->create_module('quiz', array('course' => $course->id, 'name' => QUIZ_TEST));
+        $category = core_course_category::create(['name' => 'Cat1']);
+        $module = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'name' => QUIZ_TEST]);
 
         // System.
         $context = get_context(10, $category->name, $course->fullname, QUIZ_TEST, null);

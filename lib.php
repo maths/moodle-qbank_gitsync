@@ -33,7 +33,7 @@
  */
 function split_category_path(?string $path): array {
     $rawnames = preg_split('~(?<!/)/(?!/)~', $path);
-    $names = array();
+    $names = [];
     foreach ($rawnames as $rawname) {
         $names[] = clean_param(trim(str_replace('//', '/', $rawname)), PARAM_TEXT);
     }
@@ -67,7 +67,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
     $result->categoryname = null;
     $result->coursename = null;
     $result->modulename = null;
-    $result->instanceid = NULL;;
+    $result->instanceid = null;
     switch ($contextlevel) {
         case \CONTEXT_SYSTEM:
             $result->contextlevel = 'system';
@@ -78,7 +78,8 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                 $instanceid = $DB->get_field('course_categories', 'id', ['name' => $categoryname], $strictness = MUST_EXIST);
                 $result->categoryname = $categoryname;
             } else {
-                $result->categoryname = $DB->get_field('course_categories', 'name', ['id' => $instanceid], $strictness = MUST_EXIST);
+                $result->categoryname = $DB->get_field('course_categories', 'name',
+                                                       ['id' => $instanceid], $strictness = MUST_EXIST);
             }
             $result->contextlevel = 'course category';
             $result->context = context_coursecat::instance($instanceid);

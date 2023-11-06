@@ -95,7 +95,7 @@ class import_repo_test extends advanced_testcase {
             'usegit' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context'
+            'get_arguments', 'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->exactly(1))->method('check_context')->willReturn(
@@ -105,19 +105,19 @@ class import_repo_test extends advanced_testcase {
         );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->uploadcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->deletecurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'upload_file', 'handle_delete', 'call_exit', 'handle_abort'
+            'upload_file', 'handle_delete', 'call_exit', 'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->deletecurlrequest = $this->deletecurl;
@@ -214,7 +214,7 @@ class import_repo_test extends advanced_testcase {
             function() {
                 $this->results[] = [
                                     $this->importrepo->subdirectoryiterator->getPathname(),
-                                    $this->importrepo->postsettings['qcategoryname']
+                                    $this->importrepo->postsettings['qcategoryname'],
                                    ];
             })
         );
@@ -227,10 +227,10 @@ class import_repo_test extends advanced_testcase {
         ];
         $this->importrepo->import_questions();
         $this->assertContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1'], $this->results);
-        $this->assertContains([$this->rootpath .
-                               '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1'], $this->results);
-        $this->assertContains([$this->rootpath .
-                               '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1'], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1'],
+                              $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1'],
+                              $this->results);
         $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2'], $this->results);
 
         // Check temp manifest file created.
@@ -286,7 +286,7 @@ class import_repo_test extends advanced_testcase {
             function() {
                 $this->results[] = [
                                     $this->importrepo->subdirectoryiterator->getPathname(),
-                                    $this->importrepo->postsettings['qcategoryname']
+                                    $this->importrepo->postsettings['qcategoryname'],
                                    ];
             })
         );
@@ -299,10 +299,10 @@ class import_repo_test extends advanced_testcase {
             'instanceid' => null,
         ];
         $this->importrepo->import_questions();
-        $this->assertContains([$this->rootpath .
-                               '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1'], $this->results);
-        $this->assertContains([$this->rootpath .
-                               '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1'], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1'],
+                               $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1'],
+                               $this->results);
 
         // Check temp manifest file created.
         $this->assertEquals(file_exists($this->importrepo->tempfilepath), true);
@@ -346,7 +346,7 @@ class import_repo_test extends advanced_testcase {
                 $this->results[] = [
                                     $this->importrepo->subdirectoryiterator->getPathname(),
                                     $this->importrepo->postsettings['qcategoryname'],
-                                    $this->importrepo->postsettings['questionbankentryid']
+                                    $this->importrepo->postsettings['questionbankentryid'],
                                    ];
             })
         );
@@ -360,10 +360,10 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->import_questions();
         // Check questions in manifest pass questionbankentryid to webservice but the others don't.
         $this->assertContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1', '1'], $this->results);
-        $this->assertContains([$this->rootpath .
-                               '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1', '2'], $this->results);
-        $this->assertContains([$this->rootpath .
-                               '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', null], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1', '2'],
+                              $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', null],
+                              $this->results);
         $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
     }
 
@@ -403,7 +403,7 @@ class import_repo_test extends advanced_testcase {
                 $this->results[] = [
                                     $this->importrepo->subdirectoryiterator->getPathname(),
                                     $this->importrepo->postsettings['qcategoryname'],
-                                    $this->importrepo->postsettings['questionbankentryid']
+                                    $this->importrepo->postsettings['questionbankentryid'],
                                 ];
             })
         );
@@ -417,10 +417,10 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->import_questions();
         // Check question with matching hashes wasn't imported.
         $this->assertNotContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1', '1'], $this->results);
-        $this->assertContains([$this->rootpath .
-                            '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1', '2'], $this->results);
-        $this->assertContains([$this->rootpath .
-                            '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', '3'], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1', '2'],
+                              $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', '3'],
+                              $this->results);
         $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
     }
 

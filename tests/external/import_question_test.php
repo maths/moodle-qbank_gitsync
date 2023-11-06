@@ -73,7 +73,8 @@ class import_question_test extends externallib_advanced_testcase {
         $this->setUser($user);
         $this->testrepo = $CFG->dirroot . '/question/bank/gitsync/testrepo/';
         $this->fileinfo = ['contextid' => '', 'component' => '', 'filearea' => '', 'userid' => '',
-                           'itemid' => '', 'filepath' => '', 'filename' => ''];
+                           'itemid' => '', 'filepath' => '', 'filename' => '',
+                        ];
     }
 
     /**
@@ -116,7 +117,7 @@ class import_question_test extends externallib_advanced_testcase {
         global $DB;
         // Set the required capabilities - webservice access and export rights on course.
         $context = context_course::instance($this->course->id);
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         return $context;
     }
@@ -163,7 +164,7 @@ class import_question_test extends externallib_advanced_testcase {
     public function test_no_webservice_access(): void {
         global $DB;
         $context = context_course::instance($this->course->id);
-        $managerroleid = $DB->get_field('role', 'id', array('shortname' => 'manager'));
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->unassignUserCapability('qbank/gitsync:importquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);

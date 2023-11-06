@@ -202,7 +202,7 @@ class import_repo {
         $this->curlrequest->set_option(CURLOPT_POST, 1);
         $this->uploadpostsettings = [
             'token' => $token,
-            'moodlewsrestformat' => 'json'
+            'moodlewsrestformat' => 'json',
         ];
         $this->uploadcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->uploadcurlrequest->set_option(CURLOPT_POST, 1);
@@ -210,7 +210,7 @@ class import_repo {
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_delete_question',
             'moodlewsrestformat' => 'json',
-            'questionbankentryid' => null
+            'questionbankentryid' => null,
         ];
         $this->deletecurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->deletecurlrequest->set_option(CURLOPT_POST, 1);
@@ -235,7 +235,8 @@ class import_repo {
             $this->manifestpath = $arguments['rootdirectory'] . '/' . $manifestpath;
         } else {
             $instanceinfo = $clihelper->check_context($this);
-            $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $instanceinfo->contextinfo->categoryname,
+            $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
+                                                $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
                                                 $instanceinfo->contextinfo->modulename, $this->directory);
         }

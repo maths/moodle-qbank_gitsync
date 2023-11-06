@@ -80,7 +80,7 @@ $options = [
         'default' => $usegit,
         'variable' => 'usegit',
         'valuerequired' => false,
-    ]
+    ],
 ];
 
 if (!function_exists('tidy_repair_string')) {
