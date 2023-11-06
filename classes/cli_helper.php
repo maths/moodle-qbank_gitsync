@@ -148,6 +148,14 @@ class cli_helper {
         }
         if (isset($cliargs['manifestpath'])) {
             $cliargs['manifestpath'] = $this->trim_slashes($cliargs['manifestpath']);
+            if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
+                        || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid'])
+                        || isset($cliargs['contextlevel']) )) {
+                echo "\nYou have specified a manifest file. Contextlevel, instance id, " .
+                        "course name, module name and/or course category are not needed. " .
+                        "Context data can be extracted from the file.\n";
+                static::call_exit();
+            }
         }
         if (isset($cliargs['instanceid'])) {
             if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
@@ -176,7 +184,7 @@ class cli_helper {
                     echo "\nYou have specified course category level context. " .
                          "You must specify the category name (--coursecategory) or \n" .
                          "its Moodle id (--instanceid).";
-                static::call_exit();
+                    static::call_exit();
                 }
             }
             if ($cliargs['contextlevel'] === 'course') {
@@ -189,7 +197,7 @@ class cli_helper {
                     echo "\nYou have specified course level context. " .
                          "You must specify the full course name (--coursename) or \n" .
                          "its Moodle id (--instanceid).";
-                static::call_exit();
+                    static::call_exit();
                 }
             }
             if ($cliargs['contextlevel'] === 'module') {
@@ -203,7 +211,7 @@ class cli_helper {
                     echo "\nYou have specified module level context. " .
                          "You must specify the full course name (--coursename) and \n" .
                          "module name (--modulename) or give the module Moodle id (--instanceid).";
-                static::call_exit();
+                    static::call_exit();
                 }
             }
         }
@@ -308,17 +316,20 @@ class cli_helper {
         $filenamemod = '_' . $contextlevel;
         switch ($contextlevel) {
             case 'coursecategory':
-                $filenamemod = $filenamemod . '_' . $coursecategory;
+                $filenamemod = $filenamemod . '_' . substr($coursecategory, 0, 100);
                 break;
             case 'course':
-                $filenamemod = $filenamemod . '_' . $coursename;
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 100);
                 break;
             case 'module':
-                $filenamemod = $filenamemod . '_' . $coursename . '_' . $modulename;
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 50) . '_' . substr($modulename, 0, 50);
                 break;
         }
 
-        return $directory . '/' . $moodleinstance . $filenamemod . self::MANIFEST_FILE;
+        $filename = $directory . '/' .
+                    preg_replace('/[^a-z0-9_]+/', '-', strtolower(substr($moodleinstance, 0, 50) . $filenamemod)) .
+                    self::MANIFEST_FILE;
+        return $filename;
     }
 
     /**
@@ -373,6 +384,7 @@ class cli_helper {
                     $manifestcontents->context->coursename = $questioninfo->coursename;
                     $manifestcontents->context->modulename = $questioninfo->modulename;
                     $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
+                    $manifestcontents->context->instanceid = $questioninfo->instanceid;
                     $manifestcontents->context->moodleurl = $moodleurl;
                 }
             }
@@ -421,7 +433,7 @@ class cli_helper {
 
         $xpath = new \DOMXpath($dom);
         $tidyoptions = array_merge($sharedoptions, [
-            'output-xhtml' => true
+            'output-xhtml' => true,
         ]);
         $tidy = new \tidy();
 
@@ -453,7 +465,7 @@ class cli_helper {
         $tidyoptions = array_merge($sharedoptions, [
             'input-xml' => true,
             'output-xml' => true,
-            'indent-cdata' => true
+            'indent-cdata' => true,
         ]);
         $tidy->parseString($noidxml, $tidyoptions);
         $tidy->cleanRepair();
@@ -563,5 +575,52 @@ class cli_helper {
      */
     public static function call_exit():void {
         exit;
+    }
+
+    public function check_context(object $activity):object {
+        $activity->listpostsettings['contextonly'] = 1;
+        $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
+        $response = $activity->listcurlrequest->execute();
+        $moodlequestionlist = json_decode($response);
+        if (is_null($moodlequestionlist)) {
+            echo "Broken JSON returned from Moodle:\n";
+            echo $response . "\n";
+            static::call_exit();
+        } else if (property_exists($moodlequestionlist, 'exception')) {
+            echo "{$moodlequestionlist->message}\n";
+            echo "Failed to get list of questions from Moodle.\n";
+            static::call_exit();
+        } else {
+            $activityname = get_class($activity);
+            echo "\nAbout to {$activityname} from:\n";
+            echo "Moodle URL: {$activity->moodleurl}\n";
+            echo "Context level: {$moodlequestionlist->contextinfo->contextlevel}\n";
+            if ($moodlequestionlist->contextinfo->categoryname || $moodlequestionlist->contextinfo->coursename) {
+                echo "Instance: {$moodlequestionlist->contextinfo->categoryname}{$moodlequestionlist->contextinfo->coursename}\n";
+            }
+            if ($moodlequestionlist->contextinfo->modulename) {
+                echo "{$moodlequestionlist->contextinfo->modulename}\n";
+            }
+            echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
+            static::handle_abort();
+        }
+        $activity->listpostsettings['contextonly'] = 0;
+        $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
+        return $moodlequestionlist;
+    }
+
+    /**
+     * Prompt user whether they want to continue.
+     *
+     * @return void
+     */
+    public static function handle_abort():void {
+        echo "Abort? y/n\n";
+        $handle = fopen ("php://stdin", "r");
+        $line = fgets($handle);
+        if (trim($line) === 'y') {
+            static::call_exit();
+        }
+        fclose($handle);
     }
 }

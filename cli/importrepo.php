@@ -49,6 +49,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'manifestpath',
+        'shortopt' => 'f',
+        'description' => 'Filepath of manifest file relative to root directory.',
+        'default' => '',
+        'variable' => 'manifestpath',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'directory',
         'shortopt' => 'd',
         'description' => 'Directory of repo on users computer containing "top" folder, ' .

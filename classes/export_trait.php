@@ -42,29 +42,19 @@ trait export_trait {
      */
     public function export_to_repo() {
         $response = $this->listcurlrequest->execute();
-        $questionsinmoodle = json_decode($response);
-        if (is_null($questionsinmoodle)) {
+        $moodlequestionlist = json_decode($response);
+        if (is_null($moodlequestionlist)) {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
             $this->call_exit();
-            $questionsinmoodle = json_decode('{"questions": []}'); // For unit test purposes.
-        } else if (property_exists($questionsinmoodle, 'exception')) {
-            echo "{$questionsinmoodle->message}\n";
+            $moodlequestionlist = json_decode('{"questions": []}'); // For unit test purposes.
+        } else if (property_exists($moodlequestionlist, 'exception')) {
+            echo "{$moodlequestionlist->message}\n";
             echo "Failed to get list of questions from Moodle.\n";
             $this->call_exit();
+            $moodlequestionlist = json_decode('{"questions": []}'); // For unit test purposes.
         } else {
-            echo "\nAbout to export questions from:\n";
-            echo "Moodle URL: {$this->moodleurl}\n";
-            echo "Context level: {$questionsinmoodle->contextinfo->contextlevel}\n";
-            if ($questionsinmoodle->contextinfo->categoryname || $questionsinmoodle->contextinfo->coursename) {
-                echo "Instance: {$questionsinmoodle->contextinfo->categoryname}{$questionsinmoodle->contextinfo->coursename}\n";
-            }
-            if ($questionsinmoodle->contextinfo->modulename) {
-                echo "{$questionsinmoodle->contextinfo->modulename}\n";
-            }
-            echo "Question category: {$questionsinmoodle->contextinfo->qcategoryname}\n";
-            $this->handle_abort();
-            $this->export_to_repo_main_process($questionsinmoodle->questions);
+            $this->export_to_repo_main_process($moodlequestionlist);
         }
     }
 
@@ -72,10 +62,11 @@ trait export_trait {
      * Main export processing
      * Separated out so can be mocked in unit tests.
      *
-     * @param array $questionsinmoodle
+     * @param object $moodlequestionlist
      * @return void
      */
-    public function export_to_repo_main_process(array $questionsinmoodle):void {
+    public function export_to_repo_main_process(object $moodlequestionlist):void {
+        $questionsinmoodle = $moodlequestionlist->questions;
         $this->postsettings['includecategory'] = 1;
         $tempfile = fopen($this->tempfilepath, 'w+');
         if ($tempfile === false) {
@@ -194,6 +185,7 @@ trait export_trait {
                     'coursename' => $this->listpostsettings['coursename'],
                     'modulename' => $this->listpostsettings['modulename'],
                     'coursecategory' => $this->listpostsettings['coursecategory'],
+                    'instanceid' => $this->listpostsettings['instanceid'],
                     'format' => 'xml',
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");

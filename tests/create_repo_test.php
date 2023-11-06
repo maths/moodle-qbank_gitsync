@@ -75,10 +75,14 @@ class create_repo_test extends advanced_testcase {
             'help' => false
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments'
+            'get_arguments', 'check_context'
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-
+        $this->clihelper->expects($this->exactly(1))->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}')
+        );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
@@ -98,7 +102,7 @@ class create_repo_test extends advanced_testcase {
                                                'instanceid' => '',
                                                'contextonly' => 0,];
         $this->createrepo->postsettings = [];
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                              "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
               "questions": [{"questionbankentryid": "1", "name": "One", "questioncategory": ""},
@@ -141,7 +145,6 @@ class create_repo_test extends advanced_testcase {
                     file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 2',
                     file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
-        $this->expectOutputRegex('/^\nAbout to export.*Question category: top\n$/s');
     }
 
     /**
@@ -166,6 +169,5 @@ class create_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->coursecategory, null);
         $this->assertEquals($firstline->version, '10');
         $this->assertEquals($firstline->format, 'xml');
-        $this->expectOutputRegex('/^\nAbout to export.*Question category: top\n$/s');
     }
 }

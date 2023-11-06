@@ -78,7 +78,7 @@ class get_question_list extends external_api {
                     'questioncategory' => new external_value(PARAM_TEXT, 'question category'),
                     'version' => new external_value(PARAM_SEQUENCE, 'version'),
                 ])
-            )
+            ),
         ]);
     }
 
@@ -131,8 +131,9 @@ class get_question_list extends external_api {
             $catnames = split_category_path($params['qcategoryname']);
             $parent = 0;
             foreach ($catnames as $catname) {
-                $category = $DB->get_record('question_categories', ['name' => $catname,
-                                            'contextid' => $thiscontext->id, 'parent' => $parent], 'id, parent, name');
+                $category = $DB->get_record('question_categories',
+                                ['name' => $catname, 'contextid' => $thiscontext->id, 'parent' => $parent],
+                                'id, parent, name');
                 $parent = $category->id;
             }
         } else {

@@ -89,15 +89,20 @@ class import_repo_test extends advanced_testcase {
             'coursecategory' => 'Cat 1',
             'qcategoryid' => null,
             'instanceid' => null,
+            'manifestpath' => null,
             'token' => 'XXXXXX',
             'help' => false,
             'usegit' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'call_exit'
+            'get_arguments', 'check_context'
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-
+        $this->clihelper->expects($this->exactly(1))->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}')
+        );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
@@ -137,7 +142,7 @@ class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": "35003", "version": "2"}',
         );
 
-        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturn(
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                              "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
               "questions": []}',
@@ -147,7 +152,6 @@ class import_repo_test extends advanced_testcase {
 
         // Check manifest file created.
         $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
-        $this->expectOutputRegex('/^\nAbout to import.*Question category: top\n$/s');
     }
 
 
@@ -219,6 +223,7 @@ class import_repo_test extends advanced_testcase {
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
             'coursecategory' => 'Cat 1',
+            'instanceid' => null,
         ];
         $this->importrepo->import_questions();
         $this->assertContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1'], $this->results);
@@ -291,6 +296,7 @@ class import_repo_test extends advanced_testcase {
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
             'coursecategory' => 'Cat 1',
+            'instanceid' => null,
         ];
         $this->importrepo->import_questions();
         $this->assertContains([$this->rootpath .
@@ -349,6 +355,7 @@ class import_repo_test extends advanced_testcase {
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
             'coursecategory' => 'Cat 1',
+            'instanceid' => null,
         ];
         $this->importrepo->import_questions();
         // Check questions in manifest pass questionbankentryid to webservice but the others don't.
@@ -405,6 +412,7 @@ class import_repo_test extends advanced_testcase {
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
             'coursecategory' => 'Cat 1',
+            'instanceid' => null,
         ];
         $this->importrepo->import_questions();
         // Check question with matching hashes wasn't imported.
@@ -452,7 +460,7 @@ class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": "35003", "version": "2"}',
         );
 
-        $this->importrepo->listcurlrequest->expects($this->exactly(2))->method('execute')->willReturn(
+        $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
               "questions": []}'
@@ -484,7 +492,6 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['35001'];
         $this->assertEquals(false, isset($samplerecord->moodlecommit));
-        $this->expectOutputRegex('/^\nAbout to import.*Question category: top\n$/s');
     }
 
     /**

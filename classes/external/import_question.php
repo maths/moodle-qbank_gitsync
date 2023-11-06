@@ -153,7 +153,9 @@ class import_question extends external_api {
             $parent = 0;
             foreach ($catnames as $key => $catname) {
                 $category = $DB->get_record('question_categories', ['name' => $catname,
-                                            'contextid' => $thiscontext->id, 'parent' => $parent]);
+                                            'contextid' => $thiscontext->id,
+                                            'parent' => $parent,
+                                           ]);
                 $parent = $category->id;
             }
             $qformat->setCategory($category);

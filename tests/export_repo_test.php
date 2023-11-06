@@ -68,10 +68,14 @@ class export_repo_test extends advanced_testcase {
             'help' => false
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments'
+            'get_arguments', 'check_context'
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}')
+        );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute'
@@ -132,7 +136,6 @@ class export_repo_test extends advanced_testcase {
 
         $this->assertEquals('1', $existingentries['35001']->version);
         $this->assertEquals('10', $existingentries['35001']->exportedversion);
-        $this->expectOutputRegex('/^\nAbout to export.*Question category: top\n$/s');
     }
 
     /**
@@ -161,7 +164,6 @@ class export_repo_test extends advanced_testcase {
         $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat 2/Second Question.xml'));
         $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
         $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
-        $this->expectOutputRegex('/^\nAbout to export.*Question category: top\n$/s');
     }
 
     /**

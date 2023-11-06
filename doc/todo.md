@@ -5,12 +5,13 @@
 - Set the file upload flag on every verion update as it resets by default.
 
 ## Command line arguments
-- Allow use of course/question category/course category/module id rather than names. These are obtainable by the user from the URL (at least the course and question category are) are definitely unique, unlike the names currently used.
-- Look into defaults to streamline the user experience, particulary the necessity of '/top' in subdirectory/subcategory settings.
+- (Done) Allow use of course/question category/course category/module id rather than names. These are obtainable by the user from the URL (at least the course and question category are) are definitely unique, unlike the names currently used.
+- (Done) Look into defaults to streamline the user experience, particulary the necessity of '/top' in subdirectory/subcategory settings.
 - Sort out the issues with slashes in Windows. Double-check what's happening when categories are split and slashes are replaced, particularly with categories/courses with slashes in the name.
-- Refactor the code to avoid having to add/remove slashes at the start of directories (or at least make it clearer what's going on).
-- Validate command line arguments and return useful error messages. Some of this can be done on the client, some will need to be done on the server e.g. more gracefully dealing with non-existent courses, etc.
-- Have option to take context from manifest file.
+- (Done) Refactor the code to avoid having to add/remove slashes at the start of directories (or at least make it clearer what's going on).
+- (Done) Validate command line arguments and return useful error messages. Some of this can be done on the client...
+- ... some will need to be done on the server e.g. more gracefully dealing with non-existent courses, etc.
+- (Done) Have option to take context from manifest file.
 
 ## Creating the manifest on an import
 We're currently set up for extracting question from Moodle as the first step. What about importing an existing repo?
@@ -24,7 +25,7 @@ We're currently set up for extracting question from Moodle as the first step. Wh
 
 ## Exception handling
 - (Done) Make sure there is error handling around all webserver access and exit/continue as appropriate.
-- Add try/catch around file access.
+- (Done) Add try/catch around file access.
 - (Done) Add try/catch around XML/String conversion. Update: It's not errors that are thrown - have to check for functions returning false.
 - Investigate what's needed around DB calls.
 

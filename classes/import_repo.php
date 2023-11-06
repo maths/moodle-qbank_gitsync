@@ -175,42 +175,13 @@ class import_repo {
         $coursecategory = $arguments['coursecategory'];
         $qcategoryid = $arguments['qcategoryid'];
         $instanceid = $arguments['instanceid'];
+        $manifestpath = $arguments['manifestpath'];
 
         $this->usegit = $arguments['usegit'];
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
-        $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
-                                                $coursename, $modulename, $this->directory);
-        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
-                                          '_import' . cli_helper::TEMP_MANIFEST_FILE,
-                                           $this->manifestpath);
-        // Create manifest file if it doesn't already exist.
-        $manifestfile = fopen($this->manifestpath, 'a+');
-        if ($manifestfile === false) {
-            echo "\nUnable to access manifest file: {$this->manifestpath}\n Aborting.\n";
-            $this->call_exit();
-            return; // Required for PHPUnit.
-        }
-        fclose($manifestfile);
-        $manifestcontents = json_decode(file_get_contents($this->manifestpath));
-        if ($manifestcontents === null) {
-            echo "\nUnable to parse manifest file: {$this->manifestpath}\nAborting.\n";
-            $this->call_exit();
-        }
-        if (!$manifestcontents) {
-            $this->manifestcontents = new \stdClass();
-            $this->manifestcontents->context = null;
-            $this->manifestcontents->questions = [];
-        } else {
-            $this->manifestcontents = $manifestcontents;
-        }
-        if (count($this->manifestcontents->questions) === 0) {
-            echo "\nManifest file is empty. This should only be the case if you are importing ";
-            echo "questions for the first time into a Moodle context where they don't already exist.\n";
-            $this->handle_abort();
-        }
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->deletecurlrequest = $this->get_curl_request($wsurl);
         $this->listcurlrequest = $this->get_curl_request($wsurl);
@@ -259,6 +230,61 @@ class import_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+
+        if ($manifestpath) {
+            $this->manifestpath = $arguments['rootdirectory'] . '/' . $manifestpath;
+        } else {
+            $instanceinfo = $clihelper->check_context($this);
+            $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $instanceinfo->contextinfo->categoryname,
+                                                $instanceinfo->contextinfo->coursename,
+                                                $instanceinfo->contextinfo->modulename, $this->directory);
+        }
+        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
+                                          '_import' . cli_helper::TEMP_MANIFEST_FILE,
+                                           $this->manifestpath);
+        // Create manifest file if it doesn't already exist.
+        $manifestfile = fopen($this->manifestpath, 'a+');
+        if ($manifestfile === false) {
+            echo "\nUnable to access manifest file: {$this->manifestpath}\n Aborting.\n";
+            $this->call_exit();
+            return; // Required for PHPUnit.
+        }
+        fclose($manifestfile);
+        $contentsjson = file_get_contents($this->manifestpath);
+        $manifestcontents = json_decode($contentsjson);
+        if ($manifestcontents === null && $contentsjson) {
+            echo "\nUnable to parse manifest file: {$this->manifestpath}\nAborting.\n";
+            $this->call_exit();
+        }
+        if (!$manifestcontents && $manifestpath) {
+            echo "\nManifest file is empty: {$this->manifestpath}\nAborting.\n";
+            $this->call_exit();
+        } else if (!$manifestcontents && !$manifestpath) {
+            $this->manifestcontents = new \stdClass();
+            $this->manifestcontents->context = null;
+            $this->manifestcontents->questions = [];
+        } else {
+            $this->manifestcontents = $manifestcontents;
+        }
+
+        if ($manifestpath) {
+            // Set context info from manifest file rather than other CLI arguments.
+            $this->postsettings['instanceid'] = $this->manifestcontents->instanceid;
+            $this->postsettings['coursename'] = $this->manifestcontents->coursename;
+            $this->postsettings['modulename'] = $this->manifestcontents->modulename;
+            $this->postsettings['coursecategory'] = $this->manifestcontents->coursecategory;
+            $this->listpostsettings['instanceid'] = $this->manifestcontents->instanceid;
+            $this->listpostsettings['coursename'] = $this->manifestcontents->coursename;
+            $this->listpostsettings['modulename'] = $this->manifestcontents->modulename;
+            $this->listpostsettings['coursecategory'] = $this->manifestcontents->coursecategory;
+            $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+            $instanceinfo = $clihelper->check_context($this);
+        }
+        if (count($this->manifestcontents->questions) === 0) {
+            echo "\nManifest file is empty. This should only be the case if you are importing ";
+            echo "questions for the first time into a Moodle context where they don't already exist.\n";
+            $this->handle_abort();
+        }
     }
 
     /**
@@ -268,7 +294,6 @@ class import_repo {
      * @return void
      */
     public function process():void {
-        $this->check_context();
         $this->import_categories();
         $this->import_questions();
         $this->curlrequest->close();
@@ -443,6 +468,7 @@ class import_repo {
                                 'coursename' => $this->postsettings['coursename'],
                                 'modulename' => $this->postsettings['modulename'],
                                 'coursecategory' => $this->postsettings['coursecategory'],
+                                'instanceid' => $this->postsettings['instanceid'],
                                 'format' => 'xml',
                             ];
                             if ($existingentry && isset($existingentry->currentcommit)) {
@@ -671,36 +697,6 @@ class import_repo {
             echo "Export questions from Moodle before proceeding.\n";
             $this->call_exit();
         }
-    }
-
-    public function check_context():void {
-        $this->listpostsettings['contextonly'] = 1;
-        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-        $response = $this->listcurlrequest->execute();
-        $questionsinmoodle = json_decode($response);
-        if (is_null($questionsinmoodle)) {
-            echo "Broken JSON returned from Moodle:\n";
-            echo $response . "\n";
-            $this->call_exit();
-        } else if (property_exists($questionsinmoodle, 'exception')) {
-            echo "{$questionsinmoodle->message}\n";
-            echo "Failed to get list of questions from Moodle.\n";
-            $this->call_exit();
-        } else {
-            echo "\nAbout to import questions from:\n";
-            echo "Moodle URL: {$this->moodleurl}\n";
-            echo "Context level: {$questionsinmoodle->contextinfo->contextlevel}\n";
-            if ($questionsinmoodle->contextinfo->categoryname || $questionsinmoodle->contextinfo->coursename) {
-                echo "Instance: {$questionsinmoodle->contextinfo->categoryname}{$questionsinmoodle->contextinfo->coursename}\n";
-            }
-            if ($questionsinmoodle->contextinfo->modulename) {
-                echo "{$questionsinmoodle->contextinfo->modulename}\n";
-            }
-            echo "Question category: {$questionsinmoodle->contextinfo->qcategoryname}\n";
-            $this->handle_abort();
-        }
-        $this->listpostsettings['contextonly'] = 0;
-        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
     }
 
     /**
