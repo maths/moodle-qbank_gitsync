@@ -586,10 +586,12 @@ class cli_helper {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
             static::call_exit();
+            return new \stdClass(); // Required for PHPUnit.
         } else if (property_exists($moodlequestionlist, 'exception')) {
             echo "{$moodlequestionlist->message}\n";
             echo "Failed to get list of questions from Moodle.\n";
             static::call_exit();
+            return new \stdClass(); // Required for PHPUnit.
         } else {
             $activityname = get_class($activity);
             echo "\nAbout to {$activityname} from:\n";

@@ -33,6 +33,9 @@ use advanced_testcase;
  * Test cli_helper function.
  * @group qbank_gitsync
  *
+ * Some tests are also done in import_repo_test where mocking has
+ * already been set up.
+ *
  * @covers \gitsync\cli_helper::class
  */
 class cli_helper_test extends advanced_testcase {
@@ -161,5 +164,41 @@ class cli_helper_test extends advanced_testcase {
         } else {
             $this->assertEquals($result, $expectedresult);
         }
+    }
+
+    /**
+     * Manifest path name creation
+     * @covers \gitsync\cli_helper\get_manifest_path()
+     */
+    public function test_manifest_path(): void {
+        $helper = new cli_helper($this->options);
+        // Module level, including replacements.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'module', 'cat$goryname',
+                                                   'cours$nam$', 'Modul$name', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_module_cours-nam-_modul-name' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+        // Category level, including replacements.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'coursecategory', 'cat$goryname',
+                                                   'cours$nam$', 'Modul$name', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_coursecategory_cat-goryname' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+        // Course level, including replacements.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'course', 'cat$goryname',
+                                                   'cours$nam$', 'Modul$name', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_course_cours-nam-' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+        // System level.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'system', 'cat$goryname',
+                                                    'cours$nam$', 'Modul$name', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_system' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+        // Shortening.
+        // Module level, including replacements.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'module', 'cat$goryname',
+            'cours$nam$thatisverylongandsoneedstobeshortened and has a space in it just to make sure',
+            'Modulename that is also very long and we want to chop up a bit as well hopefully', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_module_cours-nam-thatisverylongandsoneedstobeshortened' .
+                            '-an_modulename-that-is-also-very-long-and-we-want-to-c' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
     }
 }

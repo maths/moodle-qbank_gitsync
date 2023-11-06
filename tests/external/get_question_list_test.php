@@ -202,6 +202,60 @@ class get_question_list_test extends externallib_advanced_testcase {
         $this->assertEquals($this->qcategory->name, $returnedq1['questioncategory']);
         $this->assertEquals($qcategory2->name, $returnedq2['questioncategory']);
 
+        $this->assertEquals($this->course->fullname, $returnvalue['contextinfo']['coursename']);
+        $this->assertEquals($this->course->id, $returnvalue['contextinfo']['instanceid']);
+        $this->assertEquals(null, $returnvalue['contextinfo']['categoryname']);
+        $this->assertEquals(null, $returnvalue['contextinfo']['modulename']);
+
+        $events = $sink->get_events();
+        $this->assertEquals(count($events), 0);
+    }
+
+    /**
+     * Test output of execute function using instanceid to retrieve list.
+     */
+    public function test_list_instanceid(): void {
+        global $DB;
+        // Set the required capabilities - webservice access and list rights on course.
+        $context = context_course::instance($this->course->id);
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $qcategory2 = $this->generator->create_question_category(
+            ['contextid' => \context_course::instance($this->course->id)->id]);
+        $q2 = $this->generator->create_question('stack', 'test3',
+                                                ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
+        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
+                             ['questionid' => $q2->id], $strictness = MUST_EXIST);
+        $sink = $this->redirectEvents();
+        $returnvalue = get_question_list::execute('top', 50, null, null, null,
+                                                  null, $this->course->id, false);
+
+        $returnvalue = external_api::clean_returnvalue(
+            get_question_list::execute_returns(),
+            $returnvalue
+        );
+
+        $returnedq1 = [];
+        $returnedq2 = [];
+        $this->assertEquals(count($returnvalue['questions']), 2);
+        foreach ($returnvalue['questions'] as $returnedq) {
+            if ($returnedq['questionbankentryid'] === $this->q->questionbankentryid) {
+                $returnedq1 = $returnedq;
+            } else if ($returnedq['questionbankentryid'] === $qbankentryid2) {
+                $returnedq2 = $returnedq;
+            }
+        }
+
+        $this->assertEquals($this->q->name, $returnedq1['name']);
+        $this->assertEquals($q2->name, $returnedq2['name']);
+        $this->assertEquals($this->qcategory->name, $returnedq1['questioncategory']);
+        $this->assertEquals($qcategory2->name, $returnedq2['questioncategory']);
+
+        $this->assertEquals($this->course->fullname, $returnvalue['contextinfo']['coursename']);
+        $this->assertEquals($this->course->id, $returnvalue['contextinfo']['instanceid']);
+        $this->assertEquals(null, $returnvalue['contextinfo']['categoryname']);
+        $this->assertEquals(null, $returnvalue['contextinfo']['modulename']);
+
         $events = $sink->get_events();
         $this->assertEquals(count($events), 0);
     }

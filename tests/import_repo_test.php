@@ -37,6 +37,10 @@ class fake_helper extends cli_helper {
     public static function call_exit():void {
         return;
     }
+
+    public static function handle_abort():void {
+        return;
+    }
 }
 
 /**
@@ -836,5 +840,47 @@ class import_repo_test extends advanced_testcase {
         );
         $this->importrepo->check_question_versions();
         $this->expectOutputRegex('/No token/');
+    }
+
+    /**
+     * Test checking context
+     * @covers \gitsync\cli_helper\check_context()
+     */
+    public function test_check_content(): void {
+        $clihelper = new fake_helper([]);
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}',
+        );
+        $clihelper->check_context($this->importrepo);
+        $this->expectOutputRegex('/^\nAbout to.*import_repo.*Question category: top\n$/s');
+    }
+
+    /**
+     * Test checking context exception
+     * @covers \gitsync\cli_helper\check_context()
+     */
+    public function test_check_content_exception(): void {
+        $clihelper = new fake_helper([]);
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+        $clihelper->check_context($this->importrepo);
+        $this->expectOutputRegex('/No token/');
+    }
+
+    /**
+     * Test checking context broken JSON
+     * @covers \gitsync\cli_helper\check_context()
+     */
+    public function test_check_content_broekn_json(): void {
+        $clihelper = new fake_helper([]);
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{broken'
+        );
+        $clihelper->check_context($this->importrepo);
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*{broken/s');
     }
 }
