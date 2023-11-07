@@ -54,7 +54,7 @@ function split_category_path(?string $path): array {
  * @param string|null $categoryname
  * @param string|null $coursename
  * @param string|null $modulename
- * @param int|null $instanceid
+ * @param string|null $instanceid
  * @return object
  */
 function get_context(int $contextlevel, ?string $categoryname = null,

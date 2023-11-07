@@ -134,18 +134,18 @@ class create_repo_test extends advanced_testcase {
 
         // Check question files exist.
         $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/One.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/Default for Test 1/sub 1/Two.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/Three.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/Four.xml'));
+        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-1/Two.xml'));
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/Three.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/Four.xml'));
 
         // Check category files exist.
         $this->assertStringContainsString('top', file_get_contents($this->rootpath . '/top/'. cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 1',
-                    file_get_contents($this->rootpath . '/top/Default for Test 1/sub 1/' . cli_helper::CATEGORY_FILE . '.xml'));
+                    file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-1/' . cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 2',
-                    file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
+                    file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/' . cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 2',
-                    file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
+                    file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/' . cli_helper::CATEGORY_FILE . '.xml'));
     }
 
     /**

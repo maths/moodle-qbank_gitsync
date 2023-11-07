@@ -135,12 +135,14 @@ trait export_trait {
                     }
                     $categorypath = $categoryxml->question->category->text->__toString();
 
-                    // TODO Is this needed?
+                    // Splits category path into an array of categories, splitting on single /.
+                    // Double / are then converted to single / after split.
                     $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
                     $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
                     $categorysofar = '';
                     // Create directory structure for category if it doesn't.
                     foreach ($directorylist as $categorydirectory) {
+                        $categorydirectory = preg_replace('/[^a-zA-Z0-9_]+/', '-', $categorydirectory);
                         $categorysofar .= "/{$categorydirectory}";
                         $currentdirectory = dirname($this->manifestpath) . $categorysofar;
                         if (!is_dir($currentdirectory)) {
@@ -171,17 +173,18 @@ trait export_trait {
                         }
                     }
                 }
-                $success = file_put_contents("{$bottomdirectory}/{$qname}.xml", $question);
+                $sanitisedqname = preg_replace('/[^a-zA-Z0-9_]+/', '-', substr($qname, 0, 230));
+                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question);
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";
-                    echo "{$bottomdirectory}/{$qname}.xml";
+                    echo "{$bottomdirectory}/{$sanitisedqname}.xml";
                     continue;
                 }
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
                     'contextlevel' => $this->listpostsettings['contextlevel'],
-                    'filepath' => $bottomdirectory . "/{$qname}.xml",
+                    'filepath' => $bottomdirectory . "/{$sanitisedqname}.xml",
                     'coursename' => $this->listpostsettings['coursename'],
                     'modulename' => $this->listpostsettings['modulename'],
                     'coursecategory' => $this->listpostsettings['coursecategory'],

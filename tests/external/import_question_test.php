@@ -127,7 +127,7 @@ class import_question_test extends externallib_advanced_testcase {
      */
     public function test_capabilities(): void {
         $this->give_capabilities();
-        $this->upload_file($this->testrepo . 'top/cat 1/gitsync_category.xml');
+        $this->upload_file($this->testrepo . 'top/cat-1/gitsync_category.xml');
         $returnvalue = import_question::execute('',
                                                 null,
                                                 $this->fileinfo,
@@ -188,7 +188,7 @@ class import_question_test extends externallib_advanced_testcase {
     public function test_category_import(): void {
         global $DB;
         $context = $this->give_capabilities();
-        $this->upload_file($this->testrepo . 'top/cat 1/gitsync_category.xml');
+        $this->upload_file($this->testrepo . 'top/cat-1/gitsync_category.xml');
         $createdcategory = $DB->get_record('question_categories', ['name' => 'cat 1'], '*');
         $this->assertEquals($createdcategory, false);
         $sink = $this->redirectEvents();
@@ -226,7 +226,7 @@ class import_question_test extends externallib_advanced_testcase {
     public function test_subcategory_import(): void {
         global $DB;
         $context = $this->give_capabilities();
-        $this->upload_file($this->testrepo . 'top/cat 2/subcat 2_1/gitsync_category.xml');
+        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/gitsync_category.xml');
         $createdcategory = $DB->get_record('question_categories', ['name' => 'cat 2'], '*');
         $this->assertEquals($createdcategory, false);
         $createdsubcategory = $DB->get_record('question_categories', ['name' => 'subcat 2_1'], '*');
@@ -272,7 +272,7 @@ class import_question_test extends externallib_advanced_testcase {
     public function test_question_import(): void {
         global $DB;
         $this->give_capabilities();
-        $this->upload_file($this->testrepo . 'top/cat 2/subcat 2_1/gitsync_category.xml');
+        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/gitsync_category.xml');
         $createdquestion = $DB->get_record('question', ['name' => 'Third Question'], '*');
         $this->assertEquals($createdquestion, false);
 
@@ -284,7 +284,7 @@ class import_question_test extends externallib_advanced_testcase {
         $createdsubcategory = $DB->get_record('question_categories', ['name' => 'subcat 2_1'], '*', $strictness = MUST_EXIST);
 
         $sink = $this->redirectEvents();
-        $this->upload_file($this->testrepo . 'top/cat 2/subcat 2_1/Third Question.xml');
+        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml');
         $returnvalue = import_question::execute('',
                                                 'top/cat 2/subcat 2_1',
                                                 $this->fileinfo,
@@ -330,7 +330,7 @@ class import_question_test extends externallib_advanced_testcase {
                             ['questionbankentryid' => $qbankentryid, 'version' => 2]));
         $sink = $this->redirectEvents();
         // Update question.
-        $this->upload_file($this->testrepo . 'top/cat 2/subcat 2_1/Third Question.xml');
+        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml');
         $returnvalue = import_question::execute($qbankentryid,
                                  null,
                                  $this->fileinfo,

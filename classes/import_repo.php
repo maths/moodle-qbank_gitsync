@@ -143,7 +143,6 @@ class import_repo {
      *
      * @var \stdClass|null
      */
-
     public ?\stdClass $manifestcontents;
 
     /**
@@ -151,7 +150,6 @@ class import_repo {
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs
-     * @param bool $usegit
      */
     public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
@@ -176,6 +174,18 @@ class import_repo {
         $qcategoryid = $arguments['qcategoryid'];
         $instanceid = $arguments['instanceid'];
         $manifestpath = $arguments['manifestpath'];
+        $qcategoryname = null;
+        if (is_null($qcategoryid)) {
+            if ($this->subdirectory === 'top') {
+                $qcategoryname = 'top';
+            } else {
+                $listqcategoryfile = $this->directory . '/' . $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
+                $qcategoryname = $this->get_question_category_from_file($listqcategoryfile);
+            }
+        }
+        if (!$qcategoryname) {
+            $this->call_exit();
+        }
 
         $this->usegit = $arguments['usegit'];
 
@@ -197,6 +207,7 @@ class import_repo {
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
             'instanceid' => $instanceid,
+            'qcategoryid' => null,
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
@@ -222,7 +233,7 @@ class import_repo {
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
-            'qcategoryname' => $this->subdirectory,
+            'qcategoryname' => $qcategoryname,
             'qcategoryid' => $qcategoryid,
             'instanceid' => $instanceid,
             'contextonly' => 0,
@@ -343,7 +354,7 @@ class import_repo {
                         echo "Broken JSON returned from Moodle:\n";
                         echo $response . "\n";
                         echo "{$repoitem->getPathname()} not imported?\n";
-                        echo "Stopping before trying to import questions.";
+                        echo "Stopping before trying to import questions.\n";
                         $this->call_exit();;
                     } else if (property_exists($responsejson, 'exception')) {
                         echo "{$responsejson->message}\n";
@@ -351,7 +362,7 @@ class import_repo {
                             echo "{$responsejson->debuginfo}\n";
                         }
                         echo "{$repoitem->getPathname()} not imported.\n";
-                        echo "Stopping before trying to import questions.";
+                        echo "Stopping before trying to import questions.\n";
                         $this->call_exit();;
                     }
                 }
@@ -376,6 +387,9 @@ class import_repo {
         if (!is_array($fileinfo)) {
             if (property_exists($fileinfo, 'error')) {
                 echo "{$fileinfo->error}\n";
+                echo "Check that the webservice allows file uploads at ";
+                echo "Site administration->Server->Web services->External services->";
+                echo "qbank_gitsync->Edit->Show more->Can upload files.\n";
             }
             echo "{$repoitem->getPathname()} not imported.\n";
             return false;
@@ -413,24 +427,26 @@ class import_repo {
         }
         $existingentries = array_column($this->manifestcontents->questions, null, 'filepath');
         // Find all the question files and import them. Order is uncertain.
+        $categorynames = [];
         foreach ($this->subdirectoryiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
-                    // Avoid starting slash in categoryname.
-                    $qcategory = $this->subdirectory;
-                    if ($qcategory && $this->subdirectoryiterator->getSubPath()) {
-                        $qcategory = $qcategory . '/' . $this->subdirectoryiterator->getSubPath();
-                    } else if ($this->subdirectoryiterator->getSubPath()) {
-                        $qcategory = $this->subdirectoryiterator->getSubPath();
+                    $currentdirectory = $this->subdirectoryiterator->getPath();
+                    $qcategoryname = null;
+                    if (isset($categorynames[$currentdirectory])) {
+                        $qcategoryname = $categorynames[$currentdirectory];
+                    } else {
+                        $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
+                        $qcategoryname = $this->get_question_category_from_file($categoryfile);
+                        $categorynames[$currentdirectory] = $qcategoryname;
                     }
+                    $this->postsettings['qcategoryname'] = $qcategoryname;
                     // Path of file (without filename) relative to base $directory.
-                    $this->postsettings['qcategoryname'] = str_replace( '\\', '/',
-                                        $qcategory);
-                    if ($this->postsettings['qcategoryname']) {
+                    if ($qcategoryname) {
                         $relpath = str_replace(dirname($this->manifestpath), '', $repoitem->getPathname());
                         $relpath = str_replace( '\\', '/', $relpath);
-                        $existingentry = $existingentries["{$relpath}"] ?? false;
+                        $existingentry = $existingentries[$relpath] ?? false;
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
                             if (isset($existingentry->currentcommit)
@@ -465,7 +481,7 @@ class import_repo {
                                 'version' => $responsejson->version,
                                 // Questions can be imported in multiple contexts.
                                 'contextlevel' => $this->postsettings['contextlevel'],
-                                'filepath' => $repoitem->getPathname(),
+                                'filepath' => str_replace( '\\', '/', $repoitem->getPathname()),
                                 'coursename' => $this->postsettings['coursename'],
                                 'modulename' => $this->postsettings['modulename'],
                                 'coursecategory' => $this->postsettings['coursecategory'],
@@ -485,7 +501,7 @@ class import_repo {
                             fwrite($tempfile, json_encode($fileoutput) . "\n");
                         }
                     } else {
-                        echo "Root directory should not contain XML files, only a 'top' directory and manifests.\n" .
+                        echo "Problem with the category file or file location.\n" .
                              "{$repoitem->getPathname()} not imported.\n";
                     }
                 }
@@ -514,10 +530,10 @@ class import_repo {
      * Offer to delete questions from Moodle/manifest where the question is in the manifest
      * but there is no file in the repo.
      *
-     * @param bool $deleenabled Allows question delete if true, otherwise just lists applicable questions
+     * @param bool $deleteenabled Allows question delete if true, otherwise just lists applicable questions
      * @return void
      */
-    public function delete_no_file_questions($deleteenabled=false):void {
+    public function delete_no_file_questions(bool $deleteenabled=false):void {
         // Get all manifest entries for imported subdirectory.
         $manifestentries = array_filter($this->manifestcontents->questions, function($value) {
             return (substr($value->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory);
@@ -560,10 +576,10 @@ class import_repo {
      * Offer to delete questions from Moodle where the question is in Moodle
      * but not in the manifest.
      *
-     * @param bool $deleenabled Allows question delete if true, otherwise just lists applicable questions
+     * @param bool $deleteenabled Allows question delete if true, otherwise just lists applicable questions
      * @return void
      */
-    public function delete_no_record_questions($deleteenabled=false):void {
+    public function delete_no_record_questions(bool $deleteenabled=false):void {
         if (count($this->manifestcontents->questions) === 0 && $deleteenabled) {
             echo 'Manifest file is empty or inaccessible. You probably want to abort.\n';
             $this->handle_abort();
@@ -709,5 +725,33 @@ class import_repo {
      */
     public function call_exit():void {
         exit;
+    }
+
+    /**
+     * Given a filepath for a category question file, extract the Moodle
+     * category path from the file. (This will vary from the filepath
+     * as the filepath will have potentially had characters sanitised.)
+     *
+     * @param [type] $filename
+     * @return void
+     */
+    public function get_question_category_from_file($filename) {
+        if (!is_file($filename)) {
+            echo "\nRequired category file does not exist: {$filename}\n";
+            return null;
+        }
+        $contents = file_get_contents($filename);
+        if ($contents === false) {
+            echo "\nUnable to access file: {$filename}\n";
+            return null;
+        }
+        $categoryxml = simplexml_load_string($contents);
+        if ($categoryxml === false) {
+            echo "\nBroken category XML.\n";
+            echo "{$filename}.\n";
+            return null;
+        }
+        $qcategoryname = $categoryxml->question->category->text->__toString();
+        return $qcategoryname;
     }
 }

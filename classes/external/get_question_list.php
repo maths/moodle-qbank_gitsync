@@ -99,7 +99,7 @@ class get_question_list extends external_api {
     public static function execute(?string $qcategoryname,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null, ?string $qcategoryid = null,
-                                    ?string $instanceid = null, bool $contextonly):object {
+                                    ?string $instanceid = null, bool $contextonly = false):object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'qcategoryname' => $qcategoryname,
@@ -140,6 +140,9 @@ class get_question_list extends external_api {
             $category = $DB->get_record('question_categories', ['id' => $qcategoryid], 'id, parent, name');
         }
 
+        if (!$category) {
+            throw new \moodle_exception(get_string('categoryerror', 'qbank_gitsync', $params['qcategoryname']));
+        }
         $response = new \stdClass();
         $response->contextinfo = $contextinfo;
         $response->contextinfo->qcategoryname = $category->name;

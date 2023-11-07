@@ -34,10 +34,20 @@ use org\bovigo\vfs\vfsStream;
  * Allows testing of errors that lead to an exit.
  */
 class fake_helper extends cli_helper {
+    /**
+     * Override so ignored during testing
+     *
+     * @return void
+     */
     public static function call_exit():void {
         return;
     }
 
+    /**
+     * Override so ignored during testing
+     *
+     * @return void
+     */
     public static function handle_abort():void {
         return;
     }
@@ -100,7 +110,7 @@ class import_repo_test extends advanced_testcase {
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',
-        ])->setConstructorArgs([[]])->getMock();
+        ])->setConstructorArgs([$this->options])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->exactly(1))->method('check_context')->willReturn(
             json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
@@ -172,9 +182,9 @@ class import_repo_test extends advanced_testcase {
             })
         );
         $this->importrepo->import_categories();
-        $this->assertContains($this->rootpath . '/top/cat 1/gitsync_category.xml', $this->results);
-        $this->assertContains($this->rootpath . '/top/cat 2/gitsync_category.xml', $this->results);
-        $this->assertContains($this->rootpath . '/top/cat 2/subcat 2_1/gitsync_category.xml', $this->results);
+        $this->assertContains($this->rootpath . '/top/cat-1/gitsync_category.xml', $this->results);
+        $this->assertContains($this->rootpath . '/top/cat-2/gitsync_category.xml', $this->results);
+        $this->assertContains($this->rootpath . '/top/cat-2/subcat-2_1/gitsync_category.xml', $this->results);
     }
 
     /**
@@ -230,12 +240,12 @@ class import_repo_test extends advanced_testcase {
             'instanceid' => null,
         ];
         $this->importrepo->import_questions();
-        $this->assertContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1'], $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1'],
+        $this->assertContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1'], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
                               $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1'],
+        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
                               $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2'], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2'], $this->results);
 
         // Check temp manifest file created.
         $this->assertEquals(file_exists($this->importrepo->tempfilepath), true);
@@ -244,7 +254,7 @@ class import_repo_test extends advanced_testcase {
         $firstline = json_decode(fgets($tempfile));
         $this->assertStringContainsString('3500', $firstline->questionbankentryid);
         $this->assertEquals($firstline->contextlevel, '10');
-        $this->assertStringContainsString($this->rootpath . '/top/cat ', $firstline->filepath);
+        $this->assertStringContainsString($this->rootpath . '/top/cat-', $firstline->filepath);
         $this->assertEquals($firstline->coursename, 'Course 1');
         $this->assertEquals($firstline->modulename, 'Test 1');
         $this->assertEquals($firstline->coursecategory, 'Cat 1');
@@ -294,7 +304,7 @@ class import_repo_test extends advanced_testcase {
                                    ];
             })
         );
-        $this->importrepo->subdirectory = 'top/cat 2/subcat 2_1';
+        $this->importrepo->subdirectory = 'top/cat-2/subcat-2_1';
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
             'coursename' => 'Course 1',
@@ -303,9 +313,9 @@ class import_repo_test extends advanced_testcase {
             'instanceid' => null,
         ];
         $this->importrepo->import_questions();
-        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1'],
+        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
                                $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1'],
+        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
                                $this->results);
 
         // Check temp manifest file created.
@@ -315,7 +325,7 @@ class import_repo_test extends advanced_testcase {
         $firstline = json_decode(fgets($tempfile));
         $this->assertStringContainsString('3500', $firstline->questionbankentryid);
         $this->assertEquals($firstline->contextlevel, '10');
-        $this->assertStringContainsString($this->rootpath . '/top/cat ', $firstline->filepath);
+        $this->assertStringContainsString($this->rootpath . '/top/cat-', $firstline->filepath);
         $this->assertEquals($firstline->coursename, 'Course 1');
         $this->assertEquals($firstline->modulename, 'Test 1');
         $this->assertEquals($firstline->coursecategory, 'Cat 1');
@@ -330,11 +340,11 @@ class import_repo_test extends advanced_testcase {
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat-1/First-Question.xml",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"2",
-                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat-2/subcat-2_1/Third-Question.xml",
                                 "format":"xml"
                             }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
@@ -363,12 +373,12 @@ class import_repo_test extends advanced_testcase {
         ];
         $this->importrepo->import_questions();
         // Check questions in manifest pass questionbankentryid to webservice but the others don't.
-        $this->assertContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1', '1'], $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1', '2'],
+        $this->assertContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1', '1'], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1', '2'],
                               $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', null],
+        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1', null],
                               $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2', null], $this->results);
     }
 
     /**
@@ -381,16 +391,16 @@ class import_repo_test extends advanced_testcase {
                                  "questionbankentryid":"1",
                                  "currentcommit":"matched",
                                  "moodlecommit":"matched",
-                                 "filepath":"/top/cat 1/First Question.xml",
+                                 "filepath":"/top/cat-1/First-Question.xml",
                                  "format":"xml"
                              }, {
                                 "questionbankentryid":"2",
-                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat-2/subcat-2_1/Third-Question.xml",
                                 "currentcommit":"notmatched",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"3",
-                                "filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",
+                                "filepath":"/top/cat-2/subcat-2_1/Fourth-Question.xml",
                                 "currentcommit":"notmatched",
                                 "moodlecommit":"notmatched!",
                                 "format":"xml"
@@ -420,12 +430,12 @@ class import_repo_test extends advanced_testcase {
         ];
         $this->importrepo->import_questions();
         // Check question with matching hashes wasn't imported.
-        $this->assertNotContains([$this->rootpath . '/top/cat 1/First Question.xml', 'top/cat 1', '1'], $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 'top/cat 2/subcat 2_1', '2'],
+        $this->assertNotContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1', '1'], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1', '2'],
                               $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml', 'top/cat 2/subcat 2_1', '3'],
+        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1', '3'],
                               $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat 2/Second Question.xml', 'top/cat 2', null], $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2', null], $this->results);
     }
 
 
@@ -435,14 +445,13 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_import_questions_wrong_directory(): void {
         $this->importrepo->directory = $this->rootpath;
-        $this->importrepo->subdirectory = '';
+        $this->importrepo->subdirectory = 'top/cat-1';
         $this->curl->expects($this->any())->method('execute')->will(
             $this->returnValue('{"questionbankentryid": "35001", "version": "2"}'));
-        $wrongfile = fopen($this->rootpath . '\wrong.xml', 'a+');
-        fclose($wrongfile);
+        unlink($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml');
 
         $this->importrepo->import_questions();
-        $this->expectOutputRegex('/Root directory should not contain XML files/');
+        $this->expectOutputRegex('/Problem with the category file or file location./');
     }
 
     /**
@@ -490,7 +499,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($context->coursecategory, '');
 
         $samplerecord = $manifestentries['35004'];
-        $this->assertStringContainsString('/top/cat ', $samplerecord->filepath);
+        $this->assertStringContainsString('/top/cat-', $samplerecord->filepath);
         $this->assertEquals($samplerecord->format, 'xml');
         $this->assertEquals($samplerecord->moodlecommit, '35004test');
 
@@ -511,32 +520,32 @@ class import_repo_test extends advanced_testcase {
                              },
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat-1/First-Question.xml",
                                 "version": "1",
                                 "exportedversion": "1",
                                 "format":"xml"
                              }, {
                                 "questionbankentryid":"2",
-                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat-2/subcat-2_1/Third-Question.xml",
                                 "version": "1",
                                 "exportedversion": "1",
                                 "currentcommit": "test",
                                 "format":"xml"
                              }]}';
         $tempcontents = '{"questionbankentryid":"1",' .
-                          '"filepath":"/top/cat 1/First Question.xml",' .
+                          '"filepath":"/top/cat-1/First-Question.xml",' .
                           '"version": "5",' .
                           '"format":"xml"}' . "\n" .
                         '{"questionbankentryid":"3",' .
-                          '"filepath":"/top/cat 2/Second Question.xml",' .
+                          '"filepath":"/top/cat-2/Second-Question.xml",' .
                           '"version": "6",' .
                           '"format":"xml"}' . "\n" .
                         '{"questionbankentryid":"2",' .
-                          '"filepath":"/top/cat 2/subcat 2_1/Third Question.xml",' .
+                          '"filepath":"/top/cat-2/subcat-2_1/Third-Question.xml",' .
                           '"version": "7",' .
                           '"format":"xml"}' . "\n" .
                         '{"questionbankentryid":"4",' .
-                          '"filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",' .
+                          '"filepath":"/top/cat-2/subcat-2_1/Fourth-Question.xml",' .
                           '"version": "8",' .
                           '"moodlecommit": "test",' .
                           '"format":"xml"}' . "\n";
@@ -565,7 +574,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($context->coursecategory, null);
 
         $samplerecord = $manifestentries['1'];
-        $this->assertEquals('/top/cat 1/First Question.xml', $samplerecord->filepath);
+        $this->assertEquals('/top/cat-1/First-Question.xml', $samplerecord->filepath);
 
         $samplerecord = $manifestentries['4'];
         $this->assertEquals('test', $samplerecord->moodlecommit);
@@ -649,27 +658,27 @@ class import_repo_test extends advanced_testcase {
                              },
                              "questions":[{
                                 "questionbankentryid":"1",
-                                "filepath":"/top/cat 1/First Question.xml",
+                                "filepath":"/top/cat-1/First-Question.xml",
                                 "format":"xml"
                              }, {
                                 "questionbankentryid":"2",
-                                "filepath":"/top/cat 2/subcat 2_1/Third Question.xml",
+                                "filepath":"/top/cat-2/subcat-2_1/Third-Question.xml",
                                 "format":"xml"
                              }, {
                                 "questionbankentryid":"3",
-                                "filepath":"/top/cat 2/Second Question.xml",
+                                "filepath":"/top/cat-2/Second-Question.xml",
                                 "format":"xml"
                              }, {
                                 "questionbankentryid":"4",
-                                "filepath":"/top/cat 2/subcat 2_1/Fourth Question.xml",
+                                "filepath":"/top/cat-2/subcat-2_1/Fourth-Question.xml",
                                 "format":"xml"
                              }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->manifestpath, $manifestcontents);
 
         // Delete 2 of the files.
-        unlink($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml');
-        unlink($this->rootpath . '/top/cat 2/Second Question.xml');
+        unlink($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml');
+        unlink($this->rootpath . '/top/cat-2/Second-Question.xml');
 
         // One question deleted of two that no longer have files.
         $this->importrepo->expects($this->exactly(2))->method('handle_delete')->willReturnOnConsecutiveCalls(
@@ -691,8 +700,8 @@ class import_repo_test extends advanced_testcase {
         // Performing expectOutputRegex multiple times causes them all to pass regardless of content.
         // Modifier 's' handles line breaks within match any characters '.*'.
         $this->expectOutputRegex('/These questions are listed in the manifest but there is no longer a matching file' .
-                                 '.*top\/cat 2\/subcat 2_1\/Third Question.xml' .
-                                 '.*top\/cat 2\/Second Question.xml/s');
+                                 '.*top\/cat-2\/subcat-2_1\/Third-Question.xml' .
+                                 '.*top\/cat-2\/Second-Question.xml/s');
     }
 
     /**

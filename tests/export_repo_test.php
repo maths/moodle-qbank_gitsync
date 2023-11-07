@@ -119,10 +119,10 @@ class export_repo_test extends advanced_testcase {
         $this->exportrepo->process();
 
         // Check question files updated.
-        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat 1/First Question.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat 2/Second Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
+        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
+        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
 
         // Check manifest file updated.
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
@@ -160,10 +160,10 @@ class export_repo_test extends advanced_testcase {
         $this->exportrepo->process();
 
         // Check question files updated.
-        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat 1/First Question.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat 2/Second Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
+        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
+        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
     }
 
     /**
@@ -224,10 +224,10 @@ class export_repo_test extends advanced_testcase {
             '{"question": "<Question><Name>One</Name></Question>", "version": "10"}'
         );
 
-        chmod($this->rootpath . '/top/cat 1/First Question.xml', 0000);
+        chmod($this->rootpath . '/top/cat-1/First-Question.xml', 0000);
 
         @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/^\nAccess issue.\n\/top\/cat 1\/First Question.xml not updated.\n$/s');
+        $this->expectOutputRegex('/^\nAccess issue.\n\/top\/cat-1\/First-Question.xml not updated.\n$/s');
     }
 
     /**
@@ -242,9 +242,9 @@ class export_repo_test extends advanced_testcase {
         );
 
         // Make sure no attempt is made to update first file.
-        chmod($this->rootpath . '/top/cat 1/First Question.xml', 0000);
+        chmod($this->rootpath . '/top/cat-1/First-Question.xml', 0000);
 
         @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/^\nBroken XML\n\/top\/cat 1\/First Question.xml not updated.\n$/s');
+        $this->expectOutputRegex('/^\nBroken XML\n\/top\/cat-1\/First-Question.xml not updated.\n$/s');
     }
 }

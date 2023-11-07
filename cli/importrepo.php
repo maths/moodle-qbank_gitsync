@@ -52,7 +52,7 @@ $options = [
         'longopt' => 'manifestpath',
         'shortopt' => 'f',
         'description' => 'Filepath of manifest file relative to root directory.',
-        'default' => '',
+        'default' => null,
         'variable' => 'manifestpath',
         'valuerequired' => true,
     ],

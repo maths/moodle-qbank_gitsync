@@ -2,12 +2,13 @@
 
 ## Make webservice setup script run on plugin install
 - Make it possible to run the script multiple times.
-- Set the file upload flag on every verion update as it resets by default.
+- Set the file upload flag on every version update as it resets by default.
 
 ## Command line arguments
 - (Done) Allow use of course/question category/course category/module id rather than names. These are obtainable by the user from the URL (at least the course and question category are) are definitely unique, unlike the names currently used.
 - (Done) Look into defaults to streamline the user experience, particulary the necessity of '/top' in subdirectory/subcategory settings.
-- Sort out the issues with slashes in Windows. Double-check what's happening when categories are split and slashes are replaced, particularly with categories/courses with slashes in the name.
+- (Done) Sort out the issues with slashes in Windows.
+- (Done) Double-check what's happening when categories are split and slashes are replaced, particularly with categories/courses with slashes in the name.
 - (Done) Refactor the code to avoid having to add/remove slashes at the start of directories (or at least make it clearer what's going on).
 - (Done) Validate command line arguments and return useful error messages. Some of this can be done on the client...
 - ... some will need to be done on the server e.g. more gracefully dealing with non-existent courses, etc.

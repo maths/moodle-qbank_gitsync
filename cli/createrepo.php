@@ -58,9 +58,9 @@ $options = [
         'valuerequired' => true,
     ],
     [
-        'longopt' => 'subdirectory',
+        'longopt' => 'subcategory',
         'shortopt' => 's',
-        'description' => 'Relative subdirectory of repo to actually export.',
+        'description' => 'Relative subcategory of question to actually export.',
         'default' => '',
         'variable' => 'subdirectory',
         'valuerequired' => true,
@@ -100,7 +100,7 @@ $options = [
     [
         'longopt' => 'questioncategoryid',
         'shortopt' => 'q',
-        'description' => 'Numerical id of subdirectory to actually export.',
+        'description' => 'Numerical id of subcategory to actually export.',
         'default' => null,
         'variable' => 'qcategoryid',
         'valuerequired' => true,

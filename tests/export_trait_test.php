@@ -135,21 +135,21 @@ class export_trait_test extends advanced_testcase {
 
         // Check question files created.
         // New question in existing folder.
-        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Five.xml'));
+        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml'));
         // New question in new folder.
-        $this->assertStringContainsString('Six', file_get_contents($this->rootpath . '/top/Source 2/cat 3/Six.xml'));
+        $this->assertStringContainsString('Six', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Six.xml'));
         $this->assertStringContainsString('top/Source 2/cat 3',
-            file_get_contents($this->rootpath . '/top/Source 2/cat 3/' . cli_helper::CATEGORY_FILE . '.xml'));
+            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml'));
         // New question in existing folder - 2 category questions.
-        $this->assertStringContainsString('Seven', file_get_contents($this->rootpath . '/top/Source 2/cat 3/Seven.xml'));
+        $this->assertStringContainsString('Seven', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Seven.xml'));
         // New question in new folder - 2 category questions.
-        $this->assertStringContainsString('Eight', file_get_contents($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Eight.xml'));
+        $this->assertStringContainsString('Eight', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Eight.xml'));
 
         // Check temp file.
         $tempfile = fopen($this->exportrepo->tempfilepath, 'r');
         $firstline = json_decode(fgets($tempfile));
         $this->assertEquals('5', $firstline->questionbankentryid);
-        $this->assertEquals($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Five.xml', $firstline->filepath);
+        $this->assertEquals($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml', $firstline->filepath);
         $this->assertEquals($firstline->version, '10');
     }
 
@@ -246,9 +246,9 @@ class export_trait_test extends advanced_testcase {
                           '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
         );
 
-        chmod($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 0000);
+        chmod($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 0000);
         @$this->exportrepo->export_to_repo_main_process($questions);
-        $this->expectOutputRegex('/^\nFile creation or update unsuccessful:.*Third Question.xml$/s');
+        $this->expectOutputRegex('/^\nFile creation or update unsuccessful:.*Third-Question.xml$/s');
     }
 
     /**
@@ -265,10 +265,10 @@ class export_trait_test extends advanced_testcase {
                           '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
         );
 
-        unlink($this->rootpath . '/top/cat 2/subcat 2_1/' . cli_helper::CATEGORY_FILE . '.xml');
-        chmod($this->rootpath . '/top/cat 2/subcat 2_1', 0000);
+        unlink($this->rootpath . '/top/cat-2/subcat-2_1/' . cli_helper::CATEGORY_FILE . '.xml');
+        chmod($this->rootpath . '/top/cat-2/subcat-2_1', 0000);
         @$this->exportrepo->export_to_repo_main_process($questions);
-        $this->expectOutputRegex('/^\nFile creation unsuccessful:.*subcat 2_1\/' . cli_helper::CATEGORY_FILE . '.xml$/s');
+        $this->expectOutputRegex('/^\nFile creation unsuccessful:.*subcat-2_1\/' . cli_helper::CATEGORY_FILE . '.xml$/s');
     }
 
     /**

@@ -146,7 +146,7 @@ class import_question extends external_api {
             $qformat->setCatfromfile(false);
         } else if ($params['qcategoryname']) {
             // Category name should be in form top/$category/$subcat1/$subcat2 and
-            // have been gleaned directly from the directory structure.
+            // have been gleaned directly from category xml file.
             // Find the 'top' category for the context ($parent==0) and
             // then descend through the hierarchy until we find the category we need.
             $catnames = split_category_path($params['qcategoryname']);

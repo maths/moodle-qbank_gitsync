@@ -118,6 +118,11 @@ class cli_helper {
         return ['shortopts' => $shortopts, 'longopts' => $longopts];
     }
 
+    /**
+     * Do some initial checks on command line arguments and tidy them up a bit.
+     *
+     * @return void
+     */
     public function validate_and_clean_args(): void {
         $cliargs = $this->processedoptions;
         if (!isset($cliargs['token'])) {
@@ -480,7 +485,7 @@ class cli_helper {
     /**
      * Updates the manifest file with the current commit hashes of question files in the repo.
      *
-     * @param object activity e.g. import_repo
+     * @param object $activity e.g. import_repo
      * @return void
      */
     public function commit_hash_update(object $activity):void {
@@ -502,7 +507,7 @@ class cli_helper {
      * Updates the manifest file with the current commit hashes of question files in the repo.
      * Used on initial repo creation so also sets the moodle commit to be the same.
      *
-     * @param object activity e.g. create_repo
+     * @param object $activity e.g. create_repo
      * @return void
      */
     public function commit_hash_setup(object $activity):void {
@@ -577,6 +582,13 @@ class cli_helper {
         exit;
     }
 
+    /**
+     * Contact Moodle to check that the user supplied context (either instance names or instanceid)
+     * is valid and then confirm with user it's the right one.
+     *
+     * @param object $activity
+     * @return object
+     */
     public function check_context(object $activity):object {
         $activity->listpostsettings['contextonly'] = 1;
         $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
