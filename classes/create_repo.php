@@ -61,11 +61,11 @@ class create_repo {
      */
     public curl_request $listcurlrequest;
     /**
-     * Relative path of subdirectory to import.
+     * Relative path of subcategory to import.
      *
      * @var string
      */
-    public string $subdirectory;
+    public string $subcategory;
     /**
      * Path to actual manifest file
      *
@@ -114,7 +114,7 @@ class create_repo {
         } else {
             $this->directory = $arguments['rootdirectory'];
         }
-        $this->subdirectory = $arguments['subdirectory'];
+        $this->subcategory = $arguments['subcategory'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -150,7 +150,7 @@ class create_repo {
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
-            'qcategoryname' => $this->subdirectory,
+            'qcategoryname' => $this->subcategory,
             'qcategoryid' => $qcategoryid,
             'instanceid' => $instanceid,
             'contextonly' => 0,

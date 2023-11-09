@@ -11,7 +11,7 @@
 - (Done) Double-check what's happening when categories are split and slashes are replaced, particularly with categories/courses with slashes in the name.
 - (Done) Refactor the code to avoid having to add/remove slashes at the start of directories (or at least make it clearer what's going on).
 - (Done) Validate command line arguments and return useful error messages. Some of this can be done on the client...
-- ... some will need to be done on the server e.g. more gracefully dealing with non-existent courses, etc.
+- (Duplicate) ... some will need to be done on the server e.g. more gracefully dealing with non-existent courses, etc.
 - (Done) Have option to take context from manifest file.
 
 ## Creating the manifest on an import
@@ -19,7 +19,7 @@ We're currently set up for extracting question from Moodle as the first step. Wh
 - (Done) This may require more manual steps e.g. adding/committing manifest and temp file to .gitignore. Attempting to do it entirely automatically to a mature repo would be problematic.
 - (Done) What about commit hashes? Will need to set Moodle and current hashes after first run. Update: We absolutely have to get the commit hash at time of import and add to temp file for this to work and be resilient for recovery purposes. `usegit` config/argument added to CLIs to trigger the (minimal) git specific code in classes.
 - (Done) What about future runs? User could be importing subdirectory - can we determine which manifest entries have been imported on a run in order to add hashes? (In manifest but no hashes and no exportedversion?) Update: see above.
-- If the top category doesn't exist, import currently fails. Should be created instead (with warning and chance to abort). This is an issue with the question version checking code, not the import itself.
+- (Done) If the top subdirectory category doesn't exist, import currently fails. Should be created instead (with warning and chance to abort). This is an issue with the question version checking code, not the import itself.
 
 ## Config
 - (Done) Flag whether Git is being used. Can then skip sections of CLIs if not.

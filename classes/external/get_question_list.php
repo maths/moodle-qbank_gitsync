@@ -141,7 +141,7 @@ class get_question_list extends external_api {
         }
 
         if (!$category) {
-            throw new \moodle_exception(get_string('categoryerror', 'qbank_gitsync', $params['qcategoryname']));
+            throw new \moodle_exception('categoryerror', 'qbank_gitsync', null, $params['qcategoryname']);
         }
         $response = new \stdClass();
         $response->contextinfo = $contextinfo;

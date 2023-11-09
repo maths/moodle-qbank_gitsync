@@ -129,7 +129,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
             $result->instanceid = $instanceid;
             return $result;
         default:
-            throw new Exception('Invalid context level supplied.');
+            throw new moodle_exception('contexterror', 'qbank_gitsync', null, $contextlevel);;
     }
 }
 

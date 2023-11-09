@@ -62,7 +62,7 @@ $options = [
         'shortopt' => 's',
         'description' => 'Relative subcategory of question to actually export.',
         'default' => '',
-        'variable' => 'subdirectory',
+        'variable' => 'subcategory',
         'valuerequired' => true,
     ],
     [

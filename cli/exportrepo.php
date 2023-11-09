@@ -58,6 +58,22 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'subcategory',
+        'shortopt' => 's',
+        'description' => 'Relative subcategory of question to actually export.',
+        'default' => '',
+        'variable' => 'subcategory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'questioncategoryid',
+        'shortopt' => 'q',
+        'description' => 'Numerical id of subcategory to actually export.',
+        'default' => null,
+        'variable' => 'qcategoryid',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'token',
         'shortopt' => 't',
         'description' => 'Security token for webservice.',

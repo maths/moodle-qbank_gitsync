@@ -30,6 +30,20 @@ global $CFG;
 use advanced_testcase;
 
 /**
+ * Allows testing of errors that lead to an exit.
+ */
+class fake_cli_helper extends cli_helper {
+    /**
+     * Override so ignored during testing
+     *
+     * @return void
+     */
+    public static function call_exit():void {
+        return;
+    }
+}
+
+/**
  * Test cli_helper function.
  * @group qbank_gitsync
  *
@@ -138,9 +152,8 @@ class cli_helper_test extends advanced_testcase {
      * @covers \gitsync\cli_helper\get_context_level()
      */
     public function test_incorrect_level(): void {
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage("Context level 'wrong' is not valid.");
-        cli_helper::get_context_level('wrong');
+        fake_cli_helper::get_context_level('wrong');
+        $this->expectOutputRegex("/^Context level 'wrong' is not valid.$/");
     }
 
     /**

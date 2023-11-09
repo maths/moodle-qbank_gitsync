@@ -171,17 +171,14 @@ class import_repo {
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
-        $qcategoryid = $arguments['qcategoryid'];
         $instanceid = $arguments['instanceid'];
         $manifestpath = $arguments['manifestpath'];
         $qcategoryname = null;
-        if (is_null($qcategoryid)) {
-            if ($this->subdirectory === 'top') {
-                $qcategoryname = 'top';
-            } else {
-                $listqcategoryfile = $this->directory . '/' . $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
-                $qcategoryname = $this->get_question_category_from_file($listqcategoryfile);
-            }
+        if ($this->subdirectory === 'top') {
+            $qcategoryname = 'top';
+        } else {
+            $listqcategoryfile = $this->directory . '/' . $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
+            $qcategoryname = cli_helper::get_question_category_from_file($listqcategoryfile);
         }
         if (!$qcategoryname) {
             $this->call_exit();
@@ -233,23 +230,38 @@ class import_repo {
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
-            'qcategoryname' => $qcategoryname,
-            'qcategoryid' => $qcategoryid,
+            'qcategoryname' => 'top',
+            'qcategoryid' => null,
             'instanceid' => $instanceid,
             'contextonly' => 0,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
-        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
 
         if ($manifestpath) {
             $this->manifestpath = $arguments['rootdirectory'] . '/' . $manifestpath;
         } else {
-            $instanceinfo = $clihelper->check_context($this);
+            if ($qcategoryname !== 'top') {
+                // Subcategory may not exist yet so we can't check it at this stage.
+                // User will get warning on version check if it definitely doesn't exist.
+                // We do still need the user to verify the top level context.
+                $message = "Question subdirectory: {$this->subdirectory}\n";
+                $instanceinfo = $clihelper->check_context($this, $message);
+            } else {
+                $instanceinfo = $clihelper->check_context($this);
+            }
             $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
                                                 $instanceinfo->contextinfo->modulename, $this->directory);
+            $this->postsettings['instanceid'] = $instanceinfo->contextinfo->instanceid;
+            $this->postsettings['coursename'] = $instanceinfo->contextinfo->coursename;
+            $this->postsettings['modulename'] = $instanceinfo->contextinfo->modulename;
+            $this->postsettings['coursecategory'] = $instanceinfo->contextinfo->categoryname;
+            $this->listpostsettings['instanceid'] = $instanceinfo->contextinfo->instanceid;
+            $this->listpostsettings['coursename'] = $instanceinfo->contextinfo->coursename;
+            $this->listpostsettings['modulename'] = $instanceinfo->contextinfo->modulename;
+            $this->listpostsettings['coursecategory'] = $instanceinfo->contextinfo->categoryname;
         }
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
                                           '_import' . cli_helper::TEMP_MANIFEST_FILE,
@@ -269,7 +281,8 @@ class import_repo {
             $this->call_exit();
         }
         if (!$manifestcontents && $manifestpath) {
-            echo "\nManifest file is empty: {$this->manifestpath}\nAborting.\n";
+            echo "\nManifest file is empty: {$this->manifestpath}\n";
+            echo "You will need to supply context details. Aborting.\n";
             $this->call_exit();
         } else if (!$manifestcontents && !$manifestpath) {
             $this->manifestcontents = new \stdClass();
@@ -292,6 +305,12 @@ class import_repo {
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
             $instanceinfo = $clihelper->check_context($this);
         }
+        // Set question category info after call to check_context.
+        // We can't rely on the subcategories existing in Moodle until after import
+        // if we're using category name.
+        $this->listpostsettings['qcategoryname'] = $qcategoryname;
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+
         if (count($this->manifestcontents->questions) === 0) {
             echo "\nManifest file is empty. This should only be the case if you are importing ";
             echo "questions for the first time into a Moodle context where they don't already exist.\n";
@@ -438,7 +457,7 @@ class import_repo {
                         $qcategoryname = $categorynames[$currentdirectory];
                     } else {
                         $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
-                        $qcategoryname = $this->get_question_category_from_file($categoryfile);
+                        $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
                         $categorynames[$currentdirectory] = $qcategoryname;
                     }
                     $this->postsettings['qcategoryname'] = $qcategoryname;
@@ -535,8 +554,12 @@ class import_repo {
      */
     public function delete_no_file_questions(bool $deleteenabled=false):void {
         // Get all manifest entries for imported subdirectory.
+        // Filepath should equal subdirectory or path must be longer and continue with
+        // one (and only) one slash.
         $manifestentries = array_filter($this->manifestcontents->questions, function($value) {
-            return (substr($value->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory);
+            return (substr($value->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory
+                    && (strlen($value->filepath) === strlen($this->subdirectory) + 1
+                        || preg_match('/^\/{1}(?!\/)/' , substr($value->filepath, strlen($this->subdirectory) + 1))));
         });
         // Check to see there is a matching file in the repo still.
         $questionstodelete = [];
@@ -679,6 +702,9 @@ class import_repo {
      * @return void
      */
     public function check_question_versions(): void {
+        if (count($this->manifestcontents->questions) === 0) {
+            return;
+        }
         $response = $this->listcurlrequest->execute();
         $questionsinmoodle = json_decode($response);
         if (is_null($questionsinmoodle)) {
@@ -688,10 +714,17 @@ class import_repo {
             $this->call_exit();
             $questionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
         } else if (property_exists($questionsinmoodle, 'exception')) {
-            echo "{$questionsinmoodle->message}\n";
-            echo "Failed to check question versions.\n";
-            $this->call_exit();
-            $questionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
+            if (isset($questionsinmoodle->errorcode) && $questionsinmoodle->errorcode === 'categoryerror') {
+                echo "Target category {$this->listpostsettings['qcategoryname']} does not exist in Moodle.\n";
+                echo "This should only be the case if you're importing it for the first time and\n";
+                echo "want to create new questions in Moodle.\n";
+                $this->handle_abort();
+            } else {
+                echo "{$questionsinmoodle->message}\n";
+                echo "Failed to check question versions.\n";
+                $this->call_exit();
+                $questionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
+            }
         }
         $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $changes = false;
@@ -727,31 +760,5 @@ class import_repo {
         exit;
     }
 
-    /**
-     * Given a filepath for a category question file, extract the Moodle
-     * category path from the file. (This will vary from the filepath
-     * as the filepath will have potentially had characters sanitised.)
-     *
-     * @param [type] $filename
-     * @return void
-     */
-    public function get_question_category_from_file($filename) {
-        if (!is_file($filename)) {
-            echo "\nRequired category file does not exist: {$filename}\n";
-            return null;
-        }
-        $contents = file_get_contents($filename);
-        if ($contents === false) {
-            echo "\nUnable to access file: {$filename}\n";
-            return null;
-        }
-        $categoryxml = simplexml_load_string($contents);
-        if ($categoryxml === false) {
-            echo "\nBroken category XML.\n";
-            echo "{$filename}.\n";
-            return null;
-        }
-        $qcategoryname = $categoryxml->question->category->text->__toString();
-        return $qcategoryname;
-    }
+
 }

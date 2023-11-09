@@ -32,5 +32,5 @@ $string['gitsync:listquestions'] = 'List';
 $string['exporterror'] = 'Could not export question id: {$a}';
 $string['importerror'] = 'Could not import question from file: {$a}';
 $string['noquestionerror'] = 'Question does not exist. Questionbankentryid: {$a}';
-$string['contexterror'] = 'The context level is invalid';
+$string['contexterror'] = 'The context level is invalid: {$a}';
 $string['categoryerror'] = 'Problem with question category: {$a}';

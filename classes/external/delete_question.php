@@ -74,7 +74,7 @@ class delete_question extends external_api {
         ]);
         $questiondata = get_question_data($params['questionbankentryid']);
         if (!$questiondata->questionid) {
-            throw new moodle_exception(get_string('noquestionerror', 'qbank_gitsync', $params['questionbankentryid']));
+            throw new moodle_exception('noquestionerror', 'qbank_gitsync', null, $params['questionbankentryid']);
         }
         $thiscontext = context::instance_by_id($questiondata->contextid);
         self::validate_context($thiscontext);

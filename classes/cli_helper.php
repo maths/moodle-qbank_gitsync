@@ -151,6 +151,22 @@ class cli_helper {
                 $cliargs['subdirectory'] = 'top';
             }
         }
+        if (isset($cliargs['subcategory'])) {
+            if (strlen($cliargs['subcategory']) > 0 && isset($cliargs['questioncategoryid'])) {
+                echo "\nYou have supplied a subcategory to identify the required question category " .
+                     "and a question category id. Please use only one.\n";
+                static::call_exit();
+            }
+            if (strlen($cliargs['subcategory']) > 0) {
+                $cliargs['subcategory'] = $this->trim_slashes($cliargs['subcategory']);
+                if (strlen($cliargs['subcategory']) > 0 && substr($cliargs['subcategory'], 0, 3) !== 'top') {
+                    $cliargs['subcategory'] = 'top/' . $cliargs['subcategory'];
+                }
+            }
+            if (strlen($cliargs['subcategory']) === 0) {
+                $cliargs['subcategory'] = 'top';
+            }
+        }
         if (isset($cliargs['manifestpath'])) {
             $cliargs['manifestpath'] = $this->trim_slashes($cliargs['manifestpath']);
             if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
@@ -301,7 +317,9 @@ class cli_helper {
             case 'module':
                 return 70;
             default:
-                throw new \Exception("Context level '{$level}' is not valid.");
+                echo "Context level '{$level}' is not valid.\n";
+                static::call_exit();
+                return 0; // Required for PHPUnit.
         }
     }
 
@@ -587,9 +605,10 @@ class cli_helper {
      * is valid and then confirm with user it's the right one.
      *
      * @param object $activity
+     * @param string|null $message Any additional message to display
      * @return object
      */
-    public function check_context(object $activity):object {
+    public function check_context(object $activity, ?string $message=null):object {
         $activity->listpostsettings['contextonly'] = 1;
         $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
         $response = $activity->listcurlrequest->execute();
@@ -606,7 +625,7 @@ class cli_helper {
             return new \stdClass(); // Required for PHPUnit.
         } else {
             $activityname = get_class($activity);
-            echo "\nAbout to {$activityname} from:\n";
+            echo "\nAbout to {$activityname}:\n";
             echo "Moodle URL: {$activity->moodleurl}\n";
             echo "Context level: {$moodlequestionlist->contextinfo->contextlevel}\n";
             if ($moodlequestionlist->contextinfo->categoryname || $moodlequestionlist->contextinfo->coursename) {
@@ -616,6 +635,7 @@ class cli_helper {
                 echo "{$moodlequestionlist->contextinfo->modulename}\n";
             }
             echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
+            echo $message;
             static::handle_abort();
         }
         $activity->listpostsettings['contextonly'] = 0;
@@ -636,5 +656,33 @@ class cli_helper {
             static::call_exit();
         }
         fclose($handle);
+    }
+
+    /**
+     * Given a filepath for a category question file, extract the Moodle
+     * category path from the file. (This will vary from the filepath
+     * as the filepath will have potentially had characters sanitised.)
+     *
+     * @param [type] $filename
+     * @return string|null $qcategoryname Question category name in format top/cat1/subcat1
+     */
+    public static function get_question_category_from_file($filename):?string {
+        if (!is_file($filename)) {
+            echo "\nRequired category file does not exist: {$filename}\n";
+            return null;
+        }
+        $contents = file_get_contents($filename);
+        if ($contents === false) {
+            echo "\nUnable to access file: {$filename}\n";
+            return null;
+        }
+        $categoryxml = simplexml_load_string($contents);
+        if ($categoryxml === false) {
+            echo "\nBroken category XML.\n";
+            echo "{$filename}.\n";
+            return null;
+        }
+        $qcategoryname = $categoryxml->question->category->text->__toString();
+        return $qcategoryname;
     }
 }

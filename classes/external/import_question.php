@@ -188,20 +188,20 @@ class import_question extends external_api {
         }
 
         if (!$qformat->importpreprocess()) {
-            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
+            throw new moodle_exception('importerror', 'qbank_gitsync', null, $filename);
         }
 
         if ($params['questionbankentryid']) {
             \qbank_importasversion\importer::import_file($qformat, $question, $tempfile);
         } else {
             if (!$qformat->importprocess()) {
-                throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
+                throw new moodle_exception('importerror', 'qbank_gitsync', null, $filename);
             }
         }
 
         // In case anything needs to be done after.
         if (!$success = $qformat->importpostprocess()) {
-            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
+            throw new moodle_exception('importerror', 'qbank_gitsync', null, $filename);
         }
 
         $file->delete();

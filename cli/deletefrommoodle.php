@@ -98,14 +98,6 @@ $options = [
         'valuerequired' => true,
     ],
     [
-        'longopt' => 'questioncategoryid',
-        'shortopt' => 'q',
-        'description' => 'Numerical id of subdirectory to actually export.',
-        'default' => null,
-        'variable' => 'qcategoryid',
-        'valuerequired' => true,
-    ],
-    [
         'longopt' => 'instanceid',
         'shortopt' => 'n',
         'description' => 'Numerical id of the course, module of course category.',
