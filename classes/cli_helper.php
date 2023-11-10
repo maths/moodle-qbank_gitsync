@@ -48,7 +48,7 @@ class cli_helper {
     /**
      * @var array|null Full set of options combining command line and defaults
      */
-    protected ?array $processedoptions = null;
+    public ?array $processedoptions = null;
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -131,6 +131,7 @@ class cli_helper {
         }
         if (isset($cliargs['rootdirectory'])) {
             $cliargs['rootdirectory'] = $this->trim_slashes($cliargs['rootdirectory']);
+            $cliargs['rootdirectory'] = '/' . $cliargs['rootdirectory'];
         }
         if (isset($cliargs['directory'])) {
             $cliargs['directory'] = $this->trim_slashes($cliargs['directory']);
@@ -187,55 +188,70 @@ class cli_helper {
             }
         }
         if (isset($cliargs['contextlevel'])) {
-            if ($cliargs['contextlevel'] === 'system') {
-                if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
-                        || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid']))) {
-                    echo "\nYou have specified system level context. Instance id, " .
-                         "course name, module name and/or course category are not needed.\n";
+            switch ($cliargs['contextlevel']) {
+                case 'system':
+                    if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
+                            || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid']))) {
+                        echo "\nYou have specified system level context. Instance id, " .
+                            "course name, module name and/or course category are not needed.\n";
+                        static::call_exit();
+                    }
+                    break;
+                case 'coursecategory':
+                    if (isset($cliargs['coursename']) || isset($cliargs['modulename'])) {
+                        echo "\nYou have specified course category level context. " .
+                            "Course name and/or module name are not needed.\n";
+                        static::call_exit();
+                    }
+                    if (!isset($cliargs['coursecategory']) && !isset($cliargs['instanceid'])) {
+                        echo "\nYou have specified course category level context. " .
+                            "You must specify the category name (--coursecategory) or \n" .
+                            "its Moodle id (--instanceid).\n";
+                        static::call_exit();
+                    }
+                    break;
+                case 'course':
+                    if (isset($cliargs['coursecategory']) || isset($cliargs['modulename'])) {
+                        echo "\nYou have specified course level context. " .
+                            "Course category name and/or module name are not needed.\n";
+                        static::call_exit();
+                    }
+                    if (!isset($cliargs['coursename']) && !isset($cliargs['instanceid'])) {
+                        echo "\nYou have specified course level context. " .
+                            "You must specify the full course name (--coursename) or \n" .
+                            "its Moodle id (--instanceid).\n";
+                        static::call_exit();
+                    }
+                    break;
+                case 'module':
+                    if (isset($cliargs['coursecategory'])) {
+                        echo "\nYou have specified module level context. " .
+                            "Course category name is not needed.\n";
+                        static::call_exit();
+                    }
+                    if ((!isset($cliargs['coursename']) || !isset($cliargs['modulename']))
+                                && !isset($cliargs['instanceid'])) {
+                        echo "\nYou have specified module level context. " .
+                            "You must specify the full course name (--coursename) and \n" .
+                            "module name (--modulename) or give the module Moodle id (--instanceid).\n";
+                        static::call_exit();
+                    }
+                    break;
+                default:
+                    echo "\nContextlevel should be 'system', 'coursecategory', 'course' or 'module'.\n";
                     static::call_exit();
-                }
-            }
-            if ($cliargs['contextlevel'] === 'coursecategory') {
-                if (isset($cliargs['coursename']) || isset($cliargs['modulename'])) {
-                    echo "\nYou have specified course category level context. " .
-                         "Course name and/or module name are not needed.\n";
-                    static::call_exit();
-                }
-                if (!isset($cliargs['coursecategory']) && !isset($cliargs['instanceid'])) {
-                    echo "\nYou have specified course category level context. " .
-                         "You must specify the category name (--coursecategory) or \n" .
-                         "its Moodle id (--instanceid).";
-                    static::call_exit();
-                }
-            }
-            if ($cliargs['contextlevel'] === 'course') {
-                if (isset($cliargs['coursecategory']) || isset($cliargs['modulename'])) {
-                    echo "\nYou have specified course level context. " .
-                         "Course category name and/or module name are not needed.\n";
-                    static::call_exit();
-                }
-                if (!isset($cliargs['coursename']) && !isset($cliargs['instanceid'])) {
-                    echo "\nYou have specified course level context. " .
-                         "You must specify the full course name (--coursename) or \n" .
-                         "its Moodle id (--instanceid).";
-                    static::call_exit();
-                }
-            }
-            if ($cliargs['contextlevel'] === 'module') {
-                if (isset($cliargs['coursecategory'])) {
-                    echo "\nYou have specified module level context. " .
-                         "Course category name is not needed.\n";
-                    static::call_exit();
-                }
-                if ((!isset($cliargs['coursename']) || !isset($cliargs['modulename']))
-                            && !isset($cliargs['instanceid'])) {
-                    echo "\nYou have specified module level context. " .
-                         "You must specify the full course name (--coursename) and \n" .
-                         "module name (--modulename) or give the module Moodle id (--instanceid).";
-                    static::call_exit();
-                }
+                    break;
             }
         }
+        if (!isset($cliargs['manifestpath']) && !isset($cliargs['contextlevel'])) {
+            echo "\nYou have not specified context. " .
+                 "You must specify context level (--contextlevel) unless \n" .
+                 "using a function where this information can be read from a manifest file, in which case" .
+                 "you could set a manifest path (--manifestpath) instead.\n";
+            static::call_exit();
+        }
+
+        $this->processedoptions = $cliargs;
     }
 
     /**
