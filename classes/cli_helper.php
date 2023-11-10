@@ -129,10 +129,6 @@ class cli_helper {
             echo "\nYou will need a security token (--token).\n";
             static::call_exit();
         }
-        if (isset($cliargs['rootdirectory'])) {
-            $cliargs['rootdirectory'] = $this->trim_slashes($cliargs['rootdirectory']);
-            $cliargs['rootdirectory'] = '/' . $cliargs['rootdirectory'];
-        }
         if (isset($cliargs['directory'])) {
             $cliargs['directory'] = $this->trim_slashes($cliargs['directory']);
         }
@@ -386,6 +382,7 @@ class cli_helper {
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
         $manifestdir = dirname($manifestpath);
+        $manifestdir = str_replace( '\\', '/', $manifestdir);
         $tempfile = fopen($tempfilepath, 'r');
         if ($tempfile === false) {
             echo "\nUnable to access temp file: {$tempfilepath}\n Aborting.\n";
@@ -550,8 +547,10 @@ class cli_helper {
         }
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
-        exec('touch .gitignore');
-        exec("printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' >> .gitignore");
+        $ignore = fopen('.gitignore', 'a');
+        $contents = "**/*_question_manifest.json\n**/*_manifest_update.tmp\n";
+        fwrite($ignore, $contents);
+        fclose($ignore);
         exec("git add .");
         exec('git commit -m "Initial Commit"');
         foreach ($activity->manifestcontents->questions as $question) {

@@ -719,6 +719,7 @@ class import_repo {
                 echo "This should only be the case if you're importing it for the first time and\n";
                 echo "want to create new questions in Moodle.\n";
                 $this->handle_abort();
+                return;
             } else {
                 echo "{$questionsinmoodle->message}\n";
                 echo "Failed to check question versions.\n";

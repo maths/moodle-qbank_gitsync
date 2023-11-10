@@ -184,7 +184,7 @@ trait export_trait {
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
                     'contextlevel' => $this->listpostsettings['contextlevel'],
-                    'filepath' => $bottomdirectory . "/{$sanitisedqname}.xml",
+                    'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.xml",
                     'coursename' => $this->listpostsettings['coursename'],
                     'modulename' => $this->listpostsettings['modulename'],
                     'coursecategory' => $this->listpostsettings['coursecategory'],
