@@ -63,24 +63,30 @@ class export_repo_test extends advanced_testcase {
         $this->options = [
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
+            'subcategory' => 'top',
+            'qcategoryid' => null,
             'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
             'token' => 'XXXXXX',
-            'help' => false
+            'help' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments'
+            'get_arguments', 'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}')
+        );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit'
+            'get_curl_request', 'call_exit', 'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -101,20 +107,24 @@ class export_repo_test extends advanced_testcase {
         );
 
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '[]',
-            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname": "top"},
+              "questions": []}',
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]'
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
             );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
 
         // Check question files updated.
-        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat 1/First Question.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat 2/Second Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
+        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
+        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
 
         // Check manifest file updated.
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
@@ -143,17 +153,19 @@ class export_repo_test extends advanced_testcase {
             '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
         );
 
-        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '[]', '[]',
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}'
         );
 
         $this->exportrepo->process();
 
         // Check question files updated.
-        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat 1/First Question.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat 2/Second Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat 2/subcat 2_1/Fourth Question.xml'));
+        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
+        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
     }
 
     /**
@@ -214,10 +226,10 @@ class export_repo_test extends advanced_testcase {
             '{"question": "<Question><Name>One</Name></Question>", "version": "10"}'
         );
 
-        chmod($this->rootpath . '/top/cat 1/First Question.xml', 0000);
+        chmod($this->rootpath . '/top/cat-1/First-Question.xml', 0000);
 
         @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/^\nAccess issue.\n\/top\/cat 1\/First Question.xml not updated.\n$/s');
+        $this->expectOutputRegex('/^\nAccess issue.\n\/top\/cat-1\/First-Question.xml not updated.\n$/s');
     }
 
     /**
@@ -232,9 +244,9 @@ class export_repo_test extends advanced_testcase {
         );
 
         // Make sure no attempt is made to update first file.
-        chmod($this->rootpath . '/top/cat 1/First Question.xml', 0000);
+        chmod($this->rootpath . '/top/cat-1/First-Question.xml', 0000);
 
         @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/^\nBroken XML\n\/top\/cat 1\/First Question.xml not updated.\n$/s');
+        $this->expectOutputRegex('/^\nBroken XML\n\/top\/cat-1\/First-Question.xml not updated.\n$/s');
     }
 }

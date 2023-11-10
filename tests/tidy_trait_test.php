@@ -63,24 +63,30 @@ class tidy_trait_test extends advanced_testcase {
         $this->options = [
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
+            'subcategory' => 'top',
+            'qcategoryid' => null,
             'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
             'token' => 'XXXXXX',
-            'help' => false
+            'help' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments'
+            'get_arguments', 'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-
+        $this->clihelper->expects($this->exactly(1))->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}')
+        );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request'
+            'get_curl_request',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -94,9 +100,11 @@ class tidy_trait_test extends advanced_testcase {
      */
     public function test_tidy_manifest():void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]'
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+                            {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+                            {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
             );
 
         $this->exportrepo->tidy_manifest();

@@ -30,8 +30,25 @@ global $CFG;
 use advanced_testcase;
 
 /**
+ * Allows testing of errors that lead to an exit.
+ */
+class fake_cli_helper extends cli_helper {
+    /**
+     * Override so ignored during testing
+     *
+     * @return void
+     */
+    public static function call_exit():void {
+        return;
+    }
+}
+
+/**
  * Test cli_helper function.
  * @group qbank_gitsync
+ *
+ * Some tests are also done in import_repo_test where mocking has
+ * already been set up.
  *
  * @covers \gitsync\cli_helper::class
  */
@@ -86,7 +103,7 @@ class cli_helper_test extends advanced_testcase {
             'default' => false,
             'variable' => 'fake',
             'valuerequired' => false,
-        ]
+        ],
     ];
 
     /**
@@ -135,9 +152,8 @@ class cli_helper_test extends advanced_testcase {
      * @covers \gitsync\cli_helper\get_context_level()
      */
     public function test_incorrect_level(): void {
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage("Context level 'wrong' is not valid.");
-        cli_helper::get_context_level('wrong');
+        fake_cli_helper::get_context_level('wrong');
+        $this->expectOutputRegex("/^Context level 'wrong' is not valid.$/");
     }
 
     /**
@@ -161,5 +177,322 @@ class cli_helper_test extends advanced_testcase {
         } else {
             $this->assertEquals($result, $expectedresult);
         }
+    }
+
+    /**
+     * Manifest path name creation
+     * @covers \gitsync\cli_helper\get_manifest_path()
+     */
+    public function test_manifest_path(): void {
+        $helper = new cli_helper($this->options);
+        // Module level, including replacements.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'module', 'cat$goryname',
+                                                   'cours$nam$', 'Modul$name', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_module_cours-nam-_modul-name' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+        // Category level, including replacements.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'coursecategory', 'cat$goryname',
+                                                   'cours$nam$', 'Modul$name', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_coursecategory_cat-goryname' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+        // Course level, including replacements.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'course', 'cat$goryname',
+                                                   'cours$nam$', 'Modul$name', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_course_cours-nam-' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+        // System level.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'system', 'cat$goryname',
+                                                    'cours$nam$', 'Modul$name', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_system' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+        // Shortening.
+        // Module level, including replacements.
+        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'module', 'cat$goryname',
+            'cours$nam$thatisverylongandsoneedstobeshortened and has a space in it just to make sure',
+            'Modulename that is also very long and we want to chop up a bit as well hopefully', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_module_cours-nam-thatisverylongandsoneedstobeshortened' .
+                            '-an_modulename-that-is-also-very-long-and-we-want-to-c' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_token(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = [];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/need a security token/');
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_subdirectory(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
+                                     'subdirectory' => 'cat1', 'questioncategoryid' => 3];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/use only one/');
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_subdirectory_format(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => 'cat1/subcat'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1/subcat', $helper->processedoptions['subdirectory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => '/top/cat1'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1', $helper->processedoptions['subdirectory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => '/top/cat1/'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1', $helper->processedoptions['subdirectory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => 'top/cat1/'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1', $helper->processedoptions['subdirectory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => '/cat1/'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1', $helper->processedoptions['subdirectory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => ''];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top', $helper->processedoptions['subdirectory']);
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_subcategory_format(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => 'cat1/subcat'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1/subcat', $helper->processedoptions['subcategory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => '/top/cat1'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1', $helper->processedoptions['subcategory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => '/top/cat1/'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1', $helper->processedoptions['subcategory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => 'top/cat1/'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1', $helper->processedoptions['subcategory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => '/cat1/'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top/cat1', $helper->processedoptions['subcategory']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => ''];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('top', $helper->processedoptions['subcategory']);
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_manifestpath(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'manifestpath' => '/path/subpath/'];
+        $helper->validate_and_clean_args();
+        $this->assertEquals('path/subpath', $helper->processedoptions['manifestpath']);
+
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'manifestpath' => '/path/subpath/',
+                                     'coursename' => 'course1', 'instanceid' => '2',];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/specified a manifest file/');
+
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_instanceid(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
+                                     'coursename' => 'course1', 'instanceid' => '2',];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/If instanceid is supplied/');
+
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_system(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
+                                     'coursename' => 'course1', 'instanceid' => '2',];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/You have specified system level.*not needed/');
+
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_coursecategory(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'coursecategory',
+                                     'coursecategory' => 'cat1',
+                                     'coursename' => 'course1', 'modulename' => '2',];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/^\nYou have specified course category level.*not needed.\n$/s');
+
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_course(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'course',
+                                     'coursecategory' => 'cat1',
+                                     'coursename' => 'course1', 'modulename' => '2',];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/^\nYou have specified course level.*not needed.\n$/s');
+
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_modul(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'module',
+                                     'coursecategory' => 'cat1',
+                                     'coursename' => 'course1', 'modulename' => '2',];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/^\nYou have specified module level.*not needed.\n$/s');
+
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_coursecategory_missing(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'coursecategory'];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/^\nYou have specified course category level.*instanceid\).\n$/s');
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_course_missing(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'course'];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/^\nYou have specified course level.*instanceid\).\n$/s');
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_module_missing(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'module', 'modulename' => 'mod1'];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/^\nYou have specified module level.*instanceid\).\n$/s');
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_coursecategory_instanceid(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'coursecategory', 'instanceid' => 3];
+        $helper->validate_and_clean_args();
+        $this->expectOutputString('');
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_course_instanceid(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'course', 'instanceid' => 3];
+        $helper->validate_and_clean_args();
+        $this->expectOutputString('');
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_module_instanceid(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'module', 'instanceid' => 3];
+        $helper->validate_and_clean_args();
+        $this->expectOutputString('');
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_missing(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X'];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/You have not specified context/');
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_manifestpath(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'manifestpath' => 'path/subpath'];
+        $helper->validate_and_clean_args();
+        $this->expectOutputString('');
+    }
+
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_validation_contextlevel_wrong(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'lama'];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/Contextlevel should be/');
     }
 }

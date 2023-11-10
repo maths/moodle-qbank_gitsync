@@ -51,8 +51,8 @@ $options = [
     [
         'longopt' => 'directory',
         'shortopt' => 'd',
-        'description' => 'Directory of repo on users computer, containing "top" folder, ' .
-                         'relative to root directory and including leading slash.',
+        'description' => 'Directory of repo on users computer containing "top" folder, ' .
+                         'relative to root directory. ',
         'default' => '',
         'variable' => 'directory',
         'valuerequired' => true,
@@ -60,8 +60,8 @@ $options = [
     [
         'longopt' => 'subdirectory',
         'shortopt' => 's',
-        'description' => 'Relative subdirectory of repo to actually import.',
-        'default' => '/top',
+        'description' => 'Relative subdirectory of repo to actually delete from.',
+        'default' => 'top',
         'variable' => 'subdirectory',
         'valuerequired' => true,
     ],
@@ -98,6 +98,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'instanceid',
+        'shortopt' => 'n',
+        'description' => 'Numerical id of the course, module of course category.',
+        'default' => null,
+        'variable' => 'instanceid',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'token',
         'shortopt' => 't',
         'description' => 'Security token for webservice.',
@@ -128,7 +136,7 @@ $options = [
         'default' => $usegit,
         'variable' => 'usegit',
         'valuerequired' => false,
-    ]
+    ],
 ];
 
 $clihelper = new cli_helper($options);

@@ -54,7 +54,7 @@ class lib_test extends \advanced_testcase {
                     'Category name ending in /',
                     '/ and one that starts with one',
                     '<span lang="en" class="multilang">Matematically</span> ' .
-                    '<span lang="sv" class="multilang">Matematiskt (svenska)</span>'
+                    '<span lang="sv" class="multilang">Matematiskt (svenska)</span>',
                 ], split_category_path($path));
     }
 
@@ -73,23 +73,70 @@ class lib_test extends \advanced_testcase {
      */
     public function test_get_context() {
         define('QUIZ_TEST', 'Quiz test');
+        define('CAT_NAME', 'Cat1');
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
-        $category = core_course_category::create(array('name' => 'Cat1'));
-        $module = $this->getDataGenerator()->create_module('quiz', array('course' => $course->id, 'name' => QUIZ_TEST));
+        $category = core_course_category::create(['name' => CAT_NAME]);
+        $module = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id, 'name' => QUIZ_TEST]);
 
         // System.
-        $context = get_context(10, $category->name, $course->fullname, QUIZ_TEST);
-        $this->assertEquals($context, context_system::instance());
+        $context = get_context(10, $category->name, $course->fullname, QUIZ_TEST, null);
+        $this->assertEquals($context->context, context_system::instance());
+        $this->assertEquals($context->contextlevel, 'system');
+        $this->assertEquals($context->categoryname, null);
+        $this->assertEquals($context->coursename, null);
+        $this->assertEquals($context->modulename, null);
+        $this->assertEquals($context->instanceid, null);
         // Course category.
-        $context = get_context(40, $category->name, $course->fullname, QUIZ_TEST);
-        $this->assertEquals($context, context_coursecat::instance($category->id));
+        $context = get_context(40, $category->name, $course->fullname, QUIZ_TEST, null);
+        $this->assertEquals($context->context, context_coursecat::instance($category->id));
+        $this->assertEquals($context->contextlevel, 'course category');
+        $this->assertEquals($context->categoryname, CAT_NAME);
+        $this->assertEquals($context->coursename, null);
+        $this->assertEquals($context->modulename, null);
+        $this->assertEquals($context->instanceid, $category->id);
         // Course.
-        $context = get_context(50, $category->name, $course->fullname, QUIZ_TEST);
-        $this->assertEquals($context, context_course::instance($course->id));
+        $context = get_context(50, $category->name, $course->fullname, QUIZ_TEST, null);
+        $this->assertEquals($context->context, context_course::instance($course->id));
+        $this->assertEquals($context->contextlevel, 'course');
+        $this->assertEquals($context->categoryname, null);
+        $this->assertEquals($context->coursename, $course->fullname);
+        $this->assertEquals($context->modulename, null);
+        $this->assertEquals($context->instanceid, $course->id);
         // Module.
-        $context = get_context(70, $category->name, $course->fullname, QUIZ_TEST);
-        $this->assertEquals($context, context_module::instance($module->cmid));
+        $context = get_context(70, $category->name, $course->fullname, QUIZ_TEST, null);
+        $this->assertEquals($context->context, context_module::instance($module->cmid));
+        $this->assertEquals($context->contextlevel, 'module');
+        $this->assertEquals($context->categoryname, null);
+        $this->assertEquals($context->coursename, $course->fullname);
+        $this->assertEquals($context->modulename, QUIZ_TEST);
+        $this->assertEquals($context->instanceid, $module->cmid);
+
+        // Using stance id
+        // Course category.
+        $context = get_context(40, null, null, null, $category->id);
+        $this->assertEquals($context->context, context_coursecat::instance($category->id));
+        $this->assertEquals($context->contextlevel, 'course category');
+        $this->assertEquals($context->categoryname, CAT_NAME);
+        $this->assertEquals($context->coursename, null);
+        $this->assertEquals($context->modulename, null);
+        $this->assertEquals($context->instanceid, $category->id);
+        // Course.
+        $context = get_context(50, null, null, null, $course->id);
+        $this->assertEquals($context->context, context_course::instance($course->id));
+        $this->assertEquals($context->contextlevel, 'course');
+        $this->assertEquals($context->categoryname, null);
+        $this->assertEquals($context->coursename, $course->fullname);
+        $this->assertEquals($context->modulename, null);
+        $this->assertEquals($context->instanceid, $course->id);
+        // Module.
+        $context = get_context(70, null, null, null, $module->cmid);
+        $this->assertEquals($context->context, context_module::instance($module->cmid));
+        $this->assertEquals($context->contextlevel, 'module');
+        $this->assertEquals($context->categoryname, null);
+        $this->assertEquals($context->coursename, $course->fullname);
+        $this->assertEquals($context->modulename, QUIZ_TEST);
+        $this->assertEquals($context->instanceid, $module->cmid);
     }
 
     /**

@@ -45,13 +45,11 @@ trait tidy_trait {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
             echo "Failed to tidy manifest.\n";
-        } else if (!is_array($questionsinmoodle)) {
-            if (property_exists($questionsinmoodle, 'exception')) {
-                echo "{$questionsinmoodle->message}\n";
-            }
+        } else if (property_exists($questionsinmoodle, 'exception')) {
+            echo "{$questionsinmoodle->message}\n";
             echo "Failed to tidy manifest.\n";
         } else {
-            $existingquestions = array_column($questionsinmoodle, null, 'questionbankentryid');
+            $existingquestions = array_column($questionsinmoodle->questions, null, 'questionbankentryid');
             $newentrylist = [];
             foreach ($this->manifestcontents->questions as $currententry) {
                 if (isset($existingquestions[$currententry->questionbankentryid])) {

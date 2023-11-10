@@ -64,41 +64,52 @@ class create_repo_test extends advanced_testcase {
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
             'directory' => '',
-            'subdirectory' => '',
+            'subcategory' => '',
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
             'coursecategory' => 'Cat 1',
+            'qcategoryid' => null,
+            'instanceid' => null,
             'token' => 'XXXXXX',
-            'help' => false
+            'help' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments'
+            'get_arguments', 'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-
+        $this->clihelper->expects($this->exactly(1))->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}')
+        );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();;
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
-            'get_curl_request'
+            'get_curl_request', 'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->createrepo->curlrequest = $this->curl;
         $this->createrepo->listcurlrequest = $this->listcurl;
 
         $this->createrepo->listpostsettings = ['contextlevel' => '50', 'coursename' => 'Course 1',
                                                'modulename' => 'Module 1', 'coursecategory' => null,
-                                               'qcategoryname' => '/top'];
+                                               'qcategoryname' => 'top', 'qcategoryid' => '',
+                                               'instanceid' => '',
+                                               'contextonly' => 0,
+                                            ];
         $this->createrepo->postsettings = [];
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "1", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "2", "name": "Two", "questioncategory": ""},
-              {"questionbankentryid": "3", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "4", "name": "Four", "questioncategory": ""}]'
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "1", "name": "One", "questioncategory": ""},
+                            {"questionbankentryid": "2", "name": "Two", "questioncategory": ""},
+                            {"questionbankentryid": "3", "name": "Three", "questioncategory": ""},
+                            {"questionbankentryid": "4", "name": "Four", "questioncategory": ""}]}'
         );
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category><text>top</text></category></question>' .
@@ -123,19 +134,18 @@ class create_repo_test extends advanced_testcase {
 
         // Check question files exist.
         $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/One.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/Default for Test 1/sub 1/Two.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/Three.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/Four.xml'));
+        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-1/Two.xml'));
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/Three.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/Four.xml'));
 
         // Check category files exist.
         $this->assertStringContainsString('top', file_get_contents($this->rootpath . '/top/'. cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 1',
-                    file_get_contents($this->rootpath . '/top/Default for Test 1/sub 1/' . cli_helper::CATEGORY_FILE . '.xml'));
+                    file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-1/' . cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 2',
-                    file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
+                    file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/' . cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 2',
-                    file_get_contents($this->rootpath . '/top/Default for Test 1/sub 2/' . cli_helper::CATEGORY_FILE . '.xml'));
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
+                    file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/' . cli_helper::CATEGORY_FILE . '.xml'));
     }
 
     /**
@@ -160,7 +170,5 @@ class create_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->coursecategory, null);
         $this->assertEquals($firstline->version, '10');
         $this->assertEquals($firstline->format, 'xml');
-        $this->expectOutputRegex('/^\nMoodle URL:.*Module name: Test 1\n$/s');
-
     }
 }

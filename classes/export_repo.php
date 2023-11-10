@@ -78,6 +78,12 @@ class export_repo {
      * @var string
      */
     public string $moodleurl;
+    /**
+     * Relative path of subcategory to export.
+     *
+     * @var string
+     */
+    public string $subcategory;
 
     /**
      * Constructor
@@ -90,7 +96,9 @@ class export_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->manifestpath = $arguments['rootdirectory'] . $arguments['manifestpath'];
+        $this->subcategory = $arguments['subcategory'];
+        $qcategoryid = $arguments['qcategoryid'];
+        $this->manifestpath = $arguments['rootdirectory'] . '/' . $arguments['manifestpath'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -126,11 +134,15 @@ class export_repo {
             'coursename' => $this->manifestcontents->context->coursename,
             'modulename' => $this->manifestcontents->context->modulename,
             'coursecategory' => $this->manifestcontents->context->coursecategory,
-            'qcategoryname' => $this->manifestcontents->context->qcategoryname
+            'qcategoryname' => $this->subcategory,
+            'qcategoryid' => $qcategoryid,
+            'instanceid' => $this->manifestcontents->context->instanceid,
+            'contextonly' => 0,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+        $clihelper->check_context($this);
     }
 
     /**
@@ -167,7 +179,33 @@ class export_repo {
      * @return void
      */
     public function export_questions_in_manifest() {
+        $categorynames = [];
+        $topdirectory = dirname($this->manifestpath);
         foreach ($this->manifestcontents->questions as $questioninfo) {
+            $currentdirectory = dirname($topdirectory . '/' . $questioninfo->filepath);
+            if (isset($categorynames[$currentdirectory])) {
+                $qcategoryname = $categorynames[$currentdirectory];
+            } else {
+                $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
+                $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
+                $categorynames[$currentdirectory] = $qcategoryname;
+            }
+            if (!$qcategoryname) {
+                echo "Problem with the category file or file location.\n" .
+                     "{$questioninfo->filepath} not exported.\n";
+                continue;
+            }
+            if (!substr($qcategoryname, 0, strlen($this->subcategory)) === $this->subcategory) {
+                // Start of category path of question must match start of subcategory to export.
+                continue;
+            }
+            if (strlen($qcategoryname) > strlen($this->subcategory)
+                    && !preg_match('/^\/{1}(?!\/)/' , substr($qcategoryname, strlen($this->subcategory)))) {
+                // Category path and subcategory must either match or path must be longer and continue with
+                // one (and only) one slash i.e. for subcategory parameter of top/cat, a question
+                // in top/cat/subcat is fine but one in top/cat2 is not and nor is top/cat//one.
+                continue;
+            }
             $this->postsettings['questionbankentryid'] = $questioninfo->questionbankentryid;
             $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
             $response = $this->curlrequest->execute();

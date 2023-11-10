@@ -33,7 +33,7 @@
  */
 function split_category_path(?string $path): array {
     $rawnames = preg_split('~(?<!/)/(?!/)~', $path);
-    $names = array();
+    $names = [];
     foreach ($rawnames as $rawname) {
         $names[] = clean_param(trim(str_replace('//', '/', $rawname)), PARAM_TEXT);
     }
@@ -54,25 +54,48 @@ function split_category_path(?string $path): array {
  * @param string|null $categoryname
  * @param string|null $coursename
  * @param string|null $modulename
- * @param int|null $instanceid
- * @return context
+ * @param string|null $instanceid
+ * @return object
  */
 function get_context(int $contextlevel, ?string $categoryname = null,
-                    ?string $coursename = null, ?string $modulename = null, ?int $instanceid = null):context {
+                    ?string $coursename = null, ?string $modulename = null, ?string $instanceid = null):object {
     global $DB;
+    if ($instanceid === '') {
+        $instanceid = null;
+    }
+    $result = new \stdClass();
+    $result->categoryname = null;
+    $result->coursename = null;
+    $result->modulename = null;
+    $result->instanceid = null;
     switch ($contextlevel) {
         case \CONTEXT_SYSTEM:
-            return context_system::instance();
+            $result->contextlevel = 'system';
+            $result->context = context_system::instance();
+            return $result;
         case \CONTEXT_COURSECAT:
             if (is_null($instanceid)) {
                 $instanceid = $DB->get_field('course_categories', 'id', ['name' => $categoryname], $strictness = MUST_EXIST);
+                $result->categoryname = $categoryname;
+            } else {
+                $result->categoryname = $DB->get_field('course_categories', 'name',
+                                                       ['id' => $instanceid], $strictness = MUST_EXIST);
             }
-            return context_coursecat::instance($instanceid);
+            $result->contextlevel = 'course category';
+            $result->context = context_coursecat::instance($instanceid);
+            $result->instanceid = $instanceid;
+            return $result;
         case \CONTEXT_COURSE:
             if (is_null($instanceid)) {
                 $instanceid = $DB->get_field('course', 'id', ['fullname' => $coursename], $strictness = MUST_EXIST);
+                $result->coursename = $coursename;
+            } else {
+                $result->coursename = $DB->get_field('course', 'fullname', ['id' => $instanceid], $strictness = MUST_EXIST);
             }
-            return context_course::instance($instanceid);
+            $result->contextlevel = 'course';
+            $result->context = context_course::instance($instanceid);
+            $result->instanceid = $instanceid;
+            return $result;
         case \CONTEXT_MODULE:
             if (is_null($instanceid)) {
                 // Assuming here that the module is a quiz.
@@ -86,11 +109,27 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                                 AND q.name = :quizname
                                 AND m.name = 'quiz'",
                     ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
+                    $result->coursename = $coursename;
+                    $result->modulename = $modulename;
+            } else {
+                $instancedata = $DB->get_record_sql("
+                SELECT c.fullname as coursename, q.name as modulename
+                    FROM {course_modules} cm
+                    JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
+                    JOIN {course} c ON c.id = cm.course
+                    JOIN {modules} m ON m.id = cm.module
+                    WHERE cm.id = :instanceid
+                            AND m.name = 'quiz'",
+                ['instanceid' => $instanceid], $strictness = MUST_EXIST);
+                $result->coursename = $instancedata->coursename;
+                $result->modulename = $instancedata->modulename;
             }
-                return context_module::instance($instanceid);
-            break;
+            $result->contextlevel = 'module';
+            $result->context = context_module::instance($instanceid);
+            $result->instanceid = $instanceid;
+            return $result;
         default:
-            throw new Exception('Invalid context level supplied.');
+            throw new moodle_exception('contexterror', 'qbank_gitsync', null, $contextlevel);;
     }
 }
 

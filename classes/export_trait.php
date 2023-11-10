@@ -42,31 +42,31 @@ trait export_trait {
      */
     public function export_to_repo() {
         $response = $this->listcurlrequest->execute();
-        $questionsinmoodle = json_decode($response);
-        if (is_null($questionsinmoodle)) {
+        $moodlequestionlist = json_decode($response);
+        if (is_null($moodlequestionlist)) {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
             $this->call_exit();
-            $questionsinmoodle = []; // For unit test purposes.
-        } else if (!is_array($questionsinmoodle)) {
-            if (property_exists($questionsinmoodle, 'exception')) {
-                echo "{$questionsinmoodle->message}\n";
-            }
+            $moodlequestionlist = json_decode('{"questions": []}'); // For unit test purposes.
+        } else if (property_exists($moodlequestionlist, 'exception')) {
+            echo "{$moodlequestionlist->message}\n";
             echo "Failed to get list of questions from Moodle.\n";
             $this->call_exit();
-            $questionsinmoodle = []; // For unit test purposes.
+            $moodlequestionlist = json_decode('{"questions": []}'); // For unit test purposes.
+        } else {
+            $this->export_to_repo_main_process($moodlequestionlist);
         }
-        $this->export_to_repo_main_process($questionsinmoodle);
     }
 
     /**
      * Main export processing
      * Separated out so can be mocked in unit tests.
      *
-     * @param array $questionsinmoodle
+     * @param object $moodlequestionlist
      * @return void
      */
-    public function export_to_repo_main_process(array $questionsinmoodle):void {
+    public function export_to_repo_main_process(object $moodlequestionlist):void {
+        $questionsinmoodle = $moodlequestionlist->questions;
         $this->postsettings['includecategory'] = 1;
         $tempfile = fopen($this->tempfilepath, 'w+');
         if ($tempfile === false) {
@@ -135,12 +135,14 @@ trait export_trait {
                     }
                     $categorypath = $categoryxml->question->category->text->__toString();
 
-                    // TODO Is this needed?
+                    // Splits category path into an array of categories, splitting on single /.
+                    // Double / are then converted to single / after split.
                     $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
                     $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
                     $categorysofar = '';
                     // Create directory structure for category if it doesn't.
                     foreach ($directorylist as $categorydirectory) {
+                        $categorydirectory = preg_replace('/[^a-zA-Z0-9_]+/', '-', $categorydirectory);
                         $categorysofar .= "/{$categorydirectory}";
                         $currentdirectory = dirname($this->manifestpath) . $categorysofar;
                         if (!is_dir($currentdirectory)) {
@@ -171,26 +173,42 @@ trait export_trait {
                         }
                     }
                 }
-                $success = file_put_contents("{$bottomdirectory}/{$qname}.xml", $question);
+                $sanitisedqname = preg_replace('/[^a-zA-Z0-9_]+/', '-', substr($qname, 0, 230));
+                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question);
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";
-                    echo "{$bottomdirectory}/{$qname}.xml";
+                    echo "{$bottomdirectory}/{$sanitisedqname}.xml";
                     continue;
                 }
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
                     'contextlevel' => $this->listpostsettings['contextlevel'],
-                    'filepath' => $bottomdirectory . "/{$qname}.xml",
+                    'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.xml",
                     'coursename' => $this->listpostsettings['coursename'],
                     'modulename' => $this->listpostsettings['modulename'],
                     'coursecategory' => $this->listpostsettings['coursecategory'],
-                    'qcategoryname' => $this->listpostsettings['qcategoryname'],
+                    'instanceid' => $this->listpostsettings['instanceid'],
                     'format' => 'xml',
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");
             }
         }
+    }
+
+    /**
+     * Prompt user whether they want to continue.
+     *
+     * @return void
+     */
+    public function handle_abort():void {
+        echo "Abort? y/n\n";
+        $handle = fopen ("php://stdin", "r");
+        $line = fgets($handle);
+        if (trim($line) === 'y') {
+            $this->call_exit();
+        }
+        fclose($handle);
     }
 
     /**

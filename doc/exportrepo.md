@@ -12,13 +12,13 @@
 |-|-|-|
 |i|moodleinstance|Key of Moodle instance in $moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
-|f|manifestpath|Filepath of manifest file relative to root directory including leading slash.|
+|f|manifestpath|Filepath of manifest file relative to root directory.|
 |t|token|Security token for webservice.|
 |h|help|
 
 Examples:
 
-`php exportrepo.php -r "C:\question_repos" -f "\source_1\edmundlocal_system_question_manifest.json"`
+`php exportrepo.php -r "C:\question_repos" -f "source_1\edmundlocal_system_question_manifest.json"`
 
 On failure:
 - If the script fails, discard changes in the repository and run again once the issue has been dealt with. All questions will be exported afresh.

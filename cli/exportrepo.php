@@ -52,9 +52,25 @@ $options = [
     [
         'longopt' => 'manifestpath',
         'shortopt' => 'f',
-        'description' => 'Filepath of manifest file relative to root directory including leading slash.',
-        'default' => '',
+        'description' => 'Filepath of manifest file relative to root directory.',
+        'default' => null,
         'variable' => 'manifestpath',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'subcategory',
+        'shortopt' => 's',
+        'description' => 'Relative subcategory of question to actually export.',
+        'default' => 'top',
+        'variable' => 'subcategory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'questioncategoryid',
+        'shortopt' => 'q',
+        'description' => 'Numerical id of subcategory to actually export.',
+        'default' => null,
+        'variable' => 'qcategoryid',
         'valuerequired' => true,
     ],
     [
@@ -80,7 +96,7 @@ $options = [
         'default' => $usegit,
         'variable' => 'usegit',
         'valuerequired' => false,
-    ]
+    ],
 ];
 
 if (!function_exists('tidy_repair_string')) {

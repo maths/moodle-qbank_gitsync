@@ -63,24 +63,30 @@ class export_trait_test extends advanced_testcase {
         $this->options = [
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
+            'subcategory' => 'top',
+            'qcategoryid' => null,
             'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
             'token' => 'XXXXXX',
-            'help' => false
+            'help' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments'
+            'get_arguments', 'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}')
+        );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute'
+            'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit'
+            'get_curl_request', 'call_exit', 'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -112,10 +118,12 @@ class export_trait_test extends advanced_testcase {
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"},
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"},
               {"questionbankentryid": "6", "name": "Fifth Question", "questioncategory": "cat 3"},
               {"questionbankentryid": "7", "name": "Fifth Question", "questioncategory": "cat 3"},
-              {"questionbankentryid": "8", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]'
+              {"questionbankentryid": "8", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]}'
         );
     }
 
@@ -129,21 +137,21 @@ class export_trait_test extends advanced_testcase {
 
         // Check question files created.
         // New question in existing folder.
-        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Five.xml'));
+        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml'));
         // New question in new folder.
-        $this->assertStringContainsString('Six', file_get_contents($this->rootpath . '/top/Source 2/cat 3/Six.xml'));
+        $this->assertStringContainsString('Six', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Six.xml'));
         $this->assertStringContainsString('top/Source 2/cat 3',
-            file_get_contents($this->rootpath . '/top/Source 2/cat 3/' . cli_helper::CATEGORY_FILE . '.xml'));
+            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml'));
         // New question in existing folder - 2 category questions.
-        $this->assertStringContainsString('Seven', file_get_contents($this->rootpath . '/top/Source 2/cat 3/Seven.xml'));
+        $this->assertStringContainsString('Seven', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Seven.xml'));
         // New question in new folder - 2 category questions.
-        $this->assertStringContainsString('Eight', file_get_contents($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Eight.xml'));
+        $this->assertStringContainsString('Eight', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Eight.xml'));
 
         // Check temp file.
         $tempfile = fopen($this->exportrepo->tempfilepath, 'r');
         $firstline = json_decode(fgets($tempfile));
         $this->assertEquals('5', $firstline->questionbankentryid);
-        $this->assertEquals($this->rootpath . '/top/Source 2/cat 2/subcat 2_1/Five.xml', $firstline->filepath);
+        $this->assertEquals($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml', $firstline->filepath);
         $this->assertEquals($firstline->version, '10');
     }
 
@@ -151,7 +159,9 @@ class export_trait_test extends advanced_testcase {
      * Test message if export JSON broken.
      */
     public function test_broken_json_on_export(): void {
-        $questions = json_decode('[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]');
+        $questions = json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+            "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+            "questions": [{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]}');
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"question": <Question><Name>One</Name></Question>", "version": "10"}'
         );
@@ -165,7 +175,9 @@ class export_trait_test extends advanced_testcase {
      * Test message if export exception.
      */
     public function test_exception_on_export(): void {
-        $questions = json_decode('[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]');
+        $questions = json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+            "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+            "questions": [{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]}');
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -179,7 +191,7 @@ class export_trait_test extends advanced_testcase {
      */
     public function test_broken_json_on_get_list(): void {
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'export_to_repo_main_process'
+            'get_curl_request', 'call_exit', 'export_to_repo_main_process',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->listcurlrequest = $this->listcurl;
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
@@ -196,7 +208,7 @@ class export_trait_test extends advanced_testcase {
      */
     public function test_exception_on_get_list(): void {
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'export_to_repo_main_process'
+            'get_curl_request', 'call_exit', 'export_to_repo_main_process',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->listcurlrequest = $this->listcurl;
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
@@ -210,7 +222,10 @@ class export_trait_test extends advanced_testcase {
      * Test message if temp file error.
      */
     public function test_temp_file_open(): void {
-        $questions = json_decode('[{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]');
+        $questions = json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+                                "questions": [{"questionbankentryid": "5", "name": "Fifth Question",
+                                "questioncategory": "subcat 2_1"}]}');
         $tempfile = fopen($this->exportrepo->tempfilepath, 'w+');
         fclose($tempfile);
         chmod($this->exportrepo->tempfilepath, 0000);
@@ -223,40 +238,49 @@ class export_trait_test extends advanced_testcase {
      * Test message if question file update issue.
      */
     public function test_question_file_update_error(): void {
-        $questions = json_decode('[{"questionbankentryid": "5", "name": "Third Question", "questioncategory": "subcat 2_1"}]');
+        $questions = json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+                                "questions": [{"questionbankentryid": "5", "name": "Third Question",
+                                "questioncategory": "subcat 2_1"}]}');
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/cat 2/subcat 2_1</text></category></question>' .
                           '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
         );
 
-        chmod($this->rootpath . '/top/cat 2/subcat 2_1/Third Question.xml', 0000);
+        chmod($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 0000);
         @$this->exportrepo->export_to_repo_main_process($questions);
-        $this->expectOutputRegex('/^\nFile creation or update unsuccessful:.*Third Question.xml$/s');
+        $this->expectOutputRegex('/^\nFile creation or update unsuccessful:.*Third-Question.xml$/s');
     }
 
     /**
      * Test message if category file creation issue.
      */
     public function test_category_file_creation_error(): void {
-        $questions = json_decode('[{"questionbankentryid": "5", "name": "Third Question", "questioncategory": "subcat 2_1"}]');
+        $questions = json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+                                "questions": [{"questionbankentryid": "5", "name": "Third Question",
+                                "questioncategory": "subcat 2_1"}]}');
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/cat 2/subcat 2_1</text></category></question>' .
                           '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
         );
 
-        unlink($this->rootpath . '/top/cat 2/subcat 2_1/' . cli_helper::CATEGORY_FILE . '.xml');
-        chmod($this->rootpath . '/top/cat 2/subcat 2_1', 0000);
+        unlink($this->rootpath . '/top/cat-2/subcat-2_1/' . cli_helper::CATEGORY_FILE . '.xml');
+        chmod($this->rootpath . '/top/cat-2/subcat-2_1', 0000);
         @$this->exportrepo->export_to_repo_main_process($questions);
-        $this->expectOutputRegex('/^\nFile creation unsuccessful:.*subcat 2_1\/' . cli_helper::CATEGORY_FILE . '.xml$/s');
+        $this->expectOutputRegex('/^\nFile creation unsuccessful:.*subcat-2_1\/' . cli_helper::CATEGORY_FILE . '.xml$/s');
     }
 
     /**
      * Test message if category file XML issue.
      */
     public function test_category_xml_error(): void {
-        $questions = json_decode('[{"questionbankentryid": "5", "name": "Third Question", "questioncategory": "subcat 2_1"}]');
+        $questions = json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+                                 "questions": [{"questionbankentryid": "5", "name": "Third Question",
+                                 "questioncategory": "subcat 2_1"}]}');
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/Source 2/cat 2/subcat 2_1</category></question>' .

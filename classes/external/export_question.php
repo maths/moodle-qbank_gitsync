@@ -105,7 +105,7 @@ class export_question extends external_api {
                 MUST_EXIST);
                 break;
             default:
-                throw new moodle_exception(get_string('contexterror', 'qbank_gitsync', $questiondata->questionid));
+                throw new moodle_exception('contexterror', 'qbank_gitsync', null, $questiondata->contextlevel);
         }
         $thiscontext = context::instance_by_id($questiondata->contextid);
         self::validate_context($thiscontext);
@@ -120,10 +120,10 @@ class export_question extends external_api {
         $qformat->setCattofile($params['includecategory']);
         $qformat->setContexttofile(false);
         if (!$qformat->exportpreprocess()) {
-            throw new moodle_exception(get_string('exporterror', 'qbank_gitsync', $questiondata->questionid));
+            throw new moodle_exception('exporterror', 'qbank_gitsync', null, $questiondata->questionid);
         }
         if (!$question = $qformat->exportprocess(true)) {
-            throw new moodle_exception(get_string('exporterror', 'qbank_gitsync', $questiondata->questionid));
+            throw new moodle_exception('exporterror', 'qbank_gitsync', null, $questiondata->questionid);
         }
 
         // Log the export of this question.

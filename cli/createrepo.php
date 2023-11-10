@@ -52,17 +52,17 @@ $options = [
         'longopt' => 'directory',
         'shortopt' => 'd',
         'description' => 'Directory of repo on users computer, containing "top" folder, ' .
-                         'relative to root directory and including leading slash.',
+                         'relative to root directory.',
         'default' => '',
         'variable' => 'directory',
         'valuerequired' => true,
     ],
     [
-        'longopt' => 'subdirectory',
+        'longopt' => 'subcategory',
         'shortopt' => 's',
-        'description' => 'Relative subdirectory of repo to actually import.',
-        'default' => '/top',
-        'variable' => 'subdirectory',
+        'description' => 'Relative subcategory of question to actually export.',
+        'default' => 'top',
+        'variable' => 'subcategory',
         'valuerequired' => true,
     ],
     [
@@ -98,6 +98,22 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'questioncategoryid',
+        'shortopt' => 'q',
+        'description' => 'Numerical id of subcategory to actually export.',
+        'default' => null,
+        'variable' => 'qcategoryid',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'instanceid',
+        'shortopt' => 'n',
+        'description' => 'Numerical id of the course, module of course category.',
+        'default' => null,
+        'variable' => 'instanceid',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'token',
         'shortopt' => 't',
         'description' => 'Security token for webservice.',
@@ -120,7 +136,7 @@ $options = [
         'default' => $usegit,
         'variable' => 'usegit',
         'valuerequired' => false,
-    ]
+    ],
 ];
 
 $clihelper = new cli_helper($options);

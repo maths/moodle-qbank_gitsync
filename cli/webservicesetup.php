@@ -42,7 +42,8 @@ if (stripos($enabledprotocols, 'rest') === false) {
 $datagenerator = testing_util::get_data_generator();
 $webserviceuser = $datagenerator->create_user([
     'username' => 'ws-gitsync-user', 'firstname' => 'Externalgitsync',
-    'lastname' => 'User']);
+    'lastname' => 'User',
+]);
 
 // Create a web service role.
 $wsroleid = create_role('WS Role for Externalgitsync', 'ws-gitsync-role', '');
@@ -64,5 +65,7 @@ $service->uploadfiles = "1";
 $webservicemanager->update_external_service($service);
 
 // Authorise the user to use the service.
-$webservicemanager->add_ws_authorised_user((object) ['externalserviceid' => $service->id,
-    'userid' => $webserviceuser->id]);
+$webservicemanager->add_ws_authorised_user((object) [
+    'externalserviceid' => $service->id,
+    'userid' => $webserviceuser->id,
+]);

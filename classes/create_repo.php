@@ -61,11 +61,11 @@ class create_repo {
      */
     public curl_request $listcurlrequest;
     /**
-     * Relative path of subdirectory to import.
+     * Relative path of subcategory to import.
      *
      * @var string
      */
-    public string $subdirectory;
+    public string $subcategory;
     /**
      * Path to actual manifest file
      *
@@ -109,11 +109,12 @@ class create_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->directory = $arguments['rootdirectory'] . $arguments['directory'];
-        $this->subdirectory = '';
-        if ($arguments['subdirectory']) {
-            $this->subdirectory = $arguments['subdirectory'];
+        if ($arguments['directory']) {
+            $this->directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+        } else {
+            $this->directory = $arguments['rootdirectory'];
         }
+        $this->subcategory = $arguments['subcategory'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -123,25 +124,10 @@ class create_repo {
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
+        $qcategoryid = $arguments['qcategoryid'];
+        $instanceid = $arguments['instanceid'];
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
-
-        echo "\nMoodle URL: {$this->moodleurl}\n";
-        echo "Context level: {$arguments['contextlevel']}\n";
-        echo "Course category: {$arguments['coursecategory']}\n";
-        echo "Course name: {$arguments['coursename']}\n";
-        echo "Module name: {$arguments['modulename']}\n";
-
-        $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel, $coursecategory,
-                                                $coursename, $modulename, $this->directory);
-        if (file_exists($this->manifestpath)) {
-            echo 'The manifest file already exists. Please delete if you really want to continue.';
-            echo "\n $this->manifestpath \n";
-            $this->call_exit();
-        }
-        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
-                                          '_export' . cli_helper::TEMP_MANIFEST_FILE,
-                                          $this->manifestpath);
 
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
@@ -164,11 +150,28 @@ class create_repo {
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
-            'qcategoryname' => substr($this->subdirectory, 1)
+            'qcategoryname' => $this->subcategory,
+            'qcategoryid' => $qcategoryid,
+            'instanceid' => $instanceid,
+            'contextonly' => 0,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+        $instanceinfo = $clihelper->check_context($this);
+
+        $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
+                                                $instanceinfo->contextinfo->categoryname,
+                                                $instanceinfo->contextinfo->coursename,
+                                                $instanceinfo->contextinfo->modulename, $this->directory);
+        if (file_exists($this->manifestpath)) {
+            echo 'The manifest file already exists. Please delete if you really want to continue.';
+            echo "\n $this->manifestpath \n";
+            $this->call_exit();
+        }
+        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
+                                          '_export' . cli_helper::TEMP_MANIFEST_FILE,
+                                          $this->manifestpath);
     }
 
     /**

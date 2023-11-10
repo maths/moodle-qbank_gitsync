@@ -66,6 +66,8 @@ class import_question extends external_api {
             'coursename' => new external_value(PARAM_TEXT, 'Unique course name'),
             'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
             'coursecategory' => new external_value(PARAM_TEXT, 'Unique course category name'),
+            'qcategoryid' => new external_value(PARAM_SEQUENCE, 'Question category id'),
+            'instanceid' => new external_value(PARAM_SEQUENCE, 'Course, module or coursecategory id'),
         ]);
     }
 
@@ -93,11 +95,15 @@ class import_question extends external_api {
      * @param string|null $coursename Unique course name (optional unless course or module context level)
      * @param string|null $modulename Unique (within course) module name (optional unless module context level)
      * @param string|null $coursecategory course category name (optional unless course catgeory context level)
+     * @param string|null $qcategoryid ID of the question category to search (supercedes $qcategoryname)
+     * @param string|null $instanceid ID of the relevant object for the given context level e.g. course id
+     *  for course level) to search for questions (supercedes $coursename, $modulename & $coursecategory)
      * @return object \stdClass with property questionbankentryid'
      */
     public static function execute(?string $questionbankentryid, ?string $qcategoryname, array $fileinfo,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
-                                    ?string $coursecategory = null):object {
+                                    ?string $coursecategory = null,  ?string $qcategoryid = null,
+                                    ?string $instanceid = null):object {
         global $CFG, $DB, $USER;
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,
@@ -106,7 +112,9 @@ class import_question extends external_api {
             'contextlevel' => $contextlevel,
             'coursename' => $coursename,
             'modulename' => $modulename,
-            'coursecategory' => $coursecategory
+            'coursecategory' => $coursecategory,
+            'qcategoryid' => $qcategoryid,
+            'instanceid' => $instanceid,
         ]);
         $questiondata = null;
         $question = null;
@@ -117,7 +125,8 @@ class import_question extends external_api {
             $thiscontext = context::instance_by_id($questiondata->contextid);
         } else {
             $thiscontext = get_context($params['contextlevel'], $params['coursecategory'],
-                                       $params['coursename'], $params['modulename']);
+                                       $params['coursename'], $params['modulename'],
+                                       $params['instanceid'])->context;
         }
 
         $qformat = new qformat_xml();
@@ -131,16 +140,22 @@ class import_question extends external_api {
         $iscategory = false;
         if ($params['questionbankentryid']) {
             $question = question_bank::load_question_data($questiondata->questionid);
+        } else if (isset($params['qcategoryid']) && $params['qcategoryid'] !== '') {
+            $category = $DB->get_record('question_categories', ['id' => $qcategoryid]);
+            $qformat->setCategory($category);
+            $qformat->setCatfromfile(false);
         } else if ($params['qcategoryname']) {
             // Category name should be in form top/$category/$subcat1/$subcat2 and
-            // have been gleaned directly from the directory structure.
+            // have been gleaned directly from category xml file.
             // Find the 'top' category for the context ($parent==0) and
             // then descend through the hierarchy until we find the category we need.
             $catnames = split_category_path($params['qcategoryname']);
             $parent = 0;
             foreach ($catnames as $key => $catname) {
                 $category = $DB->get_record('question_categories', ['name' => $catname,
-                                            'contextid' => $thiscontext->id, 'parent' => $parent]);
+                                            'contextid' => $thiscontext->id,
+                                            'parent' => $parent,
+                                           ]);
                 $parent = $category->id;
             }
             $qformat->setCategory($category);
@@ -173,20 +188,20 @@ class import_question extends external_api {
         }
 
         if (!$qformat->importpreprocess()) {
-            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
+            throw new moodle_exception('importerror', 'qbank_gitsync', null, $filename);
         }
 
         if ($params['questionbankentryid']) {
             \qbank_importasversion\importer::import_file($qformat, $question, $tempfile);
         } else {
             if (!$qformat->importprocess()) {
-                throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
+                throw new moodle_exception('importerror', 'qbank_gitsync', null, $filename);
             }
         }
 
         // In case anything needs to be done after.
         if (!$success = $qformat->importpostprocess()) {
-            throw new moodle_exception(get_string('importerror', 'qbank_gitsync', $filename));
+            throw new moodle_exception('importerror', 'qbank_gitsync', null, $filename);
         }
 
         $file->delete();

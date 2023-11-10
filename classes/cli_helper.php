@@ -48,7 +48,7 @@ class cli_helper {
     /**
      * @var array|null Full set of options combining command line and defaults
      */
-    protected ?array $processedoptions = null;
+    public ?array $processedoptions = null;
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -91,6 +91,7 @@ class cli_helper {
             $this->show_help();
             exit;
         }
+        $this->validate_and_clean_args();
         return $this->processedoptions;
     }
 
@@ -115,6 +116,156 @@ class cli_helper {
         }
 
         return ['shortopts' => $shortopts, 'longopts' => $longopts];
+    }
+
+    /**
+     * Do some initial checks on command line arguments and tidy them up a bit.
+     *
+     * @return void
+     */
+    public function validate_and_clean_args(): void {
+        $cliargs = $this->processedoptions;
+        if (!isset($cliargs['token'])) {
+            echo "\nYou will need a security token (--token).\n";
+            static::call_exit();
+        }
+        if (isset($cliargs['directory'])) {
+            $cliargs['directory'] = $this->trim_slashes($cliargs['directory']);
+        }
+        if (isset($cliargs['subdirectory'])) {
+            if (strlen($cliargs['subdirectory']) > 0 && isset($cliargs['questioncategoryid'])) {
+                echo "\nYou have supplied a subdirectory to identify the required question category " .
+                     "and a question category id. Please use only one.\n";
+                static::call_exit();
+            }
+            if (strlen($cliargs['subdirectory']) > 0) {
+                $cliargs['subdirectory'] = $this->trim_slashes($cliargs['subdirectory']);
+                if (strlen($cliargs['subdirectory']) > 0 && substr($cliargs['subdirectory'], 0, 3) !== 'top') {
+                    $cliargs['subdirectory'] = 'top/' . $cliargs['subdirectory'];
+                }
+            }
+            if (strlen($cliargs['subdirectory']) === 0) {
+                $cliargs['subdirectory'] = 'top';
+            }
+        }
+        if (isset($cliargs['subcategory'])) {
+            if (strlen($cliargs['subcategory']) > 0 && isset($cliargs['questioncategoryid'])) {
+                echo "\nYou have supplied a subcategory to identify the required question category " .
+                     "and a question category id. Please use only one.\n";
+                static::call_exit();
+            }
+            if (strlen($cliargs['subcategory']) > 0) {
+                $cliargs['subcategory'] = $this->trim_slashes($cliargs['subcategory']);
+                if (strlen($cliargs['subcategory']) > 0 && substr($cliargs['subcategory'], 0, 3) !== 'top') {
+                    $cliargs['subcategory'] = 'top/' . $cliargs['subcategory'];
+                }
+            }
+            if (strlen($cliargs['subcategory']) === 0) {
+                $cliargs['subcategory'] = 'top';
+            }
+        }
+        if (isset($cliargs['manifestpath'])) {
+            $cliargs['manifestpath'] = $this->trim_slashes($cliargs['manifestpath']);
+            if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
+                        || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid'])
+                        || isset($cliargs['contextlevel']) )) {
+                echo "\nYou have specified a manifest file. Contextlevel, instance id, " .
+                        "course name, module name and/or course category are not needed. " .
+                        "Context data can be extracted from the file.\n";
+                static::call_exit();
+            }
+        }
+        if (isset($cliargs['instanceid'])) {
+            if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
+                    || isset($cliargs['coursecategory'])) {
+                echo "\nIf instanceid is supplied, you do not require " .
+                     "course name, module name and/or course category.\n";
+                static::call_exit();
+            }
+        }
+        if (isset($cliargs['contextlevel'])) {
+            switch ($cliargs['contextlevel']) {
+                case 'system':
+                    if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
+                            || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid']))) {
+                        echo "\nYou have specified system level context. Instance id, " .
+                            "course name, module name and/or course category are not needed.\n";
+                        static::call_exit();
+                    }
+                    break;
+                case 'coursecategory':
+                    if (isset($cliargs['coursename']) || isset($cliargs['modulename'])) {
+                        echo "\nYou have specified course category level context. " .
+                            "Course name and/or module name are not needed.\n";
+                        static::call_exit();
+                    }
+                    if (!isset($cliargs['coursecategory']) && !isset($cliargs['instanceid'])) {
+                        echo "\nYou have specified course category level context. " .
+                            "You must specify the category name (--coursecategory) or \n" .
+                            "its Moodle id (--instanceid).\n";
+                        static::call_exit();
+                    }
+                    break;
+                case 'course':
+                    if (isset($cliargs['coursecategory']) || isset($cliargs['modulename'])) {
+                        echo "\nYou have specified course level context. " .
+                            "Course category name and/or module name are not needed.\n";
+                        static::call_exit();
+                    }
+                    if (!isset($cliargs['coursename']) && !isset($cliargs['instanceid'])) {
+                        echo "\nYou have specified course level context. " .
+                            "You must specify the full course name (--coursename) or \n" .
+                            "its Moodle id (--instanceid).\n";
+                        static::call_exit();
+                    }
+                    break;
+                case 'module':
+                    if (isset($cliargs['coursecategory'])) {
+                        echo "\nYou have specified module level context. " .
+                            "Course category name is not needed.\n";
+                        static::call_exit();
+                    }
+                    if ((!isset($cliargs['coursename']) || !isset($cliargs['modulename']))
+                                && !isset($cliargs['instanceid'])) {
+                        echo "\nYou have specified module level context. " .
+                            "You must specify the full course name (--coursename) and \n" .
+                            "module name (--modulename) or give the module Moodle id (--instanceid).\n";
+                        static::call_exit();
+                    }
+                    break;
+                default:
+                    echo "\nContextlevel should be 'system', 'coursecategory', 'course' or 'module'.\n";
+                    static::call_exit();
+                    break;
+            }
+        }
+        if (!isset($cliargs['manifestpath']) && !isset($cliargs['contextlevel'])) {
+            echo "\nYou have not specified context. " .
+                 "You must specify context level (--contextlevel) unless \n" .
+                 "using a function where this information can be read from a manifest file, in which case" .
+                 "you could set a manifest path (--manifestpath) instead.\n";
+            static::call_exit();
+        }
+
+        $this->processedoptions = $cliargs;
+    }
+
+    /**
+     * Remove beginning and end slashes from a path.
+     * Convert all slashes to unix-friendly.
+     *
+     * @param string $path
+     * @return string
+     */
+    public function trim_slashes(string $path):string {
+        $path = str_replace( '\\', '/', $path);
+        if (substr($path, 0, 1) === '/') {
+            $path = substr($path, 1);
+        }
+        if (substr($path, strlen($path) - 1, 1) === '/') {
+            $path = substr($path, 0, strlen($path) - 1);
+        }
+        return $path;
     }
 
     /**
@@ -178,7 +329,9 @@ class cli_helper {
             case 'module':
                 return 70;
             default:
-                throw new \Exception("Context level '{$level}' is not valid.");
+                echo "Context level '{$level}' is not valid.\n";
+                static::call_exit();
+                return 0; // Required for PHPUnit.
         }
     }
 
@@ -198,17 +351,20 @@ class cli_helper {
         $filenamemod = '_' . $contextlevel;
         switch ($contextlevel) {
             case 'coursecategory':
-                $filenamemod = $filenamemod . '_' . $coursecategory;
+                $filenamemod = $filenamemod . '_' . substr($coursecategory, 0, 100);
                 break;
             case 'course':
-                $filenamemod = $filenamemod . '_' . $coursename;
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 100);
                 break;
             case 'module':
-                $filenamemod = $filenamemod . '_' . $coursename . '_' . $modulename;
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 50) . '_' . substr($modulename, 0, 50);
                 break;
         }
 
-        return $directory . '/' . $moodleinstance . $filenamemod . self::MANIFEST_FILE;
+        $filename = $directory . '/' .
+                    preg_replace('/[^a-z0-9_]+/', '-', strtolower(substr($moodleinstance, 0, 50) . $filenamemod)) .
+                    self::MANIFEST_FILE;
+        return $filename;
     }
 
     /**
@@ -226,6 +382,7 @@ class cli_helper {
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
         $manifestdir = dirname($manifestpath);
+        $manifestdir = str_replace( '\\', '/', $manifestdir);
         $tempfile = fopen($tempfilepath, 'r');
         if ($tempfile === false) {
             echo "\nUnable to access temp file: {$tempfilepath}\n Aborting.\n";
@@ -263,7 +420,7 @@ class cli_helper {
                     $manifestcontents->context->coursename = $questioninfo->coursename;
                     $manifestcontents->context->modulename = $questioninfo->modulename;
                     $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
-                    $manifestcontents->context->qcategoryname = $questioninfo->qcategoryname;
+                    $manifestcontents->context->instanceid = $questioninfo->instanceid;
                     $manifestcontents->context->moodleurl = $moodleurl;
                 }
             }
@@ -312,7 +469,7 @@ class cli_helper {
 
         $xpath = new \DOMXpath($dom);
         $tidyoptions = array_merge($sharedoptions, [
-            'output-xhtml' => true
+            'output-xhtml' => true,
         ]);
         $tidy = new \tidy();
 
@@ -344,7 +501,7 @@ class cli_helper {
         $tidyoptions = array_merge($sharedoptions, [
             'input-xml' => true,
             'output-xml' => true,
-            'indent-cdata' => true
+            'indent-cdata' => true,
         ]);
         $tidy->parseString($noidxml, $tidyoptions);
         $tidy->cleanRepair();
@@ -359,7 +516,7 @@ class cli_helper {
     /**
      * Updates the manifest file with the current commit hashes of question files in the repo.
      *
-     * @param object activity e.g. import_repo
+     * @param object $activity e.g. import_repo
      * @return void
      */
     public function commit_hash_update(object $activity):void {
@@ -381,7 +538,7 @@ class cli_helper {
      * Updates the manifest file with the current commit hashes of question files in the repo.
      * Used on initial repo creation so also sets the moodle commit to be the same.
      *
-     * @param object activity e.g. create_repo
+     * @param object $activity e.g. create_repo
      * @return void
      */
     public function commit_hash_setup(object $activity):void {
@@ -390,8 +547,10 @@ class cli_helper {
         }
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
-        exec('touch .gitignore');
-        exec("printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' >> .gitignore");
+        $ignore = fopen('.gitignore', 'a');
+        $contents = "**/*_question_manifest.json\n**/*_manifest_update.tmp\n";
+        fwrite($ignore, $contents);
+        fclose($ignore);
         exec("git add .");
         exec('git commit -m "Initial Commit"');
         foreach ($activity->manifestcontents->questions as $question) {
@@ -454,5 +613,91 @@ class cli_helper {
      */
     public static function call_exit():void {
         exit;
+    }
+
+    /**
+     * Contact Moodle to check that the user supplied context (either instance names or instanceid)
+     * is valid and then confirm with user it's the right one.
+     *
+     * @param object $activity
+     * @param string|null $message Any additional message to display
+     * @return object
+     */
+    public function check_context(object $activity, ?string $message=null):object {
+        $activity->listpostsettings['contextonly'] = 1;
+        $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
+        $response = $activity->listcurlrequest->execute();
+        $moodlequestionlist = json_decode($response);
+        if (is_null($moodlequestionlist)) {
+            echo "Broken JSON returned from Moodle:\n";
+            echo $response . "\n";
+            static::call_exit();
+            return new \stdClass(); // Required for PHPUnit.
+        } else if (property_exists($moodlequestionlist, 'exception')) {
+            echo "{$moodlequestionlist->message}\n";
+            echo "Failed to get list of questions from Moodle.\n";
+            static::call_exit();
+            return new \stdClass(); // Required for PHPUnit.
+        } else {
+            $activityname = get_class($activity);
+            echo "\nAbout to {$activityname}:\n";
+            echo "Moodle URL: {$activity->moodleurl}\n";
+            echo "Context level: {$moodlequestionlist->contextinfo->contextlevel}\n";
+            if ($moodlequestionlist->contextinfo->categoryname || $moodlequestionlist->contextinfo->coursename) {
+                echo "Instance: {$moodlequestionlist->contextinfo->categoryname}{$moodlequestionlist->contextinfo->coursename}\n";
+            }
+            if ($moodlequestionlist->contextinfo->modulename) {
+                echo "{$moodlequestionlist->contextinfo->modulename}\n";
+            }
+            echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
+            echo $message;
+            static::handle_abort();
+        }
+        $activity->listpostsettings['contextonly'] = 0;
+        $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
+        return $moodlequestionlist;
+    }
+
+    /**
+     * Prompt user whether they want to continue.
+     *
+     * @return void
+     */
+    public static function handle_abort():void {
+        echo "Abort? y/n\n";
+        $handle = fopen ("php://stdin", "r");
+        $line = fgets($handle);
+        if (trim($line) === 'y') {
+            static::call_exit();
+        }
+        fclose($handle);
+    }
+
+    /**
+     * Given a filepath for a category question file, extract the Moodle
+     * category path from the file. (This will vary from the filepath
+     * as the filepath will have potentially had characters sanitised.)
+     *
+     * @param [type] $filename
+     * @return string|null $qcategoryname Question category name in format top/cat1/subcat1
+     */
+    public static function get_question_category_from_file($filename):?string {
+        if (!is_file($filename)) {
+            echo "\nRequired category file does not exist: {$filename}\n";
+            return null;
+        }
+        $contents = file_get_contents($filename);
+        if ($contents === false) {
+            echo "\nUnable to access file: {$filename}\n";
+            return null;
+        }
+        $categoryxml = simplexml_load_string($contents);
+        if ($categoryxml === false) {
+            echo "\nBroken category XML.\n";
+            echo "{$filename}.\n";
+            return null;
+        }
+        $qcategoryname = $categoryxml->question->category->text->__toString();
+        return $qcategoryname;
     }
 }
