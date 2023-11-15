@@ -136,6 +136,19 @@ class cli_helper {
         if (isset($cliargs['directory'])) {
             $cliargs['directory'] = $this->trim_slashes($cliargs['directory']);
         }
+        if (isset($cliargs['manifestpath'])) {
+            if (isset($cliargs['directory']) && strlen($cliargs['directory']) > 0 ) {
+                echo "\nYou have supplied a manifest file path and a directory. " .
+                     "Please use only one.\n";
+                static::call_exit();
+            }
+        }
+        if (isset($cliargs['rootdirectory'])) {
+            $cliargs['rootdirectory'] = str_replace( '\\', '/', $cliargs['rootdirectory']);
+            if (substr($cliargs['rootdirectory'], strlen($cliargs['rootdirectory']) - 1, 1) === '/') {
+                $cliargs['rootdirectory'] = substr($cliargs['rootdirectory'], 0, strlen($cliargs['rootdirectory']) - 1);
+            }
+        }
         if (isset($cliargs['subdirectory'])) {
             if (strlen($cliargs['subdirectory']) > 0 && isset($cliargs['questioncategoryid'])) {
                 echo "\nYou have supplied a subdirectory to identify the required question category " .
@@ -632,6 +645,7 @@ class cli_helper {
         $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
         $response = $activity->listcurlrequest->execute();
         $moodlequestionlist = json_decode($response);
+        var_dump($activity->listpostsettings);
         if (is_null($moodlequestionlist)) {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
@@ -654,7 +668,9 @@ class cli_helper {
                 echo "{$moodlequestionlist->contextinfo->modulename}\n";
             }
             echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
-            echo $message;
+            if ($message) {
+                echo $message;
+            }
             static::handle_abort();
         }
         $activity->listpostsettings['contextonly'] = 0;

@@ -156,10 +156,15 @@ class import_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
+        $manifestpath = $arguments['manifestpath'];
         if ($arguments['directory']) {
             $this->directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
         } else {
-            $this->directory = $arguments['rootdirectory'];
+            if ($manifestpath) {
+                $this->directory = $arguments['rootdirectory'] . '/' . dirname($manifestpath);
+            } else {
+                $this->directory = $arguments['rootdirectory'];
+            }
         }
         $this->subdirectory = $arguments['subdirectory'];
         if (is_array($arguments['token'])) {
@@ -172,7 +177,6 @@ class import_repo {
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
         $instanceid = $arguments['instanceid'];
-        $manifestpath = $arguments['manifestpath'];
         $qcategoryname = null;
         if ($this->subdirectory === 'top') {
             $qcategoryname = 'top';
@@ -199,7 +203,7 @@ class import_repo {
             'wsfunction' => 'qbank_gitsync_import_question',
             'moodlewsrestformat' => 'json',
             'questionbankentryid' => null,
-            'contextlevel' => cli_helper::get_context_level($contextlevel),
+            'contextlevel' => ($contextlevel) ? cli_helper::get_context_level($contextlevel) : null,
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
@@ -226,7 +230,7 @@ class import_repo {
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_get_question_list',
             'moodlewsrestformat' => 'json',
-            'contextlevel' => cli_helper::get_context_level($contextlevel),
+            'contextlevel' => ($contextlevel) ? cli_helper::get_context_level($contextlevel) : null,
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
@@ -238,18 +242,17 @@ class import_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
 
+        $message = null;
+        if ($qcategoryname !== 'top') {
+            // Subcategory may not exist yet so we can't check it at this stage.
+            // User will get warning on version check if it definitely doesn't exist.
+            // We do still need the user to verify the top level context.
+            $message = "Question subdirectory: {$this->subdirectory}\n";
+        }
         if ($manifestpath) {
             $this->manifestpath = $arguments['rootdirectory'] . '/' . $manifestpath;
         } else {
-            if ($qcategoryname !== 'top') {
-                // Subcategory may not exist yet so we can't check it at this stage.
-                // User will get warning on version check if it definitely doesn't exist.
-                // We do still need the user to verify the top level context.
-                $message = "Question subdirectory: {$this->subdirectory}\n";
-                $instanceinfo = $clihelper->check_context($this, $message);
-            } else {
-                $instanceinfo = $clihelper->check_context($this);
-            }
+            $instanceinfo = $clihelper->check_context($this, $message);
             $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
@@ -294,16 +297,18 @@ class import_repo {
 
         if ($manifestpath) {
             // Set context info from manifest file rather than other CLI arguments.
-            $this->postsettings['instanceid'] = $this->manifestcontents->instanceid;
-            $this->postsettings['coursename'] = $this->manifestcontents->coursename;
-            $this->postsettings['modulename'] = $this->manifestcontents->modulename;
-            $this->postsettings['coursecategory'] = $this->manifestcontents->coursecategory;
-            $this->listpostsettings['instanceid'] = $this->manifestcontents->instanceid;
-            $this->listpostsettings['coursename'] = $this->manifestcontents->coursename;
-            $this->listpostsettings['modulename'] = $this->manifestcontents->modulename;
-            $this->listpostsettings['coursecategory'] = $this->manifestcontents->coursecategory;
+            $this->postsettings['instanceid'] = $this->manifestcontents->context->instanceid;
+            $this->postsettings['contextlevel'] = $this->manifestcontents->context->contextlevel;
+            $this->postsettings['coursename'] = $this->manifestcontents->context->coursename;
+            $this->postsettings['modulename'] = $this->manifestcontents->context->modulename;
+            $this->postsettings['coursecategory'] = $this->manifestcontents->context->coursecategory;
+            $this->listpostsettings['instanceid'] = $this->manifestcontents->context->instanceid;
+            $this->listpostsettings['contextlevel'] = $this->manifestcontents->context->contextlevel;
+            $this->listpostsettings['coursename'] = $this->manifestcontents->context->coursename;
+            $this->listpostsettings['modulename'] = $this->manifestcontents->context->modulename;
+            $this->listpostsettings['coursecategory'] = $this->manifestcontents->context->coursecategory;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-            $instanceinfo = $clihelper->check_context($this);
+            $instanceinfo = $clihelper->check_context($this, $message);
         }
         // Set question category info after call to check_context.
         // We can't rely on the subcategories existing in Moodle until after import

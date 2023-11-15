@@ -160,6 +160,14 @@ class create_repo {
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         $instanceinfo = $clihelper->check_context($this);
 
+        $this->listpostsettings['contextlevel'] =
+                cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
+        $this->listpostsettings['categoryname'] = $instanceinfo->contextinfo->categoryname;
+        $this->listpostsettings['coursename'] = $instanceinfo->contextinfo->coursename;
+        $this->listpostsettings['modulename'] = $instanceinfo->contextinfo->modulename;
+        $this->listpostsettings['instanceid'] = $instanceinfo->contextinfo->instanceid;
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,

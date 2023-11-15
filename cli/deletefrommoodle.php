@@ -49,6 +49,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'manifestpath',
+        'shortopt' => 'f',
+        'description' => 'Filepath of manifest file relative to root directory.',
+        'default' => null,
+        'variable' => 'manifestpath',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'directory',
         'shortopt' => 'd',
         'description' => 'Directory of repo on users computer containing "top" folder, ' .
@@ -119,14 +127,6 @@ $options = [
         'description' => '',
         'default' => false,
         'variable' => 'help',
-        'valuerequired' => false,
-    ],
-    [
-        'longopt' => 'usegit',
-        'shortopt' => 'u',
-        'description' => 'Is the repo controlled using Git?',
-        'default' => $usegit,
-        'variable' => 'usegit',
         'valuerequired' => false,
     ],
     [
