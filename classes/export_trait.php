@@ -142,7 +142,7 @@ trait export_trait {
                     $categorysofar = '';
                     // Create directory structure for category if it doesn't.
                     foreach ($directorylist as $categorydirectory) {
-                        $categorydirectory = preg_replace('/[^a-zA-Z0-9_]+/', '-', $categorydirectory);
+                        $categorydirectory = preg_replace(cli_helper::BAD_CHARACTERS, '-', $categorydirectory);
                         $categorysofar .= "/{$categorydirectory}";
                         $currentdirectory = dirname($this->manifestpath) . $categorysofar;
                         if (!is_dir($currentdirectory)) {
@@ -173,7 +173,7 @@ trait export_trait {
                         }
                     }
                 }
-                $sanitisedqname = preg_replace('/[^a-zA-Z0-9_]+/', '-', substr($qname, 0, 230));
+                $sanitisedqname = preg_replace(cli_helper::BAD_CHARACTERS, '-', substr($qname, 0, 230));
                 $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question);
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";

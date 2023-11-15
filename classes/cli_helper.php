@@ -64,6 +64,10 @@ class cli_helper {
      */
     public const TEMP_MANIFEST_FILE = '_manifest_update.tmp';
     /**
+     * BAD_CHARACTERS - Characters to remove for filename sanitisation
+     */
+    public const BAD_CHARACTERS = '/[\/\\\?\%*:|"<> .]+/';
+    /**
      * Constructor
      *
      * @param array $options
@@ -362,7 +366,7 @@ class cli_helper {
         }
 
         $filename = $directory . '/' .
-                    preg_replace('/[^a-z0-9_]+/', '-', strtolower(substr($moodleinstance, 0, 50) . $filenamemod)) .
+                    preg_replace(self::BAD_CHARACTERS, '-', strtolower(substr($moodleinstance, 0, 50) . $filenamemod)) .
                     self::MANIFEST_FILE;
         return $filename;
     }
