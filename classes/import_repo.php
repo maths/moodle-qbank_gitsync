@@ -238,6 +238,7 @@ class import_repo {
             'qcategoryid' => null,
             'instanceid' => $instanceid,
             'contextonly' => 0,
+            'qbankentryids[]' => null,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
@@ -716,6 +717,19 @@ class import_repo {
         if (count($this->manifestcontents->questions) === 0) {
             return;
         }
+        $questionstocheck = [];
+        foreach ($this->manifestcontents->questions as $manifestquestion) {
+            if (substr($manifestquestion->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory
+                && preg_match('/^\/{1}(?!\/)/' , substr($manifestquestion->filepath, strlen($this->subdirectory) + 1))) {
+                // Start of filepath of question must match start of subdirectory to import.
+                // Filepath must continue with one (and only) one slash.
+                array_push($questionstocheck, $manifestquestion->questionbankentryid);
+            }
+        }
+        foreach ($questionstocheck as $key => $id) {
+            $this->listpostsettings["qbankentryids[{$key}]"] = $id;
+        }
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         $response = $this->listcurlrequest->execute();
         $questionsinmoodle = json_decode($response);
         if (is_null($questionsinmoodle)) {
@@ -759,6 +773,8 @@ class import_repo {
             echo "Export questions from Moodle before proceeding.\n";
             $this->call_exit();
         }
+        $this->listpostsettings['qbankentryids[]'] = null;
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
     }
 
     /**

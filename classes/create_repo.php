@@ -154,6 +154,7 @@ class create_repo {
             'qcategoryid' => $qcategoryid,
             'instanceid' => $instanceid,
             'contextonly' => 0,
+            'qbankentryids[]' => null,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);

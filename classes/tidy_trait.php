@@ -41,7 +41,12 @@ trait tidy_trait {
     public function tidy_manifest():void {
         // We want to check the whole context or we'll be flagging
         // entries outside the subcategory.
+        $oldsetting = $this->listpostsettings['qcategoryname'];
+        $qbeids = array_map(function($q) { return $q->questionbankentryid;}, $this->manifestcontents->questions);
         $this->listpostsettings['qcategoryname'] = 'top';
+        foreach ($qbeids as $key => $id) {
+            $this->listpostsettings["qbankentryids[{$key}]"] = $id;
+        }
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         $response = $this->listcurlrequest->execute();
         $questionsinmoodle = json_decode($response);
@@ -70,5 +75,8 @@ trait tidy_trait {
                 echo "Failed to tidy manifest\n";
             }
         }
+        $this->listpostsettings['qcategoryname'] = $oldsetting;
+        $this->listpostsettings['qbankentryids[]'] = null;
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
     }
 }

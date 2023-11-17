@@ -54,6 +54,9 @@ class get_question_list extends external_api {
             'qcategoryid' => new external_value(PARAM_SEQUENCE, 'Question category id'),
             'instanceid' => new external_value(PARAM_SEQUENCE, 'Course, module or coursecategory id'),
             'contextonly' => new external_value(PARAM_BOOL, 'Only return context info?'),
+            'qbankentryids' => new external_multiple_structure(
+                new external_value(PARAM_SEQUENCE, 'QUestion bank entry id')
+            )
         ]);
     }
 
@@ -94,12 +97,14 @@ class get_question_list extends external_api {
      * @param string|null $instanceid ID of the relevant object for the given context level e.g. course id
      *  for course level) to search for questions (supercedes $coursename, $modulename & $coursecategory)
      * @param bool $contextonly Only return info on context and not questions
+     * @param $qbankentryids Array of qbankentryids to check
      * @return object containing context info and an array of question data
      */
     public static function execute(?string $qcategoryname,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null, ?string $qcategoryid = null,
-                                    ?string $instanceid = null, bool $contextonly = false):object {
+                                    ?string $instanceid = null, bool $contextonly = false,
+                                    $qbankentryids):object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'qcategoryname' => $qcategoryname,
@@ -110,6 +115,7 @@ class get_question_list extends external_api {
             'qcategoryid' => $qcategoryid,
             'instanceid' => $instanceid,
             'contextonly' => $contextonly,
+            'qbankentryids' => $qbankentryids,
         ]);
         $contextinfo = get_context($params['contextlevel'], $params['coursecategory'],
                                    $params['coursename'], $params['modulename'],
@@ -168,6 +174,33 @@ class get_question_list extends external_api {
             array_push($response->questions, $qinfo);
         }
 
+        // Deal with any additional qbankids passed in to check.
+        if (count($qbankentryids) > 0) {
+            // Find any questions we haven't dealt with already.
+            $prevhandledqs = array_column($qbentries, null, 'id');
+            $extraqs = [];
+            foreach ($qbankentryids as $qbeid) {
+                $dealtwithalready = $prevhandledqs[$qbeid] ?? false;
+                if (!$dealtwithalready) {
+                    array_push($extraqs, $qbeid);
+                }
+            }
+            // Add to the response.
+            $extraqbentries = $DB->get_records_list('question_bank_entries', 'id', $extraqs);
+            foreach ($extraqbentries as $extraqbe) {
+                $mindata = get_minimal_question_data($extraqbe->id);
+                $qinfo = new \stdClass();
+                $qinfo->questionbankentryid = $extraqbe->id;
+                // These questions could be outside the context we've checked for permissions
+                // so we only return very basic info. The scenario we're dealing with is checking
+                // question existence in Moodle or version number if question has been moved
+                // to a new context. Import/export themselves will check context of actual question.
+                $qinfo->name = null;
+                $qinfo->questioncategory = null;
+                $qinfo->version = $mindata->version;
+                array_push($response->questions, $qinfo);
+            }
+        }
         return $response;
     }
 

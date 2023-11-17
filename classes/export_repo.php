@@ -138,6 +138,7 @@ class export_repo {
             'qcategoryid' => $qcategoryid,
             'instanceid' => $this->manifestcontents->context->instanceid,
             'contextonly' => 0,
+            'qbankentryids[]' => null,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
