@@ -622,6 +622,9 @@ class import_repo {
             return;
         } else if (property_exists($questionsinmoodle, 'exception')) {
             echo "{$questionsinmoodle->message}\n";
+            if (property_exists($questionsinmoodle, 'debuginfo')) {
+                echo "{$questionsinmoodle->debuginfo}\n";
+            }
             echo "Failed to check questions for deletion.\n";
             return;
         }
@@ -673,8 +676,11 @@ class import_repo {
                 echo $response . "\n";
                 echo 'Not deleted?';
             } else if (property_exists($responsejson, 'exception')) {
-                echo "{$responsejson->message}\n" .
-                    "Not deleted\n";
+                echo "{$responsejson->message}\n";
+                if (property_exists($responsejson, 'debuginfo')) {
+                    echo "{$responsejson->debuginfo}\n";
+                }
+                echo "Not deleted\n";
             } else {
                 echo "Deleted\n";
                 $deleted = true;

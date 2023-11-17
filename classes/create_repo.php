@@ -162,7 +162,7 @@ class create_repo {
 
         $this->listpostsettings['contextlevel'] =
                 cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
-        $this->listpostsettings['categoryname'] = $instanceinfo->contextinfo->categoryname;
+        $this->listpostsettings['coursecategory'] = $instanceinfo->contextinfo->categoryname;
         $this->listpostsettings['coursename'] = $instanceinfo->contextinfo->coursename;
         $this->listpostsettings['modulename'] = $instanceinfo->contextinfo->modulename;
         $this->listpostsettings['instanceid'] = $instanceinfo->contextinfo->instanceid;

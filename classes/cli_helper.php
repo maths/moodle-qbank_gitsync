@@ -645,7 +645,6 @@ class cli_helper {
         $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
         $response = $activity->listcurlrequest->execute();
         $moodlequestionlist = json_decode($response);
-        var_dump($activity->listpostsettings);
         if (is_null($moodlequestionlist)) {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
@@ -653,6 +652,9 @@ class cli_helper {
             return new \stdClass(); // Required for PHPUnit.
         } else if (property_exists($moodlequestionlist, 'exception')) {
             echo "{$moodlequestionlist->message}\n";
+            if (property_exists($moodlequestionlist, 'debuginfo')) {
+                echo "{$moodlequestionlist->debuginfo}\n";
+            }
             echo "Failed to get list of questions from Moodle.\n";
             static::call_exit();
             return new \stdClass(); // Required for PHPUnit.

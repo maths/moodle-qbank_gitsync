@@ -39,6 +39,10 @@ trait tidy_trait {
      * @return void
      */
     public function tidy_manifest():void {
+        // We want to check the whole context or we'll be flagging
+        // entries outside the subcategory.
+        $this->listpostsettings['qcategoryname'] = 'top';
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         $response = $this->listcurlrequest->execute();
         $questionsinmoodle = json_decode($response);
         if (is_null($questionsinmoodle)) {
@@ -47,6 +51,9 @@ trait tidy_trait {
             echo "Failed to tidy manifest.\n";
         } else if (property_exists($questionsinmoodle, 'exception')) {
             echo "{$questionsinmoodle->message}\n";
+            if (property_exists($questionsinmoodle, 'debuginfo')) {
+                echo "{$questionsinmoodle->debuginfo}\n";
+            }
             echo "Failed to tidy manifest.\n";
         } else {
             $existingquestions = array_column($questionsinmoodle->questions, null, 'questionbankentryid');
