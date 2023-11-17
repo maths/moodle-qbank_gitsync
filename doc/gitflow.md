@@ -9,7 +9,7 @@ Assume the starting point is a category of questions in a Moodle question bank, 
 
 To export questions from moodle to the git repro, from the cli directory of the PHP scripts, we need
 
-`php createrepo.php -l course -c "Course 1" -d "/source_1" -s "/top/Source 1"`
+`php createrepo.php -l course -c "Course 1" -d "source_1" -s "top/Source 1"`
 
 Notes
 
@@ -21,14 +21,10 @@ Notes
 Note, that -s must start with `/top/` as all categories in Moodle have this as a starting poitn for all sub-categories.
 
 To import/export:
+ 
+`php exportrepo.php -f "source_2/edmundlocal_course_Course 1_question_manifest.json"`
+`php importrepo.php -l course -c "Course 1" -d "source_2" -s "top/Source 2"`
 
-Unix:  
-`php exportrepo.php -f "/source_2/edmundlocal_course_Course 1_question_manifest.json"`
-`php importrepo.php -l course -c "Course 1" -d "/source_2" -s "/top/Source 2"`
-
-Windows:  
-`php exportrepo.php -f "\source_2\edmundlocal_course_Course 1_question_manifest.json"`
-`php importrepo.php -l course -c "Course 1" -d "\source_2" -s "\top/Source 2"`
 
 
 ## Dealing with questions on two moodle sites
@@ -38,8 +34,8 @@ Steps for dealing with 2 different Moodle sources of a set of questions. Files f
 In umbrella folder, create 'gold' master branch and then clone to store files for different sources in different folders:
 
 `git init master`  
-`git clone /home/efarrow1/gitquestions/master source_1`  
-`git clone /home/efarrow1/gitquestions/master source_2`  
+`git clone master source_1`  
+`git clone master source_2`  
 
 Switch to branches for each source:  
 In source_1:  
@@ -51,8 +47,8 @@ In source_2:
 Set config file.
 
 Export initial repo from Moodle:  
-`php createrepo.php -l course -c "Course 1" -d "/source_1" -s "/top/Source 1"`  
-`php createrepo.php -l course -c "Course 1" -d "/source_2" -s "/top/Source 2"`
+`php createrepo.php -l course -c "Course 1" -d "source_1" -s "top/Source 1"`  
+`php createrepo.php -l course -c "Course 1" -d "source_2" -s "top/Source 2"`
 
 For Windows we have slash issues! Works like this but obviously not ideal:  
 `php createrepo.php -l course -c "Course 1" -d '\source_2' -s "\top/Source 2"`

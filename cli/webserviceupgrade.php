@@ -15,22 +15,22 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for GitSync question bank plugin.
+ * Set the file upload flag on upgrade
  *
- * @package   qbank_gitsync
- * @copyright 2023 The Open University
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    qbank_gitsync
+ * @copyright  2023 The Open University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+define('CLI_SCRIPT', true);
 
-$plugin->version   = 2023111600;
-// Question versions functionality of Moodle 4 required.
-$plugin->requires  = 2022041900;
-$plugin->component = 'qbank_gitsync';
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0 for Moodle 4.0+';
+require(__DIR__ . '/../../../../config.php');
+require_once($CFG->dirroot . '/webservice/lib.php');
 
-$plugin->dependencies = [
-    'qbank_importasversion'     => 2023102700,
-];
+// Enable the gitsync webservice.
+$webservicemanager = new webservice();
+$service = $webservicemanager->get_external_service_by_shortname('qbank_gitsync_ws');
+$service->enabled = true;
+$service->uploadfiles = "1";
+$webservicemanager->update_external_service($service);
+
