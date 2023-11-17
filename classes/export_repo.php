@@ -228,7 +228,7 @@ class export_repo {
                     echo "{$questioninfo->filepath} not updated.\n";
                     continue;
                 }
-                $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
+                $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question . "\n");
                 if ($success === false) {
                     echo "\nAccess issue.\n";
                     echo "{$questioninfo->filepath} not updated.\n";

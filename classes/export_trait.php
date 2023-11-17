@@ -50,6 +50,9 @@ trait export_trait {
             $moodlequestionlist = json_decode('{"questions": []}'); // For unit test purposes.
         } else if (property_exists($moodlequestionlist, 'exception')) {
             echo "{$moodlequestionlist->message}\n";
+            if (property_exists($moodlequestionlist, 'debuginfo')) {
+                echo "{$moodlequestionlist->debuginfo}\n";
+            }
             echo "Failed to get list of questions from Moodle.\n";
             $this->call_exit();
             $moodlequestionlist = json_decode('{"questions": []}'); // For unit test purposes.
@@ -165,7 +168,7 @@ trait export_trait {
                             echo "{$catfilepath} not created.\n";
                             continue;
                         }
-                        $success = file_put_contents($catfilepath, $category);
+                        $success = file_put_contents($catfilepath, $category . "\n");
                         if ($success === false) {
                             echo "\nFile creation unsuccessful:\n";
                             echo "{$catfilepath}";
@@ -174,7 +177,7 @@ trait export_trait {
                     }
                 }
                 $sanitisedqname = preg_replace(cli_helper::BAD_CHARACTERS, '-', substr($qname, 0, 230));
-                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question);
+                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question . "\n");
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";
                     echo "{$bottomdirectory}/{$sanitisedqname}.xml";

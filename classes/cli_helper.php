@@ -136,6 +136,19 @@ class cli_helper {
         if (isset($cliargs['directory'])) {
             $cliargs['directory'] = $this->trim_slashes($cliargs['directory']);
         }
+        if (isset($cliargs['manifestpath'])) {
+            if (isset($cliargs['directory']) && strlen($cliargs['directory']) > 0 ) {
+                echo "\nYou have supplied a manifest file path and a directory. " .
+                     "Please use only one.\n";
+                static::call_exit();
+            }
+        }
+        if (isset($cliargs['rootdirectory'])) {
+            $cliargs['rootdirectory'] = str_replace( '\\', '/', $cliargs['rootdirectory']);
+            if (substr($cliargs['rootdirectory'], strlen($cliargs['rootdirectory']) - 1, 1) === '/') {
+                $cliargs['rootdirectory'] = substr($cliargs['rootdirectory'], 0, strlen($cliargs['rootdirectory']) - 1);
+            }
+        }
         if (isset($cliargs['subdirectory'])) {
             if (strlen($cliargs['subdirectory']) > 0 && isset($cliargs['questioncategoryid'])) {
                 echo "\nYou have supplied a subdirectory to identify the required question category " .
@@ -639,6 +652,9 @@ class cli_helper {
             return new \stdClass(); // Required for PHPUnit.
         } else if (property_exists($moodlequestionlist, 'exception')) {
             echo "{$moodlequestionlist->message}\n";
+            if (property_exists($moodlequestionlist, 'debuginfo')) {
+                echo "{$moodlequestionlist->debuginfo}\n";
+            }
             echo "Failed to get list of questions from Moodle.\n";
             static::call_exit();
             return new \stdClass(); // Required for PHPUnit.
@@ -654,7 +670,9 @@ class cli_helper {
                 echo "{$moodlequestionlist->contextinfo->modulename}\n";
             }
             echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
-            echo $message;
+            if ($message) {
+                echo $message;
+            }
             static::handle_abort();
         }
         $activity->listpostsettings['contextonly'] = 0;

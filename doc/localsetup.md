@@ -8,7 +8,7 @@
   For Windows:
   - Go to `https://git-scm.com/download/win` and download the standalone installer (probably '64-bit Git for Windows Setup').
   - Run the installer and fight through the setup questions. The defaults are fine for most of them but if you've never heard of Vim
-  don't choose it as your default editor. Choose 'Checkout as-is, commit as-is' for line endings.
+  don't choose it as your default editor.
   - Set your identity:
     - `git config --global user.name "John Doe"`
     - `git config --global user.email johndoe@example.com`
