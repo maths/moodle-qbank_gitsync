@@ -26,8 +26,6 @@ You can use context instance id and subcategory id instead:
 
 You'll get a confirmation of the context and category with the abortion to abort before performing the actual export. A manifest file will be created in the specified directory.
 
-TODO - Bug where category file is not created if there's no question in that category.
-
 To import/export:
  
 `php exportrepo.php -f "master/edmundlocal_course_Course-1_question_manifest.json" -s "Source 1/subcat 2_1"`

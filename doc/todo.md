@@ -39,9 +39,9 @@ We're currently set up for extracting question from Moodle as the first step. Wh
 See markup files for each CLI for re-run instructions.
 
 ## Guidance
-- Further instructions for config setup, defaults and setting command line arguments.
+- (Started) Further instructions for config setup, defaults and setting command line arguments.
 - Security of web-service and permission options.
-- Instructions for day-to-day Git use.
+- (Started) Instructions for day-to-day Git use.
 
 ## Deletion or overwrite of questions in Moodle
 - (Done) Separate out deletion steps from import script.
