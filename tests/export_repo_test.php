@@ -153,7 +153,7 @@ class export_repo_test extends advanced_testcase {
             '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
         );
 
-        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturn(
+        $this->listcurl->expects($this->exactly(3))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
               "questions": []}'

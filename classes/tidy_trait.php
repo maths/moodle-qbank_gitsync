@@ -40,13 +40,9 @@ trait tidy_trait {
      */
     public function tidy_manifest():void {
         // We want to check the whole context or we'll be flagging
-        // entries outside the subcategory.
+        // entries outside the subcategory/subdirectory.
         $oldsetting = $this->listpostsettings['qcategoryname'];
-        $qbeids = array_map(function($q) { return $q->questionbankentryid;}, $this->manifestcontents->questions);
         $this->listpostsettings['qcategoryname'] = 'top';
-        foreach ($qbeids as $key => $id) {
-            $this->listpostsettings["qbankentryids[{$key}]"] = $id;
-        }
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         $response = $this->listcurlrequest->execute();
         $questionsinmoodle = json_decode($response);
@@ -61,6 +57,41 @@ trait tidy_trait {
             }
             echo "Failed to tidy manifest.\n";
         } else {
+            // We also need to check questions that have been moved to another context.
+            // We do this in a second pass to minimise the size of passed array.
+            $retrievedentries = array_column($questionsinmoodle->questions, null, 'questionbankentryid');
+            $questionstocheck = [];
+            foreach ($this->manifestcontents->questions as $manifestquestion) {
+                $retrievedalready = $retrievedentries["{$manifestquestion->questionbankentryid}"] ?? false;
+                if (!$retrievedalready) {
+                    array_push($questionstocheck, $manifestquestion->questionbankentryid);
+                }
+            }
+            if (count($questionstocheck) > 0) {
+                foreach ($questionstocheck as $key => $id) {
+                    $this->listpostsettings["qbankentryids[{$key}]"] = $id;
+                }
+                $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+                $secondresponse = $this->listcurlrequest->execute();
+                $movedquestionsinmoodle = json_decode($secondresponse);
+                if (is_null($movedquestionsinmoodle)) {
+                    echo "Broken JSON returned from Moodle:\n";
+                    echo $secondresponse . "\n";
+                    echo "Failed to check question versions.\n";
+                    $this->call_exit();
+                    $movedquestionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
+                } else if (property_exists($movedquestionsinmoodle, 'exception')) {
+                    echo "{$movedquestionsinmoodle->message}\n";
+                    if (property_exists($movedquestionsinmoodle, 'debuginfo')) {
+                        echo "{$movedquestionsinmoodle->debuginfo}\n";
+                    }
+                    echo "Failed to check question versions.\n";
+                    $this->call_exit();
+                    $movedquestionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
+                }
+                $questionsinmoodle->questions = array_merge($questionsinmoodle->questions,
+                                                            $movedquestionsinmoodle->questions);
+            }
             $existingquestions = array_column($questionsinmoodle->questions, null, 'questionbankentryid');
             $newentrylist = [];
             foreach ($this->manifestcontents->questions as $currententry) {

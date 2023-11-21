@@ -86,7 +86,7 @@ class tidy_trait_test extends advanced_testcase {
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request',
+            'get_curl_request', 'call_exit',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -99,7 +99,7 @@ class tidy_trait_test extends advanced_testcase {
      * @covers \gitsync\tidy_trait\tidy_manifest()
      */
     public function test_tidy_manifest():void {
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                              "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
               "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
@@ -145,6 +145,96 @@ class tidy_trait_test extends advanced_testcase {
         $this->exportrepo->tidy_manifest();
 
         $this->expectOutputRegex('/No token/');
+    }
+
+    /**
+     * Test message if tidy JSON broken.
+     * @covers \gitsync\tidy_trait\tidy_manifest()
+     */
+    public function test_broken_json_on_tidy_request_2(): void {
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""}]}',
+            '[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]'
+        );
+
+        $this->exportrepo->tidy_manifest();
+
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*[{"questionbankentryid": "35001", "name": "One", "questioncategory": "}]/s');
+    }
+
+    /**
+     * Test message if tidy exception.
+     * @covers \gitsync\tidy_trait\tidy_manifest()
+     */
+    public function test_exception_on_tidy_request_2(): void {
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""}]}',
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+
+        $this->exportrepo->tidy_manifest();
+
+        $this->expectOutputRegex('/No token/');
+    }
+
+    /**
+     * Check nothing removed normal pass.
+     * @covers \gitsync\tidy_trait\tidy_manifest()
+     */
+    public function test_tidy_manifest_nothing_removed():void {
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+                            {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
+                            {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+                            {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
+            );
+
+        $this->exportrepo->tidy_manifest();
+
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->assertCount(4, $manifestcontents->questions);
+
+        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertArrayHasKey('35001', $existingentries);
+        $this->assertArrayHasKey('35002', $existingentries);
+        $this->assertArrayHasKey('35003', $existingentries);
+        $this->assertArrayHasKey('35004', $existingentries);
+    }
+
+    /**
+     * Check nothing removed with two passes.
+     * @covers \gitsync\tidy_trait\tidy_manifest()
+     */
+    public function test_tidy_manifest_nothing_removed_two_passes():void {
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+                        {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
+             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+                    {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
+                    {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""}]}'
+            );
+
+        $this->exportrepo->tidy_manifest();
+
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->assertCount(4, $manifestcontents->questions);
+
+        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertArrayHasKey('35001', $existingentries);
+        $this->assertArrayHasKey('35002', $existingentries);
+        $this->assertArrayHasKey('35003', $existingentries);
+        $this->assertArrayHasKey('35004', $existingentries);
     }
 
 }

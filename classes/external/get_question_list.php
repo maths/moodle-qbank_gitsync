@@ -56,7 +56,7 @@ class get_question_list extends external_api {
             'contextonly' => new external_value(PARAM_BOOL, 'Only return context info?'),
             'qbankentryids' => new external_multiple_structure(
                 new external_value(PARAM_SEQUENCE, 'QUestion bank entry id')
-            )
+            ),
         ]);
     }
 
@@ -97,14 +97,14 @@ class get_question_list extends external_api {
      * @param string|null $instanceid ID of the relevant object for the given context level e.g. course id
      *  for course level) to search for questions (supercedes $coursename, $modulename & $coursecategory)
      * @param bool $contextonly Only return info on context and not questions
-     * @param $qbankentryids Array of qbankentryids to check
+     * @param array|null $qbankentryids Array of qbankentryids to check
      * @return object containing context info and an array of question data
      */
     public static function execute(?string $qcategoryname,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null, ?string $qcategoryid = null,
                                     ?string $instanceid = null, bool $contextonly = false,
-                                    $qbankentryids):object {
+                                    ?array $qbankentryids = ['']):object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'qcategoryname' => $qcategoryname,
@@ -129,64 +129,56 @@ class get_question_list extends external_api {
         self::validate_context($thiscontext);
         require_capability('qbank/gitsync:listquestions', $thiscontext);
 
-        if (is_null($qcategoryid) || $qcategoryid === '') {
-            // Category name should be in form top/$category/$subcat1/$subcat2 and
-            // have been gleaned directly from the directory structure.
-            // Find the 'top' category for the context ($parent==0) and
-            // then descend through the hierarchy until we find the category we need.
-            $catnames = split_category_path($params['qcategoryname']);
-            $parent = 0;
-            foreach ($catnames as $catname) {
-                $category = $DB->get_record('question_categories',
-                                ['name' => $catname, 'contextid' => $thiscontext->id, 'parent' => $parent],
-                                'id, parent, name');
-                $parent = $category->id;
-            }
-        } else {
-            $category = $DB->get_record('question_categories', ['id' => $qcategoryid], 'id, parent, name');
-        }
-
-        if (!$category) {
-            throw new \moodle_exception('categoryerror', 'qbank_gitsync', null, $params['qcategoryname']);
-        }
         $response = new \stdClass();
         $response->contextinfo = $contextinfo;
-        $response->contextinfo->qcategoryname = $category->name;
         unset($response->contextinfo->context);
         $response->questions = [];
-        if ($contextonly) {
-            return $response;
-        }
+        $response->contextinfo->qcategoryname = '';
 
-        $categoriestosearch = array_merge([$category], self::get_category_descendants($category->id));
-
-        $categoryids = array_map(fn($catinfo) => $catinfo->id, $categoriestosearch);
-
-        $qbentries = $DB->get_records_list('question_bank_entries', 'questioncategoryid', $categoryids);
-        $categories = array_column($categoriestosearch, null, 'id');
-        foreach ($qbentries as $qbe) {
-            $mindata = get_minimal_question_data($qbe->id);
-            $qinfo = new \stdClass();
-            $qinfo->questionbankentryid = $qbe->id;
-            $qinfo->name = $mindata->name;
-            $qinfo->questioncategory = $categories[$qbe->questioncategoryid]->name;
-            $qinfo->version = $mindata->version;
-            array_push($response->questions, $qinfo);
-        }
-
-        // Deal with any additional qbankids passed in to check.
-        if (count($qbankentryids) > 0) {
-            // Find any questions we haven't dealt with already.
-            $prevhandledqs = array_column($qbentries, null, 'id');
-            $extraqs = [];
-            foreach ($qbankentryids as $qbeid) {
-                $dealtwithalready = $prevhandledqs[$qbeid] ?? false;
-                if (!$dealtwithalready) {
-                    array_push($extraqs, $qbeid);
+        if (count($qbankentryids) === 1 && $qbankentryids[0] === '') {
+            if (is_null($qcategoryid) || $qcategoryid === '') {
+                // Category name should be in form top/$category/$subcat1/$subcat2 and
+                // have been gleaned directly from the directory structure.
+                // Find the 'top' category for the context ($parent==0) and
+                // then descend through the hierarchy until we find the category we need.
+                $catnames = split_category_path($params['qcategoryname']);
+                $parent = 0;
+                foreach ($catnames as $catname) {
+                    $category = $DB->get_record('question_categories',
+                                    ['name' => $catname, 'contextid' => $thiscontext->id, 'parent' => $parent],
+                                    'id, parent, name');
+                    $parent = $category->id;
                 }
+            } else {
+                $category = $DB->get_record('question_categories', ['id' => $qcategoryid], 'id, parent, name');
             }
-            // Add to the response.
-            $extraqbentries = $DB->get_records_list('question_bank_entries', 'id', $extraqs);
+
+            if (!$category) {
+                throw new \moodle_exception('categoryerror', 'qbank_gitsync', null, $params['qcategoryname']);
+            }
+            $response->contextinfo->qcategoryname = $category->name;
+            if ($contextonly) {
+                return $response;
+            }
+
+            $categoriestosearch = array_merge([$category], self::get_category_descendants($category->id));
+
+            $categoryids = array_map(fn($catinfo) => $catinfo->id, $categoriestosearch);
+
+            $qbentries = $DB->get_records_list('question_bank_entries', 'questioncategoryid', $categoryids);
+            $categories = array_column($categoriestosearch, null, 'id');
+            foreach ($qbentries as $qbe) {
+                $mindata = get_minimal_question_data($qbe->id);
+                $qinfo = new \stdClass();
+                $qinfo->questionbankentryid = $qbe->id;
+                $qinfo->name = $mindata->name;
+                $qinfo->questioncategory = $categories[$qbe->questioncategoryid]->name;
+                $qinfo->version = $mindata->version;
+                array_push($response->questions, $qinfo);
+            }
+        } else {
+            // Deal with list of qbankids passed in to check.
+            $extraqbentries = $DB->get_records_list('question_bank_entries', 'id', $qbankentryids);
             foreach ($extraqbentries as $extraqbe) {
                 $mindata = get_minimal_question_data($extraqbe->id);
                 $qinfo = new \stdClass();

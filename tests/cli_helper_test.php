@@ -233,7 +233,8 @@ class cli_helper_test extends advanced_testcase {
     public function test_validation_subdirectory(): void {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
-                                     'subdirectory' => 'cat1', 'questioncategoryid' => 3];
+                                     'subdirectory' => 'cat1', 'questioncategoryid' => 3,
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/use only one/');
     }
@@ -322,7 +323,8 @@ class cli_helper_test extends advanced_testcase {
 
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'manifestpath' => '/path/subpath/',
-                                     'coursename' => 'course1', 'instanceid' => '2',];
+                                     'coursename' => 'course1', 'instanceid' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/specified a manifest file/');
 
@@ -335,7 +337,8 @@ class cli_helper_test extends advanced_testcase {
     public function test_validation_instanceid(): void {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
-                                     'coursename' => 'course1', 'instanceid' => '2',];
+                                     'coursename' => 'course1', 'instanceid' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/If instanceid is supplied/');
 
@@ -348,7 +351,8 @@ class cli_helper_test extends advanced_testcase {
     public function test_validation_contextlevel_system(): void {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
-                                     'coursename' => 'course1', 'instanceid' => '2',];
+                                     'coursename' => 'course1', 'instanceid' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/You have specified system level.*not needed/');
 
@@ -362,7 +366,8 @@ class cli_helper_test extends advanced_testcase {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'coursecategory',
                                      'coursecategory' => 'cat1',
-                                     'coursename' => 'course1', 'modulename' => '2',];
+                                     'coursename' => 'course1', 'modulename' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/^\nYou have specified course category level.*not needed.\n$/s');
 
@@ -376,7 +381,8 @@ class cli_helper_test extends advanced_testcase {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'course',
                                      'coursecategory' => 'cat1',
-                                     'coursename' => 'course1', 'modulename' => '2',];
+                                     'coursename' => 'course1', 'modulename' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/^\nYou have specified course level.*not needed.\n$/s');
 
@@ -390,7 +396,8 @@ class cli_helper_test extends advanced_testcase {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'module',
                                      'coursecategory' => 'cat1',
-                                     'coursename' => 'course1', 'modulename' => '2',];
+                                     'coursename' => 'course1', 'modulename' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/^\nYou have specified module level.*not needed.\n$/s');
 

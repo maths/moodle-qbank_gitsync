@@ -87,7 +87,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         role_assign($managerroleid, $this->user->id, $context->id);
 
         $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
-                                                  null, null, false, []);
+                                                  null, null, false, ['']);
 
         // We need to execute the return values cleaning process to simulate
         // the web service server.
@@ -111,7 +111,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
         get_question_list::execute('top', 50, $this->course->fullname, null, null,
-                                   null, null, false, []);
+                                   null, null, false, ['']);
     }
 
     /**
@@ -126,7 +126,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         $this->expectException(required_capability_exception::class);
         $this->expectExceptionMessage('you do not currently have permissions to do that (List)');
         get_question_list::execute('top', 50, $this->course->fullname, null, null,
-                                   null, null, false, []);
+                                   null, null, false, ['']);
     }
 
     /**
@@ -136,7 +136,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
         get_question_list::execute('top', 50, $this->course->fullname, null, null,
-                                   null, null, false, []);
+                                   null, null, false, ['']);
     }
 
     /**
@@ -159,7 +159,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         // Trying to list question from course 2 using context of course 1.
         // User has list capability on course 1 but not course 2.
         get_question_list::execute('top', 50, $course2->fullname, null, null,
-                                   null, null, false, []);
+                                   null, null, false, ['']);
     }
 
     /**
@@ -179,7 +179,7 @@ class get_question_list_test extends externallib_advanced_testcase {
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
         $sink = $this->redirectEvents();
         $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
-                                                  null, null, false, []);
+                                                  null, null, false, ['']);
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),
@@ -228,7 +228,7 @@ class get_question_list_test extends externallib_advanced_testcase {
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
         $sink = $this->redirectEvents();
         $returnvalue = get_question_list::execute('top', 50, null, null, null,
-                                                  null, $this->course->id, false, []);
+                                                  null, $this->course->id, false, ['']);
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),
@@ -261,8 +261,7 @@ class get_question_list_test extends externallib_advanced_testcase {
     }
 
     /**
-     * Test output of execute function using instanceid to retrieve list
-     * and getting extra questions via an array.
+     * Test output of execute function getting questions via an array.
      */
     public function test_list_with_array(): void {
         global $DB;
@@ -295,7 +294,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         $returnedq1 = [];
         $returnedq2 = [];
         $returnedq3 = [];
-        $this->assertEquals(count($returnvalue['questions']), 3);
+        $this->assertEquals(count($returnvalue['questions']), 2);
         foreach ($returnvalue['questions'] as $returnedq) {
             if ($returnedq['questionbankentryid'] === $this->q->questionbankentryid) {
                 $returnedq1 = $returnedq;
@@ -306,11 +305,11 @@ class get_question_list_test extends externallib_advanced_testcase {
             }
         }
 
-        $this->assertEquals($this->q->name, $returnedq1['name']);
-        $this->assertEquals($q2->name, $returnedq2['name']);
+        $this->assertEquals([], $returnedq1);
+
+        $this->assertEquals(null, $returnedq2['name']);
         $this->assertEquals(null, $returnedq3['name']);
-        $this->assertEquals($this->qcategory->name, $returnedq1['questioncategory']);
-        $this->assertEquals($qcategory2->name, $returnedq2['questioncategory']);
+        $this->assertEquals(null, $returnedq2['questioncategory']);
         $this->assertEquals(null, $returnedq3['questioncategory']);
 
         $this->assertEquals($this->course->fullname, $returnvalue['contextinfo']['coursename']);

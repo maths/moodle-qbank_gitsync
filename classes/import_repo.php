@@ -718,19 +718,8 @@ class import_repo {
             return;
         }
         $questionstocheck = [];
-        foreach ($this->manifestcontents->questions as $manifestquestion) {
-            if (substr($manifestquestion->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory
-                && preg_match('/^\/{1}(?!\/)/' , substr($manifestquestion->filepath, strlen($this->subdirectory) + 1))) {
-                // Start of filepath of question must match start of subdirectory to import.
-                // Filepath must continue with one (and only) one slash.
-                array_push($questionstocheck, $manifestquestion->questionbankentryid);
-            }
-        }
-        foreach ($questionstocheck as $key => $id) {
-            $this->listpostsettings["qbankentryids[{$key}]"] = $id;
-        }
-        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         $response = $this->listcurlrequest->execute();
+        // Retrieve all the question info for questions in the context.
         $questionsinmoodle = json_decode($response);
         if (is_null($questionsinmoodle)) {
             echo "Broken JSON returned from Moodle:\n";
@@ -751,6 +740,45 @@ class import_repo {
                 $this->call_exit();
                 $questionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
             }
+        }
+        // We also need to check questions that have been moved to another context.
+        // We do this in a second pass to minimise the size of passed array.
+        $retrievedentries = array_column($questionsinmoodle->questions, null, 'questionbankentryid');
+        foreach ($this->manifestcontents->questions as $manifestquestion) {
+            if (substr($manifestquestion->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory
+                && preg_match('/^\/{1}(?!\/)/' , substr($manifestquestion->filepath, strlen($this->subdirectory) + 1))) {
+                // Start of filepath of question must match start of subdirectory to import.
+                // Filepath must continue with one (and only) one slash.
+                $retrievedalready = $retrievedentries["{$manifestquestion->questionbankentryid}"] ?? false;
+                if (!$retrievedalready) {
+                    array_push($questionstocheck, $manifestquestion->questionbankentryid);
+                }
+            }
+        }
+        if (count($questionstocheck) > 0) {
+            foreach ($questionstocheck as $key => $id) {
+                $this->listpostsettings["qbankentryids[{$key}]"] = $id;
+            }
+            $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+            $secondresponse = $this->listcurlrequest->execute();
+            $movedquestionsinmoodle = json_decode($secondresponse);
+            if (is_null($movedquestionsinmoodle)) {
+                echo "Broken JSON returned from Moodle:\n";
+                echo $secondresponse . "\n";
+                echo "Failed to check question versions.\n";
+                $this->call_exit();
+                $movedquestionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
+            } else if (property_exists($movedquestionsinmoodle, 'exception')) {
+                echo "{$movedquestionsinmoodle->message}\n";
+                if (property_exists($movedquestionsinmoodle, 'debuginfo')) {
+                    echo "{$movedquestionsinmoodle->debuginfo}\n";
+                }
+                echo "Failed to check question versions.\n";
+                $this->call_exit();
+                $movedquestionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
+            }
+            $questionsinmoodle->questions = array_merge($questionsinmoodle->questions,
+                                                        $movedquestionsinmoodle->questions);
         }
         $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $changes = false;
