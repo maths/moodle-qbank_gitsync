@@ -186,29 +186,29 @@ class cli_helper_test extends advanced_testcase {
     public function test_manifest_path(): void {
         $helper = new cli_helper($this->options);
         // Module level, including replacements.
-        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'module', 'cat$goryname',
-                                                   'cours$nam$', 'Modul$name', 'directoryname');
+        $manifestpath = $helper->get_manifest_path('moodleinstanc<name', 'module', 'cat<goryname',
+                                                   'cours<nam>', 'Modul<name', 'directoryname');
         $this->assertEquals('directoryname/moodleinstanc-name_module_cours-nam-_modul-name' . cli_helper::MANIFEST_FILE,
                             $manifestpath);
         // Category level, including replacements.
-        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'coursecategory', 'cat$goryname',
-                                                   'cours$nam$', 'Modul$name', 'directoryname');
+        $manifestpath = $helper->get_manifest_path('moodleinstanc<name', 'coursecategory', 'cat<goryname',
+                                                   'cours<nam<', 'Modul<name', 'directoryname');
         $this->assertEquals('directoryname/moodleinstanc-name_coursecategory_cat-goryname' . cli_helper::MANIFEST_FILE,
                             $manifestpath);
         // Course level, including replacements.
-        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'course', 'cat$goryname',
-                                                   'cours$nam$', 'Modul$name', 'directoryname');
+        $manifestpath = $helper->get_manifest_path('moodleinstanc<name', 'course', 'cat<goryname',
+                                                   'cours<nam>', 'Modul<name', 'directoryname');
         $this->assertEquals('directoryname/moodleinstanc-name_course_cours-nam-' . cli_helper::MANIFEST_FILE,
                             $manifestpath);
         // System level.
-        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'system', 'cat$goryname',
-                                                    'cours$nam$', 'Modul$name', 'directoryname');
+        $manifestpath = $helper->get_manifest_path('moodleinstanc<name', 'system', 'cat<goryname',
+                                                    'cours<nam<', 'Modul<name', 'directoryname');
         $this->assertEquals('directoryname/moodleinstanc-name_system' . cli_helper::MANIFEST_FILE,
                             $manifestpath);
         // Shortening.
         // Module level, including replacements.
-        $manifestpath = $helper->get_manifest_path('moodleinstanc$name', 'module', 'cat$goryname',
-            'cours$nam$thatisverylongandsoneedstobeshortened and has a space in it just to make sure',
+        $manifestpath = $helper->get_manifest_path('moodleinstanc<name', 'module', 'cat<goryname',
+            'cours<nam<thatisverylongandsoneedstobeshortened and has a space in it just to make sure',
             'Modulename that is also very long and we want to chop up a bit as well hopefully', 'directoryname');
         $this->assertEquals('directoryname/moodleinstanc-name_module_cours-nam-thatisverylongandsoneedstobeshortened' .
                             '-an_modulename-that-is-also-very-long-and-we-want-to-c' . cli_helper::MANIFEST_FILE,
@@ -233,7 +233,8 @@ class cli_helper_test extends advanced_testcase {
     public function test_validation_subdirectory(): void {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
-                                     'subdirectory' => 'cat1', 'questioncategoryid' => 3];
+                                     'subdirectory' => 'cat1', 'questioncategoryid' => 3,
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/use only one/');
     }
@@ -322,7 +323,8 @@ class cli_helper_test extends advanced_testcase {
 
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'manifestpath' => '/path/subpath/',
-                                     'coursename' => 'course1', 'instanceid' => '2',];
+                                     'coursename' => 'course1', 'instanceid' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/specified a manifest file/');
 
@@ -335,7 +337,8 @@ class cli_helper_test extends advanced_testcase {
     public function test_validation_instanceid(): void {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
-                                     'coursename' => 'course1', 'instanceid' => '2',];
+                                     'coursename' => 'course1', 'instanceid' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/If instanceid is supplied/');
 
@@ -348,7 +351,8 @@ class cli_helper_test extends advanced_testcase {
     public function test_validation_contextlevel_system(): void {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
-                                     'coursename' => 'course1', 'instanceid' => '2',];
+                                     'coursename' => 'course1', 'instanceid' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/You have specified system level.*not needed/');
 
@@ -362,7 +366,8 @@ class cli_helper_test extends advanced_testcase {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'coursecategory',
                                      'coursecategory' => 'cat1',
-                                     'coursename' => 'course1', 'modulename' => '2',];
+                                     'coursename' => 'course1', 'modulename' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/^\nYou have specified course category level.*not needed.\n$/s');
 
@@ -376,7 +381,8 @@ class cli_helper_test extends advanced_testcase {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'course',
                                      'coursecategory' => 'cat1',
-                                     'coursename' => 'course1', 'modulename' => '2',];
+                                     'coursename' => 'course1', 'modulename' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/^\nYou have specified course level.*not needed.\n$/s');
 
@@ -390,7 +396,8 @@ class cli_helper_test extends advanced_testcase {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'module',
                                      'coursecategory' => 'cat1',
-                                     'coursename' => 'course1', 'modulename' => '2',];
+                                     'coursename' => 'course1', 'modulename' => '2',
+                                    ];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/^\nYou have specified module level.*not needed.\n$/s');
 

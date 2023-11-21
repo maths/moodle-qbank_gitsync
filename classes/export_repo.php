@@ -138,6 +138,7 @@ class export_repo {
             'qcategoryid' => $qcategoryid,
             'instanceid' => $this->manifestcontents->context->instanceid,
             'contextonly' => 0,
+            'qbankentryids[]' => null,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
@@ -228,7 +229,7 @@ class export_repo {
                     echo "{$questioninfo->filepath} not updated.\n";
                     continue;
                 }
-                $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
+                $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question . "\n");
                 if ($success === false) {
                     echo "\nAccess issue.\n";
                     echo "{$questioninfo->filepath} not updated.\n";

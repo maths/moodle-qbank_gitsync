@@ -1,8 +1,9 @@
 # Phase 1 TODO list (in no particular order)
 
 ## Make webservice setup script run on plugin install
-- Make it possible to run the script multiple times.
-- Set the file upload flag on every version update as it resets by default.
+- (Won't do) Make it possible to run the script multiple times.
+- (Won't do) Set the file upload flag on every version update as it resets by default.
+Played around with this. Getting the contents of the script to be run as part of install/upgrade is do-able via db/install.php and db/upgrade.php but is probably asking for trouble as any problems lead to install fail which is never good. Also the upgrde script runs before the upload flag is reset so doesn't do any good anyway. Everything the script does can be done manually so we just need to give detailed instructions.
 
 ## Command line arguments
 - (Done) Allow use of course/question category/course category/module id rather than names. These are obtainable by the user from the URL (at least the course and question category are) are definitely unique, unlike the names currently used.
@@ -28,7 +29,7 @@ We're currently set up for extracting question from Moodle as the first step. Wh
 - (Done) Make sure there is error handling around all webserver access and exit/continue as appropriate.
 - (Done) Add try/catch around file access.
 - (Done) Add try/catch around XML/String conversion. Update: It's not errors that are thrown - have to check for functions returning false.
-- Investigate what's needed around DB calls.
+- (Done) Investigate what's needed around DB calls. Update: An error is thrown which is then passed to the front end and handled. Debug info is being displayed which may be too much but fine for now.
 
 ## Crash recovery
 - (Done) Check what currently happens if there is an error or network failure.

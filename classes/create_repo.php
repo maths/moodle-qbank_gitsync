@@ -154,11 +154,20 @@ class create_repo {
             'qcategoryid' => $qcategoryid,
             'instanceid' => $instanceid,
             'contextonly' => 0,
+            'qbankentryids[]' => null,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         $instanceinfo = $clihelper->check_context($this);
+
+        $this->listpostsettings['contextlevel'] =
+                cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
+        $this->listpostsettings['coursecategory'] = $instanceinfo->contextinfo->categoryname;
+        $this->listpostsettings['coursename'] = $instanceinfo->contextinfo->coursename;
+        $this->listpostsettings['modulename'] = $instanceinfo->contextinfo->modulename;
+        $this->listpostsettings['instanceid'] = $instanceinfo->contextinfo->instanceid;
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
 
         $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,

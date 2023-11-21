@@ -827,6 +827,47 @@ class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Check abort if question version in Moodle doesn't match a version in manifest.
+     * @covers \gitsync\import_repo\check_question_versions()
+     */
+    public function test_check_question_versions_moved_question():void {
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+               "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]}',
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+            "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+            "questions": [{"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "2"}]}'
+            );
+        $this->importrepo->check_question_versions();
+
+        $this->expectOutputRegex('/35002 - TestC - Two' .
+                                 '.*Moodle question version: 2' .
+                                 '.*Version on last import to Moodle: 6' .
+                                 '.*Version on last export from Moodle: 7' .
+                                 '.*Export questions from Moodle before proceeding/s');
+    }
+
+    /**
+     * Test version check passes if imported version matches.
+     * @covers \gitsync\import_repo\check_question_versions()
+     */
+    public function test_check_question_import_version_success_moved_question():void {
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]}',
+              '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+              "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "6"}]}'
+            );
+        $this->importrepo->check_question_versions();
+    }
+    /**
      * Test version check broken JSON.
      * @covers \gitsync\import_repo\check_question_versions()
      */
@@ -845,6 +886,37 @@ class import_repo_test extends advanced_testcase {
      */
     public function test_check_version_exception(): void {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+        $this->importrepo->check_question_versions();
+        $this->expectOutputRegex('/No token/');
+    }
+
+    /**
+     * Test version check broken JSON.
+     * @covers \gitsync\import_repo\check_question_versions()
+     */
+    public function test_check_versions_broken_json_request_2(): void {
+        $this->listcurl->expects($this->any())->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"}]}',
+            '{broken'
+        );
+        $this->importrepo->check_question_versions();
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*{broken/s');
+    }
+
+    /**
+     * Test version check exception.
+     * @covers \gitsync\import_repo\check_question_versions()
+     */
+    public function test_check_version_exception_request_2(): void {
+        $this->listcurl->expects($this->any())->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"}]}',
             '{"exception":"moodle_exception","message":"No token"}'
         );
         $this->importrepo->check_question_versions();

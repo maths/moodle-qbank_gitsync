@@ -10,7 +10,7 @@ This plugin requires the [import as new version](https://github.com/maths/moodle
 - Run the setup script in the cli folder on the Moodle server:
   - `php webservicesetup.php`
   - This creates a user `ws-gitsync-user` and role `ws-gitsync-role`.
-  - The role has capabilities `webservice/rest:use`, `qbank/gitsync:importquestions` and `qbank/gitsync:exportquestions`.
+  - The role has capabilities `webservice/rest:use`, `qbank/gitsync:importquestions`, `qbank/gitsync:exportquestions`, `qbank/gitsync:deletequestions` and `qbank/gitsync:listquestions`.
   - The user is assigned the role.
   - The webservice is enabled and the user is authorised to use the service.
   - File upload is enabled.

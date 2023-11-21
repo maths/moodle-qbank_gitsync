@@ -156,10 +156,15 @@ class import_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
+        $manifestpath = $arguments['manifestpath'];
         if ($arguments['directory']) {
             $this->directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
         } else {
-            $this->directory = $arguments['rootdirectory'];
+            if ($manifestpath) {
+                $this->directory = $arguments['rootdirectory'] . '/' . dirname($manifestpath);
+            } else {
+                $this->directory = $arguments['rootdirectory'];
+            }
         }
         $this->subdirectory = $arguments['subdirectory'];
         if (is_array($arguments['token'])) {
@@ -172,7 +177,6 @@ class import_repo {
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
         $instanceid = $arguments['instanceid'];
-        $manifestpath = $arguments['manifestpath'];
         $qcategoryname = null;
         if ($this->subdirectory === 'top') {
             $qcategoryname = 'top';
@@ -199,7 +203,7 @@ class import_repo {
             'wsfunction' => 'qbank_gitsync_import_question',
             'moodlewsrestformat' => 'json',
             'questionbankentryid' => null,
-            'contextlevel' => cli_helper::get_context_level($contextlevel),
+            'contextlevel' => ($contextlevel) ? cli_helper::get_context_level($contextlevel) : null,
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
@@ -226,7 +230,7 @@ class import_repo {
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_get_question_list',
             'moodlewsrestformat' => 'json',
-            'contextlevel' => cli_helper::get_context_level($contextlevel),
+            'contextlevel' => ($contextlevel) ? cli_helper::get_context_level($contextlevel) : null,
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
@@ -234,22 +238,22 @@ class import_repo {
             'qcategoryid' => null,
             'instanceid' => $instanceid,
             'contextonly' => 0,
+            'qbankentryids[]' => null,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
 
+        $message = null;
+        if ($qcategoryname !== 'top') {
+            // Subcategory may not exist yet so we can't check it at this stage.
+            // User will get warning on version check if it definitely doesn't exist.
+            // We do still need the user to verify the top level context.
+            $message = "Question subdirectory: {$this->subdirectory}\n";
+        }
         if ($manifestpath) {
             $this->manifestpath = $arguments['rootdirectory'] . '/' . $manifestpath;
         } else {
-            if ($qcategoryname !== 'top') {
-                // Subcategory may not exist yet so we can't check it at this stage.
-                // User will get warning on version check if it definitely doesn't exist.
-                // We do still need the user to verify the top level context.
-                $message = "Question subdirectory: {$this->subdirectory}\n";
-                $instanceinfo = $clihelper->check_context($this, $message);
-            } else {
-                $instanceinfo = $clihelper->check_context($this);
-            }
+            $instanceinfo = $clihelper->check_context($this, $message);
             $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
@@ -294,16 +298,18 @@ class import_repo {
 
         if ($manifestpath) {
             // Set context info from manifest file rather than other CLI arguments.
-            $this->postsettings['instanceid'] = $this->manifestcontents->instanceid;
-            $this->postsettings['coursename'] = $this->manifestcontents->coursename;
-            $this->postsettings['modulename'] = $this->manifestcontents->modulename;
-            $this->postsettings['coursecategory'] = $this->manifestcontents->coursecategory;
-            $this->listpostsettings['instanceid'] = $this->manifestcontents->instanceid;
-            $this->listpostsettings['coursename'] = $this->manifestcontents->coursename;
-            $this->listpostsettings['modulename'] = $this->manifestcontents->modulename;
-            $this->listpostsettings['coursecategory'] = $this->manifestcontents->coursecategory;
+            $this->postsettings['instanceid'] = $this->manifestcontents->context->instanceid;
+            $this->postsettings['contextlevel'] = $this->manifestcontents->context->contextlevel;
+            $this->postsettings['coursename'] = $this->manifestcontents->context->coursename;
+            $this->postsettings['modulename'] = $this->manifestcontents->context->modulename;
+            $this->postsettings['coursecategory'] = $this->manifestcontents->context->coursecategory;
+            $this->listpostsettings['instanceid'] = $this->manifestcontents->context->instanceid;
+            $this->listpostsettings['contextlevel'] = $this->manifestcontents->context->contextlevel;
+            $this->listpostsettings['coursename'] = $this->manifestcontents->context->coursename;
+            $this->listpostsettings['modulename'] = $this->manifestcontents->context->modulename;
+            $this->listpostsettings['coursecategory'] = $this->manifestcontents->context->coursecategory;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-            $instanceinfo = $clihelper->check_context($this);
+            $instanceinfo = $clihelper->check_context($this, $message);
         }
         // Set question category info after call to check_context.
         // We can't rely on the subcategories existing in Moodle until after import
@@ -617,6 +623,9 @@ class import_repo {
             return;
         } else if (property_exists($questionsinmoodle, 'exception')) {
             echo "{$questionsinmoodle->message}\n";
+            if (property_exists($questionsinmoodle, 'debuginfo')) {
+                echo "{$questionsinmoodle->debuginfo}\n";
+            }
             echo "Failed to check questions for deletion.\n";
             return;
         }
@@ -668,8 +677,11 @@ class import_repo {
                 echo $response . "\n";
                 echo 'Not deleted?';
             } else if (property_exists($responsejson, 'exception')) {
-                echo "{$responsejson->message}\n" .
-                    "Not deleted\n";
+                echo "{$responsejson->message}\n";
+                if (property_exists($responsejson, 'debuginfo')) {
+                    echo "{$responsejson->debuginfo}\n";
+                }
+                echo "Not deleted\n";
             } else {
                 echo "Deleted\n";
                 $deleted = true;
@@ -705,7 +717,9 @@ class import_repo {
         if (count($this->manifestcontents->questions) === 0) {
             return;
         }
+        $questionstocheck = [];
         $response = $this->listcurlrequest->execute();
+        // Retrieve all the question info for questions in the context.
         $questionsinmoodle = json_decode($response);
         if (is_null($questionsinmoodle)) {
             echo "Broken JSON returned from Moodle:\n";
@@ -726,6 +740,45 @@ class import_repo {
                 $this->call_exit();
                 $questionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
             }
+        }
+        // We also need to check questions that have been moved to another context.
+        // We do this in a second pass to minimise the size of passed array.
+        $retrievedentries = array_column($questionsinmoodle->questions, null, 'questionbankentryid');
+        foreach ($this->manifestcontents->questions as $manifestquestion) {
+            if (substr($manifestquestion->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory
+                && preg_match('/^\/{1}(?!\/)/' , substr($manifestquestion->filepath, strlen($this->subdirectory) + 1))) {
+                // Start of filepath of question must match start of subdirectory to import.
+                // Filepath must continue with one (and only) one slash.
+                $retrievedalready = $retrievedentries["{$manifestquestion->questionbankentryid}"] ?? false;
+                if (!$retrievedalready) {
+                    array_push($questionstocheck, $manifestquestion->questionbankentryid);
+                }
+            }
+        }
+        if (count($questionstocheck) > 0) {
+            foreach ($questionstocheck as $key => $id) {
+                $this->listpostsettings["qbankentryids[{$key}]"] = $id;
+            }
+            $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+            $secondresponse = $this->listcurlrequest->execute();
+            $movedquestionsinmoodle = json_decode($secondresponse);
+            if (is_null($movedquestionsinmoodle)) {
+                echo "Broken JSON returned from Moodle:\n";
+                echo $secondresponse . "\n";
+                echo "Failed to check question versions.\n";
+                $this->call_exit();
+                $movedquestionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
+            } else if (property_exists($movedquestionsinmoodle, 'exception')) {
+                echo "{$movedquestionsinmoodle->message}\n";
+                if (property_exists($movedquestionsinmoodle, 'debuginfo')) {
+                    echo "{$movedquestionsinmoodle->debuginfo}\n";
+                }
+                echo "Failed to check question versions.\n";
+                $this->call_exit();
+                $movedquestionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
+            }
+            $questionsinmoodle->questions = array_merge($questionsinmoodle->questions,
+                                                        $movedquestionsinmoodle->questions);
         }
         $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $changes = false;
@@ -748,6 +801,8 @@ class import_repo {
             echo "Export questions from Moodle before proceeding.\n";
             $this->call_exit();
         }
+        $this->listpostsettings['qbankentryids[]'] = null;
+        $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
     }
 
     /**
