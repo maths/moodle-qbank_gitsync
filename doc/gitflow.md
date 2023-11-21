@@ -1,30 +1,46 @@
-# Git flow for basic connection of Moodle to a git repro
+# Git flow for basic connection of Moodle questions to a git repo
 
-Assume the starting point is a category of questions in a Moodle question bank, with the aim of storing them locally on the file system in a git repro, e.g. with a view to sharing them via git, or direct into another Moodle question bank.
+Assume the starting point is a category of questions in a Moodle question bank, with the aim of storing them locally on the file system in a git repo, e.g. with a view to sharing them via git, or direct into another Moodle question bank.
 
 1. Identify a category in Moodle.
 2. Create an empty git repository on your local disc.  Within the directory defined by your config `$rootdirectory` the following command creates an empty directory `master`:
 
 `git init master`
 
-To export questions from moodle to the git repro, from the cli directory of the PHP scripts, we need
+To export questions from moodle to the git repo, from the cli directory of the PHP scripts, you need to:
 
-`php createrepo.php -l course -c "Course 1" -d "source_1" -s "top/Source 1"`
-
-Notes
+`php createrepo.php -l course -c "Course 1" -d "master" -s "Source 1/subcat 2_1"`
 
 * `-h` gives command line documentation.
 * `-l` is the context level within Moodle, e.g. the "course level".
 * `-c` is the Moodle coursename.
-* `-s` is the subdirectory repo to actually import/category in Moodle to export.
+* `-s` is the subcategory of questions to actually export.
+* `-d` is the directory of the repo within the root directory.
 
-Note, that -s must start with `/top/` as all categories in Moodle have this as a starting poitn for all sub-categories.
+You can use context instance id and subcategory id instead:
+
+`php createrepo.php -l course -n 2 -d "master" -q 80`
+
+* `-n` the contect instance id, which is the course id in this case.
+* `-q` the question category id
+
+You'll get a confirmation of the context and category with the abortion to abort before performing the actual export. A manifest file will be created in the specified directory.
+
+TODO - Bug where category file is not created if there's no question in that category.
 
 To import/export:
  
-`php exportrepo.php -f "source_2/edmundlocal_course_Course 1_question_manifest.json"`
-`php importrepo.php -l course -c "Course 1" -d "source_2" -s "top/Source 2"`
+`php exportrepo.php -f "master/edmundlocal_course_Course-1_question_manifest.json" -s "Source 1/subcat 2_1"`
+`php importrepo.php -f "master/edmundlocal_course_Course-1_question_manifest.json" -s "Source-1/subcat-2_1"`
 
+* `-f` the filepath of the manifest file relative to the root directory.
+* `-s` the question subcategory for export or the subdirectory for import. These are essentially the same thing but for export we're working within Moodle so you need to supply the question categories as named in Moodle (or alternatively the category id). For import we're working from the repo so we're dealing with the sanitised versions of the category names that are used for folder names within the repo. 
+
+# Git flow for basic connection of git repo to Moodle
+
+If you have a repo of questions and want to import them to Moodle, use importrepo.php with context information as your starting point rather than createrepo.php.
+
+`php importrepo.php -l course -n 2 -d "master" -s "Source-1/cat-2"`
 
 
 ## Dealing with questions on two moodle sites
