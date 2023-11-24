@@ -1,4 +1,6 @@
-# Git flow for basic connection of Moodle questions to a git repo
+# Maintaining a one-to-one link between a Moodle instance and a Git repo
+
+## Creating a Git repo from questions in Moodle
 
 Assume the starting point is a category of questions in a Moodle question bank, with the aim of storing them locally on the file system in a git repo, e.g. with a view to sharing them via git, or direct into another Moodle question bank.
 
@@ -32,16 +34,25 @@ To import/export:
 `php importrepo.php -f "master/edmundlocal_course_Course-1_question_manifest.json" -s "Source-1/subcat-2_1"`
 
 * `-f` the filepath of the manifest file relative to the root directory.
-* `-s` the question subcategory for export or the subdirectory for import. These are essentially the same thing but for export we're working within Moodle so you need to supply the question categories as named in Moodle (or alternatively the category id). For import we're working from the repo so we're dealing with the sanitised versions of the category names that are used for folder names within the repo. 
+* `-s` the question subcategory for export or the subdirectory for import. These are essentially the same thing but for export we're working within Moodle so you need to supply the question categories as named in Moodle (or alternatively the category id). For import we're working from the repo so we're dealing with the sanitised versions of the category names that are used for folder names within the repo.
 
-# Git flow for basic connection of git repo to Moodle
+After initial creation of the repo, you will be able to move questions between categories in Moodle and they will remain linked to the file in your repo. The file will not move within the repo, however. Try to avoid moving questions within the repo. If you do move the question within the repo, gitsync will interpret this as the question being deleted and a new one being created. On import, a new question will be created in Moodle and you will be prompted to delete the old one. To prevent this, you (and everyone who shares the repo!) will need to manually update the filepath in the manifest file to link to the question's new location.
+
+On export, the manifest will be tidied to remove questions that are no longer in Moodle. The corresponding files will not be removed from the repo, however, and will create a new question in Moodle on the next import.
+
+On import, you will be notified of questions that are in Moodle but have no corresponding manifest entry and/or file in the repo. Run deletefrommoodle.php to delete them from Moodle if required.
+
+`php deletefrommoodle.php -f "master/edmundlocal_course_Course-1_question_manifest.json"`
+
+## Importing an existing Git repo into Moodle
 
 If you have a repo of questions and want to import them to Moodle, use importrepo.php with context information as your starting point rather than createrepo.php.
 
 `php importrepo.php -l course -n 2 -d "master" -s "Source-1/cat-2"`
 
+After that, import, export and deletion are the same as above.
 
-## Dealing with questions on two moodle sites
+# Maintaining a Git repo of questions on two moodle sites
 
 Steps for dealing with 2 different Moodle sources of a set of questions. Files from a source (and also for the gold copy) have their own branch in Git but also their own location on the user's computer:
 
@@ -94,6 +105,9 @@ On fresh export from Moodle, check whether repo has changed first and do not exp
 `git update-index --refresh # Removes false positives due to timestamp changes`  
 `git diff-index --quiet HEAD -- || echo "Deal with changes first" # First command fails if there are changes.`  
 Do the same for import
+
+
+# Detailed list of steps that take place for each process
 
 ## On Creation:
 - Export all questions from Moodle.

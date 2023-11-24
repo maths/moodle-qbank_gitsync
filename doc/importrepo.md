@@ -52,7 +52,7 @@ Importing will create a manifest file specific to the Moodle instance and contex
 You will need to specify the context you want to import the questions into. You will need to supply:
 - Context level - system, coursecategory, course or module - must be supplied.
 - (i) coursecategory (ii) coursename or (iii) coursename and modulename can then be supplied to identify the context instance.
-- Alternatively, the instanceid of the context can be supplied. This is available from the URL while browsing the context in Moodle.
+- Alternatively, the instanceid of the context can be supplied. This is available from the URL while browsing the context in Moodle ('?id=XXX').
 
 If you only want to import a certain question category (and its subcategories) within the context you will need to supply the path of the corresponding folder within your repo relative to the 'top' category e.g. 'category-1/subcategory-2'.
 
