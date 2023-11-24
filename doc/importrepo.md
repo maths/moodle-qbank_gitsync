@@ -54,8 +54,9 @@ You will need to specify the context you want to import the questions into. You 
 - (i) coursecategory (ii) coursename or (iii) coursename and modulename can then be supplied to identify the context instance.
 - Alternatively, the instanceid of the context can be supplied. This is available from the URL while browsing the context in Moodle.
 
-If you only want to import a certain question category (and its subcategories) within the context you will need to supply the path of the corresponding folder within your repo relative to the 'top' category e.g. 'category-1/subcategory-2'. [TODO - Currently all the categories for the entire repo will still be imported.]
-[TODO - .gitignore not created]
+If you only want to import a certain question category (and its subcategories) within the context you will need to supply the path of the corresponding folder within your repo relative to the 'top' category e.g. 'category-1/subcategory-2'.
+
+On the first run when using Git the process will ask you to commit changes in the repo and try again as a .gitignore file will be created.
 
 ## Scenario 2: Re-importing questions into Moodle when the manifest file already exists
 

@@ -35,7 +35,7 @@ If you only want to export a certain question category (and its subcategories) w
 
 A manifest file which links the questions in your repo to the questions in Moodle will be created at the top level of your directory. This manifest file will be ignored by Git, however. [TODO - The philosophy of this needs explained in an overview document.] The manifest file will be backed up to a local folder before changes are made to it.
 
-If Git is being used, the destination directory must be an empty Git repo and the exported questions will be committed to the current branch. [TODO - Check repo is empty?]
+If Git is being used, the destination directory must be an empty Git repo and the exported questions will be committed to the current branch.
 
 On failure:
 - If the script fails, it can be safely run again once the issue has been dealt with. (You may get instructions to delete a manifest file. If so, delete the file and run again.)
