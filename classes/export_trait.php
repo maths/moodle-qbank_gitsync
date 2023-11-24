@@ -129,9 +129,11 @@ trait export_trait {
                     // No need to catch issues here - already checked above.
                     $categoryxml = simplexml_load_string($responsejson->question);
                     // Isolate each category in turn.
-                    for ($k = 0; $k < $numcategories; $k++) {
-                        if ($k !== $j) {
-                            unset($categoryxml->question[$k]);
+                    for ($k = 0; $k < $numcategories + 1; $k++) {
+                        if ($k < $j) {
+                            unset($categoryxml->question[0]);
+                        } else if ($k > $j) {
+                            unset($categoryxml->question[count($categoryxml->question) - 1]);
                         }
                     }
                     $categorypath = $categoryxml->question->category->text->__toString();

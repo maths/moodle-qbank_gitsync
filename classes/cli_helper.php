@@ -562,12 +562,9 @@ class cli_helper {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
+        $this->create_gitignore($activity->manifestpath);
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
-        $ignore = fopen('.gitignore', 'a');
-        $contents = "**/*_question_manifest.json\n**/*_manifest_update.tmp\n";
-        fwrite($ignore, $contents);
-        fclose($ignore);
         exec("git add .");
         exec('git commit -m "Initial Commit"');
         foreach ($activity->manifestcontents->questions as $question) {
@@ -577,6 +574,22 @@ class cli_helper {
         }
         // Happens last so no need to abort on failure.
         file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
+    }
+
+    /**
+     * Add manifest and tmp files to .gitignore.
+     *
+     * @param string manifestpath
+     * @return void
+     */
+    public function create_gitignore(string $manifestpath):void {
+        $manifestdirname = dirname($manifestpath);
+        if (!is_file($manifestdirname . '/.gitignore')) {
+            $ignore = fopen($manifestdirname . '/.gitignore', 'a');
+            $contents = "**/*_question_manifest.json\n**/*_manifest_update.tmp\n";
+            fwrite($ignore, $contents);
+            fclose($ignore);
+        }
     }
 
     /**
@@ -590,6 +603,7 @@ class cli_helper {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
+        $this->create_gitignore($fullmanifestpath);
         $manifestdirname = dirname($fullmanifestpath);
         if (chdir($manifestdirname)) {
             exec('git add .'); // Make sure everything changed has been staged.

@@ -173,9 +173,9 @@ class create_repo {
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
                                                 $instanceinfo->contextinfo->modulename, $this->directory);
-        if (file_exists($this->manifestpath)) {
-            echo 'The manifest file already exists. Please delete if you really want to continue.';
-            echo "\n $this->manifestpath \n";
+        if (file_exists($this->directory . '/top')) {
+            echo 'The specified directory already contains files. Please delete them if you really want to continue.';
+            echo "\n{$this->directory}\n";
             $this->call_exit();
         }
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
