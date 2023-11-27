@@ -48,9 +48,9 @@ See markup files for each CLI for re-run instructions.
 - (Started) Consider what could result in data loss during import/delete and mitigate.
 
 ## Concurrency
-- What are the scenarios?
-- Which cause a problem?
-- How do we mitigate?
+- (Done) What are the scenarios? Create repo, import, export, tidy, delete.
+- (Done) Which cause a problem? Create and export will just take whatever is there and if it's updated again that will be caught on the next task. Tidy is user specific. Delete would need coordination between users anyway. So it's really just import - current version check is all-at-once.
+- (Done) How do we mitigate? We need to do the check on individual import of each question.
 
 ## Testing
 - Try different scenarios and see how well they work.
@@ -65,4 +65,4 @@ See markup files for each CLI for re-run instructions.
 
 ## Other
 - Additional metadata in manifest.
-- Category files. Categories are not versioned and currently gitsync is not updating existing categories on either import or export. What are the options here?
+- Category files. Categories are not versioned and currently gitsync is not updating existing categories on either import or export. What are the options here? We could update every category for a question every time we import or export the question. For import we could store categories in the manifest and only import if the commit hash has changed but is that worth it and we still overwrite changes in Moodle without warning. Users maybe just need to update category files manually (NB it's HTML so CDATA in the file which is messy) or we have a flag parameter that forces category update.

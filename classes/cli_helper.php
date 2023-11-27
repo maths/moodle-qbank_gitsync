@@ -416,7 +416,7 @@ class cli_helper {
                     $questionentry->questionbankentryid = $questioninfo->questionbankentryid;
                     $questionentry->filepath = str_replace($manifestdir, '', $questioninfo->filepath);
                     $questionentry->format = $questioninfo->format;
-                    $questionentry->version = $questioninfo->version;
+                    $questionentry->importedversion = $questioninfo->version;
                     $questionentry->exportedversion = $questioninfo->version;
                     if (isset($questioninfo->moodlecommit)) {
                         $questionentry->moodlecommit = $questioninfo->moodlecommit;
@@ -426,7 +426,7 @@ class cli_helper {
                     }
                     array_push($manifestcontents->questions, $questionentry);
                 } else {
-                    $existingentries["{$questioninfo->questionbankentryid}"]->version = $questioninfo->version;
+                    $existingentries["{$questioninfo->questionbankentryid}"]->importedversion = $questioninfo->version;
                     if (isset($questioninfo->moodlecommit)) {
                         $existingentries["{$questioninfo->questionbankentryid}"]->moodlecommit = $questioninfo->moodlecommit;
                     }

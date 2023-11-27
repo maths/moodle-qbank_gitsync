@@ -136,7 +136,7 @@ class export_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('35003', $existingentries);
         $this->assertArrayHasKey('35004', $existingentries);
 
-        $this->assertEquals('1', $existingentries['35001']->version);
+        $this->assertEquals('1', $existingentries['35001']->importedversion);
         $this->assertEquals('10', $existingentries['35001']->exportedversion);
     }
 
