@@ -54,10 +54,10 @@ See markup files for each CLI for re-run instructions.
 
 ## Testing
 - Try different scenarios and see how well they work.
- - Single repo.
- - Double repo.
- - Multiple users.
- - How do we effectively handle deletion of questions from Moodle source but not the master branch?
+  - Single repo.
+  - Double repo.
+  - Multiple users.
+  - How do we effectively handle deletion of questions from Moodle source but not the master branch?
 - Test exception recovery.
 - Thorough testing of different context levels.
 - Thorough testing of using subdirectories.

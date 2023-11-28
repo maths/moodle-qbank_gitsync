@@ -167,7 +167,7 @@ function get_question_data(string $questionbankentryid):stdClass {
 function get_minimal_question_data(string $questionbankentryid):stdClass {
     global $DB;
     $questiondata = $DB->get_record_sql("
-    SELECT q.id as questionid, q.name as name, qv.version as version
+    SELECT q.id as questionid, q.name as name, qv.version as version, qv.status as status
         FROM {question} q
         JOIN {question_versions} qv ON qv.questionid = q.id
         JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
