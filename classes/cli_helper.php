@@ -391,7 +391,7 @@ class cli_helper {
      * @param string $tempfilepath
      * @param string $manifestpath
      * @param string $moodleurl
-     * @param boolean $showupdated
+     * @param bool $showupdated
      * @return object
      */
     public static function create_manifest_file(object $manifestcontents, string $tempfilepath,
@@ -587,9 +587,9 @@ class cli_helper {
     }
 
     /**
-     * Add manifest and tmp files to .gitignore.
+     * Add manifest and tmp files to .gitignore
      *
-     * @param string manifestpath
+     * @param string $manifestpath
      * @return void
      */
     public function create_gitignore(string $manifestpath):void {

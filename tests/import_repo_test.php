@@ -166,6 +166,7 @@ class import_repo_test extends advanced_testcase {
 
         // Check manifest file created.
         $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 4 questions.*\n$/s');
     }
 
 
@@ -515,6 +516,7 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['35001'];
         $this->assertEquals(false, isset($samplerecord->moodlecommit));
+        $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 4 questions.*\n$/s');
     }
 
     /**
@@ -588,6 +590,7 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['4'];
         $this->assertEquals('test', $samplerecord->moodlecommit);
+        $this->expectOutputRegex('/^\nAdded 2 questions.*Updated 2 questions.*\n$/s');
     }
 
     /**
@@ -649,7 +652,7 @@ class import_repo_test extends advanced_testcase {
         @fake_helper::create_manifest_file($this->importrepo->manifestcontents,
                                         $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
                                         'www.moodle');
-        $this->expectOutputRegex('/^\nUnable to update manifest file.*Aborting.\n$/s');
+        $this->expectOutputRegex('/\nUnable to update manifest file.*Aborting.\n$/s');
     }
 
     /**

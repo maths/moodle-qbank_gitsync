@@ -165,7 +165,8 @@ class export_repo {
         $this->export_questions_in_manifest();
         // Export any questions that are in Moodle but not in the manifest.
         $this->export_to_repo();
-        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath, $this->manifestpath, $this->moodleurl, false);
+        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,
+                                         $this->manifestpath, $this->moodleurl, false);
         unlink($this->tempfilepath);
         // Remove questions from manifest that are no longer in Moodle.
         // Will be restored from repo on next import if file is still there.

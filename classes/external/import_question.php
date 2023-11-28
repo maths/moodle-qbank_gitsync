@@ -91,8 +91,8 @@ class import_question extends external_api {
      * use importasversion if question already exists.
      *
      * @param string|null $questionbankentryid questionbankentry id
-     * @param string|null $version last exported version of question
-     * @param string|null $version last imported version of question
+     * @param string|null $importedversion last exported version of question
+     * @param string|null $exportedversion last imported version of question
      * @param string|null $qcategoryname category of the question in form top/$category/$subcat1/$subcat2
      * @param array $fileinfo Moodle file information of previously uploaded file
      * @param int $contextlevel Moodle code for context level e.g. 10 for system
@@ -138,7 +138,8 @@ class import_question extends external_api {
                             ['name' => $qinfo->name,
                              'currentversion' => $questiondata->version,
                              'importedversion' => $params['importedversion'],
-                             'exportedversion' => $params['exportedversion']]);
+                             'exportedversion' => $params['exportedversion'],
+                            ]);
             }
         } else {
             $thiscontext = get_context($params['contextlevel'], $params['coursecategory'],
