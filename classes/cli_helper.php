@@ -259,7 +259,7 @@ class cli_helper {
         if (!isset($cliargs['manifestpath']) && !isset($cliargs['contextlevel'])) {
             echo "\nYou have not specified context. " .
                  "You must specify context level (--contextlevel) unless \n" .
-                 "using a function where this information can be read from a manifest file, in which case" .
+                 "using a function where this information can be read from a manifest file, in which case " .
                  "you could set a manifest path (--manifestpath) instead.\n";
             static::call_exit();
         }
@@ -391,16 +391,20 @@ class cli_helper {
      * @param string $tempfilepath
      * @param string $manifestpath
      * @param string $moodleurl
+     * @param boolean $showupdated
      * @return object
      */
     public static function create_manifest_file(object $manifestcontents, string $tempfilepath,
-                                                string $manifestpath, string $moodleurl):object {
+                                                string $manifestpath, string $moodleurl,
+                                                bool $showupdated=true):object {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
         $manifestdir = dirname($manifestpath);
         $manifestdir = str_replace( '\\', '/', $manifestdir);
         $tempfile = fopen($tempfilepath, 'r');
+        $updatedcount = 0;
+        $addedcount = 0;
         if ($tempfile === false) {
             echo "\nUnable to access temp file: {$tempfilepath}\n Aborting.\n";
             static::call_exit();
@@ -412,6 +416,7 @@ class cli_helper {
             if ($questioninfo) {
                 $existingentry = $existingentries["{$questioninfo->questionbankentryid}"] ?? false;
                 if (!$existingentry) {
+                    $addedcount++;
                     $questionentry = new \stdClass();
                     $questionentry->questionbankentryid = $questioninfo->questionbankentryid;
                     $questionentry->filepath = str_replace($manifestdir, '', $questioninfo->filepath);
@@ -426,6 +431,7 @@ class cli_helper {
                     }
                     array_push($manifestcontents->questions, $questionentry);
                 } else {
+                    $updatedcount++;
                     $existingentries["{$questioninfo->questionbankentryid}"]->importedversion = $questioninfo->version;
                     if (isset($questioninfo->moodlecommit)) {
                         $existingentries["{$questioninfo->questionbankentryid}"]->moodlecommit = $questioninfo->moodlecommit;
@@ -441,6 +447,10 @@ class cli_helper {
                     $manifestcontents->context->moodleurl = $moodleurl;
                 }
             }
+        }
+        echo "\nAdded {$addedcount} question" . (($addedcount !== 1) ? 's' : '') . ".\n";
+        if ($showupdated) {
+            echo "\nUpdated {$updatedcount} question" . (($updatedcount !== 1) ? 's' : '') . ".\n";
         }
         $success = file_put_contents($manifestpath, json_encode($manifestcontents));
         if ($success === false) {
@@ -683,7 +693,11 @@ class cli_helper {
             if ($moodlequestionlist->contextinfo->modulename) {
                 echo "{$moodlequestionlist->contextinfo->modulename}\n";
             }
-            echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
+            if (isset($activity->subcategory)) {
+                echo "Question category: {$activity->subcategory}\n";
+            } else {
+                echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
+            }
             if ($message) {
                 echo $message;
             }

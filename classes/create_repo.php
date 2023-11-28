@@ -194,7 +194,7 @@ class create_repo {
         $this->manifestcontents->context = null;
         $this->manifestcontents->questions = [];
         $this->export_to_repo();
-        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath, $this->manifestpath, $this->moodleurl);
+        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath, $this->manifestpath, $this->moodleurl, false);
         unlink($this->tempfilepath);
     }
 
