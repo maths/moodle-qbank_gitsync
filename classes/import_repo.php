@@ -245,17 +245,10 @@ class import_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
 
-        $message = null;
-        if ($qcategoryname !== 'top') {
-            // Subcategory may not exist yet so we can't check it at this stage.
-            // User will get warning on version check if it definitely doesn't exist.
-            // We do still need the user to verify the top level context.
-            $message = "Question subdirectory: {$this->subdirectory}\n";
-        }
         if ($manifestpath) {
             $this->manifestpath = $arguments['rootdirectory'] . '/' . $manifestpath;
         } else {
-            $instanceinfo = $clihelper->check_context($this, $message);
+            $instanceinfo = $clihelper->check_context($this);
             $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
@@ -311,7 +304,7 @@ class import_repo {
             $this->listpostsettings['modulename'] = $this->manifestcontents->context->modulename;
             $this->listpostsettings['coursecategory'] = $this->manifestcontents->context->coursecategory;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-            $instanceinfo = $clihelper->check_context($this, $message);
+            $instanceinfo = $clihelper->check_context($this);
         }
         // Set question category info after call to check_context.
         // We can't rely on the subcategories existing in Moodle until after import

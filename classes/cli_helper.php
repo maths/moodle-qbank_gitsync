@@ -90,6 +90,9 @@ class cli_helper {
         $shortopts = $parsed['shortopts'];
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
+        $argcount = count($commandlineargs);
+        echo "\nProcessed {$argcount} valid command line argument" .
+                (($argcount !== 1) ? 's' : '') . ".\n";
         $this->processedoptions = $this->prioritise_options($commandlineargs);
         if ($this->processedoptions['help']) {
             $this->show_help();
@@ -258,9 +261,10 @@ class cli_helper {
         }
         if (!isset($cliargs['manifestpath']) && !isset($cliargs['contextlevel'])) {
             echo "\nYou have not specified context. " .
-                 "You must specify context level (--contextlevel) unless \n" .
+                 "You must specify context level (--contextlevel) unless " .
                  "using a function where this information can be read from a manifest file, in which case " .
-                 "you could set a manifest path (--manifestpath) instead.\n";
+                 "you could set a manifest path (--manifestpath) instead. If using exportrepo, you " .
+                 "must set manifest path only. If you still see this message, you may be using invalid arguments.\n";
             static::call_exit();
         }
 
@@ -661,10 +665,9 @@ class cli_helper {
      * is valid and then confirm with user it's the right one.
      *
      * @param object $activity
-     * @param string|null $message Any additional message to display
      * @return object
      */
-    public function check_context(object $activity, ?string $message=null):object {
+    public function check_context(object $activity):object {
         $activity->listpostsettings['contextonly'] = 1;
         $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
         $response = $activity->listcurlrequest->execute();
@@ -693,13 +696,13 @@ class cli_helper {
             if ($moodlequestionlist->contextinfo->modulename) {
                 echo "{$moodlequestionlist->contextinfo->modulename}\n";
             }
-            if (isset($activity->subcategory)) {
-                echo "Question category: {$activity->subcategory}\n";
+            if (isset($activity->subcategory) && $activity->subcategory !== 'top') {
+                echo "Question category path: {$activity->subcategory}\n";
             } else {
                 echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
             }
-            if ($message) {
-                echo $message;
+            if (isset($activity->subdirectory) && $moodlequestionlist->contextinfo->qcategoryname !== 'top') {
+                echo "Question subdirectory: {$activity->subdirectory}\n";
             }
             static::handle_abort();
         }

@@ -54,7 +54,7 @@ See markup files for each CLI for re-run instructions.
 
 ## Testing
 - Try different scenarios and see how well they work.
-  - Single repo.
+  - (Done) Single repo.
   - Double repo.
   - Multiple users.
   - How do we effectively handle deletion of questions from Moodle source but not the master branch?
@@ -71,3 +71,4 @@ Update:
 Import DOES update category info but only if there was none before - this is an oddity of Moodle's import process (format.php->create_category_path). We would need to update DB fields directly.  
 Export could be easily modified to update category files for new questions with an extra CLI argument but doing so for existing questions would be more involved. Would probably be better just to handle categories separately (which maybe isn't worth it).  
 Probably best to leave for users to update categories manually.
+- Most of the the text users see is outside Moodle so is not set up for translation. 
