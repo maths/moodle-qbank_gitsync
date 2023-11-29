@@ -90,7 +90,7 @@ class lib_test extends \advanced_testcase {
         // Course category.
         $context = get_context(40, $category->name, $course->fullname, QUIZ_TEST, null);
         $this->assertEquals($context->context, context_coursecat::instance($category->id));
-        $this->assertEquals($context->contextlevel, 'course category');
+        $this->assertEquals($context->contextlevel, 'coursecategory');
         $this->assertEquals($context->categoryname, CAT_NAME);
         $this->assertEquals($context->coursename, null);
         $this->assertEquals($context->modulename, null);
@@ -116,7 +116,7 @@ class lib_test extends \advanced_testcase {
         // Course category.
         $context = get_context(40, null, null, null, $category->id);
         $this->assertEquals($context->context, context_coursecat::instance($category->id));
-        $this->assertEquals($context->contextlevel, 'course category');
+        $this->assertEquals($context->contextlevel, 'coursecategory');
         $this->assertEquals($context->categoryname, CAT_NAME);
         $this->assertEquals($context->coursename, null);
         $this->assertEquals($context->modulename, null);

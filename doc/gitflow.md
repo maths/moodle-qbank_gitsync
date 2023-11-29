@@ -36,7 +36,9 @@ To import/export:
 * `-f` the filepath of the manifest file relative to the root directory.
 * `-s` the question subcategory for export or the subdirectory for import. These are essentially the same thing but for export we're working within Moodle so you need to supply the question categories as named in Moodle (or alternatively the category id using `-q`). For import we're working from the repo so we're dealing with the sanitised versions of the category names that are used for folder names within the repo.
 
-After initial creation of the repo, you will be able to move questions between categories in Moodle and they will remain linked to the file in your repo. The file will not move within the repo, however. Try to avoid moving questions within the repo. If you do move the question within the repo, gitsync will interpret this as the question being deleted and a new one being created. On import, a new question will be created in Moodle and you will be prompted to delete the old one. To prevent this, you (and everyone who shares the repo!) will need to manually update the filepath in the manifest file to link to the question's new location.
+After initial creation of the repo, you will be able to move questions between categories/contexts in Moodle and they will remain linked to the file in your repo. The file will not move within the repo, however. Try to avoid moving questions within the repo. If you do move the question within the repo, gitsync will interpret this as the question being deleted and a new one being created. On import, a new question will be created in Moodle and you will be prompted to delete the old one. To prevent this, you (and everyone who shares the repo!) will need to manually update the filepath in the manifest file to link to the question's new location.
+
+**If you move questions around in Moodle, it's vital you keep backups of your manifest file** as creating a new one may be difficult. Gitsync itself creates backups of previous versions but this won't help you if your computer dies. If you haven't moved questions around, you can just use createrepo to create a new manifest. If you have, you'll need to createrepo for all the relevant contexts and then Frankenstein something together.
 
 On export, the manifest will be tidied to remove questions that are no longer in Moodle. The corresponding files will not be removed from the repo, however, and will create a new question in Moodle on the next import.
 
@@ -54,15 +56,18 @@ After that, import, export and deletion are the same as above.
 
 # Maintaining a Git repo of questions on two moodle sites
 
-Steps for dealing with 2 different Moodle sources of a set of questions e.g. you're using the same questions on two different courses and you want to keep changes in sync. Files from a source (and also for the gold copy) have their own branch in Git but also their own location on the user's computer. (You don't need separate locations, particularly if you're used to Git, but it makes the process clearer):
+Steps for dealing with 2 different Moodle sources of a set of questions e.g. you're using the same questions on two different courses and you want to keep changes in sync. Files from a source (and also for the gold copy) have their own branch in Git but also their own location on the user's computer. (You don't need separate locations, particularly if you're used to Git, but it makes the process clearer and is liable to cut down on errors caused by mismatching branches and manifest files.):
+
+For this to work, the two sources need to have the same relative category path within their contexts in Moodle.
 
 In your root folder, create a 'gold' master branch and then clone the repo to store files for different sources in different folders:
 
-`git init master`  
+`git init master`
+In master: `git commit --allow-empty -m "Empty commit"` 
 `git clone master source_1`  
 `git clone master source_2`  
 
-Create branches for each source:  
+Create branches in each directory:
 In source_1:  
 `git checkout -b source_1`
 
@@ -78,8 +83,40 @@ To import/export:
 `php exportrepo.php -f "/source_2/instancename_course_coursename_question_manifest.json"`  
 `php importrepo.php -f "/source_2/instancename_course_coursename_question_manifest.json"`
 
-Merge/compare,etc
+## Merge/compare, etc
 
+### Create initial version of master branch
+The master directory is essentially acting as a remote repository. Push one of your sources to it, create your master branch and merge them.
+In Source_1:
+`git push origin source_1`
+
+In master:
+`git merge source_1`
+
+### Compare with your other source
+In Source_2:
+`git push origin source_2`
+
+In master:
+`git diff master source_2` to see the differences.
+`git merge source_2` - all the differences will be flagged as merge conflicts which you will need to resolve. then `git add .` and `git commit -m "Merge differences from source_2"`
+
+Much of this will be easier if you use a Git desktop application to help. Be careful when resolving merge conflicts and ensure your editor is using the same line endings as the rest of the file. (In Windows, you can use Notepad++ to display all the line endings to make sure.)
+
+### Apply changes to source branches
+
+Go back into each of Source_1 and Source_2 and `git pull origin master`. This will prevent merge conflicts in future.
+
+### Starting from a single source
+
+If you have some questions on Moodle and want to create a second copy elsewhere (e.g. another course or Moodle instance) and keep them in synch, the instructions are very similar. When exporting the initial repos simply create them both from same Moodle context, then import one of the repos to your new context. (You will have a superfluous manifest file in your imported repo. You can delete it if you want but that's not necessary.)
+
+# Multiple users
+
+If multiple users are using the same remote repo on different Moodle instances/contexts that should only have the same issues as maintaining any other code base.
+
+If multiple users are using a repo to maintain the same context on the same instance, the manifest file will need to be added to the repo. (If anyone else is using the repo this may require negotiation and/or fun with branches, etc.) If questions are not being moved around in Moodle, users could use exportrepo before making changes instead.
+ 
 # Detailed list of steps that take place for each process
 
 ## On Creation:

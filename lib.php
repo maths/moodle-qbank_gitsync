@@ -81,7 +81,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                 $result->categoryname = $DB->get_field('course_categories', 'name',
                                                        ['id' => $instanceid], $strictness = MUST_EXIST);
             }
-            $result->contextlevel = 'course category';
+            $result->contextlevel = 'coursecategory';
             $result->context = context_coursecat::instance($instanceid);
             $result->instanceid = $instanceid;
             return $result;
