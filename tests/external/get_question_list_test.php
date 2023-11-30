@@ -320,4 +320,22 @@ class get_question_list_test extends externallib_advanced_testcase {
         $events = $sink->get_events();
         $this->assertEquals(count($events), 0);
     }
+
+    /**
+     * Test question category is in the supplied context.
+     */
+    public function test_question_category_is_in_supplied_context(): void {
+        global $DB;
+        $course2 = $this->getDataGenerator()->create_course();
+        $catincourse2 = $this->generator->create_question_category(['contextid' => \context_course::instance($course2->id)->id]);
+        $context = context_course::instance($this->course->id);
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $this->expectException(moodle_exception::class);
+        $this->expectExceptionMessage('The category is not in the supplied context.');
+        // Trying to list question from course 2 using context of course 1.
+        // User has list capability on course 1 but not course 2.
+        get_question_list::execute('top', 50, $this->course->fullname, null, null,
+                                    $catincourse2->id, null, false, ['']);
+    }
 }

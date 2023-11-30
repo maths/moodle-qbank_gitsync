@@ -151,7 +151,13 @@ class get_question_list extends external_api {
                     $parent = $category->id;
                 }
             } else {
-                $category = $DB->get_record('question_categories', ['id' => $qcategoryid], 'id, parent, name');
+                $category = $DB->get_record('question_categories', ['id' => $qcategoryid], 'id, parent, name, contextid');
+                if (!$category) {
+                    throw new \moodle_exception('categoryerror', 'qbank_gitsync', null, $params['qcategoryid']);
+                }
+                if (isset($category->contextid) && $category->contextid !== strval($thiscontext->id)) {
+                    throw new \moodle_exception('categorymismatcherror', 'qbank_gitsync', null, $params['qcategoryid']);
+                }
             }
 
             if (!$category) {
