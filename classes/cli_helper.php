@@ -701,7 +701,7 @@ class cli_helper {
             } else {
                 echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
             }
-            if (isset($activity->subdirectory) && $moodlequestionlist->contextinfo->qcategoryname !== 'top') {
+            if (isset($activity->subdirectory) && $activity->subdirectory !== 'top') {
                 echo "Question subdirectory: {$activity->subdirectory}\n";
             }
             static::handle_abort();
