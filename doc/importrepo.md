@@ -62,7 +62,7 @@ On the first run when using Git the process will ask you to commit changes in th
 
 You should specify the manifest file path and context will be extracted from that. You can still enter a subdirectory to only re-import some of the questions.
 
-Import will only be possible if there are not updates to the questions in Moodle which haven't been exported. (TODO - Make this check for each question as it is imported not just in a batch before import starts.) 
+Import will only be possible if there are not updates to the questions in Moodle which haven't been exported.
 
 Only questions that have changed in the repo since the last import will be imported to Moodle (to avoid creating a new version in Moodle when nothing has changed).
 

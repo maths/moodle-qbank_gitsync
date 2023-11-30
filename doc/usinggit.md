@@ -122,3 +122,9 @@ If multiple users are using a repo to maintain the same context on the same inst
 Update .gitignore to just `manifest_backups/*_question_manifest.json`
 
 An alternative to having the manifest in the repo is a one off copy of the manifest to the second user after they have cloned the repo. Each user then performs an exportrepo before making changes as if the other user were updating questions manually within Moodle.
+
+## Deleted questions
+
+If you have multiple repos and you delete questions in one because you don't want them to appear in a particular Moodle instance then you will need to take care when merging to and from the master repository. The questions need to stay in master and not be re-introduced to your other branch. Run the merge withou committing the result and then go into the repository and revert the deletions/additions as necessary before committing.
+
+`git merge --no-commit --no-ff source_branch_name`

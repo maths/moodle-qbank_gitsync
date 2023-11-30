@@ -39,9 +39,10 @@ We're currently set up for extracting question from Moodle as the first step. Wh
 See markup files for each CLI for re-run instructions.
 
 ## Guidance
-- (Started) Further instructions for config setup, defaults and setting command line arguments.
+- (Done) Further instructions for config setup, defaults and setting command line arguments.
 - Security of web-service and permission options.
-- (Started) Instructions for day-to-day Git use.
+- (Done) Instructions for day-to-day Git use.
+- Overview document and order current docs.
 
 ## Deletion or overwrite of questions in Moodle
 - (Done) Separate out deletion steps from import script.
@@ -55,20 +56,22 @@ See markup files for each CLI for re-run instructions.
 ## Testing
 - Try different scenarios and see how well they work.
   - (Done) Single repo.
-  - Double repo.
-  - Multiple users.
-  - How do we effectively handle deletion of questions from Moodle source but not the master branch?
+  - (Done) Double repo. Some of the initial setup could be changed to avoid merge conflicts but this is maybe a feature?
+  - (Done) Multiple users.
+  - (Done) How do we effectively handle deletion of questions from Moodle source but not the master branch?
+    Answer: The merge to and from master should be done without commit and the files either restored or deleted before committing.  
+    `git merge --no-commit --no-ff source_1`
 - Test exception recovery.
 - Thorough testing of different context levels.
-- Thorough testing of using subdirectories.
-- Is there any directory structure weirdness thrown up by using subdirectories?
+- Thorough testing of using subdirectories/subcategories.
+- Is there any directory structure weirdness thrown up by using subdirectories? A little - see createrepo.md about MDL-80256
 
 ## Other
 - Additional metadata in manifest.
 - (Done) Add more feedback on success - e.g. number of questions imported/exported.
-- Category files. Categories are not versioned and currently gitsync is not updating existing categories on either import or export. What are the options here? We could update every category for a question every time we import or export the question. For import we could store categories in the manifest and only import if the commit hash has changed but is that worth it and we still overwrite changes in Moodle without warning. Users maybe just need to update category files manually (NB it's HTML so CDATA in the file which is messy) or we have a flag parameter that forces category update.  
+- (Future?) Category files. Categories are not versioned and currently gitsync is not updating existing categories on either import or export. What are the options here? We could update every category for a question every time we import or export the question. For import we could store categories in the manifest and only import if the commit hash has changed but is that worth it and we still overwrite changes in Moodle without warning. Users maybe just need to update category files manually (NB it's HTML so CDATA in the file which is messy) or we have a flag parameter that forces category update.  
 Update:  
 Import DOES update category info but only if there was none before - this is an oddity of Moodle's import process (format.php->create_category_path). We would need to update DB fields directly.  
 Export could be easily modified to update category files for new questions with an extra CLI argument but doing so for existing questions would be more involved. Would probably be better just to handle categories separately (which maybe isn't worth it).  
 Probably best to leave for users to update categories manually.
-- Most of the the text users see is outside Moodle so is not set up for translation. 
+- (Future?) Most of the the text users see is outside Moodle so is not set up for translation. (Could copy whatever API has done!)
