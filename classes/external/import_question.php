@@ -52,6 +52,8 @@ class import_question extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters([
             'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle questionbankentryid if question exists already'),
+            'importedversion' => new external_value(PARAM_SEQUENCE, 'Last imported version of question'),
+            'exportedversion' => new external_value(PARAM_SEQUENCE, 'Last exported version of question'),
             'qcategoryname' => new external_value(PARAM_TEXT, 'Category of question in form top/$category/$subcat1/$subcat2'),
             'fileinfo' => new external_single_structure([
                 'component' => new external_value(PARAM_TEXT, 'File component'),
@@ -89,6 +91,8 @@ class import_question extends external_api {
      * use importasversion if question already exists.
      *
      * @param string|null $questionbankentryid questionbankentry id
+     * @param string|null $importedversion last exported version of question
+     * @param string|null $exportedversion last imported version of question
      * @param string|null $qcategoryname category of the question in form top/$category/$subcat1/$subcat2
      * @param array $fileinfo Moodle file information of previously uploaded file
      * @param int $contextlevel Moodle code for context level e.g. 10 for system
@@ -100,13 +104,16 @@ class import_question extends external_api {
      *  for course level) to search for questions (supercedes $coursename, $modulename & $coursecategory)
      * @return object \stdClass with property questionbankentryid'
      */
-    public static function execute(?string $questionbankentryid, ?string $qcategoryname, array $fileinfo,
+    public static function execute(?string $questionbankentryid, ?string $importedversion, ?string $exportedversion,
+                                    ?string $qcategoryname, array $fileinfo,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null,  ?string $qcategoryid = null,
                                     ?string $instanceid = null):object {
         global $CFG, $DB, $USER;
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,
+            'importedversion' => $importedversion,
+            'exportedversion' => $exportedversion,
             'qcategoryname' => $qcategoryname,
             'fileinfo' => $fileinfo,
             'contextlevel' => $contextlevel,
@@ -123,6 +130,17 @@ class import_question extends external_api {
         if ($params['questionbankentryid']) {
             $questiondata = get_question_data($params['questionbankentryid']);
             $thiscontext = context::instance_by_id($questiondata->contextid);
+            if (strval($questiondata->version) !== $params['importedversion']
+                       && strval($questiondata->version) !== $params['exportedversion']) {
+                // This should only happen if another user updated the question during the import process.
+                $qinfo = get_minimal_question_data($params['questionbankentryid']);
+                throw new moodle_exception('importversionerror', 'qbank_gitsync', null,
+                            ['name' => $qinfo->name,
+                             'currentversion' => $questiondata->version,
+                             'importedversion' => $params['importedversion'],
+                             'exportedversion' => $params['exportedversion'],
+                            ]);
+            }
         } else {
             $thiscontext = get_context($params['contextlevel'], $params['coursecategory'],
                                        $params['coursename'], $params['modulename'],

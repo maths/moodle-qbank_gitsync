@@ -30,6 +30,7 @@ require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
 
+use core_question\local\bank\question_version_status;
 use external_api;
 use external_function_parameters;
 use external_multiple_structure;
@@ -150,7 +151,13 @@ class get_question_list extends external_api {
                     $parent = $category->id;
                 }
             } else {
-                $category = $DB->get_record('question_categories', ['id' => $qcategoryid], 'id, parent, name');
+                $category = $DB->get_record('question_categories', ['id' => $qcategoryid], 'id, parent, name, contextid');
+                if (!$category) {
+                    throw new \moodle_exception('categoryerror', 'qbank_gitsync', null, $params['qcategoryid']);
+                }
+                if (isset($category->contextid) && $category->contextid !== strval($thiscontext->id)) {
+                    throw new \moodle_exception('categorymismatcherror', 'qbank_gitsync', null, $params['qcategoryid']);
+                }
             }
 
             if (!$category) {
@@ -169,12 +176,14 @@ class get_question_list extends external_api {
             $categories = array_column($categoriestosearch, null, 'id');
             foreach ($qbentries as $qbe) {
                 $mindata = get_minimal_question_data($qbe->id);
-                $qinfo = new \stdClass();
-                $qinfo->questionbankentryid = $qbe->id;
-                $qinfo->name = $mindata->name;
-                $qinfo->questioncategory = $categories[$qbe->questioncategoryid]->name;
-                $qinfo->version = $mindata->version;
-                array_push($response->questions, $qinfo);
+                if ($mindata->status !== question_version_status::QUESTION_STATUS_HIDDEN) {
+                    $qinfo = new \stdClass();
+                    $qinfo->questionbankentryid = $qbe->id;
+                    $qinfo->name = $mindata->name;
+                    $qinfo->questioncategory = $categories[$qbe->questioncategoryid]->name;
+                    $qinfo->version = $mindata->version;
+                    array_push($response->questions, $qinfo);
+                }
             }
         } else {
             // Deal with list of qbankids passed in to check.

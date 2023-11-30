@@ -136,8 +136,10 @@ class export_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('35003', $existingentries);
         $this->assertArrayHasKey('35004', $existingentries);
 
-        $this->assertEquals('1', $existingentries['35001']->version);
+        $this->assertEquals('1', $existingentries['35001']->importedversion);
         $this->assertEquals('10', $existingentries['35001']->exportedversion);
+
+        $this->expectOutputRegex('/^\nExported 4 previously linked questions.*Added 0 questions.\n$/s');
     }
 
     /**
@@ -166,6 +168,7 @@ class export_repo_test extends advanced_testcase {
         $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
         $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
         $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
+        $this->expectOutputRegex('/^\nExported 4 previously linked questions.*Added 0 questions.\n$/s');
     }
 
     /**
@@ -206,7 +209,7 @@ class export_repo_test extends advanced_testcase {
         chmod($this->exportrepo->manifestpath, 0000);
 
         @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/^\nUnable to update manifest file.*Aborting.\n$/s');
+        $this->expectOutputRegex('/\nUnable to update manifest file.*Aborting.\n$/s');
     }
 
     /**
@@ -229,7 +232,7 @@ class export_repo_test extends advanced_testcase {
         chmod($this->rootpath . '/top/cat-1/First-Question.xml', 0000);
 
         @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/^\nAccess issue.\n\/top\/cat-1\/First-Question.xml not updated.\n$/s');
+        $this->expectOutputRegex('/^\nAccess issue.\n\/top\/cat-1\/First-Question.xml not updated.\n/s');
     }
 
     /**
@@ -247,6 +250,6 @@ class export_repo_test extends advanced_testcase {
         chmod($this->rootpath . '/top/cat-1/First-Question.xml', 0000);
 
         @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/^\nBroken XML\n\/top\/cat-1\/First-Question.xml not updated.\n$/s');
+        $this->expectOutputRegex('/^\nBroken XML\n\/top\/cat-1\/First-Question.xml not updated.\n/s');
     }
 }

@@ -166,6 +166,7 @@ class import_repo_test extends advanced_testcase {
 
         // Check manifest file created.
         $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 4 questions.*\n$/s');
     }
 
 
@@ -340,10 +341,14 @@ class import_repo_test extends advanced_testcase {
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
+                                "importedversion":"1",
+                                "exportedversion":"1",
                                 "filepath":"/top/cat-1/First-Question.xml",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"2",
+                                "importedversion":"1",
+                                "exportedversion":"1",
                                 "filepath":"/top/cat-2/subcat-2_1/Third-Question.xml",
                                 "format":"xml"
                             }]}';
@@ -392,17 +397,23 @@ class import_repo_test extends advanced_testcase {
                                  "currentcommit":"matched",
                                  "moodlecommit":"matched",
                                  "filepath":"/top/cat-1/First-Question.xml",
+                                 "importedversion":"1",
+                                 "exportedversion":"1",
                                  "format":"xml"
                              }, {
                                 "questionbankentryid":"2",
                                 "filepath":"/top/cat-2/subcat-2_1/Third-Question.xml",
                                 "currentcommit":"notmatched",
+                                "importedversion":"1",
+                                "exportedversion":"1",
                                 "format":"xml"
                             }, {
                                 "questionbankentryid":"3",
                                 "filepath":"/top/cat-2/subcat-2_1/Fourth-Question.xml",
                                 "currentcommit":"notmatched",
                                 "moodlecommit":"notmatched!",
+                                "importedversion":"1",
+                                "exportedversion":"1",
                                 "format":"xml"
                             }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
@@ -505,6 +516,7 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['35001'];
         $this->assertEquals(false, isset($samplerecord->moodlecommit));
+        $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 4 questions.*\n$/s');
     }
 
     /**
@@ -565,7 +577,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('3', $manifestentries);
         $this->assertArrayHasKey('4', $manifestentries);
 
-        $this->assertEquals('5', $manifestentries['1']->version);
+        $this->assertEquals('5', $manifestentries['1']->importedversion);
         $this->assertEquals('1', $manifestentries['1']->exportedversion);
         $context = $manifestcontents->context;
         $this->assertEquals($context->contextlevel, '70');
@@ -578,6 +590,7 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['4'];
         $this->assertEquals('test', $samplerecord->moodlecommit);
+        $this->expectOutputRegex('/^\nAdded 2 questions.*Updated 2 questions.*\n$/s');
     }
 
     /**
@@ -639,7 +652,7 @@ class import_repo_test extends advanced_testcase {
         @fake_helper::create_manifest_file($this->importrepo->manifestcontents,
                                         $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
                                         'www.moodle');
-        $this->expectOutputRegex('/^\nUnable to update manifest file.*Aborting.\n$/s');
+        $this->expectOutputRegex('/\nUnable to update manifest file.*Aborting.\n$/s');
     }
 
     /**

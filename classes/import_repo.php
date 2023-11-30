@@ -203,6 +203,8 @@ class import_repo {
             'wsfunction' => 'qbank_gitsync_import_question',
             'moodlewsrestformat' => 'json',
             'questionbankentryid' => null,
+            'importedversion' => null,
+            'exportedversion' => null,
             'contextlevel' => ($contextlevel) ? cli_helper::get_context_level($contextlevel) : null,
             'coursename' => $coursename,
             'modulename' => $modulename,
@@ -243,17 +245,10 @@ class import_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
 
-        $message = null;
-        if ($qcategoryname !== 'top') {
-            // Subcategory may not exist yet so we can't check it at this stage.
-            // User will get warning on version check if it definitely doesn't exist.
-            // We do still need the user to verify the top level context.
-            $message = "Question subdirectory: {$this->subdirectory}\n";
-        }
         if ($manifestpath) {
             $this->manifestpath = $arguments['rootdirectory'] . '/' . $manifestpath;
         } else {
-            $instanceinfo = $clihelper->check_context($this, $message);
+            $instanceinfo = $clihelper->check_context($this);
             $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
@@ -309,7 +304,7 @@ class import_repo {
             $this->listpostsettings['modulename'] = $this->manifestcontents->context->modulename;
             $this->listpostsettings['coursecategory'] = $this->manifestcontents->context->coursecategory;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-            $instanceinfo = $clihelper->check_context($this, $message);
+            $instanceinfo = $clihelper->check_context($this);
         }
         // Set question category info after call to check_context.
         // We can't rely on the subcategories existing in Moodle until after import
@@ -474,6 +469,8 @@ class import_repo {
                         $existingentry = $existingentries[$relpath] ?? false;
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
+                            $this->postsettings['importedversion'] = $existingentry->importedversion;
+                            $this->postsettings['exportedversion'] = $existingentry->exportedversion;
                             if (isset($existingentry->currentcommit)
                                     && isset($existingentry->moodlecommit)
                                     && $existingentry->currentcommit === $existingentry->moodlecommit) {
@@ -481,6 +478,8 @@ class import_repo {
                             }
                         } else {
                             $this->postsettings['questionbankentryid'] = null;
+                            $this->postsettings['importedversion'] = null;
+                            $this->postsettings['exportedversion'] = null;
                         }
                         if (!$this->upload_file($repoitem)) {
                             echo 'File upload problem.\n';
@@ -782,17 +781,17 @@ class import_repo {
         }
         $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $changes = false;
-        // If the version in Moodle and in the manifest don't match, the question has been updated in Moodle
+        // If the version in Moodle and in the importedversion in manifest don't match, the question has been updated in Moodle
         // since we created the repo or last imported to Moodle.
-        // If the last exportedversion doesn't match what's in the manifest we haven't dealt with
-        // all the changes locally. Instruct user to export.
+        // If the last exportedversion doesn't match either we haven't exported the changes from Moodle and dealt with
+        // them locally. Instruct user to export.
         foreach ($questionsinmoodle->questions as $moodleq) {
             if (isset($manifestentries[$moodleq->questionbankentryid])
-                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->version
+                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->importedversion
                     && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->exportedversion) {
                 echo "{$moodleq->questionbankentryid} - {$moodleq->questioncategory} - {$moodleq->name}\n";
                 echo "Moodle question version: {$moodleq->version}\n";
-                echo "Version on last import to Moodle: {$manifestentries[$moodleq->questionbankentryid]->version}\n";
+                echo "Version on last import to Moodle: {$manifestentries[$moodleq->questionbankentryid]->importedversion}\n";
                 echo "Version on last export from Moodle: {$manifestentries[$moodleq->questionbankentryid]->exportedversion}\n";
                 $changes = true;
             }

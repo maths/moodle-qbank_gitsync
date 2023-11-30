@@ -128,7 +128,7 @@ class import_question_test extends externallib_advanced_testcase {
     public function test_capabilities(): void {
         $this->give_capabilities();
         $this->upload_file($this->testrepo . 'top/cat-1/gitsync_category.xml');
-        $returnvalue = import_question::execute('',
+        $returnvalue = import_question::execute('', '', '',
                                                 null,
                                                 $this->fileinfo,
                                                 50,
@@ -155,7 +155,7 @@ class import_question_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        import_question::execute('', null, $this->fileinfo, 50, $this->course->fullname);
+        import_question::execute('', '', '', null, $this->fileinfo, 50, $this->course->fullname);
     }
 
     /**
@@ -169,7 +169,7 @@ class import_question_test extends externallib_advanced_testcase {
         $this->unassignUserCapability('qbank/gitsync:importquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
         $this->expectExceptionMessage('you do not currently have permissions to do that (Import)');
-        import_question::execute('', null, $this->fileinfo, 50, $this->course->fullname);
+        import_question::execute('', '', '', null, $this->fileinfo, 50, $this->course->fullname);
     }
 
     /**
@@ -178,7 +178,7 @@ class import_question_test extends externallib_advanced_testcase {
     public function test_import_capability(): void {
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        import_question::execute('', null, $this->fileinfo, 50, $this->course->fullname);
+        import_question::execute('', '', '', null, $this->fileinfo, 50, $this->course->fullname);
     }
 
     /**
@@ -194,7 +194,7 @@ class import_question_test extends externallib_advanced_testcase {
         $sink = $this->redirectEvents();
 
         // Create a category.
-        $returnvalue = import_question::execute('',
+        $returnvalue = import_question::execute('', '', '',
                                                 null,
                                                 $this->fileinfo,
                                                 50,
@@ -234,7 +234,7 @@ class import_question_test extends externallib_advanced_testcase {
         $sink = $this->redirectEvents();
 
         // Create a category and subcategory.
-        $returnvalue = import_question::execute('',
+        $returnvalue = import_question::execute('', '', '',
                                                 null,
                                                 $this->fileinfo,
                                                 50,
@@ -276,7 +276,7 @@ class import_question_test extends externallib_advanced_testcase {
         $createdquestion = $DB->get_record('question', ['name' => 'Third Question'], '*');
         $this->assertEquals($createdquestion, false);
 
-        import_question::execute('',
+        import_question::execute('', '', '',
                                  null,
                                  $this->fileinfo,
                                  50,
@@ -285,7 +285,7 @@ class import_question_test extends externallib_advanced_testcase {
 
         $sink = $this->redirectEvents();
         $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml');
-        $returnvalue = import_question::execute('',
+        $returnvalue = import_question::execute('', '', '',
                                                 'top/cat 2/subcat 2_1',
                                                 $this->fileinfo,
                                                 50,
@@ -331,7 +331,7 @@ class import_question_test extends externallib_advanced_testcase {
         $sink = $this->redirectEvents();
         // Update question.
         $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml');
-        $returnvalue = import_question::execute($qbankentryid,
+        $returnvalue = import_question::execute($qbankentryid, '1', '1',
                                  null,
                                  $this->fileinfo,
                                  50,
@@ -350,5 +350,36 @@ class import_question_test extends externallib_advanced_testcase {
         $events = $sink->get_events();
         $this->assertEquals(count($events), 1);
         $this->assertInstanceOf('\qbank_importasversion\event\question_version_imported', $events['0']);
+    }
+
+    /**
+     * Test version check.
+     */
+    public function test_version_check(): void {
+        global $DB;
+        $this->give_capabilities();
+        // Generate question and obtain its QBE id.
+        $question = $this->generator->create_question('stack', 'test3',
+                            ['name' => self::QNAME, 'category' => $this->qcategory->id]);
+        $qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
+                            ['questionid' => $question->id], $strictness = MUST_EXIST);
+        $this->assertEquals(false, $DB->record_exists('question_versions',
+                            ['questionbankentryid' => $qbankentryid, 'version' => 2]));
+        $sink = $this->redirectEvents();
+        // Update question.
+        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml');
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage('Could not import question : Example STACK question ' .
+                                      'Current version in Moodle is 1. Last imported version is 3. ' .
+                                      'Last exported version is 4. You need to export the question.');
+        import_question::execute($qbankentryid, '3', '4',
+                                 null,
+                                 $this->fileinfo,
+                                 50,
+                                 $this->course->fullname);
+
+        // Check version number has not increased.
+        $this->assertEquals(true, $DB->record_exists('question_versions',
+                            ['questionbankentryid' => $qbankentryid, 'version' => 1]));
     }
 }

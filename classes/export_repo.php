@@ -55,6 +55,14 @@ class export_repo {
      */
     public curl_request $listcurlrequest;
     /**
+     * Settings for question list request
+     *
+     * These are the parameters for the webservice list call.
+     *
+     * @var array
+     */
+    public array $listpostsettings;
+    /**
      * Full path to manifest file
      *
      * @var string
@@ -157,7 +165,8 @@ class export_repo {
         $this->export_questions_in_manifest();
         // Export any questions that are in Moodle but not in the manifest.
         $this->export_to_repo();
-        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath, $this->manifestpath, $this->moodleurl);
+        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,
+                                         $this->manifestpath, $this->moodleurl, false);
         unlink($this->tempfilepath);
         // Remove questions from manifest that are no longer in Moodle.
         // Will be restored from repo on next import if file is still there.
@@ -182,6 +191,7 @@ class export_repo {
     public function export_questions_in_manifest() {
         $categorynames = [];
         $topdirectory = dirname($this->manifestpath);
+        $count = 0;
         foreach ($this->manifestcontents->questions as $questioninfo) {
             $currentdirectory = dirname($topdirectory . '/' . $questioninfo->filepath);
             if (isset($categorynames[$currentdirectory])) {
@@ -234,9 +244,14 @@ class export_repo {
                     echo "\nAccess issue.\n";
                     echo "{$questioninfo->filepath} not updated.\n";
                 } else {
+                    $count++;
                     $questioninfo->exportedversion = $responsejson->version;
                 }
             }
+        }
+        echo "\nExported {$count} previously linked question" . (($count !== 1) ? 's' : '') . ".\n";
+        if ($count > 0) {
+            echo "(Check your repository to see which questions have changes.)\n";
         }
         // Will not be updated properly if there is an error but this is no loss.
         // Process can simply be run again from start.

@@ -146,6 +146,8 @@ class create_repo_test extends advanced_testcase {
                     file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/' . cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 2',
                     file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/' . cli_helper::CATEGORY_FILE . '.xml'));
+
+        $this->expectOutputRegex('/^\nAdded 4 questions.\n$/s');
     }
 
     /**
