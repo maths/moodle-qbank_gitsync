@@ -42,7 +42,7 @@ See markup files for each CLI for re-run instructions.
 - (Done) Further instructions for config setup, defaults and setting command line arguments.
 - Security of web-service and permission options.
 - (Done) Instructions for day-to-day Git use.
-- Overview document and order current docs.
+- (Started) Overview document and order current docs.
 
 ## Deletion or overwrite of questions in Moodle
 - (Done) Separate out deletion steps from import script.
@@ -61,10 +61,10 @@ See markup files for each CLI for re-run instructions.
   - (Done) How do we effectively handle deletion of questions from Moodle source but not the master branch?
     Answer: The merge to and from master should be done without commit and the files either restored or deleted before committing.  
     `git merge --no-commit --no-ff source_1`
-- Test exception recovery.
-- Thorough testing of different context levels.
-- Thorough testing of using subdirectories/subcategories.
-- Is there any directory structure weirdness thrown up by using subdirectories? A little - see createrepo.md about MDL-80256
+- (Done) Test exception recovery.
+- (Done) Thorough testing of different context levels.
+- (Done) Thorough testing of using subdirectories/subcategories.
+- (Done) Is there any directory structure weirdness thrown up by using subdirectories? A little - see createrepo.md about MDL-80256
 
 ## Other
 - Additional metadata in manifest.

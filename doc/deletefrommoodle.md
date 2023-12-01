@@ -32,4 +32,4 @@ Examples:
 The arguments are the same as for importrepo and the questions are identified in the same way as explained there. This task is just to separate out the deletion process from the import process as a safeguard. 
 
 On failure:
-- If the script fails, it can be safely run again once the issue has been dealt with. Questions that have already been deleted will be removed from the manifest file and will not need to approve deletion again.
+- If the script fails, it can be safely run again once the issue has been dealt with. Questions that have already been deleted will be removed from the manifest file and you will not need to approve deletion again.

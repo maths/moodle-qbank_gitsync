@@ -163,7 +163,8 @@ class get_question_list extends external_api {
             if (!$category) {
                 throw new \moodle_exception('categoryerror', 'qbank_gitsync', null, $params['qcategoryname']);
             }
-            $response->contextinfo->qcategoryname = $category->name;
+
+            $response->contextinfo->qcategoryname = self::get_category_path($category);
             if ($contextonly) {
                 return $response;
             }
@@ -221,5 +222,34 @@ class get_question_list extends external_api {
             $descendants = array_merge($descendants, $childdescendants);
         }
         return $descendants;
+    }
+
+    /**
+     * get the category as a path (e.g., tom/dick/harry)
+     * @param object $category question category
+     * @return string the path
+     */
+    public static function get_category_path($category) {
+        global $DB;
+
+        $pathsections = [];
+        do {
+            $pathsections[] = $category->name;
+            $id = $category->parent;
+        } while ($category = $DB->get_record('question_categories', ['id' => $id]));
+
+        $names = array_reverse($pathsections);
+
+        foreach ($names as $name) {
+            $escapedname = str_replace('/', '//', $name);
+            if (substr($escapedname, 0, 1) == '/') {
+                $escapedname = ' ' . $escapedname;
+            }
+            if (substr($escapedname, -1) == '/') {
+                $escapedname = $escapedname . ' ';
+            }
+            $escapednames[] = $escapedname;
+        }
+        return implode('/', $escapednames);
     }
 }

@@ -44,7 +44,7 @@ class export_repo_test extends advanced_testcase {
     public cli_helper $clihelper;
     /** @var curl_request mocked curl_request */
     public curl_request $curl;
-    /** @var export_repo mocked curl_request for doc upload */
+    /** @var export_repo mocked export_repo */
     public export_repo $exportrepo;
     /** @var string root of virtual file system */
     public string $rootpath;
@@ -108,8 +108,11 @@ class export_repo_test extends advanced_testcase {
 
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
-                "modulename": "Module 1", "instanceid": "", "qcategoryname": "top"},
-              "questions": []}',
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+              {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
             '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
                 "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
               "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
@@ -251,5 +254,128 @@ class export_repo_test extends advanced_testcase {
 
         @$this->exportrepo->export_questions_in_manifest();
         $this->expectOutputRegex('/^\nBroken XML\n\/top\/cat-1\/First-Question.xml not updated.\n/s');
+    }
+
+    /**
+     * Test the full process with subcategory name.
+     */
+    public function test_process_with_subcategory_name(): void {
+        $this->options['subcategory'] = 'top/cat-2/subcat-2_1';
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1"},
+              "questions": []}')
+        );
+        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'handle_abort',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+
+        $this->exportrepo->curlrequest = $this->curl;
+        $this->exportrepo->listcurlrequest = $this->listcurl;
+
+        // Will get questions in order from manifest file in testrepo.
+        $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}'
+        );
+
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/cat 2/subcat 2_1"},
+              "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+              {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
+            );
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->exportrepo->process();
+
+        // Check question files updated.
+        $this->assertStringContainsString('First Question', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
+        $this->assertStringContainsString('Second Question', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
+
+        // Check manifest file updated.
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->assertCount(4, $manifestcontents->questions);
+
+        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertArrayHasKey('35001', $existingentries);
+        $this->assertArrayHasKey('35002', $existingentries);
+        $this->assertArrayHasKey('35003', $existingentries);
+        $this->assertArrayHasKey('35004', $existingentries);
+
+        $this->expectOutputRegex('/^\nExported 2 previously linked questions.*Added 0 questions.\n$/s');
+    }
+
+    /**
+     * Test the full process with subcategory id.
+     */
+    public function test_process_with_subcategory_id(): void {
+        global $DB;
+        $this->options['qcategoryid'] = $DB->get_field('question_categories', 'id', ['name' => 'subcat 2_1']);
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1"},
+              "questions": []}')
+        );
+        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'handle_abort',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+
+        $this->exportrepo->curlrequest = $this->curl;
+        $this->exportrepo->listcurlrequest = $this->listcurl;
+
+        // Will get questions in order from manifest file in testrepo.
+        $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
+            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}'
+        );
+
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/cat 2/subcat 2_1"},
+              "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+              {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
+            );
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->exportrepo->process();
+
+        // Check question files updated.
+        $this->assertStringContainsString('First Question', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
+        $this->assertStringContainsString('Second Question', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
+
+        // Check manifest file updated.
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->assertCount(4, $manifestcontents->questions);
+
+        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertArrayHasKey('35001', $existingentries);
+        $this->assertArrayHasKey('35002', $existingentries);
+        $this->assertArrayHasKey('35003', $existingentries);
+        $this->assertArrayHasKey('35004', $existingentries);
+
+        $this->expectOutputRegex('/^\nExported 2 previously linked questions.*Added 0 questions.\n$/s');
     }
 }

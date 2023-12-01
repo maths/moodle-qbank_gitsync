@@ -186,9 +186,9 @@ class cli_helper_test extends advanced_testcase {
     public function test_manifest_path(): void {
         $helper = new cli_helper($this->options);
         // Module level, including replacements.
-        $manifestpath = $helper->get_manifest_path('moodleinstanc<name', 'module', 'cat<goryname',
+        $manifestpath = $helper->get_manifest_path('mood$l!einstanc<name', 'module', 'cat<goryname',
                                                    'cours<nam>', 'Modul<name', 'directoryname');
-        $this->assertEquals('directoryname/moodleinstanc-name_module_cours-nam-_modul-name' . cli_helper::MANIFEST_FILE,
+        $this->assertEquals('directoryname/mood-l-einstanc-name_module_cours-nam-_modul-name' . cli_helper::MANIFEST_FILE,
                             $manifestpath);
         // Category level, including replacements.
         $manifestpath = $helper->get_manifest_path('moodleinstanc<name', 'coursecategory', 'cat<goryname',

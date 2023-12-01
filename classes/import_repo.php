@@ -542,11 +542,13 @@ class import_repo {
      */
     public function recovery():void {
         if (file_exists($this->tempfilepath)) {
+            echo 'Attempting recovery from failure on previous run. Updating manifest:';
             $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
                                                                     $this->tempfilepath,
                                                                     $this->manifestpath,
                                                                     $this->moodleurl);
             unlink($this->tempfilepath);
+            echo 'Recovery successful. Continuing...';
         }
     }
 
