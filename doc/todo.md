@@ -42,7 +42,7 @@ See markup files for each CLI for re-run instructions.
 - (Done) Further instructions for config setup, defaults and setting command line arguments.
 - Security of web-service and permission options.
 - (Done) Instructions for day-to-day Git use.
-- (Started) Overview document and order current docs.
+- (Done) Overview document and order current docs.
 
 ## Deletion or overwrite of questions in Moodle
 - (Done) Separate out deletion steps from import script.
