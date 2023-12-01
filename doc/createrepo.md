@@ -33,7 +33,7 @@ You will need to specify the context of the questions you want to export from Mo
 
 If you only want to export a certain question category (and its subcategories) within the context you will need to supply the category's name relative to the 'top' category e.g. 'category 1/subcategory 2'. Alternatively you can supply the questioncategoryid which is available in the URL ('&category=XXX') when browsing the category in the question bank. If you want to keep working only with this subcategory, then you will need to specify it (or the matching subdirectory of your repo) when performing each task - the repo itself will be created for the entire context. You will also need to be careful if you try importing a wider section of your repo than you've previously exported as some parent directories may not have required category files due to a bug with Moodle (MDL-80256) - you will need to create the files or run exportrepo.php on the wider section and discard any exported questions you don't want.
 
-A manifest file which links the questions in your repo to the questions in Moodle will be created at the top level of your directory. This manifest file will be ignored by Git, however. [TODO - The philosophy of this needs explained in an overview document.] The manifest file will be backed up to a local folder before changes are made to it.
+A manifest file which links the questions in your repo to the questions in Moodle will be created at the top level of your directory. This manifest file will be ignored by Git, however. The manifest file will be backed up to a local folder before changes are made to it.
 
 If Git is being used, the destination directory must be an empty Git repo and the exported questions will be committed to the current branch.
 
