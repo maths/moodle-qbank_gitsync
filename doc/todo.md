@@ -61,10 +61,10 @@ See markup files for each CLI for re-run instructions.
   - (Done) How do we effectively handle deletion of questions from Moodle source but not the master branch?
     Answer: The merge to and from master should be done without commit and the files either restored or deleted before committing.  
     `git merge --no-commit --no-ff source_1`
-- Test exception recovery.
+- (Done) Test exception recovery.
 - Thorough testing of different context levels.
-- Thorough testing of using subdirectories/subcategories.
-- Is there any directory structure weirdness thrown up by using subdirectories? A little - see createrepo.md about MDL-80256
+- (Done) Thorough testing of using subdirectories/subcategories.
+- (Done) Is there any directory structure weirdness thrown up by using subdirectories? A little - see createrepo.md about MDL-80256
 
 ## Other
 - Additional metadata in manifest.

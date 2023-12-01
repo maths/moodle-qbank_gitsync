@@ -66,7 +66,7 @@ class cli_helper {
     /**
      * BAD_CHARACTERS - Characters to remove for filename sanitisation
      */
-    public const BAD_CHARACTERS = '/[\/\\\?\%*:|"<> .]+/';
+    public const BAD_CHARACTERS = '/[\/\\\?\%*:|"<> .$!]+/';
     /**
      * Constructor
      *
@@ -454,7 +454,7 @@ class cli_helper {
         }
         echo "\nAdded {$addedcount} question" . (($addedcount !== 1) ? 's' : '') . ".\n";
         if ($showupdated) {
-            echo "\nUpdated {$updatedcount} question" . (($updatedcount !== 1) ? 's' : '') . ".\n";
+            echo "Updated {$updatedcount} question" . (($updatedcount !== 1) ? 's' : '') . ".\n";
         }
         $success = file_put_contents($manifestpath, json_encode($manifestcontents));
         if ($success === false) {
@@ -556,7 +556,9 @@ class cli_helper {
         }
         foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
-            $question->currentcommit = $commithash;
+            if ($commithash) {
+                $question->currentcommit = $commithash;
+            }
         }
         $success = file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
         if ($success === false) {
@@ -583,8 +585,10 @@ class cli_helper {
         exec('git commit -m "Initial Commit"');
         foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
-            $question->currentcommit = $commithash;
-            $question->moodlecommit = $commithash;
+            if ($commithash) {
+                $question->currentcommit = $commithash;
+                $question->moodlecommit = $commithash;
+            }
         }
         // Happens last so no need to abort on failure.
         file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
@@ -696,11 +700,7 @@ class cli_helper {
             if ($moodlequestionlist->contextinfo->modulename) {
                 echo "{$moodlequestionlist->contextinfo->modulename}\n";
             }
-            if (isset($activity->subcategory) && $activity->subcategory !== 'top') {
-                echo "Question category path: {$activity->subcategory}\n";
-            } else {
-                echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
-            }
+            echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
             if (isset($activity->subdirectory) && $activity->subdirectory !== 'top') {
                 echo "Question subdirectory: {$activity->subdirectory}\n";
             }

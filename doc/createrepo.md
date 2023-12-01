@@ -38,4 +38,4 @@ A manifest file which links the questions in your repo to the questions in Moodl
 If Git is being used, the destination directory must be an empty Git repo and the exported questions will be committed to the current branch.
 
 On failure:
-- If the script fails, it can be safely run again once the issue has been dealt with. (You may get instructions to delete a manifest file. If so, delete the file and run again.)
+- If the script fails, clean out the question folders and manifest files from the directory and run it again once the issue is sorted.

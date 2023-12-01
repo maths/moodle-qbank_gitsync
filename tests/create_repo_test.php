@@ -46,8 +46,8 @@ class create_repo_test extends advanced_testcase {
     public curl_request $curl;
     /** @var curl_request mocked curl_request for question list */
     public curl_request $listcurl;
-    /** @var export_repo mocked curl_request for doc upload */
-    public export_repo $exportrepo;
+    /** @var create_repo mocked create_repo */
+    public create_repo $createrepo;
     /** @var string root of virtual file system */
     public string $rootpath;
     /** @var string used to store output of multiple calls to a function */
@@ -64,7 +64,7 @@ class create_repo_test extends advanced_testcase {
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
             'directory' => '',
-            'subcategory' => '',
+            'subcategory' => 'top',
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
@@ -103,6 +103,12 @@ class create_repo_test extends advanced_testcase {
                                                'contextonly' => 0,
                                             ];
         $this->createrepo->postsettings = [];
+    }
+
+    /**
+     * Test the full process.
+     */
+    public function test_process(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                              "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -124,12 +130,6 @@ class create_repo_test extends advanced_testcase {
                           '</text></category></question><question><name><text>Four</text></name></question></quiz>"' .
                           ', "version": "1"}',
         );
-    }
-
-    /**
-     * Test the full process.
-     */
-    public function test_process(): void {
         $this->createrepo->process($this->clihelper, $this->moodleinstances);
 
         // Check question files exist.
@@ -154,8 +154,27 @@ class create_repo_test extends advanced_testcase {
      * Test temp file creation.
      */
     public function test_temp_file_creation(): void {
-        $this->createrepo->listcurlrequest = $this->listcurl;
-        $this->createrepo->curlrequest = $this->curl;
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "1", "name": "One", "questioncategory": ""},
+                            {"questionbankentryid": "2", "name": "Two", "questioncategory": ""},
+                            {"questionbankentryid": "3", "name": "Three", "questioncategory": ""},
+                            {"questionbankentryid": "4", "name": "Four", "questioncategory": ""}]}'
+        );
+        $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<quiz><question type=\"category\"><category><text>top</text></category></question>' .
+                          '<question><name><text>One</text></name></question></quiz>", "version": "10"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 1' .
+                          '</text></category></question><question><name><text>Two</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
+                          '</text></category></question><question><name><text>Three</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
+                          '</text></category></question><question><name><text>Four</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+        );
         $this->createrepo->directory = $this->rootpath;
         $this->createrepo->manifestcontents = new \stdClass();
         $this->createrepo->manifestcontents->context = null;
@@ -172,5 +191,55 @@ class create_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->coursecategory, null);
         $this->assertEquals($firstline->version, '10');
         $this->assertEquals($firstline->format, 'xml');
+    }
+
+    /**
+     * Test the full process with named subcategory.
+     */
+    public function test_process_with_named_subcategory(): void {
+        $this->options['subcategory'] = 'top/cat-2/subcat-2_1';
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1"},
+              "questions": []}')
+        );
+        $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'handle_abort',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+
+        $this->createrepo->curlrequest = $this->curl;
+        $this->createrepo->listcurlrequest = $this->listcurl;
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1"},
+              "questions": [{"questionbankentryid": "3", "name": "Three", "questioncategory": ""},
+                            {"questionbankentryid": "4", "name": "Four", "questioncategory": ""}]}'
+        );
+        $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
+                          '</text></category></question><question><name><text>Three</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Default for Test 1/sub 2' .
+                          '</text></category></question><question><name><text>Four</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+        );
+        $this->createrepo->process($this->clihelper, $this->moodleinstances);
+
+        // Check question files exist.
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/Three.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/Four.xml'));
+
+        // Check category files exist.
+        $this->assertStringContainsString('top/Default for Test 1/sub 2',
+                    file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/' . cli_helper::CATEGORY_FILE . '.xml'));
+        $this->assertStringContainsString('top/Default for Test 1/sub 2',
+                    file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/' . cli_helper::CATEGORY_FILE . '.xml'));
+
+        $this->expectOutputRegex('/^\nAdded 2 questions.\n$/s');
     }
 }

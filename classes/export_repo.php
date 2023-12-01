@@ -151,7 +151,8 @@ class export_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-        $clihelper->check_context($this);
+        $moodlequestionlist = $clihelper->check_context($this);
+        $this->subcategory = $moodlequestionlist->contextinfo->qcategoryname;
     }
 
     /**
@@ -206,7 +207,7 @@ class export_repo {
                      "{$questioninfo->filepath} not exported.\n";
                 continue;
             }
-            if (!substr($qcategoryname, 0, strlen($this->subcategory)) === $this->subcategory) {
+            if (substr($qcategoryname, 0, strlen($this->subcategory)) !== $this->subcategory) {
                 // Start of category path of question must match start of subcategory to export.
                 continue;
             }
