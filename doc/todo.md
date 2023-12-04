@@ -40,13 +40,13 @@ See markup files for each CLI for re-run instructions.
 
 ## Guidance
 - (Done) Further instructions for config setup, defaults and setting command line arguments.
-- Security of web-service and permission options.
+- (Done) Security of web-service and permission options.
 - (Done) Instructions for day-to-day Git use.
 - (Done) Overview document and order current docs.
 
 ## Deletion or overwrite of questions in Moodle
 - (Done) Separate out deletion steps from import script.
-- (Started) Consider what could result in data loss during import/delete and mitigate.
+- (Done) Consider what could result in data loss during import/delete and mitigate. Version checks when importing and commit checks when exporting should mitigate most issues with import/export. User would have to export questions, discard the changes and then import to cause problems but even then the previous versions of the questions would still be in Moodle. The old version of a question can be selected for edit and then saved without changes to make it the latest version - a pain if many questions are involved but recoverable. Delete does introduce the possibility of data loss if the user has never exported the question (which could happen if they begin by using subcategories/subdirectories and then start dealing with the whole context). Users have to run the delete script specially, however, and confirm the deletion of each question individually after already having seen a list of all the questions that are in Moodle but not in the repo. Also, any questions that are used in quizzes will be hidden rather than completely deleted in Moodle. Given all this, the risks are probably only minimally worse than the option to delete within Moodle itself.
 
 ## Concurrency
 - (Done) What are the scenarios? Create repo, import, export, tidy, delete.
@@ -70,8 +70,7 @@ See markup files for each CLI for re-run instructions.
 - Additional metadata in manifest.
 - (Done) Add more feedback on success - e.g. number of questions imported/exported.
 - (Future?) Category files. Categories are not versioned and currently gitsync is not updating existing categories on either import or export. What are the options here? We could update every category for a question every time we import or export the question. For import we could store categories in the manifest and only import if the commit hash has changed but is that worth it and we still overwrite changes in Moodle without warning. Users maybe just need to update category files manually (NB it's HTML so CDATA in the file which is messy) or we have a flag parameter that forces category update.  
-Update:  
-Import DOES update category info but only if there was none before - this is an oddity of Moodle's import process (format.php->create_category_path). We would need to update DB fields directly.  
+Update: Import DOES update category info but only if there was none before - this is an oddity of Moodle's import process (format.php->create_category_path). We would need to update DB fields directly.  
 Export could be easily modified to update category files for new questions with an extra CLI argument but doing so for existing questions would be more involved. Would probably be better just to handle categories separately (which maybe isn't worth it).  
-Probably best to leave for users to update categories manually.
+Probably best to leave for users to update categories manually?
 - (Future?) Most of the the text users see is outside Moodle so is not set up for translation. (Could copy whatever API has done!)
