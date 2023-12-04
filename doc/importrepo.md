@@ -74,5 +74,5 @@ A check will be run to see if there are questions in the context in Moodle that 
 
 To delete the questions from Moodle and tidy the manifest, run deletefrommoodle.php
 
-On failure:
+### On failure
 - If the script fails, it can be safely run again once the issue has been dealt with. Pending updates to the manifest file are stored in a temporary file in the root directory and these will be picked up at the start of the new run, avoiding multiple new versions of a question being created in Moodle.

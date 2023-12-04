@@ -30,5 +30,5 @@ If you only want to export a certain question category (and its subcategories) w
 
 Export will only be possible if there are no uncommitted changes in the repo. After the export, the manifest will be tidied to remove any entries where the question is no longer in the Moodle. (The manifest is the link between your repo and Moodle and you can't link to something which isn't there.)
 
-On failure:
+### On failure
 - If the script fails, discard changes in the repository and run again once the issue has been dealt with. All questions will be exported afresh.

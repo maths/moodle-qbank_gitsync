@@ -61,6 +61,14 @@ There are two logically separate parts of this project.
 1. Using manifest files to synchronise questions from part of a moodle question bank to an external file system.
 2. Maintainance of manifest files
 
-This project provides tools which scan the files on the external file system, and maintains the manifest file to match the file system and the Moodle question bank. Questions added or removed from the file system (via `git add`, `git rm` or through consequences of a `git pull` from an external repro) will be reflected in the manifest file but not necessarily straight away. The manifest file does not record what is in the repo - the file system itself does that. The manifest file links questions in the file system to questions in a Moodle instance. The manifest is tidied as appropriate on import/export. See [process details](processdetails.md) document for exactly what happens when.
+This project provides tools which scan the files on the external file system, and maintains the manifest file to match the file system and the Moodle question bank. Questions added or removed from the file system (via `git add`, `git rm` or through consequences of a `git pull` from an external repro) will be reflected in the manifest file but not necessarily straight away. The manifest file does not record what is in the repo - the file system itself does that. The manifest file links questions in the file system to questions in a Moodle instance. The manifest is tidied as appropriate on import/export. See [process details](doc/processdetails.md) document for exactly what happens when.
 
-By default, the manifest file is not stored as part of the Git repo but is only on the user's local computer. This allows repos to be shared with other users using different Moodle instances. For repos tied to a single Moodle instance adding the manifest to the repo may be useful. 
+By default, the manifest file is not stored as part of the Git repo but is only on the user's local computer. This allows repos to be shared with other users using different Moodle instances. For repos tied to a single Moodle instance adding the manifest to the repo may be useful.
+
+# Setup
+
+1) Install the plugin on Moodle and [set up the webservice](doc/webservicesetup.md).
+2) Set up Git, PHP and the plugin [on your local computer](doc/localsetup.md).
+3) Look through the [sample Git scenarios](doc/usinggit.md) and decide the best process for you.
+4) [Create](doc/createrepo.md) or [import](doc/importrepo.md) your repo.
+5) [Import](doc/importrepo.md), [export](doc/exportrepo.md) and [delete](doc/deletefrommoodle.md) questions as required.

@@ -59,7 +59,7 @@ $services = [
                             'qbank_gitsync_delete_question',
                             'qbank_gitsync_get_question_list',
                         ],
-            'restrictedusers' => 0,
+            'restrictedusers' => 1,
             'enabled' => 1,
             'shortname' => 'qbank_gitsync_ws',
     ],
