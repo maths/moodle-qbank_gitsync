@@ -1,8 +1,8 @@
 # Updating a repo with the latest version of questions in Moodle
 
 ## Prerequisites
-- Set up the webserver on the Moodle instance.
-- Set up your local machine.
+- Set up the [webserver](webservicesetup.md) on the Moodle instance.
+- Set up your [local machine](localsetup.md).
 - Import a repo into Moodle using `importrepo.php` or create a repo from Moodle using `createrepo.php`.
 
 ## Exporting
@@ -31,4 +31,5 @@ If you only want to export a certain question category (and its subcategories) w
 Export will only be possible if there are no uncommitted changes in the repo. After the export, the manifest will be tidied to remove any entries where the question is no longer in the Moodle. (The manifest is the link between your repo and Moodle and you can't link to something which isn't there.)
 
 ### On failure
-- If the script fails, discard changes in the repository and run again once the issue has been dealt with. All questions will be exported afresh.
+
+- If the script fails, discard changes in the repository (e.g. with the `git reset` command) and run the `php exportrepo.php` again once the issue has been dealt with. All questions will be exported afresh.

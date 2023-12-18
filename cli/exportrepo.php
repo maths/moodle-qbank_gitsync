@@ -100,7 +100,7 @@ $options = [
 ];
 
 if (!function_exists('tidy_repair_string')) {
-    echo 'Please install HTML Tidy.';
+    echo 'Please install the PHP library HTML Tidy.' . "\n";
     exit;
 }
 $clihelper = new cli_helper($options);

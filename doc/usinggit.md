@@ -17,7 +17,7 @@ To export questions from moodle to the git repo, from the cli directory of the P
 
 * `-h` gives command line documentation.
 * `-l` is the context level within Moodle, e.g. the "course level".
-* `-c` is the Moodle coursename.
+* `-c` is the Moodle coursename.  This must be the full name, not the short name.
 * `-s` is the subcategory of questions to actually export.
 * `-d` is the directory of the repo within the root directory.
 

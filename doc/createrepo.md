@@ -11,7 +11,7 @@
 |-|-|-|
 |i|moodleinstance|Key of Moodle instance in  moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
-|d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
+|d|directory|Directory of repo on user's computer containing "top" folder, relative to root directory.|
 |s|subcategory|Relative subcategory of repo to actually export.|
 |l|contextlevel|Context from which to extract questions. Set to system, coursecategory, course or module
 |c|coursename|Unique course name for course or module context.

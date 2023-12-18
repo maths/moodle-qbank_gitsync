@@ -33,7 +33,7 @@ namespace qbank_gitsync;
 class create_repo {
     use export_trait;
     /**
-     * Settings for POST request
+     * Settings for POST request.
      *
      * These are the parameters for the webservice call.
      *
@@ -41,7 +41,7 @@ class create_repo {
      */
     public array $postsettings;
     /**
-     * Settings for list POST request
+     * Settings for list POST request.
      *
      * These are the parameters for the webservice call.
      *
@@ -49,13 +49,13 @@ class create_repo {
      */
     public array $listpostsettings;
     /**
-     * cURL request handle for file upload
+     * cURL request handle for file upload.
      *
      * @var curl_request
      */
     public curl_request $curlrequest;
     /**
-     * cURL request handle for question list retrieve
+     * cURL request handle for question list retrieve.
      *
      * @var curl_request
      */
@@ -67,13 +67,13 @@ class create_repo {
      */
     public string $subcategory;
     /**
-     * Path to actual manifest file
+     * Path to actual manifest file.
      *
      * @var string
      */
     public string $manifestpath;
     /**
-     * Path to temporary manifest file
+     * Path to temporary manifest file.
      *
      * @var string
      */
@@ -86,20 +86,20 @@ class create_repo {
      */
     public string $directory;
     /**
-     * Parsed content of JSON manifest file
+     * Parsed content of JSON manifest file.
      *
      * @var \stdClass|null
      */
     public ?\stdClass $manifestcontents;
     /**
-     * URL of Moodle instance
+     * URL of Moodle instance.
      *
      * @var string
      */
     public string $moodleurl;
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param cli_helper $clihelper
      * @param array $moodleinstances pairs of names and URLs

@@ -5,13 +5,13 @@ The purpose of this module is to synchronise questions from part of a moodle que
 The motivating use-case is to share questions either (i) between multiple courses on a single moodle site or (ii) between multiple sites.
 If the external file system is part of a version control repository (e.g. git), then version control tools can be used on the external file system to track differences between versions, merge changes, use branches to maintain different versions, and so on.
 
-This tool helps users export to their local file system, removing the need to access to the file system on the server directly.
+This tool helps users export questions from a moodle question bank to their local file system, avoiding the need to access the file system on the server directly.
 
 This module will not help users make judgements on how to organise their question banks!  Users must consider how to arrange their materials in such a way that makes sense.
 
 The basic unit is a "folder of questions", which may contain sub-folders.
 
-* On the external file system these "folder of questions" are literally directories of Moodle .xml files, each file is a single question file.
+* On the external (local) file system a "folder of questions" is literally a directory of Moodle .xml files, each file is a single question file.
 * On Moodle these "folder of questions" are categories in the Moodle question bank.
 
 A "manifest file" tracks the link between the external file system and the moodle question bank.
@@ -24,7 +24,7 @@ A single manifest file sits in the same directory as the .git directory. Importi
 
 ## Using version control tools to share materials
 
-One or more manifest files sits in the same directory as the .git directory.
+One or more manifest files sit in the same directory as the .git directory.
 The user can then share materials in two ways.
 
 1. Use .git as version control.  Users with their own fork of the repository will have a parallel manifest file in their fork to synchronise questions from their external file system to part of a moodle question bank.
@@ -32,19 +32,21 @@ The user can then share materials in two ways.
 
 For example a user creates two branches to match two different Moodle courses: Exporting and committing to separate branches enables the git-merge features to help resolve conflicts.  Branches can diverge, if necessary, to reflect genuine differences between courses on moodle, but shared materials can still be merge between branches.  (But see "duplicates and waste" below.)
 
+Note, that typically the manifest file is _not_ included in the git repository.
+
 ## Using subsets of materials
 
-A Gitsync manifest is tied to a question context - system, course category, course or module (i.e. quiz). A user might want to manage questions at a question category level, however. This must be done by specifying a question category when exporting and a directory when importing. Only questions in or below this category/directory will be exported/imported.
+A Gitsync manifest is tied to a question context in moodle, e.g. system, course category, course or module (i.e. quiz). A user might want to manage questions at a question category level, however. This must be done by specifying a question category when exporting and a directory when importing. Only questions in or below this category/directory will be exported/imported.
 
-This will help synchronise questions from part of a larger external library of materials (the git repro) to a moodle question bank.  This has the advantage of not importing irrelevant material from a large external library of materials into moodle. (But see "duplicates and waste" below.) A large moodle question bank can also be split into separate external git repositories in this way. 
+This will help synchronise questions from part of a larger external library of materials (the git repro) to a moodle question bank.  This has the advantage of not importing irrelevant material from a large external library of materials into moodle. (But see "duplicates and waste" below.) A large moodle question bank can also be split into separate external git repositories in this way.
 
-The question category structure on initial export/import is maintained. So if you import only questions in directory 'top/cat-1/subcat-1' into Moodle they will be placed in your specified context in category 'top/cat 1/subcat 1' not simply in 'top' and vice versa for export. You can move questions around within Moodle after their initial import/export.
+The question category structure on initial export/import is maintained. So if you import only questions in directory 'top/cat-1/subcat-1' into Moodle they will be placed in your specified context in category 'top/cat 1/subcat 1' not simply in 'top' and vice versa for export. You can move questions around within Moodle after their initial import/export.  
 
 ## Duplicates and waste
 
 Expert users' time is much more valuable than DB storage or file storage.  If users import/export materials which are not needed in a particular moodle course then they could simply be ignored.....up to a point.
 
-The logical disconnection of the synchronise questions from the .git repository provides lots of options when combined with version control features such as branches.  Users will need to match their expertise with the complexity of the way they choose to use the tool.  We expect the most common use will be one or more manifest files in a single git repository.
+The logical disconnection of the synchronise questions from the .git repository provides lots of options when combined with version control features such as branches.  Users will need to match their expertise with the complexity of the way they choose to use the tool.  We expect the most common use will be via one or more manifest files in a single git repository.
 
 This module will not help users make judgements on how to organise their question banks!  Users must consider how to arrange their materials in such a way that makes sense.
 
@@ -59,7 +61,7 @@ The purpose of this module is to synchronise questions from part of a moodle que
 There are two logically separate parts of this project.
 
 1. Using manifest files to synchronise questions from part of a moodle question bank to an external file system.
-2. Maintainance of manifest files
+2. Maintainance of manifest files.
 
 This project provides tools which scan the files on the external file system, and maintains the manifest file to match the file system and the Moodle question bank. Questions added or removed from the file system (via `git add`, `git rm` or through consequences of a `git pull` from an external repro) will be reflected in the manifest file but not necessarily straight away. The manifest file does not record what is in the repo - the file system itself does that. The manifest file links questions in the file system to questions in a Moodle instance. The manifest is tidied as appropriate on import/export. See [process details](doc/processdetails.md) document for exactly what happens when.
 

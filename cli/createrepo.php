@@ -139,6 +139,12 @@ $options = [
     ],
 ];
 
+// TODO: tidy questions on initial export!
+if (!function_exists('tidy_repair_string')) {
+    echo 'Please install the PHP library HTML Tidy.' . "\n";
+    exit;
+}
+
 $clihelper = new cli_helper($options);
 $createrepo = new create_repo($clihelper, $moodleinstances);
 $createrepo->process();

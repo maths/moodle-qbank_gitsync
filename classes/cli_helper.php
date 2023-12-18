@@ -290,7 +290,7 @@ class cli_helper {
     }
 
     /**
-     * Combine sanitised output of getopt() with defaults
+     * Combine sanitised output of getopt() with defaults.
      *
      * @param array $commandlineargs output from getopt()
      * @return array of options and values
@@ -357,7 +357,7 @@ class cli_helper {
     }
 
     /**
-     * Create manifest path
+     * Create manifest path.
      *
      * @param string $moodleinstance
      * @param string $contextlevel
@@ -466,7 +466,7 @@ class cli_helper {
     }
 
     /**
-     * Tidy up question formatting and remove unwanted comment
+     * Tidy up question formatting and remove unwanted comment.
      *
      * @param string $question original question XML
      * @return string tidied question XML

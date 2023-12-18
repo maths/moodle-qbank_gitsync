@@ -26,6 +26,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Array of moodleinstnce nicknames and URLs.
+// The nicknames are used how....
+// No trailing slash on the URLs.
 $moodleinstances = [
     'instance1' => 'http://stack.org/instance1',
     'instance2' => 'http:localhost:8888',
@@ -37,10 +39,12 @@ $token = [
     'instance2' => '6ae...abcd',
 ];
 
+// Use this variable to hard-wire the default instance.
 $instance = 'instance1';
 
 // Root directory on the local file system.
 // This directory stores all git repos associated with the gitsync.
+// No trailing slash on the directory name.
 $rootdirectory = '/home/user/questions';
 
 $usegit = true;
