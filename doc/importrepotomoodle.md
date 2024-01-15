@@ -12,7 +12,7 @@
 `printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' >> .gitignore`  
 Commit this update.  
 (This will be done automatically when using `createrepo.php`.)
-- From the commandline in the `cli` folder run `importrepo.php`. There are a number of options you can input. List them all with `php importrepo.php -h`. You can use -shortname or --longname on the command line followed by a space and the value.
+- From the commandline in the `cli` folder run `importrepotomoodle.php`. There are a number of options you can input. List them all with `php importrepotomoodle.php -h`. You can use -shortname or --longname on the command line followed by a space and the value.
 
 |Short|Long|Required value|
 |-|-|-|
@@ -31,15 +31,15 @@ Commit this update.
 
 Examples:
 
-`php importrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" --contextlevel system`
+`php importrepotomoodle.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" --contextlevel system`
 
 This sets the token, the Moodle instance and the location of the repository to upload. Categories will be created at the system level.
 
-`php importrepo.php -l module -c "Course 1" -m "Test 1"`
+`php importrepotomoodle.php -l module -c "Course 1" -m "Test 1"`
 
-This will use the default token, instance and location values in `importrepo.php` but create the categories in quiz 'Test 1' of 'Course 1'.
+This will use the default token, instance and location values in `importrepotomoodle.php` but create the categories in quiz 'Test 1' of 'Course 1'.
 
-`php importrepo.php -i edmundlocal -r "C:\question_repos" -d "source_1" -s "top/My-course/My-category" --contextlevel system`
+`php importrepotomoodle.php -i edmundlocal -r "C:\question_repos" -d "source_1" -s "top/My-course/My-category" --contextlevel system`
 
 This will only import the questions in the 'My-category' folder and below.
 

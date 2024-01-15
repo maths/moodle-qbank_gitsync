@@ -263,7 +263,7 @@ class cli_helper {
             echo "\nYou have not specified context. " .
                  "You must specify context level (--contextlevel) unless " .
                  "using a function where this information can be read from a manifest file, in which case " .
-                 "you could set a manifest path (--manifestpath) instead. If using exportrepo, you " .
+                 "you could set a manifest path (--manifestpath) instead. If using exportrepofrommoodle, you " .
                  "must set manifest path only. If you still see this message, you may be using invalid arguments.\n";
             static::call_exit();
         }

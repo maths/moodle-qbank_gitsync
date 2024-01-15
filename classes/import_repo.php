@@ -17,7 +17,7 @@
 /**
  * Wrapper class for processing performed by command line interface for importing a repo.
  *
- * Utilised in cli\importrepo.php
+ * Utilised in cli\importrepotomoodle.php
  *
  * Allows mocking and unit testing via PHPUnit.
  * Used outside Moodle.

@@ -69,8 +69,13 @@ By default, the manifest file is not stored as part of the Git repo but is only 
 
 # Setup
 
+Gitsync is run from and stores question files on your local computer not on the Moodle server. First you need to install it and set it up as a plugin within Moodle and then you need to download and set it up locally.
+
 1) Install the plugin on Moodle and [set up the webservice](doc/webservicesetup.md).
 2) Set up Git, PHP and the plugin [on your local computer](doc/localsetup.md).
-3) Look through the [sample Git scenarios](doc/usinggit.md) and decide the best process for you.
-4) [Create](doc/createrepo.md) or [import](doc/importrepo.md) your repo.
-5) [Import](doc/importrepo.md), [export](doc/exportrepo.md) and [delete](doc/deletefrommoodle.md) questions as required.
+
+# Usage
+
+1) Look through the [sample Git scenarios](doc/usinggit.md) and decide the best process for you.
+2) As detailed in the sample scenarios, either create a repo locally [using createrepo.php](doc/createrepo.md) to extract questions from Moodle or [use importrepotomoodle](doc/importrepotomoodle.md) to import an existing local repo into your instance of Moodle.
+3) [Import](doc/importrepotomoodle.md), [export](doc/exportrepofrommoodle.md) and [delete](doc/deletefrommoodle.md) questions as required.

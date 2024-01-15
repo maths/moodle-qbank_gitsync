@@ -22,9 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// Remove this line in actual config file for running on your local computer.
-defined('MOODLE_INTERNAL') || die();
-
 // Array of moodleinstnce nicknames and URLs.
 // The nicknames are used how....
 // No trailing slash on the URLs.

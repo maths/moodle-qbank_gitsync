@@ -1,5 +1,12 @@
 # Different scenarios for maintaining sets of questions using a Git repository
 
+It is recommended you at least skim the whole of this document before attempting to follow any of the examples as it deals with a number of different scenarios for using Gitsync. You need to decide which applies to you and your needs. For additional information on each of the PHP scripts as you try to use them, see:
+- Creating a repo - [createrepo.php](createrepo.md)
+- Importing questions to Moodle - [importrepotomoodle.php](importrepotomoodle.md)
+- Exporting questions from Moodle - [exportrepofrommoodle.php](exportrepofrommoodle.md)
+
+For detailed information on what happens at each stage of the process, see [Process Details](processdetails.md).
+
 ## Maintaining a one-to-one link between a Moodle instance and a Git repo
 
 ### Creating a Git repo from questions in Moodle
@@ -11,7 +18,7 @@ If you have a category of questions in a Moodle question bank and want to store 
 
 `git init master`
 
-To export questions from moodle to the git repo, from the cli directory of the PHP scripts, you need to:
+To export questions from moodle to the git repo, from the gitsync cli directory on your local computer, you need to:
 
 `php createrepo.php -l course -c "Course 1" -d "master" -s "Source 1/subcat 2_1"`
 
@@ -25,15 +32,15 @@ You can use context instance id and subcategory id instead:
 
 `php createrepo.php -l course -n 2 -d "master" -q 80`
 
-* `-n` the contect instance id, which is the course id in this case.
+* `-n` the context instance id, which is the course id in this case.
 * `-q` the question category id
 
 You'll get a confirmation of the context and category with the option to abort before performing the actual export. A manifest file will be created in the specified directory.
 
 To import/export changes:
  
-`php exportrepo.php -f "master/instancename_contextlevel_contextname_question_manifest.json" -s "Source 1/subcat 2_1"`
-`php importrepo.php -f "master/instancename_contextlevel_contextname_question_manifest.json" -s "Source-1/subcat-2_1"`
+`php exportrepofrommoodle.php -f "master/instancename_contextlevel_contextname_question_manifest.json" -s "Source 1/subcat 2_1"`  
+`php importrepotomoodle.php -f "master/instancename_contextlevel_contextname_question_manifest.json" -s "Source-1/subcat-2_1"`
 
 * `-f` the filepath of the manifest file relative to the root directory.
 * `-s` the question subcategory for export or the subdirectory for import. These are essentially the same thing but for export we're working within Moodle so you need to supply the question categories as named in Moodle (or alternatively the category id using `-q`). For import we're working from the repo so we're dealing with the sanitised versions of the category names that are used for folder names within the repo.
@@ -50,9 +57,9 @@ On import, you will be notified of questions that are in Moodle but have no corr
 
 ### Importing an existing Git repo into Moodle
 
-If you have a repo of questions and want to import them to Moodle, use importrepo.php with context information as your starting point rather than createrepo.php.
+If you have a repo of questions and want to import them to Moodle, use importrepotomoodle.php with context information as your starting point rather than createrepo.php.
 
-`php importrepo.php -l course -n 2 -d "master" -s "Source-1/cat-2"`
+`php importrepotomoodle.php -l course -n 2 -d "master" -s "Source-1/cat-2"`
 
 After that, import, export and deletion are the same as above.
 
@@ -82,8 +89,8 @@ Export the initial repos from Moodle just like in the one-to-one setup:
 
 To import/export:
 
-`php exportrepo.php -f "/source_2/instancename_course_coursename_question_manifest.json"`  
-`php importrepo.php -f "/source_2/instancename_course_coursename_question_manifest.json"`
+`php exportrepofrommoodle.php -f "/source_2/instancename_course_coursename_question_manifest.json"`  
+`php importrepotomoodle.php -f "/source_2/instancename_course_coursename_question_manifest.json"`
 
 ### Merge/compare, etc
 
@@ -121,7 +128,7 @@ If multiple users are using a repo to maintain the same context on the same inst
 
 Update .gitignore to just `manifest_backups/*_question_manifest.json`
 
-An alternative to having the manifest in the repo is a one off copy of the manifest to the second user after they have cloned the repo. Each user then performs an exportrepo before making changes as if the other user were updating questions manually within Moodle.
+An alternative to having the manifest in the repo is a one off copy of the manifest to the second user after they have cloned the repo. Each user then performs an exportrepofrommoodle before making changes as if the other user were updating questions manually within Moodle.
 
 ## Deleted questions
 
