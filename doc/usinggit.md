@@ -1,6 +1,6 @@
 # Different scenarios for maintaining sets of questions using a Git repository
 
-It is recommended you at least skim the whole of this document before attempting to follow any of the examples as it deals with a number of different scenarios for using Gitsync. You need to decide which applies to you and your needs. For additional information on each of the PHP scripts as you try to use then, see:
+It is recommended you at least skim the whole of this document before attempting to follow any of the examples as it deals with a number of different scenarios for using Gitsync. You need to decide which applies to you and your needs. For additional information on each of the PHP scripts as you try to use them, see:
 - Creating a repo - [createrepo.php](createrepo.md)
 - Importing questions to Moodle - [importrepotomoodle.php](importrepotomoodle.md)
 - Exporting questions from Moodle - [exportrepofrommoodle.php](exportrepofrommoodle.md)
