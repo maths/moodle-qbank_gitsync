@@ -498,7 +498,7 @@ class cli_helper {
         $dom->formatOutput = true;
         $dom->loadXML($question);
 
-        $xpath = new \DOMXpath($dom);
+/*         $xpath = new \DOMXpath($dom);
         $tidyoptions = array_merge($sharedoptions, [
             'output-xhtml' => true,
         ]);
@@ -512,7 +512,7 @@ class cli_helper {
                 $output = tidy_get_output($tidy);
                 $cdata->data = "\n{$output}\n";
             }
-        }
+        } */
 
         $cdataprettyxml = $dom->saveXML();
 
@@ -528,11 +528,10 @@ class cli_helper {
 
         $noidxml = $xml->asXML();
 
-        // Tidy the whole thing, cluding indenting CDATA as a whole.
+        // Tidy the whole thing.
         $tidyoptions = array_merge($sharedoptions, [
             'input-xml' => true,
             'output-xml' => true,
-            'indent-cdata' => true,
         ]);
         $tidy->parseString($noidxml, $tidyoptions);
         $tidy->cleanRepair();
@@ -592,6 +591,39 @@ class cli_helper {
         }
         // Happens last so no need to abort on failure.
         file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
+    }
+
+    /**
+     * Updates the manifest file with the current commit hashes of question files in the repo.
+     * Used on initial repo creation so also sets the moodle commit to be the same.
+     *
+     * @param object $activity e.g. create_repo
+     * @return void
+     */
+    public function tidy_repo_xml(object $activity):void {
+        if ($activity->subdirectory) {
+            $subdirectory = $activity->directory . '/' . $activity->subdirectory;
+        } else {
+            $subdirectory = $activity->directory;
+        }
+        $subdirectoryiterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+        foreach ($subdirectoryiterator as $repoitem) {
+            if ($repoitem->isFile()) {
+                if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml') {
+                    $path = $repoitem->getPathname();
+                    $question = file_get_contents($path);
+                    $question = self::reformat_question($question);
+                    $success = file_put_contents($path, $question . "\n");
+                    if ($success === false) {
+                        echo "\nAccess issue.\n";
+                        echo "{$path} not updated.\n";
+                    }
+                }
+            }
+        }
     }
 
     /**

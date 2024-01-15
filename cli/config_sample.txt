@@ -44,4 +44,8 @@ $instance = 'instance1';
 // No trailing slash on the directory name.
 $rootdirectory = '/home/user/questions';
 
+// Are you using Git and wanting repository checks performed automatically?
 $usegit = true;
+
+// Do you want question XML files tidied on export and before import?
+$tidyxml = false;
