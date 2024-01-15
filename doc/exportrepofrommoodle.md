@@ -3,10 +3,10 @@
 ## Prerequisites
 - Set up the [webserver](webservicesetup.md) on the Moodle instance.
 - Set up your [local machine](localsetup.md).
-- Import a repo into Moodle using `importrepo.php` or create a repo from Moodle using `createrepo.php`.
+- Import a repo into Moodle using `importrepotomoodle.php` or create a repo from Moodle using `createrepo.php`.
 
 ## Exporting
-- From the commandline in the `cli` folder run `exportrepo.php`. There are a number of options you can input. List them all with `php exportrepo.php -h`. You can use -shortname or --longname on the command line followed by a space and the value.
+- From the commandline in the `cli` folder run `exportrepofrommoodle.php`. There are a number of options you can input. List them all with `php exportrepofrommoodle.php -h`. You can use -shortname or --longname on the command line followed by a space and the value.
 
 |Short|Long|Required value|
 |-|-|-|
@@ -20,9 +20,9 @@
 
 Examples:
 
-`php exportrepo.php -r "C:\question_repos" -f "source_1\edmundlocal_system_question_manifest.json"`
+`php exportrepofrommoodle.php -r "C:\question_repos" -f "source_1\edmundlocal_system_question_manifest.json"`
 
-The manifest file should have been created by createrepo.php if the repo was initially created by exporting questions from Moodle or importrepo.php if questions were initially imported into Moodle from an existing repo.
+The manifest file should have been created by createrepo.php if the repo was initially created by exporting questions from Moodle or importrepotomoodle.php if questions were initially imported into Moodle from an existing repo.
 
 The context of the questions to export will be extracted from the manifest file.
 
@@ -32,4 +32,4 @@ Export will only be possible if there are no uncommitted changes in the repo. Af
 
 ### On failure
 
-- If the script fails, discard changes in the repository (e.g. with the `git reset` command) and run the `php exportrepo.php` again once the issue has been dealt with. All questions will be exported afresh.
+- If the script fails, discard changes in the repository (e.g. with the `git reset` command) and run the `php exportrepofrommoodle.php` again once the issue has been dealt with. All questions will be exported afresh.

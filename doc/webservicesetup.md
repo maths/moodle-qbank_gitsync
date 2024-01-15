@@ -1,12 +1,14 @@
+Gitsync is run from and stores question files on your local computer not on the Moodle server. First you need to install it and set it up as a plugin within Moodle as described below but then you also need to [download and set it up locally](localsetup.md).
 
 This plugin requires the [import as new version](https://github.com/maths/moodle-qbank_importasversion) plugin as well.
 
 # Setting up the Webservice
 
 - Add the gitsync plugin to Moodle.  E.g. from the moodle directory clone the code as follows:  
-    `git clone https://github.com/maths/moodle-qbank_gitsync.git question/bank/gitsync`  
-  Then install the plugin via Moodle.
-- Run the setup script in the cli folder on the Moodle server:
+    `git clone https://github.com/maths/moodle-qbank_gitsync.git question/bank/gitsync`
+- The repository will default to the `main` branch but you may need to switch to another branch if you're testing new features (e.g. `dev` for initial beta testing). In the gitsync directory e.g. `git checkout dev`.  
+- Install the plugin via Moodle.
+- Run the setup script in the gitsync cli folder (`yourmoodle/question/bank/gitsync/cli/`) on the Moodle server if you have access:
   - `php webservicesetup.php`
 - Alternatively, perform user set up manually:
   - Create a user `ws-gitsync-user`. (Site administration/Users/Add a new user; Username: ws-gitsync-user, First name: Externalgitsync,
@@ -19,7 +21,7 @@ This plugin requires the [import as new version](https://github.com/maths/moodle
 - Go to Site administration/Server/Web services/Manage tokens in Moodle and create a token for the user `ws-gitsync-user`.
 ![Screenshot of token creation.](../images/Add_token.png)
 - Add roles for the user to give them access to the required courses and questions. If you would like them to have site-wide access, go to Site Administration/Users/Permissions/Assign system roles and give `ws-gitsync-user` Manager role for the webservice to have access to all questions on the site.  If you only want them to have access to particular courses, then make `ws-gitsync-user` Manager on courses individually.
-- You can test using [Postman](https://www.postman.com/downloads/) if you know a question id and its course name:
+- Optionally, you can test using [Postman](https://www.postman.com/downloads/) if you know a question id and its course name:
   - URL: Your_Moodle_root_address/webservice/rest/server.php
   - Params:
     - wstoken: _Your token created above_
@@ -29,8 +31,8 @@ This plugin requires the [import as new version](https://github.com/maths/moodle
     - contextlevel: 10
     - coursename: _Your course name_
     - modulename:
-    - coursecategory:
-
+    - coursecategory:  
+Fill in the URL and parameters above in the fields as shown in the screenshot and click 'Send'. You should get the requested question back as a response.
 ![Screenshot of Postman.](../images/Postman.png)
 
 ## Additional security

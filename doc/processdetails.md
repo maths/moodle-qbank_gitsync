@@ -6,7 +6,7 @@
 - Commit changes.
 - Update 'moodlecommit' to 'currentcommit' for all files to this initial commit.
 
-## On Export (from Moodle to the local file system) - exportrepo.php:
+## On Export (from Moodle to the local file system) - exportrepofrommoodle.php:
 - Check repo for uncommitted changes. Abort if there are any.
 - Export all questions in manifest from Moodle (as it's safe to overwrite repo content). Update 'exportedversion' number in manifest.
 - Export all questions in Moodle but not in manifest. Add to manifest.
@@ -14,7 +14,7 @@
 - Leave files in repo that do not have a linked question in Moodle. (Question will be created on next import.)
 - User will need to check and commit changes.
 
-## On Import (from the local file system to Moodle) - importrepo.php:
+## On Import (from the local file system to Moodle) - importrepotomoodle.php:
 - Check repo for uncommitted changes. Abort if there are any.
 - Check all questions in Moodle. If they're in the manifest but version number is not the same as 'importedversion' or 'exportedversion' in manifest, abort. User will need to export and reconcile changes. (This will update 'exportedversion' in the manifest and allow the import to proceed.)
 - Update the 'currentcommit' hash in the manifest for each question file. (This is the commit on which the file was last changed.)

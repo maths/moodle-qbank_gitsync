@@ -17,7 +17,7 @@
 /**
  * Wrapper class for processing performed by command line interface for exporting a repo from Moodle.
  *
- * Utilised in cli\exportrepo.php
+ * Utilised in cli\exportrepofrommoodle.php
  *
  * Allows mocking and unit testing via PHPUnit.
  * Used outside Moodle.
