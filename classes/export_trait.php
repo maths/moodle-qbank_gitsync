@@ -168,7 +168,7 @@ trait export_trait {
                             echo "{$catfilepath} not created.\n";
                             continue;
                         }
-                        $success = file_put_contents($catfilepath, $category . "\n");
+                        $success = file_put_contents($catfilepath, $category);
                         if ($success === false) {
                             echo "\nFile creation unsuccessful:\n";
                             echo "{$catfilepath}";
@@ -177,7 +177,7 @@ trait export_trait {
                     }
                 }
                 $sanitisedqname = preg_replace(cli_helper::BAD_CHARACTERS, '-', substr($qname, 0, 230));
-                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question . "\n");
+                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question);
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";
                     echo "{$bottomdirectory}/{$sanitisedqname}.xml";

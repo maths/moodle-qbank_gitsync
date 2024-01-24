@@ -466,80 +466,19 @@ class cli_helper {
     }
 
     /**
-     * Tidy up question formatting and remove unwanted comment.
+     * Remove unwanted comments from question.
      *
      * @param string $question original question XML
      * @return string tidied question XML
      */
     public static function reformat_question(string $question):string {
-        $locale = setlocale(LC_ALL, 0);
-        // Options for HTML Tidy.
-        // If in doubt, set to false to avoid unexpected 'repairs'.
-        $sharedoptions = [
-            'break-before-br' => true,
-            'show-body-only' => true,
-            'wrap' => '0',
-            'indent' => true,
-            'coerce-endtags' => false,
-            'drop-empty-elements' => false,
-            'drop-empty-paras' => false,
-            'fix-backslash' => false,
-            'fix-bad-comments' => false,
-            'merge-emphasis' => false,
-            'quote-ampersand' => false,
-            'quote-nbsp' => false,
-        ];
-        if (!function_exists('tidy_repair_string')) {
-            // Tidy not installed.
-            return $question;
-        }
-        $dom = new \DOMDocument('1.0');
-        $dom->preserveWhiteSpace = true;
-        $dom->formatOutput = true;
-        $dom->loadXML($question);
-
-/*         $xpath = new \DOMXpath($dom);
-        $tidyoptions = array_merge($sharedoptions, [
-            'output-xhtml' => true,
-        ]);
-        $tidy = new \tidy();
-
-        // Find CDATA sections and format nicely.
-        foreach ($xpath->evaluate("//*[@format='html']/text/text()") as $cdata) {
-            if ($cdata->data) {
-                $tidy->parseString($cdata->data, $tidyoptions);
-                $tidy->cleanRepair();
-                $output = tidy_get_output($tidy);
-                $cdata->data = "\n{$output}\n";
-            }
-        } */
-
-        $cdataprettyxml = $dom->saveXML();
-
-        // Remove question id comment.
-        $xml = simplexml_load_string($cdataprettyxml);
-        if ($xml === false) {
-            setlocale(LC_ALL, $locale);
+        $quiz = simplexml_load_string($question);
+        if ($quiz === false) {
             throw new \Exception('Broken XML');
         }
-        if (get_class($xml->comment) === 'SimpleXMLElement') {
-            unset($xml->comment);
-        }
-
-        $noidxml = $xml->asXML();
-
-        // Tidy the whole thing.
-        $tidyoptions = array_merge($sharedoptions, [
-            'input-xml' => true,
-            'output-xml' => true,
-        ]);
-        $tidy->parseString($noidxml, $tidyoptions);
-        $tidy->cleanRepair();
-        $result = tidy_get_output($tidy);
-        // HTML Tidy switches to the default locale for the system. PHPUnit uses en_AU.
-        // PHPUnit throws a warning unless we switch back to en_AU.
-        setlocale(LC_ALL, $locale);
-
+        $questionnode = $quiz->question;
+        $cleanedquiz = simplexml_load_string('<?xml version="1.0" encoding="UTF-8"?><quiz>&#10;  ' . $questionnode->asXML() . '&#10;</quiz>');
+        $result = $cleanedquiz->asXML();
         return $result;
     }
 
@@ -594,8 +533,9 @@ class cli_helper {
     }
 
     /**
-     * Updates the manifest file with the current commit hashes of question files in the repo.
-     * Used on initial repo creation so also sets the moodle commit to be the same.
+     * Can be used to tidy questions in a repo.
+     * Requires Michael Kallweit's Python prettify script:
+     * https://github.com/m-r-k/stack2023/blob/main/Preparing%20questions%20for%20version%20control/prettify_cli.py
      *
      * @param object $activity e.g. create_repo
      * @return void
@@ -614,13 +554,7 @@ class cli_helper {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml') {
                     $path = $repoitem->getPathname();
-                    $question = file_get_contents($path);
-                    $question = self::reformat_question($question);
-                    $success = file_put_contents($path, $question . "\n");
-                    if ($success === false) {
-                        echo "\nAccess issue.\n";
-                        echo "{$path} not updated.\n";
-                    }
+                    exec('python3 prettify_cli.py ' . $path);
                 }
             }
         }

@@ -100,10 +100,10 @@ class export_repo_test extends advanced_testcase {
     public function test_process(): void {
         // Will get questions in order from manifest file in testrepo.
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<Question><Name>One</Name></Question>", "version": "10"}',
-            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
+            '{"question": "<quiz><question><Name>One</Name></question></quiz>", "version": "10"}',
+            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
+            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}',
+            '{"question": "<quiz><question><Name>Two</Name></question></quiz>", "version": "1"}'
         );
 
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
@@ -152,10 +152,10 @@ class export_repo_test extends advanced_testcase {
     public function test_export_to_repo(): void {
         // Will get questions in order from manifest file in testrepo.
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<Question><Name>One</Name></Question>", "version": "10"}',
-            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}'
+            '{"question": "<quiz><question><Name>One</Name></question></quiz>", "version": "10"}',
+            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
+            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}',
+            '{"question": "<quiz><question><Name>Two</Name></question></quiz>", "version": "1"}'
         );
 
         $this->listcurl->expects($this->exactly(3))->method('execute')->willReturn(
@@ -243,10 +243,10 @@ class export_repo_test extends advanced_testcase {
      */
     public function test_reformat_error(): void {
         $this->curl->expects($this->any())->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<Question><Name>One</Question>", "version": "10"}', // Broken.
-            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Two</Name></Question>", "version": "1"}',
+            '{"question": "<quiz><question><Name>One</question></quiz>", "version": "10"}', // Broken.
+            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
+            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}',
+            '{"question": "<quiz><question><Name>Two</Name></question></quiz>", "version": "1"}',
         );
 
         // Make sure no attempt is made to update first file.
@@ -279,8 +279,8 @@ class export_repo_test extends advanced_testcase {
 
         // Will get questions in order from manifest file in testrepo.
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}'
+            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
+            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}'
         );
 
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
@@ -341,8 +341,8 @@ class export_repo_test extends advanced_testcase {
 
         // Will get questions in order from manifest file in testrepo.
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<Question><Name>Three</Name></Question>", "version": "1"}',
-            '{"question": "<Question><Name>Four</Name></Question>", "version": "1"}'
+            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
+            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}'
         );
 
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(

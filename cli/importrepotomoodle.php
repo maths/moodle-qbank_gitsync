@@ -146,7 +146,6 @@ if (!function_exists('simplexml_load_file')) {
 
 $clihelper = new cli_helper($options);
 $importrepo = new import_repo($clihelper, $moodleinstances);
-$clihelper->tidy_repo_xml($importrepo);
 $clihelper->check_for_changes($importrepo->manifestpath);
 $clihelper->backup_manifest($importrepo->manifestpath);
 $importrepo->recovery();
