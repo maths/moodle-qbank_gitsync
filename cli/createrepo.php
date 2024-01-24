@@ -139,10 +139,6 @@ $options = [
     ],
 ];
 
-if (!function_exists('tidy_repair_string')) {
-    echo 'Please install the PHP library HTML Tidy.' . "\n";
-    exit;
-}
 if (!function_exists('simplexml_load_file')) {
     echo 'Please install the PHP library SimpleXML.' . "\n";
     exit;

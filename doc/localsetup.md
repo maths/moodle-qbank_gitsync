@@ -23,7 +23,7 @@ Gitsync is run from and stores question files on your local computer not on the 
   - Unzip the folder into a folder of your choice.
   - Add the folder to the `Path` variable of your system via 'Edit System Environment Variables'.
 
-  You will need to enable 2 PHP extensions. On the command line, run `php -i`. This will display pages of information but near the top there should be a line similar to `Loaded Configuration File => C:\Program Files\php-x64\php.ini`. Open the shown file as an administrator and search for `;extension=curl` and `;extension=tidy`. Remove the semi-colons from these lines and save.
+  You will need to enable a PHP extension. On the command line, run `php -i`. This will display pages of information but near the top there should be a line similar to `Loaded Configuration File => C:\Program Files\php-x64\php.ini`. Open the shown file as an administrator and search for `;extension=curl`. Remove the semi-colon from this line and save.
 
 ## Setup
 - Open a terminal and clone this repository `git clone https://github.com/maths/moodle-qbank_gitsync.git gitsync`. The repository will be downloaded in a folder `gitsync` inside your current folder.
