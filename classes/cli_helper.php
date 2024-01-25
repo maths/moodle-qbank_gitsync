@@ -477,7 +477,8 @@ class cli_helper {
             throw new \Exception('Broken XML');
         }
         $questionnode = $quiz->question;
-        $cleanedquiz = simplexml_load_string('<?xml version="1.0" encoding="UTF-8"?><quiz>&#10;  ' . $questionnode->asXML() . '&#10;</quiz>');
+        $cleanedquiz = simplexml_load_string('<?xml version="1.0" encoding="UTF-8"?><quiz>&#10;  ' .
+                                                $questionnode->asXML() . '&#10;</quiz>');
         $result = $cleanedquiz->asXML();
         return $result;
     }
