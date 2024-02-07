@@ -1,4 +1,4 @@
-# Updating a repo with the latest version of questions in Moodle
+# Updating a local file system (repo) with the latest version of questions in Moodle
 
 ## Prerequisites
 - Set up the [webserver](webservicesetup.md) on the Moodle instance.

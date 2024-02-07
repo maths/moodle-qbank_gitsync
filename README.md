@@ -40,7 +40,7 @@ A Gitsync manifest is tied to a question context in moodle, e.g. system, course 
 
 This will help synchronise questions from part of a larger external library of materials (the git repro) to a moodle question bank.  This has the advantage of not importing irrelevant material from a large external library of materials into moodle. (But see "duplicates and waste" below.) A large moodle question bank can also be split into separate external git repositories in this way.
 
-The question category structure on initial export/import is maintained. So if you import only questions in directory 'top/cat-1/subcat-1' into Moodle they will be placed in your specified context in category 'top/cat 1/subcat 1' not simply in 'top' and vice versa for export. You can move questions around within Moodle after their initial import/export.  
+The question category structure on initial export/import is maintained. So if you import only questions in directory 'top/cat-1/subcat-1' into Moodle they will be placed in your specified context in category 'top/cat 1/subcat 1' not simply in 'top' and vice versa for export. You can move questions around within Moodle after their initial import/export.  In particular, once a manifest file links questions in moodle to files in the local directory it is the moodle DB `questionid` number which is relevant, not the current position of the question in the moodle question bank.
 
 ## Duplicates and waste
 
@@ -71,11 +71,11 @@ By default, the manifest file is not stored as part of the Git repo but is only 
 
 Gitsync is run from and stores question files on your local computer not on the Moodle server. First you need to install it and set it up as a plugin within Moodle and then you need to download and set it up locally.
 
-1) Install the plugin on Moodle and [set up the webservice](doc/webservicesetup.md).
-2) Set up Git, PHP and the plugin [on your local computer](doc/localsetup.md).
+1. Install the plugin on Moodle and [set up the webservice](doc/webservicesetup.md).
+2. Set up Git, PHP and the plugin scripts [on your local computer](doc/localsetup.md).
 
 # Usage
 
-1) Look through the [sample Git scenarios](doc/usinggit.md) and decide the best process for you.
-2) As detailed in the sample scenarios, either create a repo locally [using createrepo.php](doc/createrepo.md) to extract questions from Moodle or [use importrepotomoodle](doc/importrepotomoodle.md) to import an existing local repo into your instance of Moodle.
-3) [Import](doc/importrepotomoodle.md), [export](doc/exportrepofrommoodle.md) and [delete](doc/deletefrommoodle.md) questions as required.
+1. Look through the [sample Git scenarios](doc/usinggit.md) and decide the best process for you.
+2. As detailed in the sample scenarios, either create a repo locally [using createrepo.php](doc/createrepo.md) to extract questions from Moodle or [use importrepotomoodle](doc/importrepotomoodle.md) to import an existing local repo into your instance of Moodle.
+3. [Import](doc/importrepotomoodle.md), [export](doc/exportrepofrommoodle.md) and [delete](doc/deletefrommoodle.md) questions as required.

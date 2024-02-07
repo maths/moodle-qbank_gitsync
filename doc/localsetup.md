@@ -1,6 +1,11 @@
-# Running the scripts locally on an external file system
+# Running the scripts on your local file system
 
-Gitsync is run from and stores question files on your local computer not on the Moodle server. First you need to install it and [set it up as a plugin within Moodle](webservicesetup.md) but then you also need to download and set it up locally as described below.
+There are two parts to installing gitsync.
+
+1. Install the plugin on Moodle and [set up the webservice](webservicesetup.md).
+2. Set up Git, PHP and the plugin scripts [on your local computer](localsetup.md).
+
+You need to download the gitsync scripts and set it up locally as described below.  Note, the gitsync project git-repro distributes the moodle plugin and local scripts in a single repository.
 
 ## Prerequisites
 - Install Git
@@ -33,3 +38,4 @@ Gitsync is run from and stores question files on your local computer not on the 
 - In the same file, add tokens for each of your Moodle instances and set a default instance. (See [Setting up the Webservice](webservicesetup.md) for token creation.)
 - In the same file, update rootdirectory to be the directory where you plan to keep your question repositories.
 
+Next you will need to [create a local filesystem](createrepro.md).
