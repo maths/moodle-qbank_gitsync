@@ -1,15 +1,17 @@
 # Creating a repo from questions in Moodle
 
 ## Prerequisites
-- Set up the webserver on the Moodle instance.
-- Set up your local machine.
 
-## Exporting
-- From the commandline in the `cli` folder run `createrepo.php`. There are a number of options you can input. List them all with `php exportrepofrommoodle.php -h`. You can use -shortname or --longname on the command line followed by a space and the value.
+1. Install the plugin on Moodle and [set up the webservice](webservicesetup.md).
+2. Set up Git, PHP and the plugin scripts [on your local computer](localsetup.md).
+
+## Setup a local file system by exporting questions from Moodle
+
+- To setup a local file system by exporting questions from Moodle, use the commandline `createrepo.php` script in the `cli` folder. There are a number of options. List them all with `php createrepo.php -h`. You can use -shortname or --longname on the command line followed by a space and the value.
 
 |Short|Long|Required value|
 |-|-|-|
-|i|moodleinstance|Key of Moodle instance in  moodleinstances to use. Should match end of instance URL.|
+|i|moodleinstance|Key of Moodle instance in $moodleinstances to use (see config.php). Should match end of instance URL. Defaults to $instance in config.php.|
 |r|rootdirectory|Directory on user's computer containing repos.|
 |d|directory|Directory of repo on user's computer containing "top" folder, relative to root directory.|
 |s|subcategory|Relative subcategory of repo to actually export.|
@@ -22,9 +24,31 @@
 |t|token|Security token for webservice.
 |h|help|
 
-Examples:
+### Example 1:
 
-`php createrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" --contextlevel system`
+Assume you have correct information in config.php, i.e. the Moodle URL in `$moodleinstances`, and the webservice token stored in `$token`, the default moodle instance in `$instance` and the local root directory for your question files in `$rootdirectory`.
+
+Assume you have a course called "Scratch" in Moodle.  You would like all questions from the "top" level, and all sub-categories, to become files in a sub-directory "gitsync-loc" of your local `$rootdirectory` directory.  Assume you have (1) created the local directory and (2) run `git init` to initialise an empty git repository.
+
+`php createrepo.php -l course -c "Scratch" -d "gitsync-loc" `
+
+### Example 2:
+
+Assume Moodle is exactly as in Example 1.
+
+You would like all questions from the sub-category "gitsync-test", to become files in a sub-directory "gitsync-sub" of your local `$rootdirectory` directory.  Assume you have (1) created the local directory and (2) run `git init` to initialise an empty git repository.
+
+Navigate to the question bank, and select the sub-category you are interested in 
+Imagine the URL of your Moodle site is `http://localhost/m402/question/edit.php?courseid=2&cat=273%2C17`.
+From this we extract the Moodle `courseid=2` and category `cat=273`.
+
+`php createrepo.php -l course -n=2 -q=273 -d "gitsync-sub"`
+
+TODO: note explaining directory structure.
+
+### Example 3:
+
+`php createrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" -l system`
 
 You will need to specify the context of the questions you want to export from Moodle.
 - Context level - system, coursecategory, course or module - must be supplied.

@@ -24,7 +24,7 @@
 
 namespace qbank_gitsync;
 define('CLI_SCRIPT', true);
-require_once('./config.php');
+require_once('config.php');
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/export_trait.php');
@@ -34,8 +34,9 @@ $options = [
     [
         'longopt' => 'moodleinstance',
         'shortopt' => 'i',
-        'description' => 'Key of Moodle instance in $moodleinstances to use. ' .
-                         'Should match end of instance URL.',
+        'description' => 'Key of Moodle instance in $moodleinstances to use (see config.php). ' .
+                         'Should match end of instance URL. ' .
+                         'Defaults to $instance in config.php.',
         'default' => $instance,
         'variable' => 'moodleinstance',
         'valuerequired' => true,
@@ -43,7 +44,8 @@ $options = [
     [
         'longopt' => 'rootdirectory',
         'shortopt' => 'r',
-        'description' => "Directory on user's computer containing repos.",
+        'description' => "Directory on user's computer containing repos. " .
+                         'Defaults to $rootdirectory in config.php.',
         'default' => $rootdirectory,
         'variable' => 'rootdirectory',
         'valuerequired' => true,

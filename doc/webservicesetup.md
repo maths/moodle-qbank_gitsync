@@ -1,8 +1,11 @@
-Gitsync is run from and stores question files on your local computer not on the Moodle server. First you need to install it and set it up as a plugin within Moodle as described below but then you also need to [download and set it up locally](localsetup.md).
+# Setting up the Moodle webservice
+
+There are two parts to installing gitsync.
+
+1. Install the plugin on Moodle and [set up the webservice](webservicesetup.md).
+2. Set up Git, PHP and the plugin scripts [on your local computer](localsetup.md).
 
 This plugin requires the [import as new version](https://github.com/maths/moodle-qbank_importasversion) plugin as well.
-
-# Setting up the Webservice
 
 - Add the gitsync plugin to Moodle.  E.g. from the moodle directory clone the code as follows:  
     `git clone https://github.com/maths/moodle-qbank_gitsync.git question/bank/gitsync`
