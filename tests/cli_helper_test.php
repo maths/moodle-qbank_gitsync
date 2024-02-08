@@ -265,7 +265,7 @@ class cli_helper_test extends advanced_testcase {
         $helper = new fake_cli_helper([]);
         $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => ''];
         $helper->validate_and_clean_args();
-        $this->assertEquals('top', $helper->processedoptions['subdirectory']);
+        $this->assertEquals(null, $helper->processedoptions['subdirectory']);
     }
 
     /**

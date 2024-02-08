@@ -104,8 +104,7 @@ class export_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->subcategory = $arguments['subcategory'];
-        $qcategoryid = $arguments['qcategoryid'];
+        $defaultwarning = false;
         $this->manifestpath = $arguments['rootdirectory'] . '/' . $arguments['manifestpath'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
@@ -117,6 +116,20 @@ class export_repo {
             echo "\nUnable to access or parse manifest file: {$this->manifestpath}\nAborting.\n";
             $this->call_exit();
         }
+        if ($arguments['subcategory']) {
+            $this->subcategory = $arguments['subcategory'];
+            $qcategoryid = null;
+        } else {
+            if ($arguments['qcategoryid']) {
+                $qcategoryid = $arguments['qcategoryid'];
+             } else {
+                $qcategoryid = $this->manifestcontents->context->defaultsubcategoryid;
+                $defaultwarning = true;
+             }
+            // Subcategory will be properly set later.
+            $this->subcategory = 'top';
+        }
+
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
                                           '_export' . cli_helper::TEMP_MANIFEST_FILE,
                                           $this->manifestpath);
@@ -151,7 +164,7 @@ class export_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-        $moodlequestionlist = $clihelper->check_context($this);
+        $moodlequestionlist = $clihelper->check_context($this, $defaultwarning, false);
         $this->subcategory = $moodlequestionlist->contextinfo->qcategoryname;
     }
 
@@ -167,7 +180,8 @@ class export_repo {
         // Export any questions that are in Moodle but not in the manifest.
         $this->export_to_repo();
         cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,
-                                         $this->manifestpath, $this->moodleurl, false);
+                                         $this->manifestpath, $this->moodleurl,
+                                         null, null, false);
         unlink($this->tempfilepath);
         // Remove questions from manifest that are no longer in Moodle.
         // Will be restored from repo on next import if file is still there.

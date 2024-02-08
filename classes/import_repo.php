@@ -34,6 +34,13 @@ use stdClass;
 class import_repo {
     use tidy_trait;
     /**
+     * CLI helper for this import
+     *
+     * @var cli_helper
+     */
+    public cli_helper $clihelper;
+
+    /**
      * File system iterator for categories
      *
      * @var \RecursiveIteratorIterator
@@ -154,6 +161,7 @@ class import_repo {
     public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
         // (Moodle code rules don't allow 'extract()').
+        $this->clihelper = $clihelper;
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
         $manifestpath = $arguments['manifestpath'];
@@ -166,7 +174,6 @@ class import_repo {
                 $this->directory = $arguments['rootdirectory'];
             }
         }
-        $this->subdirectory = $arguments['subdirectory'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -177,17 +184,6 @@ class import_repo {
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
         $instanceid = $arguments['instanceid'];
-        $qcategoryname = null;
-        if ($this->subdirectory === 'top') {
-            $qcategoryname = 'top';
-        } else {
-            $listqcategoryfile = $this->directory . '/' . $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
-            $qcategoryname = cli_helper::get_question_category_from_file($listqcategoryfile);
-        }
-        if (!$qcategoryname) {
-            $this->call_exit();
-        }
-
         $this->usegit = $arguments['usegit'];
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
@@ -248,7 +244,8 @@ class import_repo {
         if ($manifestpath) {
             $this->manifestpath = $arguments['rootdirectory'] . '/' . $manifestpath;
         } else {
-            $instanceinfo = $clihelper->check_context($this);
+            $this->subdirectory = ($arguments['subdirectory']) ? $arguments['subdirectory'] : 'top';
+            $instanceinfo = $this->clihelper->check_context($this, false, false);
             $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
@@ -304,7 +301,23 @@ class import_repo {
             $this->listpostsettings['modulename'] = $this->manifestcontents->context->modulename;
             $this->listpostsettings['coursecategory'] = $this->manifestcontents->context->coursecategory;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-            $instanceinfo = $clihelper->check_context($this);
+            if ($arguments['subdirectory']) {
+                $this->subdirectory = $arguments['subdirectory'];
+                $instanceinfo = $this->clihelper->check_context($this, false, false);
+            } else {
+                $this->subdirectory = $this->manifestcontents->context->defaultsubdirectory;
+                $instanceinfo = $this->clihelper->check_context($this, true, false);
+            }
+        }
+        $qcategoryname = null;
+        if ($this->subdirectory === 'top') {
+            $qcategoryname = 'top';
+        } else {
+            $listqcategoryfile = $this->directory . '/' . $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
+            $qcategoryname = cli_helper::get_question_category_from_file($listqcategoryfile);
+        }
+        if (!$qcategoryname) {
+            $this->call_exit();
         }
         // Set question category info after call to check_context.
         // We can't rely on the subcategories existing in Moodle until after import
@@ -328,11 +341,13 @@ class import_repo {
     public function process():void {
         $this->import_categories();
         $this->import_questions();
-        $this->curlrequest->close();
+        $instanceinfo = $this->clihelper->check_context($this, true, true);
         $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
                                                                    $this->tempfilepath,
                                                                    $this->manifestpath,
-                                                                   $this->moodleurl);
+                                                                   $this->moodleurl,
+                                                                   $instanceinfo->contextinfo->qcategoryid,
+                                                                   $this->subdirectory);
         unlink($this->tempfilepath);
         $this->delete_no_file_questions(false);
         $this->delete_no_record_questions(false);
@@ -543,10 +558,13 @@ class import_repo {
     public function recovery():void {
         if (file_exists($this->tempfilepath)) {
             echo 'Attempting recovery from failure on previous run. Updating manifest:';
+            $instanceinfo = $this->clihelper->check_context($this, true, true);
             $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
                                                                     $this->tempfilepath,
                                                                     $this->manifestpath,
-                                                                    $this->moodleurl);
+                                                                    $this->moodleurl,
+                                                                    $instanceinfo->contextinfo->qcategoryid,
+                                                                    $this->subdirectory);
             unlink($this->tempfilepath);
             echo 'Recovery successful. Continuing...';
         }
@@ -816,6 +834,4 @@ class import_repo {
     public function call_exit():void {
         exit;
     }
-
-
 }
