@@ -642,8 +642,8 @@ class cli_helper {
      * is valid and then confirm with user it's the right one.
      *
      * @param object $activity
-     * @param boolean $defaultwarning If true, display using subcat default warning
-     * @param boolean $silent If true, don't display returned info
+     * @param bool $defaultwarning If true, display using subcat default warning
+     * @param bool $silent If true, don't display returned info
      * @return object
      */
     public function check_context(object $activity, bool $defaultwarning=false, bool $silent=false):object {

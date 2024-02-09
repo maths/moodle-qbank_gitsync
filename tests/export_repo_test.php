@@ -118,6 +118,13 @@ class export_repo_test extends advanced_testcase {
         $this->exportrepo->postsettings = ['questionbankentryid' => null];
     }
 
+    /**
+     * Redo mock set up
+     *
+     * Required if we want to change options so that they affect contructor output.
+     *
+     * @return void
+     */
     public function replace_mock_default() {
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',

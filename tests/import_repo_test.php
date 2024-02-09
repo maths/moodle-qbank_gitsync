@@ -140,6 +140,13 @@ class import_repo_test extends advanced_testcase {
         $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
     }
 
+    /**
+     * Redo mock set up
+     *
+     * Required if we want to change options so that they affect contructor output.
+     *
+     * @return void
+     */
     public function replace_mock_default() {
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',

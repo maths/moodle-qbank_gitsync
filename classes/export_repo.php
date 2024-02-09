@@ -122,10 +122,10 @@ class export_repo {
         } else {
             if ($arguments['qcategoryid']) {
                 $qcategoryid = $arguments['qcategoryid'];
-             } else {
+            } else {
                 $qcategoryid = $this->manifestcontents->context->defaultsubcategoryid;
                 $defaultwarning = true;
-             }
+            }
             // Subcategory will be properly set later.
             $this->subcategory = 'top';
         }
