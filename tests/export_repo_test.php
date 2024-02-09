@@ -30,6 +30,30 @@ use advanced_testcase;
 use org\bovigo\vfs\vfsStream;
 
 /**
+ * Allows testing of errors that lead to an exit.
+ */
+class fake_export_cli_helper extends cli_helper {
+    /**
+     * Override so ignored during testing
+     *
+     * @return void
+     */
+    public static function call_exit():void {
+        return;
+    }
+
+    /**
+     * Override so ignored during testing
+     *
+     * @return void
+     */
+    public static function handle_abort():void {
+        return;
+    }
+}
+
+
+/**
  * Test the CLI script for exporting a repo from Moodle.
  * @group qbank_gitsync
  *
@@ -63,7 +87,7 @@ class export_repo_test extends advanced_testcase {
         $this->options = [
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
-            'subcategory' => 'top',
+            'subcategory' => null,
             'qcategoryid' => null,
             'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
             'token' => 'XXXXXX',
@@ -92,6 +116,31 @@ class export_repo_test extends advanced_testcase {
         $this->exportrepo->listcurlrequest = $this->listcurl;
 
         $this->exportrepo->postsettings = ['questionbankentryid' => null];
+    }
+
+    /**
+     * Redo mock set up
+     *
+     * Required if we want to change options so that they affect contructor output.
+     *
+     * @return void
+     */
+    public function replace_mock_default() {
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1"},
+              "questions": []}')
+        );
+        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'handle_abort',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+
+        $this->exportrepo->curlrequest = $this->curl;
+        $this->exportrepo->listcurlrequest = $this->listcurl;
     }
 
     /**
@@ -141,6 +190,8 @@ class export_repo_test extends advanced_testcase {
 
         $this->assertEquals('1', $existingentries['35001']->importedversion);
         $this->assertEquals('10', $existingentries['35001']->exportedversion);
+        // Question category id should be default from manifest.
+        $this->assertEquals(5, $this->exportrepo->listpostsettings["qcategoryid"]);
 
         $this->expectOutputRegex('/^\nExported 4 previously linked questions.*Added 0 questions.\n$/s');
     }
@@ -261,22 +312,7 @@ class export_repo_test extends advanced_testcase {
      */
     public function test_process_with_subcategory_name(): void {
         $this->options['subcategory'] = 'top/cat-2/subcat-2_1';
-        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context',
-        ])->setConstructorArgs([[]])->getMock();
-        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
-            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1"},
-              "questions": []}')
-        );
-        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'handle_abort',
-        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
-
-        $this->exportrepo->curlrequest = $this->curl;
-        $this->exportrepo->listcurlrequest = $this->listcurl;
-
+        $this->replace_mock_default();
         // Will get questions in order from manifest file in testrepo.
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
@@ -313,6 +349,7 @@ class export_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('35002', $existingentries);
         $this->assertArrayHasKey('35003', $existingentries);
         $this->assertArrayHasKey('35004', $existingentries);
+        $this->assertEquals(null, $this->exportrepo->listpostsettings["qcategoryid"]);
 
         $this->expectOutputRegex('/^\nExported 2 previously linked questions.*Added 0 questions.\n$/s');
     }
@@ -322,22 +359,8 @@ class export_repo_test extends advanced_testcase {
      */
     public function test_process_with_subcategory_id(): void {
         global $DB;
-        $this->options['qcategoryid'] = $DB->get_field('question_categories', 'id', ['name' => 'subcat 2_1']);
-        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context',
-        ])->setConstructorArgs([[]])->getMock();
-        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
-            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1"},
-              "questions": []}')
-        );
-        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'handle_abort',
-        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
-
-        $this->exportrepo->curlrequest = $this->curl;
-        $this->exportrepo->listcurlrequest = $this->listcurl;
+        $this->options['qcategoryid'] = 17;
+        $this->replace_mock_default();
 
         // Will get questions in order from manifest file in testrepo.
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
@@ -375,7 +398,25 @@ class export_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('35002', $existingentries);
         $this->assertArrayHasKey('35003', $existingentries);
         $this->assertArrayHasKey('35004', $existingentries);
+        // Question category id should be as supplied.
+        $this->assertEquals(17, $this->exportrepo->listpostsettings["qcategoryid"]);
 
         $this->expectOutputRegex('/^\nExported 2 previously linked questions.*Added 0 questions.\n$/s');
     }
+
+    /**
+     * Test checking context default warning
+     * @covers \gitsync\cli_helper\check_context()
+     */
+    public function test_check_content_default_warning(): void {
+        $clihelper = new fake_export_cli_helper([]);
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
+              "questions": []}',
+        );
+        $clihelper->check_context($this->exportrepo, true, false);
+        $this->expectOutputRegex('/Using default question category from manifest file./');
+    }
+
 }

@@ -36,6 +36,12 @@ namespace qbank_gitsync;
  */
 trait export_trait {
     /**
+     * Relative path of subdirectory matching subcategory.
+     *
+     * @var string|null
+     */
+    public ?string $subdirectory = null;
+    /**
      * Obtain a list of questions from Moodle and loop through them.
      * If the question is not already in the manifest then create any necessary folders
      * and create the question file.
@@ -69,6 +75,7 @@ trait export_trait {
      * @return void
      */
     public function export_to_repo_main_process(object $moodlequestionlist):void {
+        $this->subdirectory = 'top';
         $questionsinmoodle = $moodlequestionlist->questions;
         $this->postsettings['includecategory'] = 1;
         $tempfile = fopen($this->tempfilepath, 'w+');
@@ -150,6 +157,9 @@ trait export_trait {
                         $currentdirectory = dirname($this->manifestpath) . $categorysofar;
                         if (!is_dir($currentdirectory)) {
                             mkdir($currentdirectory);
+                        }
+                        if ($categorypath === $this->subcategory) {
+                            $this->subdirectory = substr($categorysofar, 1);
                         }
                     }
                     $catfilepath = $currentdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';

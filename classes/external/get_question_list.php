@@ -73,7 +73,8 @@ class get_question_list extends external_api {
                 'coursename' => new external_value(PARAM_TEXT, 'course name (course or module context)'),
                 'modulename' => new external_value(PARAM_TEXT, 'module name (module context)'),
                 'instanceid' => new external_value(PARAM_SEQUENCE, 'id of course category, course or module'),
-                'qcategoryname' => new external_value(PARAM_TEXT, 'course category, course name and/or module'),
+                'qcategoryname' => new external_value(PARAM_TEXT, 'name of question category'),
+                'qcategoryid' => new external_value(PARAM_SEQUENCE, 'id of question category'),
             ]),
             'questions' => new external_multiple_structure(
                 new external_single_structure([
@@ -135,6 +136,7 @@ class get_question_list extends external_api {
         unset($response->contextinfo->context);
         $response->questions = [];
         $response->contextinfo->qcategoryname = '';
+        $response->contextinfo->qcategoryid = null;
 
         if (count($qbankentryids) === 1 && $qbankentryids[0] === '') {
             if (is_null($qcategoryid) || $qcategoryid === '') {
@@ -165,6 +167,7 @@ class get_question_list extends external_api {
             }
 
             $response->contextinfo->qcategoryname = self::get_category_path($category);
+            $response->contextinfo->qcategoryid = $category->id;
             if ($contextonly) {
                 return $response;
             }

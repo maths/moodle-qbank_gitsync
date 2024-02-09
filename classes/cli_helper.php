@@ -165,7 +165,7 @@ class cli_helper {
                 }
             }
             if (strlen($cliargs['subdirectory']) === 0) {
-                $cliargs['subdirectory'] = 'top';
+                $cliargs['subdirectory'] = null;
             }
         }
         if (isset($cliargs['subcategory'])) {
@@ -395,11 +395,15 @@ class cli_helper {
      * @param string $tempfilepath
      * @param string $manifestpath
      * @param string $moodleurl
+     * @param int|null $subcategoryid
+     * @param string|null $subdirectory
      * @param bool $showupdated
      * @return object
      */
     public static function create_manifest_file(object $manifestcontents, string $tempfilepath,
                                                 string $manifestpath, string $moodleurl,
+                                                ?int $subcategoryid=null,
+                                                ?string $subdirectory=null,
                                                 bool $showupdated=true):object {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
@@ -448,6 +452,8 @@ class cli_helper {
                     $manifestcontents->context->modulename = $questioninfo->modulename;
                     $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
                     $manifestcontents->context->instanceid = $questioninfo->instanceid;
+                    $manifestcontents->context->defaultsubcategoryid = $subcategoryid;
+                    $manifestcontents->context->defaultsubdirectory = $subdirectory;
                     $manifestcontents->context->moodleurl = $moodleurl;
                 }
             }
@@ -636,9 +642,11 @@ class cli_helper {
      * is valid and then confirm with user it's the right one.
      *
      * @param object $activity
+     * @param bool $defaultwarning If true, display using subcat default warning
+     * @param bool $silent If true, don't display returned info
      * @return object
      */
-    public function check_context(object $activity):object {
+    public function check_context(object $activity, bool $defaultwarning=false, bool $silent=false):object {
         $activity->listpostsettings['contextonly'] = 1;
         $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
         $response = $activity->listcurlrequest->execute();
@@ -656,7 +664,7 @@ class cli_helper {
             echo "Failed to get list of questions from Moodle.\n";
             static::call_exit();
             return new \stdClass(); // Required for PHPUnit.
-        } else {
+        } else if (!$silent) {
             $activityname = get_class($activity);
             echo "\nAbout to {$activityname}:\n";
             echo "Moodle URL: {$activity->moodleurl}\n";
@@ -667,9 +675,18 @@ class cli_helper {
             if ($moodlequestionlist->contextinfo->modulename) {
                 echo "{$moodlequestionlist->contextinfo->modulename}\n";
             }
-            echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
-            if (isset($activity->subdirectory) && $activity->subdirectory !== 'top') {
+            if (isset($activity->subdirectory)) {
                 echo "Question subdirectory: {$activity->subdirectory}\n";
+                if ($defaultwarning) {
+                    echo "\nUsing default subdirectory from manifest file.\n";
+                    echo "Set --subdirectory to override.\n";
+                }
+            } else {
+                echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
+            }
+            if ($defaultwarning && !isset($activity->subdirectory)) {
+                echo "\nUsing default question category from manifest file.\n";
+                echo "Set --subcategory or --questioncategoryid to override.\n";
             }
             static::handle_abort();
         }

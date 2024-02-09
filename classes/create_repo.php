@@ -67,6 +67,12 @@ class create_repo {
      */
     public string $subcategory;
     /**
+     * Moodle id of question category.
+     *
+     * @var int|null
+     */
+    public ?int $qcategoryid = null;
+    /**
      * Path to actual manifest file.
      *
      * @var string
@@ -80,7 +86,7 @@ class create_repo {
     public string $tempfilepath;
     /**
      * Path of root of repo
-     * i.e. folder containing manifest
+     * i.e. folder containing manifest.
      *
      * @var string
      */
@@ -114,7 +120,7 @@ class create_repo {
         } else {
             $this->directory = $arguments['rootdirectory'];
         }
-        $this->subcategory = $arguments['subcategory'];
+        $this->subcategory = ($arguments['subcategory']) ? $arguments['subcategory'] : 'top';
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -159,8 +165,10 @@ class create_repo {
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-        $instanceinfo = $clihelper->check_context($this);
+        $instanceinfo = $clihelper->check_context($this, false, false);
+        $this->subcategory = $instanceinfo->contextinfo->qcategoryname;
 
+        $this->qcategoryid = $instanceinfo->contextinfo->qcategoryid;
         $this->listpostsettings['contextlevel'] =
                 cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
         $this->listpostsettings['coursecategory'] = $instanceinfo->contextinfo->categoryname;
@@ -195,7 +203,8 @@ class create_repo {
         $this->manifestcontents->questions = [];
         $this->export_to_repo();
         cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,
-                                         $this->manifestpath, $this->moodleurl, false);
+                                         $this->manifestpath, $this->moodleurl,
+                                         $this->qcategoryid, $this->subdirectory, false);
         unlink($this->tempfilepath);
     }
 

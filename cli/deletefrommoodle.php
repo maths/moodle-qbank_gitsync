@@ -69,7 +69,7 @@ $options = [
         'longopt' => 'subdirectory',
         'shortopt' => 's',
         'description' => 'Relative subdirectory of repo to actually delete from.',
-        'default' => 'top',
+        'default' => null,
         'variable' => 'subdirectory',
         'valuerequired' => true,
     ],
