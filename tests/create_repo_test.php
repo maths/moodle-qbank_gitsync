@@ -80,7 +80,7 @@ class create_repo_test extends advanced_testcase {
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->exactly(1))->method('check_context')->willReturn(
             json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
               "questions": []}')
         );
         // Mock call to webservice.
@@ -204,7 +204,8 @@ class create_repo_test extends advanced_testcase {
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->any())->method('check_context')->willReturn(
             json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1"},
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1",
+                             "qcategoryid":1},
               "questions": []}')
         );
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([

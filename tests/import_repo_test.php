@@ -112,9 +112,9 @@ class import_repo_test extends advanced_testcase {
             'get_arguments', 'check_context',
         ])->setConstructorArgs([$this->options])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-        $this->clihelper->expects($this->exactly(1))->method('check_context')->willReturn(
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
             json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
               "questions": []}')
         );
         // Mock call to webservice.
@@ -486,7 +486,7 @@ class import_repo_test extends advanced_testcase {
 
         $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
               "questions": []}'
         );
 
@@ -944,11 +944,11 @@ class import_repo_test extends advanced_testcase {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
               "questions": []}',
         );
         $clihelper->check_context($this->importrepo);
-        $this->expectOutputRegex('/^\nAbout to.*import_repo.*Question category: top\n$/s');
+        $this->expectOutputRegex('/^\nAbout to.*import_repo.*Question subdirectory: top\n$/s');
     }
 
     /**
