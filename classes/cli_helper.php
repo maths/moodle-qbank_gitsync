@@ -678,7 +678,7 @@ class cli_helper {
             if (isset($activity->subdirectory)) {
                 echo "Question subdirectory: {$activity->subdirectory}\n";
                 if ($defaultwarning) {
-                    echo "Using default subdirectory from manifest file.\n";
+                    echo "\nUsing default subdirectory from manifest file.\n";
                     echo "Set --subdirectory to override.\n";
                 }
             } else {

@@ -96,7 +96,7 @@ class import_repo_test extends advanced_testcase {
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
             'directory' => '',
-            'subdirectory' => 'top',
+            'subdirectory' => null,
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
@@ -114,7 +114,7 @@ class import_repo_test extends advanced_testcase {
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->any())->method('check_context')->willReturn(
             json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":123},
               "questions": []}')
         );
         // Mock call to webservice.
@@ -130,6 +130,26 @@ class import_repo_test extends advanced_testcase {
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
+        $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
+            'upload_file', 'handle_delete', 'call_exit', 'handle_abort',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->importrepo->curlrequest = $this->curl;
+        $this->importrepo->deletecurlrequest = $this->deletecurl;
+        $this->importrepo->listcurlrequest = $this->listcurl;
+        $this->importrepo->uploadcurlrequest = $this->uploadcurl;
+        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
+    }
+
+    public function replace_mock_default() {
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([$this->options])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":123},
+              "questions": []}')
+        );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
             'upload_file', 'handle_delete', 'call_exit', 'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
@@ -167,8 +187,75 @@ class import_repo_test extends advanced_testcase {
         // Check manifest file created.
         $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
         $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 4 questions.*\n$/s');
+        // There's a manifest file but it's not being used so don't use manifest default.
+        $this->assertEquals("top", $this->importrepo->subdirectory);
     }
 
+    /**
+     * Test the full process with manifest path.
+     */
+    public function test_process_manifest_path(): void {
+        $this->options["manifestpath"] = 'fakeexport_system_question_manifest.json';
+        $this->replace_mock_default();
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 3 category calls to the webservice and 3 question calls as using cat 2 subdirectory
+        // from manifest file default.
+        $this->curl->expects($this->exactly(6))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35002", "version": "2"}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}',
+        );
+
+        $this->importrepo->process();
+
+        // Check manifest file created.
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 3 questions.*\n$/s');
+        // Use manifest default.
+        $this->assertEquals("top/cat-2", $this->importrepo->subdirectory);
+    }
+
+    /**
+     * Test the full process with manifest path and subdirectory.
+     */
+    public function test_process_manifest_path_and_subdirectory(): void {
+        $this->options["manifestpath"] = 'fakeexport_system_question_manifest.json';
+        $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
+        $this->replace_mock_default();
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 3 category calls to the webservice and 2 question calls as using subcat 2_1
+        // from subdirectory parameter.
+        $this->curl->expects($this->exactly(5))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}',
+        );
+
+        $this->importrepo->process();
+
+        // Check manifest file created.
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 2 questions.*\n$/s');
+        // Use subdirectory parameter.
+        $this->assertEquals("top/cat-2/subcat-2_1", $this->importrepo->subdirectory);
+    }
 
     /**
      * Test importing categories.
@@ -292,6 +379,8 @@ class import_repo_test extends advanced_testcase {
      * @covers \gitsync\import_repo\import_questions()
      */
     public function test_import_subdirectory_questions(): void {
+        $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
+        $this->replace_mock_default();
         $this->results = [];
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": "35001", "version": "2"}',
@@ -331,6 +420,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->modulename, 'Test 1');
         $this->assertEquals($firstline->coursecategory, 'Cat 1');
         $this->assertEquals($firstline->format, 'xml');
+        $this->assertEquals($this->importrepo->listpostsettings["qcategoryname"], 'top/cat 2/subcat 2_1');
     }
 
     /**
@@ -472,6 +562,15 @@ class import_repo_test extends advanced_testcase {
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
     public function test_manifest_file(): void {
+        unlink($this->importrepo->manifestpath);
+        $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
+            'upload_file', 'handle_delete', 'call_exit', 'handle_abort',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->importrepo->curlrequest = $this->curl;
+        $this->importrepo->deletecurlrequest = $this->deletecurl;
+        $this->importrepo->listcurlrequest = $this->listcurl;
+        $this->importrepo->uploadcurlrequest = $this->uploadcurl;
+        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->importrepo->curlrequest->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
@@ -505,18 +604,60 @@ class import_repo_test extends advanced_testcase {
 
         $context = $manifestcontents->context;
         $this->assertEquals($context->contextlevel, '10');
-        $this->assertEquals($context->coursename, '');
-        $this->assertEquals($context->modulename, '');
+        $this->assertEquals($context->coursename, 'Course 1');
+        $this->assertEquals($context->modulename, 'Module 1');
         $this->assertEquals($context->coursecategory, '');
+        $this->assertEquals($context->defaultsubcategoryid, 123);
+        $this->assertEquals($context->defaultsubdirectory, 'top');
 
-        $samplerecord = $manifestentries['35004'];
-        $this->assertStringContainsString('/top/cat-', $samplerecord->filepath);
-        $this->assertEquals($samplerecord->format, 'xml');
-        $this->assertEquals($samplerecord->moodlecommit, '35004test');
+        $this->expectOutputRegex('/^\nManifest file is empty.*\nAdded 4 questions.*Updated 0 questions.*\n$/s');
+    }
 
-        $samplerecord = $manifestentries['35001'];
-        $this->assertEquals(false, isset($samplerecord->moodlecommit));
-        $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 4 questions.*\n$/s');
+    /**
+     * Test creation of manifest file with subdirectory.
+     * @covers \gitsync\cli_helper\create_manifest_file()
+     *
+     * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
+     */
+    public function test_manifest_file_with_subdirectory(): void {
+        unlink($this->importrepo->manifestpath);
+        $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
+        $this->replace_mock_default();
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 3 category calls to the webservice and 2 question calls (as subdirectory parameter used).
+        $this->importrepo->curlrequest->expects($this->exactly(5))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+        );
+
+        $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/ds", "qcategoryid":1},
+              "questions": []}'
+        );
+        $this->importrepo->process();
+
+        // Manifest file is a single array.
+        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
+        $this->assertCount(2, $manifestcontents->questions);
+
+        $manifestentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertArrayHasKey('35004', $manifestentries);
+        $this->assertArrayHasKey('35003', $manifestentries);
+
+        $context = $manifestcontents->context;
+        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->coursename, 'Course 1');
+        $this->assertEquals($context->modulename, 'Module 1');
+        $this->assertEquals($context->coursecategory, '');
+        $this->assertEquals($context->defaultsubcategoryid, 123);
+        $this->assertEquals($context->defaultsubdirectory, 'top/cat-2/subcat-2_1');
+
+        $this->expectOutputRegex('/^\nManifest file is empty.*\nAdded 2 questions.*Updated 0 questions.*\n$/s');
     }
 
     /**
@@ -590,6 +731,7 @@ class import_repo_test extends advanced_testcase {
 
         $samplerecord = $manifestentries['4'];
         $this->assertEquals('test', $samplerecord->moodlecommit);
+
         $this->expectOutputRegex('/^\nAdded 2 questions.*Updated 2 questions.*\n$/s');
     }
 
@@ -977,4 +1119,35 @@ class import_repo_test extends advanced_testcase {
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
                                  '.*{broken/s');
     }
+
+    /**
+     * Test checking context silent
+     * @covers \gitsync\cli_helper\check_context()
+     */
+    public function test_check_content_silent(): void {
+        $clihelper = new fake_helper([]);
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
+              "questions": []}',
+        );
+        $clihelper->check_context($this->importrepo, true, true);
+        $this->expectOutputString('');
+    }
+
+    /**
+     * Test checking context default warning
+     * @covers \gitsync\cli_helper\check_context()
+     */
+    public function test_check_content_default_warning(): void {
+        $clihelper = new fake_helper([]);
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
+              "questions": []}',
+        );
+        $clihelper->check_context($this->importrepo, true, false);
+        $this->expectOutputRegex('/Using default subdirectory from manifest file./');
+    }
+
 }
