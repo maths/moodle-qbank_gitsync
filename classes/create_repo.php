@@ -166,6 +166,7 @@ class create_repo {
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         $instanceinfo = $clihelper->check_context($this, false, false);
+        $this->subcategory = $instanceinfo->contextinfo->qcategoryname;
 
         $this->qcategoryid = $instanceinfo->contextinfo->qcategoryid;
         $this->listpostsettings['contextlevel'] =

@@ -75,6 +75,7 @@ trait export_trait {
      * @return void
      */
     public function export_to_repo_main_process(object $moodlequestionlist):void {
+        $this->subdirectory = 'top';
         $questionsinmoodle = $moodlequestionlist->questions;
         $this->postsettings['includecategory'] = 1;
         $tempfile = fopen($this->tempfilepath, 'w+');

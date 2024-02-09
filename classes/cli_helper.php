@@ -685,7 +685,7 @@ class cli_helper {
                 echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
             }
             if ($defaultwarning && !isset($activity->subdirectory)) {
-                echo "Using default question category from manifest file.\n";
+                echo "\nUsing default question category from manifest file.\n";
                 echo "Set --subcategory or --questioncategoryid to override.\n";
             }
             static::handle_abort();
