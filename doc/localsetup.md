@@ -38,4 +38,4 @@ You need to download the gitsync scripts and set it up locally as described belo
 - In the same file, add tokens for each of your Moodle instances and set a default instance. (See [Setting up the Webservice](webservicesetup.md) for token creation.)
 - In the same file, update rootdirectory to be the directory where you plan to keep your question repositories.
 
-Next you will need to [create a local filesystem](createrepro.md).
+Next you will need to [create a local filesystem](createrepo.md).

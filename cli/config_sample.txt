@@ -42,6 +42,7 @@ $instance = 'instance1';
 // Root directory on the local file system.
 // This directory stores all git repos associated with the gitsync.
 // No trailing slash on the directory name.
+// Windows users must change backslash \ to forward slash /.
 $rootdirectory = '/home/user/questions';
 
 // Are you using Git and wanting repository checks performed automatically?
