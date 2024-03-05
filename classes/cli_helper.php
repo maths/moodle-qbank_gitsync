@@ -574,12 +574,40 @@ class cli_helper {
      * @return void
      */
     public function create_gitignore(string $manifestpath):void {
+        if (!$this->get_arguments()['usegit']) {
+            return;
+        }
         $manifestdirname = dirname($manifestpath);
         if (!is_file($manifestdirname . '/.gitignore')) {
             $ignore = fopen($manifestdirname . '/.gitignore', 'a');
             $contents = "**/*_question_manifest.json\n**/*_manifest_update.tmp\n";
             fwrite($ignore, $contents);
             fclose($ignore);
+        }
+    }
+
+    /**
+     * Check if the repository has been initialised
+     *
+     * @param string $manifestpath
+     * @return void
+     */
+    public function check_repo_initialised(string $fullmanifestpath):void {
+        if (!$this->get_arguments()['usegit']) {
+            return;
+        }
+        $manifestdirname = dirname($fullmanifestpath);
+        if (chdir($manifestdirname)) {
+            // Will give path of .git if in repo or error.
+            // Working on the assumption we have to be at the top of the repo.
+            if (exec('git rev-parse --git-dir') !== '.git') {
+                echo "The Git repository has not been initialised or " .
+                     "the manifest directory is not at the top level.\n";
+                exit;
+            }
+        } else {
+            echo "Cannot find the directory of the manifest file.\n";
+            exit;
         }
     }
 
@@ -594,6 +622,7 @@ class cli_helper {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
+        $this->check_repo_initialised($fullmanifestpath);
         $this->create_gitignore($fullmanifestpath);
         $manifestdirname = dirname($fullmanifestpath);
         if (chdir($manifestdirname)) {
@@ -605,7 +634,7 @@ class cli_helper {
                 exit;
             }
         } else {
-            echo "Cannot find the directory of the manifest file.";
+            echo "Cannot find the directory of the manifest file.\n";
             exit;
         }
     }
@@ -666,14 +695,30 @@ class cli_helper {
             return new \stdClass(); // Required for PHPUnit.
         } else if (!$silent) {
             $activityname = get_class($activity);
-            echo "\nAbout to {$activityname}:\n";
+            switch ($activityname) {
+                case 'qbank_gitsync\export_repo':
+                    echo "\nPreparing to update your local repository from Moodle:\n";
+                    break;
+                case 'qbank_gitsync\import_repo':
+                    echo "\nPreparing to update Moodle from your local repository:\n";
+                    break;
+                case 'qbank_gitsync\create_repo':
+                    echo "\nPreparing to create a local repository from Moodle:\n";
+                    break;
+                default:
+                    echo "\nPreparing to {$activityname}:\n";
+                    break;
+            }
             echo "Moodle URL: {$activity->moodleurl}\n";
             echo "Context level: {$moodlequestionlist->contextinfo->contextlevel}\n";
-            if ($moodlequestionlist->contextinfo->categoryname || $moodlequestionlist->contextinfo->coursename) {
-                echo "Instance: {$moodlequestionlist->contextinfo->categoryname}{$moodlequestionlist->contextinfo->coursename}\n";
+            if ($moodlequestionlist->contextinfo->categoryname) {
+                echo "Course category: {$moodlequestionlist->contextinfo->categoryname}\n";
+            }
+            if ($moodlequestionlist->contextinfo->coursename) {
+                echo "Course: {$moodlequestionlist->contextinfo->coursename}\n";
             }
             if ($moodlequestionlist->contextinfo->modulename) {
-                echo "{$moodlequestionlist->contextinfo->modulename}\n";
+                echo "Quiz: {$moodlequestionlist->contextinfo->modulename}\n";
             }
             if (isset($activity->subdirectory)) {
                 echo "Question subdirectory: {$activity->subdirectory}\n";

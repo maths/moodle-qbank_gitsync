@@ -617,6 +617,8 @@ class import_repo {
             } else {
                 echo "Run deletefrommoodle for the option to delete.\n";
             }
+        } else {
+            echo "\nAll questions in the manifest have a matching file. Nothing to delete.\n";
         }
     }
 
@@ -673,6 +675,8 @@ class import_repo {
             } else {
                 echo "Run deletefrommoodle for the option to delete.\n";
             }
+        } else {
+            echo "\nAll selected questions in Moodle are linked to your repository. Nothing to delete.\n";
         }
     }
 

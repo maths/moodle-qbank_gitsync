@@ -148,5 +148,6 @@ if (!function_exists('simplexml_load_file')) {
 
 $clihelper = new cli_helper($options);
 $createrepo = new create_repo($clihelper, $moodleinstances);
+$clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
