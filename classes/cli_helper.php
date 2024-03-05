@@ -587,7 +587,7 @@ class cli_helper {
     }
 
     /**
-     * Check if the repository has benn initialised
+     * Check if the repository has been initialised
      *
      * @param string $manifestpath
      * @return void
