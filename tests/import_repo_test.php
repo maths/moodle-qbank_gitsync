@@ -1097,7 +1097,7 @@ class import_repo_test extends advanced_testcase {
               "questions": []}',
         );
         $clihelper->check_context($this->importrepo);
-        $this->expectOutputRegex('/^\nAbout to.*import_repo.*Question subdirectory: top\n$/s');
+        $this->expectOutputRegex('/^\nPreparing to.*import_repo.*Question subdirectory: top\n$/s');
     }
 
     /**
