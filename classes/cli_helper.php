@@ -592,21 +592,17 @@ class cli_helper {
      * @param string $manifestpath
      * @return void
      */
-    public function check_repo_initialised(string $manifestpath):void {
+    public function check_repo_initialised(string $fullmanifestpath):void {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
-        $manifestdirname = dirname($manifestpath);
+        $manifestdirname = dirname($fullmanifestpath);
         if (chdir($manifestdirname)) {
-            // Will give path of .git if in repo or error if not. Error suppressed.
-            if (!exec('git rev-parse --git-dir 2> /dev/null')) {
-                echo "The Git repository has not been initialised.\n";
-                exit;
-            }
-            // Will give relative path of .git. Blank if at top.
-            // Suppressed error if not in Git repo but we've already checked for that.
-            if (exec('git rev-parse --show-cdup 2> /dev/null')) {
-                echo "Directory or manifestpath is not at the top of a Git repository.\n";
+            // Will give path of .git if in repo or error.
+            // Working on the assumption we have to be at the top of the repo.
+            if (exec('git rev-parse --git-dir') !== '.git') {
+                echo "The Git repository has not been initialised or " .
+                     "the manifest directory is not at the top level.\n";
                 exit;
             }
         } else {
