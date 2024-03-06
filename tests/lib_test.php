@@ -153,7 +153,6 @@ class lib_test extends \advanced_testcase {
         $qcategory = $generator->create_question_category(
                             ['contextid' => \context_course::instance($course->id)->id]);
         $user = $this->getDataGenerator()->create_user();
-        $this->user = $user;
         $this->setUser($user);
         $q = $generator->create_question('shortanswer', null,
                             ['name' => 'This is the first version', 'category' => $qcategory->id]);

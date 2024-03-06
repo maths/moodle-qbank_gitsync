@@ -102,7 +102,7 @@ class import_question_test extends externallib_advanced_testcase {
         $fileinfo = core_files_external::upload($contextid, $component, $filearea, $itemid, $filepath,
                 $filename, $filecontent, $contextlevel, $instanceid);
 
-        $fileinfo = \external_api::clean_returnvalue(core_files_external::upload_returns(), $fileinfo);
+        $fileinfo = core_files_external::clean_returnvalue(core_files_external::upload_returns(), $fileinfo);
 
         $this->fileinfo = $fileinfo;
         unset($this->fileinfo['url']);

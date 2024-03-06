@@ -46,6 +46,8 @@ class tidy_trait_test extends advanced_testcase {
     public cli_helper $clihelper;
     /** @var curl_request mocked curl_request */
     public curl_request $curl;
+    /** @var curl_request mocked curl_request for question list */
+    public curl_request $listcurl;
     /** @var export_repo mocked curl_request for doc upload */
     public export_repo $exportrepo;
     /** @var string root of virtual file system */
