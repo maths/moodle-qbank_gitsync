@@ -56,7 +56,6 @@ class fake_helper extends cli_helper {
 /**
  * Test the CLI script for importing a repo to Moodle.
  * @group qbank_gitsync
- * @runTestsInSeparateProcesses
  *
  * @covers \gitsync\import_repo::class
  */

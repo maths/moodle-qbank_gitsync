@@ -30,7 +30,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: # I don't know why, but mariadb is much slower, so mostly use pgsql.
-        # We use a mix of SBCL and GCL, but mostly prefer SBCL as it is faster.
         include:
           - php: '8.2'
             moodle-branch: 'master'
@@ -95,12 +94,12 @@ jobs:
         run: moodle-plugin-ci phpmd
 
       - name: Moodle Code Checker
-        continue-on-error: true # Currently fails. We really ought to get this passing.
+        continue-on-error: true
         if: ${{ always() }}
         run: moodle-plugin-ci codechecker --max-warnings 0
 
       - name: Moodle PHPDoc Checker
-        continue-on-error: true # Currently fails. We really ought to get this passing.
+        continue-on-error: true
         if: ${{ always() }}
         run: moodle-plugin-ci phpdoc
 

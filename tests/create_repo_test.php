@@ -32,7 +32,6 @@ use org\bovigo\vfs\vfsStream;
 /**
  * Test the CLI script for creating a repo from questions in Moodle.
  * @group qbank_gitsync
- * @runTestsInSeparateProcesses
  *
  * @covers \gitsync\create_repo::class
  */
