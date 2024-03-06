@@ -45,5 +45,12 @@ $instance = 'instance1';
 // Windows users must change backslash \ to forward slash /.
 $rootdirectory = '/home/user/questions';
 
+// You can set a default manifest file path for import, export and delete.
+// You will need to run createrepo or importrepotomoodle first to create the file.
+// You will need to set the default back to null if you want to import or delete
+// from a new context. Setting the contextlevel CLI parameter will not
+// override this path and will cause the script to abort.
+$manifestpath = null;
+
 // Are you using Git and wanting repository checks performed automatically?
 $usegit = true;
