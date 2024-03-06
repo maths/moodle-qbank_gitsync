@@ -69,7 +69,7 @@ class delete_question_test extends externallib_advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->user = $user;
         $this->setUser($user);
-        $this->q = $this->generator->create_question('stack', 'test3',
+        $this->q = $this->generator->create_question('shortanswer', null,
                         ['name' => self::QNAME, 'category' => $this->qcategory->id]);
         $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
                                              ['questionid' => $this->q->id], $strictness = MUST_EXIST);

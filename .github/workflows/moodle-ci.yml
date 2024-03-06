@@ -35,32 +35,19 @@ jobs:
           - php: '8.2'
             moodle-branch: 'master'
             database: 'pgsql'
-            maxima: 'SBCL'
           - php: '8.1'
             moodle-branch: 'MOODLE_402_STABLE'
             database: 'pgsql'
-            maxima: 'GCL'
           - php: '8.0'
             moodle-branch: 'MOODLE_402_STABLE'
             database: 'pgsql'
-            maxima: 'SBCL'
           # Edinburgh is planning to run the setup below for 2023-24.
           - php: '7.4'
             moodle-branch: 'MOODLE_401_STABLE'
             database: 'mariadb'
-            maxima: 'GCL'
           - php: '7.4'
             moodle-branch: 'MOODLE_400_STABLE'
             database: 'pgsql'
-            maxima: 'SBCL'
-          - php: '7.3'
-            moodle-branch: 'MOODLE_311_STABLE'
-            database: 'pgsql'
-            maxima: 'SBCL'
-          - php: '7.2'
-            moodle-branch: 'MOODLE_39_STABLE'
-            database: 'pgsql'
-            maxima: 'SBCL'
 
     steps:
       - name: Check out repository code
@@ -90,6 +77,7 @@ jobs:
           moodle-plugin-ci add-plugin maths/moodle-qbehaviour_dfcbmexplicitvaildate
           moodle-plugin-ci add-plugin maths/moodle-qbehaviour_adaptivemultipart
           moodle-plugin-ci add-plugin maths/moodle-qformat_stack
+          moodle-plugin-ci add-plugin maths/moodle-qbank_importasversion
 
           moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
 
