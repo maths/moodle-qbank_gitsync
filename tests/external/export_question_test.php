@@ -39,6 +39,7 @@ use moodle_exception;
 
 /**
  * Test the export_question webservice function.
+ * @runTestsInSeparateProcesses
  * @group qbank_gitsync
  *
  * @covers \gitsync\external\export_question::execute

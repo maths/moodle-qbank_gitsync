@@ -29,7 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/question/engine/tests/helpers.php');
 require_once($CFG->dirroot . '/webservice/tests/helpers.php');
-require_once($CFG->dirroot . '/lib/externallib.php');
+require_once($CFG->dirroot . '/files/externallib.php');
 require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
 
 use context_course;
@@ -41,6 +41,7 @@ use core_files_external;
 
 /**
  * Test the export_question webservice function.
+ * @runTestsInSeparateProcesses
  * @group qbank_gitsync
  *
  * @covers \gitsync\external\import_question::execute
