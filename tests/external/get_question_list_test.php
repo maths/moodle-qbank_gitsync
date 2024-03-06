@@ -39,6 +39,7 @@ use moodle_exception;
 
 /**
  * Test the get_question_list webservice function.
+ * @runTestsInSeparateProcesses
  * @group qbank_gitsync
  *
  * @covers \gitsync\external\get_question_list::execute
@@ -57,7 +58,7 @@ class get_question_list_test extends externallib_advanced_testcase {
     /** @var \stdClass generated user object */
     protected \stdClass $user;
     /** Name of question to be generated and listed. */
-    const QNAME = 'Example STACK question';
+    const QNAME = 'Example short answer question';
 
     public function setUp(): void {
         global $DB;
@@ -69,7 +70,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->user = $user;
         $this->setUser($user);
-        $this->q = $this->generator->create_question('stack', 'test3',
+        $this->q = $this->generator->create_question('shortanswer', null,
                         ['name' => self::QNAME, 'category' => $this->qcategory->id]);
         $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
                                              ['questionid' => $this->q->id], $strictness = MUST_EXIST);
@@ -173,7 +174,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         role_assign($managerroleid, $this->user->id, $context->id);
         $qcategory2 = $this->generator->create_question_category(
             ['contextid' => \context_course::instance($this->course->id)->id]);
-        $q2 = $this->generator->create_question('stack', 'test3',
+        $q2 = $this->generator->create_question('shortanswer', null,
                                                 ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
@@ -222,7 +223,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         role_assign($managerroleid, $this->user->id, $context->id);
         $qcategory2 = $this->generator->create_question_category(
             ['contextid' => \context_course::instance($this->course->id)->id]);
-        $q2 = $this->generator->create_question('stack', 'test3',
+        $q2 = $this->generator->create_question('shortanswer', null,
                                                 ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
@@ -271,7 +272,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         role_assign($managerroleid, $this->user->id, $context->id);
         $qcategory2 = $this->generator->create_question_category(
             ['contextid' => \context_course::instance($this->course->id)->id]);
-        $q2 = $this->generator->create_question('stack', 'test3',
+        $q2 = $this->generator->create_question('shortanswer', null,
                                                 ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
@@ -379,7 +380,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         role_assign($managerroleid, $this->user->id, $context->id);
         $qcategory2 = $this->generator->create_question_category(
             ['contextid' => \context_course::instance($this->course->id)->id]);
-        $q2 = $this->generator->create_question('stack', 'test3',
+        $q2 = $this->generator->create_question('shortanswer', null,
                                                 ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
@@ -423,7 +424,7 @@ class get_question_list_test extends externallib_advanced_testcase {
         role_assign($managerroleid, $this->user->id, $context->id);
         $qcategory2 = $this->generator->create_question_category(
             ['contextid' => \context_course::instance($this->course->id)->id]);
-        $q2 = $this->generator->create_question('stack', 'test3',
+        $q2 = $this->generator->create_question('shortanswer', null,
                                                 ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);

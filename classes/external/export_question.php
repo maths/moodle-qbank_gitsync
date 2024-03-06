@@ -26,7 +26,7 @@ namespace qbank_gitsync\external;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/externallib.php');
+require_once($CFG->dirroot . '/lib/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot . '/question/format/xml/format.php');
 require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');

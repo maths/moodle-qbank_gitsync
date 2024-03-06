@@ -141,8 +141,8 @@ class cli_helper {
         }
         if (isset($cliargs['manifestpath'])) {
             if (isset($cliargs['directory']) && strlen($cliargs['directory']) > 0 ) {
-                echo "\nYou have supplied a manifest file path and a directory. " .
-                     "Please use only one.\n";
+                echo "\nYou have supplied a manifest file path (possibly as a default in your config file) " .
+                     "and a directory. Please use only one.\n";
                 static::call_exit();
             }
         }
@@ -189,8 +189,8 @@ class cli_helper {
             if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
                         || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid'])
                         || isset($cliargs['contextlevel']) )) {
-                echo "\nYou have specified a manifest file. Contextlevel, instance id, " .
-                        "course name, module name and/or course category are not needed. " .
+                echo "\nYou have specified a manifest file (possibly as a default in your config file). " .
+                        "Contextlevel, instance id, course name, module name and/or course category are not needed. " .
                         "Context data can be extracted from the file.\n";
                 static::call_exit();
             }
@@ -589,7 +589,7 @@ class cli_helper {
     /**
      * Check if the repository has been initialised
      *
-     * @param string $manifestpath
+     * @param string $fullmanifestpath
      * @return void
      */
     public function check_repo_initialised(string $fullmanifestpath):void {
