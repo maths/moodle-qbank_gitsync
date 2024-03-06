@@ -56,6 +56,7 @@ class fake_export_cli_helper extends cli_helper {
 /**
  * Test the CLI script for exporting a repo from Moodle.
  * @group qbank_gitsync
+ * @runTestsInSeparateProcesses
  *
  * @covers \gitsync\export_repo::class
  */

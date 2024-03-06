@@ -49,6 +49,7 @@ class fake_cli_helper extends cli_helper {
  *
  * Some tests are also done in import_repo_test where mocking has
  * already been set up.
+ * @runTestsInSeparateProcesses
  *
  * @covers \gitsync\cli_helper::class
  */
