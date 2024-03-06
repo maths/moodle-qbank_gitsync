@@ -57,7 +57,7 @@ class delete_question_test extends externallib_advanced_testcase {
     /** @var \stdClass generated user object */
     protected \stdClass $user;
     /** Name of question to be generated and deleted. */
-    const QNAME = 'Example STACK question';
+    const QNAME = 'Example short answer question';
 
     public function setUp(): void {
         global $DB;
@@ -78,6 +78,7 @@ class delete_question_test extends externallib_advanced_testcase {
 
     /**
      * Test the execute function when capabilities are present.
+     * @runInSeparateProcess
      */
     public function test_capabilities(): void {
         global $DB;
