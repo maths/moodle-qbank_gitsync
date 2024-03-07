@@ -35,4 +35,5 @@ $string['importversionerror'] = 'Could not import question : {$a->name} Current 
 $string['noquestionerror'] = 'Question does not exist. Questionbankentryid: {$a}';
 $string['contexterror'] = 'The context level is invalid: {$a}';
 $string['categoryerror'] = 'Problem with question category: {$a}';
+$string['categoryerrornew'] = 'Problem with question category: {$a}. If the course is new, please open the question bank in Moodle to initialise it and try Gitsync again.';
 $string['categorymismatcherror'] = 'Problem with question category: {$a}. The category is not in the supplied context.';

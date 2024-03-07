@@ -163,7 +163,11 @@ class get_question_list extends external_api {
             }
 
             if (!$category) {
-                throw new \moodle_exception('categoryerror', 'qbank_gitsync', null, $params['qcategoryname']);
+                if ($params['qcategoryname'] === 'top') {
+                    throw new \moodle_exception('categoryerrornew', 'qbank_gitsync', null, $params['qcategoryname']);
+                } else {
+                    throw new \moodle_exception('categoryerror', 'qbank_gitsync', null, $params['qcategoryname']);
+                }
             }
 
             $response->contextinfo->qcategoryname = self::get_category_path($category);
