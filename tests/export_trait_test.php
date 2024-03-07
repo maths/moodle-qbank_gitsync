@@ -120,10 +120,48 @@ class export_trait_test extends advanced_testcase {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
-              "questions": [{"questionbankentryid": "5", "name": "Fifth Question", "questioncategory": "subcat 2_1"},
-              {"questionbankentryid": "6", "name": "Fifth Question", "questioncategory": "cat 3"},
-              {"questionbankentryid": "7", "name": "Fifth Question", "questioncategory": "cat 3"},
-              {"questionbankentryid": "8", "name": "Fifth Question", "questioncategory": "subcat 2_1"}]}'
+              "questions": [{"questionbankentryid": "5", "name": "Five", "questioncategory": "subcat 2_1"},
+              {"questionbankentryid": "6", "name": "Six", "questioncategory": "cat 3"},
+              {"questionbankentryid": "7", "name": "Seven", "questioncategory": "cat 3"},
+              {"questionbankentryid": "8", "name": "Eight", "questioncategory": "subcat 2_1"}]}'
+        );
+    }
+
+    /**
+     * Set valid output for web service calls with questions with matching names.
+     *
+     * @return void
+     */
+    public function set_curl_output_same_name():void {
+        $this->curl->expects($this->exactly(5))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<quiz><question type=\"category\"><category>' .
+                          '<text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
+                          '<question><name><text>Five</text></name></question></quiz>", "version": "10"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2/cat 3</text></category></question>' .
+                          '<question><name><text>Five</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2</text></category></question>' .
+                          '<question type=\"category\"><category><text>top/Source 2/cat 3</text></category></question>' .
+                          '<question><name><text>Five</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2/cat 2</text></category></question>' .
+                          '<question type=\"category\"><category><text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
+                          '<question><name><text>Five</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2/cat 2</text></category></question>' .
+                          '<question type=\"category\"><category><text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
+                          '<question><name><text>Five</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "5", "name": "Five", "questioncategory": "subcat 2_1"},
+              {"questionbankentryid": "6", "name": "Five", "questioncategory": "cat 3"},
+              {"questionbankentryid": "7", "name": "Five", "questioncategory": "cat 3"},
+              {"questionbankentryid": "8", "name": "Five", "questioncategory": "subcat 2_1"},
+              {"questionbankentryid": "9", "name": "Five", "questioncategory": "subcat 2_1"}]}'
         );
     }
 
@@ -235,42 +273,23 @@ class export_trait_test extends advanced_testcase {
     }
 
     /**
-     * Test message if question file update issue.
-     */
-    public function test_question_file_update_error(): void {
-        $questions = json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
-                                "questions": [{"questionbankentryid": "5", "name": "Third Question",
-                                "questioncategory": "subcat 2_1"}]}');
-        $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<quiz><question type=\"category\"><category>' .
-                          '<text>top/cat 2/subcat 2_1</text></category></question>' .
-                          '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
-        );
-
-        chmod($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 0000);
-        @$this->exportrepo->export_to_repo_main_process($questions);
-        $this->expectOutputRegex('/^\nFile creation or update unsuccessful:.*Third-Question.xml$/s');
-    }
-
-    /**
      * Test message if category file creation issue.
      */
     public function test_category_file_creation_error(): void {
         $questions = json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
-                                "questions": [{"questionbankentryid": "5", "name": "Third Question",
+                                "questions": [{"questionbankentryid": "5", "name": "Another Question",
                                 "questioncategory": "subcat 2_1"}]}');
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/cat 2/subcat 2_1</text></category></question>' .
-                          '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
+                          '<question><name><text>Another Question</text></name></question></quiz>", "version": "10"}',
         );
 
         unlink($this->rootpath . '/top/cat-2/subcat-2_1/' . cli_helper::CATEGORY_FILE . '.xml');
         chmod($this->rootpath . '/top/cat-2/subcat-2_1', 0000);
         @$this->exportrepo->export_to_repo_main_process($questions);
-        $this->expectOutputRegex('/^\nFile creation unsuccessful:.*subcat-2_1\/' . cli_helper::CATEGORY_FILE . '.xml$/s');
+        $this->expectOutputRegex('/^\nFile creation unsuccessful:.*subcat-2_1\/' . cli_helper::CATEGORY_FILE . '.xml.*$/s');
     }
 
     /**
@@ -289,5 +308,30 @@ class export_trait_test extends advanced_testcase {
 
         @$this->exportrepo->export_to_repo_main_process($questions);
         $this->expectOutputRegex('/^\nBroken XML.\nsubcat 2_1 - Third Question not downloaded.\n$/s');
+    }
+
+    /**
+     * Test the export of questions which aren't in the manifest and have the same name
+     * @covers \gitsync\export_trait\export_to_repo()
+     */
+    public function test_export_to_repo_same_name(): void {
+        $this->set_curl_output_same_name();
+        $this->exportrepo->export_to_repo();
+
+        // Check question files created.
+        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml'));
+        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five_2.xml'));
+        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five_3.xml'));
+        $this->assertStringContainsString('top/Source 2/cat 3',
+            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml'));
+        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Five.xml'));
+        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Five_2.xml'));
+
+        // Check temp file.
+        $tempfile = fopen($this->exportrepo->tempfilepath, 'r');
+        $firstline = json_decode(fgets($tempfile));
+        $this->assertEquals('5', $firstline->questionbankentryid);
+        $this->assertEquals($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml', $firstline->filepath);
+        $this->assertEquals($firstline->version, '10');
     }
 }
