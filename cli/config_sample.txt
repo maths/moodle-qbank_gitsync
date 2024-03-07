@@ -44,7 +44,6 @@ $instance = 'instance1';
 // Root directory on the local file system.
 // This directory stores all git repos associated with the gitsync.
 // No trailing slash on the directory name.
-// Windows users must change backslash \ to forward slash /.
 $rootdirectory = '/home/user/questions';
 
 // You can set a default manifest file path for import, export and delete.
