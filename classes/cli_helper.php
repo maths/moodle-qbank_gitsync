@@ -589,7 +589,7 @@ class cli_helper {
     /**
      * Check if the repository has been initialised
      *
-     * @param string $manifestpath
+     * @param string $fullmanifestpath
      * @return void
      */
     public function check_repo_initialised(string $fullmanifestpath):void {

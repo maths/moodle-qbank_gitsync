@@ -26,10 +26,11 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->version   = 2023120400;
 // Question versions functionality of Moodle 4 required.
-$plugin->requires  = 2022041900;
+// Question delete fix for Moodle 4.1.5 required.
+$plugin->requires  = 2022112805;
 $plugin->component = 'qbank_gitsync';
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.9.0 for Moodle 4.0+';
+$plugin->release   = '0.9.0 for Moodle 4.1+';
 
 $plugin->dependencies = [
     'qbank_importasversion'     => 2023102700,

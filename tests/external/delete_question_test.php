@@ -39,9 +39,10 @@ use moodle_exception;
 
 /**
  * Test the delete_question webservice function.
- *
+ * @runTestsInSeparateProcesses
  * @covers \gitsync\external\delete_question::execute
  * @group qbank_gitsync
+ *
  */
 class delete_question_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */
@@ -57,7 +58,7 @@ class delete_question_test extends externallib_advanced_testcase {
     /** @var \stdClass generated user object */
     protected \stdClass $user;
     /** Name of question to be generated and deleted. */
-    const QNAME = 'Example STACK question';
+    const QNAME = 'Example short answer question';
 
     public function setUp(): void {
         global $DB;
@@ -69,7 +70,7 @@ class delete_question_test extends externallib_advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->user = $user;
         $this->setUser($user);
-        $this->q = $this->generator->create_question('stack', 'test3',
+        $this->q = $this->generator->create_question('shortanswer', null,
                         ['name' => self::QNAME, 'category' => $this->qcategory->id]);
         $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
                                              ['questionid' => $this->q->id], $strictness = MUST_EXIST);

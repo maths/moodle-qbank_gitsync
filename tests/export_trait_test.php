@@ -46,6 +46,8 @@ class export_trait_test extends advanced_testcase {
     public curl_request $curl;
     /** @var export_repo mocked curl_request for doc upload */
     public export_repo $exportrepo;
+    /** @var curl_request mocked curl_request for question list */
+    public curl_request $listcurl;
     /** @var string root of virtual file system */
     public string $rootpath;
     /** @var string used to store output of multiple calls to a function */

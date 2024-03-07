@@ -41,6 +41,7 @@ use core_files_external;
 
 /**
  * Test the export_question webservice function.
+ * @runTestsInSeparateProcesses
  * @group qbank_gitsync
  *
  * @covers \gitsync\external\import_question::execute
@@ -101,7 +102,7 @@ class import_question_test extends externallib_advanced_testcase {
         $fileinfo = core_files_external::upload($contextid, $component, $filearea, $itemid, $filepath,
                 $filename, $filecontent, $contextlevel, $instanceid);
 
-        $fileinfo = \external_api::clean_returnvalue(core_files_external::upload_returns(), $fileinfo);
+        $fileinfo = core_files_external::clean_returnvalue(core_files_external::upload_returns(), $fileinfo);
 
         $this->fileinfo = $fileinfo;
         unset($this->fileinfo['url']);
@@ -322,7 +323,7 @@ class import_question_test extends externallib_advanced_testcase {
         global $DB;
         $this->give_capabilities();
         // Generate question and obtain its QBE id.
-        $question = $this->generator->create_question('stack', 'test3',
+        $question = $this->generator->create_question('shortanswer', null,
                             ['name' => self::QNAME, 'category' => $this->qcategory->id]);
         $qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
                             ['questionid' => $question->id], $strictness = MUST_EXIST);
@@ -359,7 +360,7 @@ class import_question_test extends externallib_advanced_testcase {
         global $DB;
         $this->give_capabilities();
         // Generate question and obtain its QBE id.
-        $question = $this->generator->create_question('stack', 'test3',
+        $question = $this->generator->create_question('shortanswer', null,
                             ['name' => self::QNAME, 'category' => $this->qcategory->id]);
         $qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
                             ['questionid' => $question->id], $strictness = MUST_EXIST);
