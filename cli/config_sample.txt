@@ -23,7 +23,9 @@
  */
 
 // Array of moodleinstnce nicknames and URLs.
-// The nicknames are used how....
+// The nicknames are used in manifest file names and as a shorthand for which
+// instance to use when running scripts. Users sharing a manifest file should
+// use the same instance nickname.
 // No trailing slash on the URLs.
 $moodleinstances = [
     'instance1' => 'http://stack.org/instance1',
@@ -42,7 +44,6 @@ $instance = 'instance1';
 // Root directory on the local file system.
 // This directory stores all git repos associated with the gitsync.
 // No trailing slash on the directory name.
-// Windows users must change backslash \ to forward slash /.
 $rootdirectory = '/home/user/questions';
 
 // You can set a default manifest file path for import, export and delete.

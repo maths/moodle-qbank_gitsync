@@ -65,8 +65,41 @@ There are two logically separate parts of this project.
 
 This project provides tools which scan the files on the external file system, and maintains the manifest file to match the file system and the Moodle question bank. Questions added or removed from the file system (via `git add`, `git rm` or through consequences of a `git pull` from an external repro) will be reflected in the manifest file but not necessarily straight away. The manifest file does not record what is in the repo - the file system itself does that. The manifest file links questions in the file system to questions in a Moodle instance. The manifest is tidied as appropriate on import/export. See [process details](doc/processdetails.md) document for exactly what happens when.
 
-By default, the manifest file is not stored as part of the Git repo but is only on the user's local computer. This allows repos to be shared with other users using different Moodle instances. For repos tied to a single Moodle instance adding the manifest to the repo may be useful.
+By default, the manifest file is not stored as part of the Git repo but is only on the user's local computer. This allows repos to be shared with other users using different Moodle instances. For repos tied to a single Moodle instance adding the manifest to the repo may be useful (but users will need to be careful to use the same Moodle instance short names in their config file).
 
+A manifest file will have the name `instancename_contextlevel_contextname_question_manifest.json` and look like this:
+```
+"context": {
+        "contextlevel": 50, // Moodle context code e.g. 50 === 'course'
+        "coursename": "Course 1", // Context details required are dependent on contextlevel
+        "modulename": null, // Restricted to quiz modules
+        "coursecategory": null,
+        "instanceid": "2", // Course, coursecategory or quiz id
+        "defaultsubcategoryid": 3, // Set by the subcategory/directory used at manifest creation
+        "defaultsubdirectory": "top", // Set by the subcategory/directory used at manifest creation
+        "moodleurl": "http:\/\/stack.stack.virtualbox.org\/edmundlocal"
+    },
+    "questions": [
+        {
+            "questionbankentryid": "727",
+            "filepath": "\/top\/Default-for-T1\/Slope-of-line.xml", // Relative to top of the repository
+            "format": "xml", // Currently always XML
+            "importedversion": "1", // Question version in Moodle on manifest creation or after last import
+            "exportedversion": "1", // Question version last exported from Moodle
+            "currentcommit": "371a103f2465319494c69500a84626a9d19e75f8", // Current Git hash of question file
+            "moodlecommit": "371a103f2465319494c69500a84626a9d19e75f8" // Git hash of file when last imported into Moodle
+        },
+        {
+            "questionbankentryid": "728",
+            "filepath": "\/top\/Default-for-T1\/Equations-of-straight-lines.xml",
+            "format": "xml",
+            "importedversion": "11",
+            "exportedversion": "11",
+            "currentcommit": "371a103f2465319494c69500a84626a9d19e75f8",
+            "moodlecommit": "371a103f2465319494c69500a84626a9d19e75f8"
+        }
+    ]
+```
 # Setup
 
 Gitsync is run from and stores question files on your local computer not on the Moodle server. First you need to install it and set it up as a plugin within Moodle and then you need to download and set it up locally.

@@ -187,6 +187,12 @@ trait export_trait {
                     }
                 }
                 $sanitisedqname = preg_replace(cli_helper::BAD_CHARACTERS, '-', substr($qname, 0, 230));
+                $holdername = $sanitisedqname;
+                $i = 2;
+                while (file_exists("{$bottomdirectory}/{$sanitisedqname}.xml")) {
+                    $sanitisedqname = "{$holdername}_{$i}";
+                    $i++;
+                }
                 $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question);
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";
