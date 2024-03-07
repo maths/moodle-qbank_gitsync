@@ -23,7 +23,9 @@
  */
 
 // Array of moodleinstnce nicknames and URLs.
-// The nicknames are used how....
+// The nicknames are used in manifest file names and as a shorthand for which
+// instance to use when running scripts. Users sharing a manifest file should
+// use the same instance nickname.
 // No trailing slash on the URLs.
 $moodleinstances = [
     'instance1' => 'http://stack.org/instance1',
