@@ -11,6 +11,7 @@ This plugin requires the [import as new version](https://github.com/maths/moodle
     `git clone https://github.com/maths/moodle-qbank_gitsync.git question/bank/gitsync`
 - The repository will default to the `main` branch but you may need to switch to another branch if you're testing new features (e.g. `dev` for initial beta testing). In the gitsync directory e.g. `git checkout dev`.  
 - Install the plugin via Moodle.
+- Enable webservices if they are not enabled already. (Site administration/General/Advanced features/Enable webservices)
 - Run the setup script in the gitsync cli folder (`yourmoodle/question/bank/gitsync/cli/`) on the Moodle server if you have access:
   - `php webservicesetup.php`
 - Alternatively, perform user set up manually:
@@ -25,17 +26,14 @@ This plugin requires the [import as new version](https://github.com/maths/moodle
 ![Screenshot of token creation.](../images/Add_token.png)
 - Add roles for the user to give them access to the required courses and questions. If you would like them to have site-wide access, go to Site Administration/Users/Permissions/Assign system roles and give `ws-gitsync-user` Manager role for the webservice to have access to all questions on the site.  If you only want them to have access to particular courses, then make `ws-gitsync-user` Manager on courses individually.
 - If you have user agreements set up for your Moodle site, you will need to accept them on behalf of the Gitsync user. (Site Administration/Users/Privacy and policies/Manage policies/Agreements/Accept)
-- Optionally, you can test using [Postman](https://www.postman.com/downloads/) if you know a question id and its course name:
+- Optionally, you can test using [Postman](https://www.postman.com/downloads/) if you know a questionbankentry id:
   - URL: Your_Moodle_root_address/webservice/rest/server.php
   - Params:
     - wstoken: _Your token created above_
     - wsfunction: qbank_gitsync_export_question
     - moodlewsrestformat: json
-    - questionid: _Your question id_
-    - contextlevel: 10
-    - coursename: _Your course name_
-    - modulename:
-    - coursecategory:  
+    - questionbankentryid: _Your question's qbe id_
+    - includecategory: 0
 Fill in the URL and parameters above in the fields as shown in the screenshot and click 'Send'. You should get the requested question back as a response.
 ![Screenshot of Postman.](../images/Postman.png)
 
