@@ -4,6 +4,7 @@
 - Set up the [webserver](webservicesetup.md) on the Moodle instance.
 - Set up your [local machine](localsetup.md).
 - Use `createrepo.php`, `exportrepofrommoodle.php` and `importrepotomoodle.php` to manage your repository.
+- Version 4.1.5+ of Moodle is required for this functionality (or 4.2.2+ as 4.2.0 and 4.2.1 are not compatible).
 
 ## Deleting
 - After running `importrepotomoodle.php` you may be informed of questions in Moodle that are no longer linked to your repository - either there is no manifest entry (i.e. the question has been added to Moodle after export) or there is no question file in the repo (i.e. the question has been deleted from the repo).
