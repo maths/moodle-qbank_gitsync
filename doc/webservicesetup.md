@@ -22,7 +22,7 @@ This plugin requires the [import as new version](https://github.com/maths/moodle
   - Assigned the role to the user. (Site administration/User/Permissions/Assign system roles)
   - Enable the webservice (Site administration/Server/Web services/External services/qbank_gitsync/Edit) and on the same page 'Show more...' and enable file upload within the webservice.
   - Authorise the user to use the service. (Site administration/Server/Web services/External services/qbank_gitsync/Authorised users)
-- Go to Site administration/Server/Web services/Manage tokens in Moodle and create a token for the user `ws-gitsync-user`.
+- Go to Site administration/Server/Web services/Manage tokens in Moodle and create a token for the user `ws-gitsync-user`. Copy this string and store it somewhere safe as you won't be able to access it anymore once you have left the page! You will need this token later when configuring up the connection to your Moodle installation.
 ![Screenshot of token creation.](../images/Add_token.png)
 - Add roles for the user to give them access to the required courses and questions. If you would like them to have site-wide access, go to Site Administration/Users/Permissions/Assign system roles and give `ws-gitsync-user` Manager role for the webservice to have access to all questions on the site.  If you only want them to have access to particular courses, then make `ws-gitsync-user` Manager on courses individually.
 - If you have user agreements set up for your Moodle site, you will need to accept them on behalf of the Gitsync user. (Site Administration/Users/Privacy and policies/Manage policies/Agreements/Accept)
