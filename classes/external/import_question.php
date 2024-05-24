@@ -87,9 +87,6 @@ class import_question extends external_api {
     /**
      * Import a question from XML file
      *
-     * Initially just create a new one in Moodle DB. Will need to expand to
-     * use importasversion if question already exists.
-     *
      * @param string|null $questionbankentryid questionbankentry id
      * @param string|null $importedversion last exported version of question
      * @param string|null $exportedversion last imported version of question

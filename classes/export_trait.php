@@ -209,6 +209,7 @@ trait export_trait {
                     'coursecategory' => $this->listpostsettings['coursecategory'],
                     'instanceid' => $this->listpostsettings['instanceid'],
                     'format' => 'xml',
+                    'ignorecat' => $this->ignorecat,
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");
             }

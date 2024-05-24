@@ -203,6 +203,13 @@ class cli_helper {
                 static::call_exit();
             }
         }
+        if (isset($cliargs['ignorecat']) && $cliargs['ignorecat']) {
+            if (@preg_match($cliargs['ignorecat'], '') === false) {
+                echo "\nThere is a problem with your regular expression for ignoring categories:\n";
+                echo error_get_last()["message"] . "\n";
+                static::call_exit();
+            }
+        }
         if (isset($cliargs['contextlevel'])) {
             switch ($cliargs['contextlevel']) {
                 case 'system':
@@ -454,6 +461,7 @@ class cli_helper {
                     $manifestcontents->context->instanceid = $questioninfo->instanceid;
                     $manifestcontents->context->defaultsubcategoryid = $subcategoryid;
                     $manifestcontents->context->defaultsubdirectory = $subdirectory;
+                    $manifestcontents->context->defaultignorecat = $questioninfo->ignorecat;
                     $manifestcontents->context->moodleurl = $moodleurl;
                 }
             }
@@ -719,6 +727,9 @@ class cli_helper {
             }
             if ($moodlequestionlist->contextinfo->modulename) {
                 echo "Quiz: {$moodlequestionlist->contextinfo->modulename}\n";
+            }
+            if (isset($activity->ignorecat)) {
+                echo "Ignoring categories (and their descendants) in form: {$activity->ignorecat}\n";
             }
             if (isset($activity->subdirectory)) {
                 echo "Question subdirectory: {$activity->subdirectory}\n";
