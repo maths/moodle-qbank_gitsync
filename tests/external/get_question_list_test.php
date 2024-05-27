@@ -538,7 +538,6 @@ class get_question_list_test extends externallib_advanced_testcase {
         $q4 = $this->generator->create_question('shortanswer', null,
                                             ['name' => self::QNAME . '4', 'category' => $qcategory4->id]);
 
-
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
         $qbankentryid3 = $DB->get_field('question_versions', 'questionbankentryid',
