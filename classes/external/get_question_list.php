@@ -56,8 +56,9 @@ class get_question_list extends external_api {
             'instanceid' => new external_value(PARAM_SEQUENCE, 'Course, module or coursecategory id'),
             'contextonly' => new external_value(PARAM_BOOL, 'Only return context info?'),
             'qbankentryids' => new external_multiple_structure(
-                new external_value(PARAM_SEQUENCE, 'QUestion bank entry id')
+                new external_value(PARAM_SEQUENCE, 'Question bank entry id')
             ),
+            'ignorecat' => new external_value(PARAM_TEXT, 'Regex of categories to ignore'),
         ]);
     }
 
@@ -75,6 +76,7 @@ class get_question_list extends external_api {
                 'instanceid' => new external_value(PARAM_SEQUENCE, 'id of course category, course or module'),
                 'qcategoryname' => new external_value(PARAM_TEXT, 'name of question category'),
                 'qcategoryid' => new external_value(PARAM_SEQUENCE, 'id of question category'),
+                'ignorecat' => new external_value(PARAM_TEXT, 'regex of categories ignored'),
             ]),
             'questions' => new external_multiple_structure(
                 new external_single_structure([
@@ -100,13 +102,14 @@ class get_question_list extends external_api {
      *  for course level) to search for questions (supercedes $coursename, $modulename & $coursecategory)
      * @param bool $contextonly Only return info on context and not questions
      * @param array|null $qbankentryids Array of qbankentryids to check
+     * @param string|null $ignorecat Regex of categories to ignore (along with their descendants)
      * @return object containing context info and an array of question data
      */
     public static function execute(?string $qcategoryname,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null, ?string $qcategoryid = null,
                                     ?string $instanceid = null, bool $contextonly = false,
-                                    ?array $qbankentryids = ['']):object {
+                                    ?array $qbankentryids = [''], ?string $ignorecat = null):object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'qcategoryname' => $qcategoryname,
@@ -118,6 +121,7 @@ class get_question_list extends external_api {
             'instanceid' => $instanceid,
             'contextonly' => $contextonly,
             'qbankentryids' => $qbankentryids,
+            'ignorecat' => $ignorecat,
         ]);
         $contextinfo = get_context($params['contextlevel'], $params['coursecategory'],
                                    $params['coursename'], $params['modulename'],
@@ -137,6 +141,7 @@ class get_question_list extends external_api {
         $response->questions = [];
         $response->contextinfo->qcategoryname = '';
         $response->contextinfo->qcategoryid = null;
+        $response->contextinfo->ignorecat = $ignorecat;
 
         if (count($qbankentryids) === 1 && $qbankentryids[0] === '') {
             if (is_null($qcategoryid) || $qcategoryid === '') {
@@ -176,7 +181,7 @@ class get_question_list extends external_api {
                 return $response;
             }
 
-            $categoriestosearch = array_merge([$category], self::get_category_descendants($category->id));
+            $categoriestosearch = array_merge([$category], self::get_category_descendants($category->id, $params['ignorecat']));
 
             $categoryids = array_map(fn($catinfo) => $catinfo->id, $categoriestosearch);
 
@@ -217,15 +222,19 @@ class get_question_list extends external_api {
      * Recursive function to return the ids of all the question categories below a given category.
      *
      * @param int $parentid ID of the category to search below
+     * @param string|null $ignorecat Regex of categories to ignore (along with their descendants)
      * @return array of question categories
      */
-    public static function get_category_descendants(int $parentid):array {
+    public static function get_category_descendants(int $parentid, ?string $ignorecat):array {
         global $DB;
         $children = $DB->get_records('question_categories', ['parent' => $parentid], null, 'id, parent, name');
+        if ($ignorecat) {
+            $children = array_filter($children, fn($ch) => !preg_match($ignorecat, $ch->name));
+        }
         // Copy array.
         $descendants = array_merge([], $children);
         foreach ($children as $child) {
-            $childdescendants = self::get_category_descendants($child->id);
+            $childdescendants = self::get_category_descendants($child->id, $ignorecat);
             $descendants = array_merge($descendants, $childdescendants);
         }
         return $descendants;

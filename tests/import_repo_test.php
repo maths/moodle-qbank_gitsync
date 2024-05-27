@@ -107,6 +107,7 @@ class import_repo_test extends advanced_testcase {
             'token' => 'XXXXXX',
             'help' => false,
             'usegit' => false,
+            'ignorecat' => null,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',
@@ -265,6 +266,69 @@ class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test the full process with manifest path and defaultignorecat.
+     */
+    public function test_process_manifest_path_and_defaultignore(): void {
+        $this->options["manifestpath"] = 'fakeignore_system_question_manifest.json';
+        $this->replace_mock_default();
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 2 category calls to the webservice and 1 question calls as using defaultsubdir cat-2
+        // and default ignore of subcat 2_1.
+        $this->curl->expects($this->exactly(3))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}',
+        );
+
+        $this->importrepo->process();
+
+        // Check manifest file created.
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 1 question.*\n$/s');
+        // Use default ignore parameter.
+        $this->assertEquals("/subcat 2_1/", $this->importrepo->ignorecat);
+    }
+
+    /**
+     * Test the full process with manifest path and defaultignorecat and ignorecat param.
+     */
+    public function test_process_manifest_path_and_defaultignore_and_param(): void {
+        $this->options["manifestpath"] = 'fakeignore_system_question_manifest.json';
+        $this->options["ignorecat"] = '/cat 1/';
+        $this->options["subdirectory"] = null;
+        $this->replace_mock_default();
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 2 category calls to the webservice and 3 question calls as ignoring cat 1.
+        $this->curl->expects($this->exactly(5))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35002", "version": "2"}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": []}',
+        );
+
+        $this->importrepo->process();
+
+        // Check manifest file created.
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/^\nAdded 0 questions.*Updated 3 questions.*\n$/s');
+        // Use default ignore parameter.
+        $this->assertEquals("/cat 1/", $this->importrepo->ignorecat);
+    }
+
+    /**
      * Test importing categories.
      * @covers \gitsync\import_repo\import_categories()
      */
@@ -280,6 +344,46 @@ class import_repo_test extends advanced_testcase {
         $this->assertContains($this->rootpath . '/top/cat-1/gitsync_category.xml', $this->results);
         $this->assertContains($this->rootpath . '/top/cat-2/gitsync_category.xml', $this->results);
         $this->assertContains($this->rootpath . '/top/cat-2/subcat-2_1/gitsync_category.xml', $this->results);
+    }
+
+    /**
+     * Test importing categories with ignore.
+     * @covers \gitsync\import_repo\import_categories()
+     */
+    public function test_import_categories_with_ignore(): void {
+        $this->options["ignorecat"] = '/^cat 2$/';
+        $this->replace_mock_default();
+        $this->results = [];
+        $this->curl->expects($this->exactly(1))->method('execute')->will($this->returnCallback(
+            function() {
+                $this->results[] = $this->importrepo->repoiterator->getPathname();
+                return '{"questionbankentryid": null, "version" : null}';
+            })
+        );
+        $this->importrepo->import_categories();
+        $this->assertContains($this->rootpath . '/top/cat-1/gitsync_category.xml', $this->results);
+        $this->assertNotContains($this->rootpath . '/top/cat-2/gitsync_category.xml', $this->results);
+        $this->assertNotContains($this->rootpath . '/top/cat-2/subcat-2_1/gitsync_category.xml', $this->results);
+    }
+
+    /**
+     * Test importing categories with ignore subcat.
+     * @covers \gitsync\import_repo\import_categories()
+     */
+    public function test_import_categories_with_ignore_subcat(): void {
+        $this->options["ignorecat"] = '/subcat 2_1/';
+        $this->replace_mock_default();
+        $this->results = [];
+        $this->curl->expects($this->exactly(2))->method('execute')->will($this->returnCallback(
+            function() {
+                $this->results[] = $this->importrepo->repoiterator->getPathname();
+                return '{"questionbankentryid": null, "version" : null}';
+            })
+        );
+        $this->importrepo->import_categories();
+        $this->assertContains($this->rootpath . '/top/cat-1/gitsync_category.xml', $this->results);
+        $this->assertContains($this->rootpath . '/top/cat-2/gitsync_category.xml', $this->results);
+        $this->assertNotContains($this->rootpath . '/top/cat-2/subcat-2_1/gitsync_category.xml', $this->results);
     }
 
     /**
@@ -354,6 +458,78 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($firstline->modulename, 'Test 1');
         $this->assertEquals($firstline->coursecategory, 'Cat 1');
         $this->assertEquals($firstline->format, 'xml');
+    }
+
+    /**
+     * Test importing questions with ignore.
+     * @covers \gitsync\import_repo\import_questions()
+     */
+    public function test_import_questions_with_ignore(): void {
+        $this->options["ignorecat"] = '/^subcat 2.*/';
+        $this->replace_mock_default();
+        $this->results = [];
+        $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": "35001", "version": "2"}',
+            '{"questionbankentryid": "35002", "version": "2"}',
+        );
+        $this->curl->expects($this->exactly(2))->method('execute')->will($this->returnCallback(
+            function() {
+                $this->results[] = [
+                                    $this->importrepo->subdirectoryiterator->getPathname(),
+                                    $this->importrepo->postsettings['qcategoryname'],
+                                   ];
+            })
+        );
+        $this->importrepo->postsettings = [
+            'contextlevel' => '10',
+            'coursename' => 'Course 1',
+            'modulename' => 'Test 1',
+            'coursecategory' => 'Cat 1',
+            'instanceid' => null,
+        ];
+        $this->importrepo->import_questions();
+        $this->assertContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1'], $this->results);
+        $this->assertNotContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
+                                $this->results);
+        $this->assertNotContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
+                                $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2'], $this->results);
+    }
+
+    /**
+     * Test importing questions with subcat and ignore.
+     * @covers \gitsync\import_repo\import_questions()
+     */
+    public function test_import_questions_with_subcat_and_ignore(): void {
+        $this->options["subdirectory"] = 'top/cat-2';
+        $this->options["ignorecat"] = '/^subcat 2.*/';
+        $this->replace_mock_default();
+        $this->results = [];
+        $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": "35002", "version": "2"}',
+        );
+        $this->curl->expects($this->exactly(1))->method('execute')->will($this->returnCallback(
+            function() {
+                $this->results[] = [
+                                    $this->importrepo->subdirectoryiterator->getPathname(),
+                                    $this->importrepo->postsettings['qcategoryname'],
+                                   ];
+            })
+        );
+        $this->importrepo->postsettings = [
+            'contextlevel' => '10',
+            'coursename' => 'Course 1',
+            'modulename' => 'Test 1',
+            'coursecategory' => 'Cat 1',
+            'instanceid' => null,
+        ];
+        $this->importrepo->import_questions();
+        $this->assertNotContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1'], $this->results);
+        $this->assertNotContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
+                                $this->results);
+        $this->assertNotContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
+                                $this->results);
+        $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2'], $this->results);
     }
 
     /**
@@ -603,11 +779,11 @@ class import_repo_test extends advanced_testcase {
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(4, $manifestcontents->questions);
 
-        $manifestentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
-        $this->assertArrayHasKey('35001', $manifestentries);
-        $this->assertArrayHasKey('35002', $manifestentries);
-        $this->assertArrayHasKey('35003', $manifestentries);
-        $this->assertArrayHasKey('35004', $manifestentries);
+        $manifestentries = array_column($manifestcontents->questions, null, 'filepath');
+        $this->assertArrayHasKey('/top/cat-1/First-Question.xml', $manifestentries);
+        $this->assertArrayHasKey('/top/cat-2/Second-Question.xml', $manifestentries);
+        $this->assertArrayHasKey('/top/cat-2/subcat-2_1/Third-Question.xml', $manifestentries);
+        $this->assertArrayHasKey('/top/cat-2/subcat-2_1/Fourth-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
         $this->assertEquals($context->contextlevel, '10');
@@ -616,6 +792,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($context->coursecategory, '');
         $this->assertEquals($context->defaultsubcategoryid, 123);
         $this->assertEquals($context->defaultsubdirectory, 'top');
+        $this->assertEquals($context->defaultignorecat, null);
 
         $this->expectOutputRegex('/^\nManifest file is empty.*\nAdded 4 questions.*Updated 0 questions.*\n$/s');
     }
@@ -652,9 +829,9 @@ class import_repo_test extends advanced_testcase {
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(2, $manifestcontents->questions);
 
-        $manifestentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
-        $this->assertArrayHasKey('35004', $manifestentries);
-        $this->assertArrayHasKey('35003', $manifestentries);
+        $manifestentries = array_column($manifestcontents->questions, null, 'filepath');
+        $this->assertArrayHasKey('/top/cat-2/subcat-2_1/Third-Question.xml', $manifestentries);
+        $this->assertArrayHasKey('/top/cat-2/subcat-2_1/Fourth-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
         $this->assertEquals($context->contextlevel, '10');
@@ -663,9 +840,104 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals($context->coursecategory, '');
         $this->assertEquals($context->defaultsubcategoryid, 123);
         $this->assertEquals($context->defaultsubdirectory, 'top/cat-2/subcat-2_1');
+        $this->assertEquals($context->defaultignorecat, null);
 
         $this->expectOutputRegex('/^\nManifest file is empty.*\nAdded 2 questions.*Updated 0 questions.*\n$/s');
     }
+
+    /**
+     * Test creation of manifest file with subdirectory and ignore.
+     * @covers \gitsync\cli_helper\create_manifest_file()
+     *
+     * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
+     */
+    public function test_manifest_file_with_subdirectory_and_ignore(): void {
+        unlink($this->importrepo->manifestpath);
+        $this->options["subdirectory"] = 'top/cat-2';
+        $this->options["ignorecat"] = '/subcat 2_1/';
+        $this->replace_mock_default();
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 2 category calls to the webservice and 1 question call.
+        $this->importrepo->curlrequest->expects($this->exactly(3))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+        );
+
+        $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/ds", "qcategoryid":1},
+              "questions": []}'
+        );
+        $this->importrepo->process();
+
+        // Manifest file is a single array.
+        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
+        $this->assertCount(1, $manifestcontents->questions);
+
+        $manifestentries = array_column($manifestcontents->questions, null, 'filepath');
+        $this->assertArrayHasKey('/top/cat-2/Second-Question.xml', $manifestentries);
+
+        $context = $manifestcontents->context;
+        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->coursename, 'Course 1');
+        $this->assertEquals($context->modulename, 'Module 1');
+        $this->assertEquals($context->coursecategory, '');
+        $this->assertEquals($context->defaultsubcategoryid, 123);
+        $this->assertEquals($context->defaultsubdirectory, 'top/cat-2');
+        $this->assertEquals($context->defaultignorecat, '/subcat 2_1/');
+
+        $this->expectOutputRegex('/^\nManifest file is empty.*\nAdded 1 question.*Updated 0 questions.*\n$/s');
+    }
+
+    /**
+     * Test creation of manifest file with ignore.
+     * @covers \gitsync\cli_helper\create_manifest_file()
+     *
+     * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
+     */
+    public function test_manifest_file_with_ignore(): void {
+        unlink($this->importrepo->manifestpath);
+        $this->options["ignorecat"] = '/subcat 2_1/';
+        $this->replace_mock_default();
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 2 category calls to the webservice and 2 question calls.
+        $this->importrepo->curlrequest->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+            '{"questionbankentryid": "35005", "version": "2"}',
+        );
+
+        $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/ds", "qcategoryid":1},
+              "questions": []}'
+        );
+        $this->importrepo->process();
+
+        // Manifest file is a single array.
+        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
+        $this->assertCount(2, $manifestcontents->questions);
+
+        $manifestentries = array_column($manifestcontents->questions, null, 'filepath');
+        $this->assertArrayHasKey('/top/cat-2/Second-Question.xml', $manifestentries);
+        $this->assertArrayHasKey('/top/cat-1/First-Question.xml', $manifestentries);
+
+        $context = $manifestcontents->context;
+        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->coursename, 'Course 1');
+        $this->assertEquals($context->modulename, 'Module 1');
+        $this->assertEquals($context->coursecategory, '');
+        $this->assertEquals($context->defaultsubcategoryid, 123);
+        $this->assertEquals($context->defaultsubdirectory, 'top');
+        $this->assertEquals($context->defaultignorecat, '/subcat 2_1/');
+
+        $this->expectOutputRegex('/^\nManifest file is empty.*\nAdded 2 question.*Updated 0 questions.*\n$/s');
+    }
+
 
     /**
      * Test update of manifest file.

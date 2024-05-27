@@ -1,0 +1,44 @@
+{
+    "context": {
+        "contextlevel": 10,
+        "coursename": "",
+        "modulename": "",
+        "coursecategory": "",
+        "qcategoryname": "/top",
+        "instanceid": "",
+        "defaultsubdirectory": "top\/cat-2",
+        "defaultsubcategoryid": 5,
+        "defaultignorecat": "/subcat 2_1/"
+    },
+    "questions": [
+        {
+            "questionbankentryid": 35001,
+            "filepath": "\/top\/cat-1\/First-Question.xml",
+            "importedversion": "1",
+            "exportedversion": "1",
+            "format": "xml"
+        },
+        {
+            "questionbankentryid": 35002,
+            "filepath": "\/top\/cat-2\/subcat-2_1\/Third-Question.xml",
+            "importedversion": "6",
+            "exportedversion": "7",
+            "format": "xml"
+        },
+        {
+            "questionbankentryid": 35004,
+            "filepath": "\/top\/cat-2\/subcat-2_1\/Fourth-Question.xml",
+            "importedversion": "1",
+            "exportedversion": "1",
+            "currentcommit": "35004test",
+            "format": "xml"
+        },
+        {
+            "questionbankentryid": 35003,
+            "filepath": "\/top\/cat-2\/Second-Question.xml",
+            "importedversion": "1",
+            "exportedversion": "1",
+            "format": "xml"
+        }
+    ]
+}

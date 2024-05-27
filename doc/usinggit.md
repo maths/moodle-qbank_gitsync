@@ -35,7 +35,11 @@ You can use context instance id and subcategory id instead:
 * `-n` the context instance id, which is the course id in this case.
 * `-q` the question category id
 
-You'll get a confirmation of the context and category with the option to abort before performing the actual export. A manifest file will be created in the specified directory.
+You can also ignore certain categories (and their descendants) using `-x` and a regex expression to match the category name(s) within Moodle.
+
+`php createrepo.php -l course -n 2 -d "master" -q 80 -x "/^.*DO_NOT_SHARE$/"`
+
+You'll get a confirmation of the context and category with the option to abort before performing the actual export. A manifest file will be created in the specified directory. The subdirectory/subcategory and any regex for ignoring categories you use will be stored in the manifest and used on import and export unless you override them using `-s` and/or `-x` (e.g. `-s "top" -x "/^\b$/"`).
 
 To import/export changes:
  

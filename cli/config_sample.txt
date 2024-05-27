@@ -55,3 +55,12 @@ $manifestpath = null;
 
 // Are you using Git and wanting repository checks performed automatically?
 $usegit = true;
+
+// Category regex to ignore.
+// Set this to ignore categories matching the regexp and the descendants of those categories.
+// Example: '/^.*DO_NOT_SHARE$/' will ignore 'DO_NOT_SHARE', 'really DO_NOT_SHARE' but
+// not 'DO_NOT_SHARE really', etc.
+// Alternatively, use -x CLI paramater.
+// If this setting is null and -x is not used, the setting
+// saved in the manifest file during repo creation will be used on import/export.
+$ignorecat = null;
