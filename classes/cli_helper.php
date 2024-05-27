@@ -203,8 +203,8 @@ class cli_helper {
                 static::call_exit();
             }
         }
-        if (isset($cliargs['ignorecat']) && $cliargs['ignorecat']) {
-            if (@preg_match($cliargs['ignorecat'], '') === false) {
+        if (isset($cliargs['ignorecat'])) {
+            if (@preg_match($cliargs['ignorecat'], 'zzzzzzzz') === false) {
                 echo "\nThere is a problem with your regular expression for ignoring categories:\n";
                 echo error_get_last()["message"] . "\n";
                 static::call_exit();

@@ -73,6 +73,7 @@ class create_repo_test extends advanced_testcase {
             'instanceid' => null,
             'token' => 'XXXXXX',
             'help' => false,
+            'ignorecat' => null,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',

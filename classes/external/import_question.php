@@ -154,7 +154,7 @@ class import_question extends external_api {
 
         $iscategory = false;
         if ($params['questionbankentryid']) {
-            $question = question_bank::load_question_data($questiondata->questionid);
+            $question = question_bank::load_question($questiondata->questionid);
         } else if (isset($params['qcategoryid']) && $params['qcategoryid'] !== '') {
             $category = $DB->get_record('question_categories', ['id' => $qcategoryid]);
             $qformat->setCategory($category);

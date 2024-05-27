@@ -456,4 +456,121 @@ class get_question_list_test extends externallib_advanced_testcase {
         $events = $sink->get_events();
         $this->assertEquals(count($events), 0);
     }
+
+    /**
+     * Test output of execute function when subcategory name supplied and ignore category.
+     */
+    public function test_list_with_subcategory_name_and_ignore(): void {
+        global $DB;
+        // Set the required capabilities - webservice access and list rights on course.
+        // Q1 in original category. Q2 in Cat2. Q3 in SubCat1. Q4 in SubCat2.
+        $context = context_course::instance($this->course->id);
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $qcategory2 = $this->generator->create_question_category(
+            ['contextid' => \context_course::instance($this->course->id)->id, 'name' => 'Cat2_DO_NOT_SHARE']);
+        $qcategory3 = $this->generator->create_question_category(
+            ['contextid' => \context_course::instance($this->course->id)->id, 'name' => 'SubCat1',
+            'parent' => $qcategory2->id]);
+        $qcategory4 = $this->generator->create_question_category(
+            ['contextid' => \context_course::instance($this->course->id)->id, 'name' => 'SubCat2',
+            'parent' => $qcategory2->id]);
+
+        $q2 = $this->generator->create_question('shortanswer', null,
+                                            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
+        $q3 = $this->generator->create_question('shortanswer', null,
+                                            ['name' => self::QNAME . '3', 'category' => $qcategory3->id]);
+        $q4 = $this->generator->create_question('shortanswer', null,
+                                            ['name' => self::QNAME . '4', 'category' => $qcategory4->id]);
+
+        $sink = $this->redirectEvents();
+        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
+                                                  null, null, false, [''], '/.*DO_NOT_SHARE/');
+
+        $returnvalue = external_api::clean_returnvalue(
+            get_question_list::execute_returns(),
+            $returnvalue
+        );
+
+        $wrongq = false;
+        $this->assertEquals(1, count($returnvalue['questions']));
+        foreach ($returnvalue['questions'] as $returnedq) {
+            if (array_search($returnedq['questionbankentryid'], [$this->qbankentryid]) === false) {
+                $wrongq = true;
+            }
+        }
+
+        $this->assertEquals($wrongq, false);
+
+        $this->assertEquals($this->course->fullname, $returnvalue['contextinfo']['coursename']);
+        $this->assertEquals($this->course->id, $returnvalue['contextinfo']['instanceid']);
+        $this->assertEquals(null, $returnvalue['contextinfo']['categoryname']);
+        $this->assertEquals(null, $returnvalue['contextinfo']['modulename']);
+        $this->assertEquals('/.*DO_NOT_SHARE/', $returnvalue['contextinfo']['ignorecat']);
+
+        $events = $sink->get_events();
+        $this->assertEquals(count($events), 0);
+    }
+
+    /**
+     * Test output of execute function when ignore category.
+     */
+    public function test_list_with_ignore(): void {
+        global $DB;
+        // Set the required capabilities - webservice access and list rights on course.
+        // Q1 in original category. Q2 in Cat2. Q3 in SubCat1. Q4 in SubCat2.
+        $context = context_course::instance($this->course->id);
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $qcategory2 = $this->generator->create_question_category(
+            ['contextid' => \context_course::instance($this->course->id)->id, 'name' => 'Cat2']);
+        $qcategory3 = $this->generator->create_question_category(
+            ['contextid' => \context_course::instance($this->course->id)->id, 'name' => 'SubCat1',
+            'parent' => $qcategory2->id]);
+        $qcategory4 = $this->generator->create_question_category(
+            ['contextid' => \context_course::instance($this->course->id)->id, 'name' => 'SubCat2_DO_NOT_SHARE',
+            'parent' => $qcategory2->id]);
+
+        $q2 = $this->generator->create_question('shortanswer', null,
+                                            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
+        $q3 = $this->generator->create_question('shortanswer', null,
+                                            ['name' => self::QNAME . '3', 'category' => $qcategory3->id]);
+        $q4 = $this->generator->create_question('shortanswer', null,
+                                            ['name' => self::QNAME . '4', 'category' => $qcategory4->id]);
+
+
+        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
+                             ['questionid' => $q2->id], $strictness = MUST_EXIST);
+        $qbankentryid3 = $DB->get_field('question_versions', 'questionbankentryid',
+                             ['questionid' => $q3->id], $strictness = MUST_EXIST);
+
+        $sink = $this->redirectEvents();
+        $returnvalue = get_question_list::execute('top/' . $qcategory2->name, 50, $this->course->fullname, null, null,
+                                                  null, null, false, [''], '/.*DO_NOT_SHARE/');
+
+        $returnvalue = external_api::clean_returnvalue(
+            get_question_list::execute_returns(),
+            $returnvalue
+        );
+
+        $wrongq = false;
+        $this->assertEquals(2, count($returnvalue['questions']));
+        foreach ($returnvalue['questions'] as $returnedq) {
+            // Q1 excluded by subcategory. Q4 excluded by ignore.
+            if (array_search($returnedq['questionbankentryid'], [$qbankentryid2, $qbankentryid3]) === false) {
+                $wrongq = true;
+            }
+        }
+
+        $this->assertEquals($wrongq, false);
+
+        $this->assertEquals($this->course->fullname, $returnvalue['contextinfo']['coursename']);
+        $this->assertEquals($this->course->id, $returnvalue['contextinfo']['instanceid']);
+        $this->assertEquals(null, $returnvalue['contextinfo']['categoryname']);
+        $this->assertEquals(null, $returnvalue['contextinfo']['modulename']);
+        $this->assertEquals('/.*DO_NOT_SHARE/', $returnvalue['contextinfo']['ignorecat']);
+
+        $events = $sink->get_events();
+        $this->assertEquals(count($events), 0);
+    }
 }

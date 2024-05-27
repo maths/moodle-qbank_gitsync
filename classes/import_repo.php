@@ -309,7 +309,7 @@ class import_repo {
             $this->listpostsettings['modulename'] = $this->manifestcontents->context->modulename;
             $this->listpostsettings['coursecategory'] = $this->manifestcontents->context->coursecategory;
             $this->ignorecat = isset($arguments['ignorecat']) ?
-                    $arguments['ignorecat'] : $this->manifestcontents->context->defaultignorecat;
+                    $arguments['ignorecat'] : $this->manifestcontents->context->defaultignorecat ?? null;
             $this->listpostsettings['ignorecat'] = $this->ignorecat;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
             if ($arguments['subdirectory']) {

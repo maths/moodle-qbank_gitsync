@@ -138,7 +138,7 @@ class export_repo {
         if ($arguments['ignorecat']) {
             $this->ignorecat = $arguments['ignorecat'];
         } else {
-            $this->ignorecat = $this->manifestcontents->context->defaultignorecat;
+            $this->ignorecat = $this->manifestcontents->context->defaultignorecat ?? null;
         }
 
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
