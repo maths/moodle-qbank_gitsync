@@ -92,6 +92,12 @@ class export_repo {
      * @var string
      */
     public string $subcategory;
+    /**
+     * Regex of categories to ignore.
+     *
+     * @var string|null
+     */
+    public ?string $ignorecat;
 
     /**
      * Constructor
@@ -129,6 +135,11 @@ class export_repo {
             // Subcategory will be properly set later.
             $this->subcategory = 'top';
         }
+        if ($arguments['ignorecat']) {
+            $this->ignorecat = $arguments['ignorecat'];
+        } else {
+            $this->ignorecat = $this->manifestcontents->context->defaultignorecat ?? null;
+        }
 
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
                                           '_export' . cli_helper::TEMP_MANIFEST_FILE,
@@ -160,6 +171,7 @@ class export_repo {
             'instanceid' => $this->manifestcontents->context->instanceid,
             'contextonly' => 0,
             'qbankentryids[]' => null,
+            'ignorecat' => $this->ignorecat,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);

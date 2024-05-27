@@ -140,6 +140,12 @@ class import_repo {
      */
     public string $subdirectory;
     /**
+     * Regex of categories to ignore.
+     *
+     * @var string|null
+     */
+    public ?string $ignorecat;
+    /**
      * Are we using git?.
      * Set in config. Adds commit hash to manifest.
      * @var bool
@@ -184,6 +190,7 @@ class import_repo {
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
         $instanceid = $arguments['instanceid'];
+        $this->ignorecat = $arguments['ignorecat'];
         $this->usegit = $arguments['usegit'];
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
@@ -237,6 +244,7 @@ class import_repo {
             'instanceid' => $instanceid,
             'contextonly' => 0,
             'qbankentryids[]' => null,
+            'ignorecat' => $this->ignorecat,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
@@ -257,7 +265,7 @@ class import_repo {
             $this->listpostsettings['instanceid'] = $instanceinfo->contextinfo->instanceid;
             $this->listpostsettings['coursename'] = $instanceinfo->contextinfo->coursename;
             $this->listpostsettings['modulename'] = $instanceinfo->contextinfo->modulename;
-            $this->listpostsettings['coursecategory'] = $instanceinfo->contextinfo->categoryname;
+            $this->listpostsettings['ignorecat'] = $this->ignorecat;
         }
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
                                           '_import' . cli_helper::TEMP_MANIFEST_FILE,
@@ -300,6 +308,9 @@ class import_repo {
             $this->listpostsettings['coursename'] = $this->manifestcontents->context->coursename;
             $this->listpostsettings['modulename'] = $this->manifestcontents->context->modulename;
             $this->listpostsettings['coursecategory'] = $this->manifestcontents->context->coursecategory;
+            $this->ignorecat = isset($arguments['ignorecat']) ?
+                    $arguments['ignorecat'] : $this->manifestcontents->context->defaultignorecat ?? null;
+            $this->listpostsettings['ignorecat'] = $this->ignorecat;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
             if ($arguments['subdirectory']) {
                 $this->subdirectory = $arguments['subdirectory'];
@@ -381,6 +392,22 @@ class import_repo {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE) {
                     $this->postsettings['qcategoryname'] = '';
+                    if ($this->ignorecat) {
+                        $qcategoryname = cli_helper::get_question_category_from_file($repoitem);
+                        if ($qcategoryname) {
+                            $catparts = explode('/', $qcategoryname);
+                            foreach ($catparts as $catpart) {
+                                if (preg_match($this->ignorecat, $catpart)) {
+                                    continue 2;
+                                }
+                            }
+                        } else {
+                            echo "\n{$repoitem->getPathname()} not imported?\n";
+                            echo "Stopping before trying to import questions.\n";
+                            $this->call_exit();
+                        }
+                    }
+
                     $this->upload_file($repoitem);
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                     $response = $this->curlrequest->execute();
@@ -390,7 +417,7 @@ class import_repo {
                         echo $response . "\n";
                         echo "{$repoitem->getPathname()} not imported?\n";
                         echo "Stopping before trying to import questions.\n";
-                        $this->call_exit();;
+                        $this->call_exit();
                     } else if (property_exists($responsejson, 'exception')) {
                         echo "{$responsejson->message}\n";
                         if (property_exists($responsejson, 'debuginfo')) {
@@ -398,7 +425,7 @@ class import_repo {
                         }
                         echo "{$repoitem->getPathname()} not imported.\n";
                         echo "Stopping before trying to import questions.\n";
-                        $this->call_exit();;
+                        $this->call_exit();
                     }
                 }
             }
@@ -479,6 +506,14 @@ class import_repo {
                     $this->postsettings['qcategoryname'] = $qcategoryname;
                     // Path of file (without filename) relative to base $directory.
                     if ($qcategoryname) {
+                        if ($this->ignorecat) {
+                            $catparts = explode('/', $qcategoryname);
+                            foreach ($catparts as $catpart) {
+                                if (preg_match($this->ignorecat, $catpart)) {
+                                    continue 2;
+                                }
+                            }
+                        }
                         $relpath = str_replace(dirname($this->manifestpath), '', $repoitem->getPathname());
                         $relpath = str_replace( '\\', '/', $relpath);
                         $existingentry = $existingentries[$relpath] ?? false;
@@ -526,6 +561,7 @@ class import_repo {
                                 'coursecategory' => $this->postsettings['coursecategory'],
                                 'instanceid' => $this->postsettings['instanceid'],
                                 'format' => 'xml',
+                                'ignorecat' => $this->ignorecat,
                             ];
                             if ($existingentry && isset($existingentry->currentcommit)) {
                                 $fileoutput['moodlecommit'] = $existingentry->currentcommit;

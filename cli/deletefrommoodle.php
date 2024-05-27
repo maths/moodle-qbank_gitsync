@@ -137,6 +137,14 @@ $options = [
         'variable' => 'usegit',
         'valuerequired' => false,
     ],
+    [
+        'longopt' => 'ignorecat',
+        'shortopt' => 'x',
+        'description' => 'Regex of categories to ignore',
+        'default' => $ignorecat,
+        'variable' => 'ignorecat',
+        'valuerequired' => true,
+    ],
 ];
 
 $clihelper = new cli_helper($options);

@@ -73,6 +73,12 @@ class create_repo {
      */
     public ?int $qcategoryid = null;
     /**
+     * Regex of categories to ignore.
+     *
+     * @var string|null
+     */
+    public ?string $ignorecat;
+    /**
      * Path to actual manifest file.
      *
      * @var string
@@ -132,6 +138,7 @@ class create_repo {
         $coursecategory = $arguments['coursecategory'];
         $qcategoryid = $arguments['qcategoryid'];
         $instanceid = $arguments['instanceid'];
+        $this->ignorecat = $arguments['ignorecat'];
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
 
@@ -161,6 +168,7 @@ class create_repo {
             'instanceid' => $instanceid,
             'contextonly' => 0,
             'qbankentryids[]' => null,
+            'ignorecat' => $this->ignorecat,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
