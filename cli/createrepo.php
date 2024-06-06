@@ -142,7 +142,7 @@ $options = [
     [
         'longopt' => 'ignorecat',
         'shortopt' => 'x',
-        'description' => 'Regex of categories to ignore',
+        'description' => 'Regex of categories to ignore - add an extra leading / for Windows.',
         'default' => $ignorecat,
         'variable' => 'ignorecat',
         'valuerequired' => true,
