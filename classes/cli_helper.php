@@ -208,7 +208,6 @@ class cli_helper {
             if (strlen($cliargs['ignorecat']) > 1 && substr($cliargs['ignorecat'], 0, 2) === '//') {
                 $cliargs['ignorecat'] = substr($cliargs['ignorecat'], 1);
             }
-            echo $cliargs['ignorecat'];
             if (@preg_match($cliargs['ignorecat'], 'zzzzzzzz') === false) {
                 echo "\nThere is a problem with your regular expression for ignoring categories:\n";
                 echo error_get_last()["message"] . "\n";
