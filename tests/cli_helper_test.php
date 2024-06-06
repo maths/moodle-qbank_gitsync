@@ -524,9 +524,9 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_ignorecat_replace(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'manifestpath' => 'path/subpath', 'ignorecat' => '//hello//'];
+        $helper->processedoptions = ['token' => 'X', 'manifestpath' => 'path/subpath', 'ignorecat' => '//hello\//'];
         $helper->validate_and_clean_args();
         $this->expectOutputString('');
-        $this->assertEquals('/hello//', $helper->processedoptions['ignorecat']);
+        $this->assertEquals('/hello\//', $helper->processedoptions['ignorecat']);
     }
 }
