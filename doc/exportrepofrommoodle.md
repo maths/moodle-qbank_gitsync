@@ -17,7 +17,7 @@
 |q|questioncategoryid|Numerical id of subcategory to actually export.
 |t|token|Security token for webservice.|
 |h|help|
-|x|ignorecat|Regex of categories to ignore
+|x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
 Examples:
 

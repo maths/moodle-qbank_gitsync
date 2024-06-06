@@ -25,7 +25,7 @@
 |n|instanceid|Numerical id of the course, module of course category.
 |t|token|Security token for webservice.
 |h|help|
-|x|ignorecat|Regex of categories to ignore
+|x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
 Examples:
 

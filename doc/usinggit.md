@@ -35,7 +35,7 @@ You can use context instance id and subcategory id instead:
 * `-n` the context instance id, which is the course id in this case.
 * `-q` the question category id
 
-You can also ignore certain categories (and their descendants) using `-x` and a regex expression to match the category name(s) within Moodle.
+You can also ignore certain categories (and their descendants) using `-x` and a regex expression to match the category name(s) within Moodle. (Add an extra leading / in Windows e.g. "//^.*DO_NOT_SHARE$/".)
 
 `php createrepo.php -l course -n 2 -d "master" -q 80 -x "/^.*DO_NOT_SHARE$/"`
 
