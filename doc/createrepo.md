@@ -49,6 +49,16 @@ TODO: note explaining directory structure.
 
 ### Example 3:
 
+Assume Moodle is exactly as in Example 1.
+
+You have a quiz within your course, and you have populated the _quiz_ question bank, rather than the course question bank.  You would like all questions from the quiz question bank,  and all sub-categories, to become files in a sub-directory "gitsync-loc" of your local `$rootdirectory` directory.
+
+Navigate to the view quiz, to get the id of the quiz itself from the URL, e.g. `mod/quiz/view.php?id=547`.  
+
+`php createrepo.php -l module -n=547 -d "gitsync-sub"`
+
+### Example 4:
+
 `php createrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" -l system`
 
 You will need to specify the context of the questions you want to export from Moodle.
