@@ -33,6 +33,7 @@ $moodleinstances = [
 ];
 
 // Array of moodleinstance nicknames and tokens.
+// Site administration/Server/Web services/Manage tokens
 $token = [
     'instance1' => '4ec...cfcd',
     'instance2' => '6ae...abcd',
