@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2024052400;
+$plugin->version   = 2024100300;
 // Question versions functionality of Moodle 4 required.
 // Question delete fix for Moodle 4.1.5 required.
 // NB 4.2.0 and 4.2.1 do not have the fix.

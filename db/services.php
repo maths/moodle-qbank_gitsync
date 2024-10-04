@@ -50,6 +50,12 @@ $functions = [
         'type'        => 'read',
         'ajax'        => true,
     ],
+    'qbank_gitsync_export_quiz_data' => [
+        'classname'   => 'qbank_gitsync\external\export_quiz_data',
+        'description' => 'Export quiz content and layout data',
+        'type'        => 'read',
+        'ajax'        => true,
+    ],
 ];
 
 $services = [
@@ -58,6 +64,7 @@ $services = [
                             'qbank_gitsync_import_question',
                             'qbank_gitsync_delete_question',
                             'qbank_gitsync_get_question_list',
+                            'qbank_gitsync_export_quiz_data',
                         ],
             'restrictedusers' => 1,
             'enabled' => 1,

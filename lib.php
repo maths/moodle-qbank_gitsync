@@ -99,8 +99,8 @@ function get_context(int $contextlevel, ?string $categoryname = null,
         case \CONTEXT_MODULE:
             if (is_null($instanceid)) {
                 // Assuming here that the module is a quiz.
-                $instanceid = $DB->get_field_sql("
-                    SELECT cm.id
+                $instancedata = $DB->get_record_sql("
+                    SELECT cm.id as cmid, q.id as quizid
                         FROM {course_modules} cm
                         JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
@@ -109,11 +109,13 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                                 AND q.name = :quizname
                                 AND m.name = 'quiz'",
                     ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
+                    $instanceid = $instancedata->cmid;
                     $result->coursename = $coursename;
                     $result->modulename = $modulename;
+                    $result->quizid = $instancedata->quizid;
             } else {
                 $instancedata = $DB->get_record_sql("
-                SELECT c.fullname as coursename, q.name as modulename
+                SELECT c.fullname as coursename, q.name as modulename, q.id as quizid
                     FROM {course_modules} cm
                     JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                     JOIN {course} c ON c.id = cm.course
@@ -123,6 +125,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                 ['instanceid' => $instanceid], $strictness = MUST_EXIST);
                 $result->coursename = $instancedata->coursename;
                 $result->modulename = $instancedata->modulename;
+                $result->quizid = $instancedata->quizid;
             }
             $result->contextlevel = 'module';
             $result->context = context_module::instance($instanceid);
