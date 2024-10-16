@@ -18,7 +18,7 @@
  * Export details of a quiz content and structure.
  *
  * @package   qbank_gitsync
- * @copyright 2023 The University of Edinburgh
+ * @copyright 2024 The University of Edinburgh
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -62,6 +62,11 @@ class export_quiz_data extends external_api {
                 'name' => new external_value(PARAM_TEXT, 'context level description'),
                 'intro' => new external_value(PARAM_RAW, 'course category name (course category context)'),
                 'introformat' => new external_value(PARAM_SEQUENCE, 'id of course category, course or module'),
+                'preferredbehaviour' => new external_value(PARAM_TEXT, 'preferred behaviour'),
+                'grade' => new external_value(PARAM_SEQUENCE, 'maximum grade'),
+                'questionsperpage' => new external_value(PARAM_SEQUENCE, 'default questions per page'),
+                'shuffleanswers' => new external_value(PARAM_BOOL, 'shuffle answers if question allows?'),
+                'navmethod' => new external_value(PARAM_TEXT, 'navigation method'),
             ]),
             'sections' => new external_multiple_structure(
                 new external_single_structure([
@@ -77,6 +82,14 @@ class export_quiz_data extends external_api {
                     'page' => new external_value(PARAM_SEQUENCE, 'page number'),
                     'requireprevious' => new external_value(PARAM_BOOL, 'Require completion of previous question'),
                     'maxmark' => new external_value(PARAM_TEXT, 'maximum mark'),
+                ])
+            ),
+            'feedback' => new external_multiple_structure(
+                new external_single_structure([
+                    'feedbacktext' => new external_value(PARAM_TEXT, 'Feedback text'),
+                    'feedbacktextformat' => new external_value(PARAM_SEQUENCE, 'Format of feedback'),
+                    'mingrade' => new external_value(PARAM_TEXT, 'minimum mark'),
+                    'maxgrade' => new external_value(PARAM_TEXT, 'maximum mark'),
                 ])
             ),
         ]);
@@ -110,12 +123,12 @@ class export_quiz_data extends external_api {
         $response->questions = [];
         $instanceid = (int) $contextinfo->moduleid;
 
-        $quiz = $DB->get_record('quiz', ['id' => $instanceid], 'intro, introformat', $strictness = MUST_EXIST);
+        $quiz = $DB->get_record('quiz', ['id' => $instanceid], 'intro, introformat');
         $response->quiz->name = $contextinfo->modulename;
         $response->quiz->intro = $quiz->intro;
         $response->quiz->introformat = $quiz->introformat;
 
-        $response->sections = $DB->get_records('quiz_sections', ['moduleid' => $instanceid], null, 'firstslot, heading, shufflequestions');
+        $response->sections = $DB->get_records('quiz_sections', ['quizid' => $instanceid], null, 'firstslot, heading, shufflequestions');
         $response->questions = $DB->get_records_sql("
         SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark
             FROM {quiz_slots} qs

@@ -1,0 +1,191 @@
+<?php
+// This file is part of Stack - http://stack.maths.ed.ac.uk/
+//
+// Stack is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Stack is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Stack.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Import details of a quiz content and structure.
+ *
+ * @package   qbank_gitsync
+ * @copyright 2024 The University of Edinburgh
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace qbank_gitsync\external;
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot .'/course/lib.php');
+require_once($CFG->dirroot . '/question/editlib.php');
+require_once($CFG->dirroot . '/lib/externallib.php');
+require_once($CFG->libdir . '/questionlib.php');
+require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
+require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+
+use external_api;
+use external_function_parameters;
+use external_multiple_structure;
+use external_single_structure;
+use external_value;
+use quiz;
+
+/**
+ * A webservice function to export details of a quiz content and structure.
+ */
+class import_quiz_data extends external_api {
+    /**
+     * Returns description of webservice function parameters
+     * @return external_single_structure
+     */
+    public static function execute_parameters() {
+        return new external_function_parameters([
+            'quiz' => new external_single_structure([
+                'name' => new external_value(PARAM_TEXT, 'context level description'),
+                'intro' => new external_value(PARAM_RAW, 'course category name (course category context)'),
+                'introformat' => new external_value(PARAM_SEQUENCE, 'id of course category, course or module'),
+                'coursename' => new external_value(PARAM_TEXT, 'course to import quiz into'),
+                'courseid' => new external_value(PARAM_SEQUENCE, 'course to import quiz into'),
+                'preferredbehaviour' => new external_value(PARAM_TEXT, 'preferred behaviour'),
+                'grade' => new external_value(PARAM_SEQUENCE, 'maximum grade'),
+                'questionsperpage' => new external_value(PARAM_SEQUENCE, 'default questions per page'),
+                'shuffleanswers' => new external_value(PARAM_BOOL, 'shuffle answers if question allows?'),
+                'navmethod' => new external_value(PARAM_TEXT, 'navigation method'),
+            ]),
+            'sections' => new external_multiple_structure(
+                new external_single_structure([
+                    'firstslot' => new external_value(PARAM_SEQUENCE, 'first slot of section'),
+                    'heading' => new external_value(PARAM_TEXT, 'heading'),
+                    'shufflequestions' => new external_value(PARAM_BOOL, 'shuffle questions?'),
+                ])
+            ),
+            'questions' => new external_multiple_structure(
+                new external_single_structure([
+                    'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'questionbankentry id'),
+                    'slot' => new external_value(PARAM_SEQUENCE, 'slot number'),
+                    'page' => new external_value(PARAM_SEQUENCE, 'page number'),
+                    'requireprevious' => new external_value(PARAM_BOOL, 'Require completion of previous question'),
+                    'maxmark' => new external_value(PARAM_TEXT, 'maximum mark'),
+                ])
+            ),
+            'feedback' => new external_multiple_structure(
+                new external_single_structure([
+                    'feedbacktext' => new external_value(PARAM_TEXT, 'Feedback text'),
+                    'feedbacktextformat' => new external_value(PARAM_SEQUENCE, 'Format of feedback'),
+                    'mingrade' => new external_value(PARAM_TEXT, 'minimum mark'),
+                    'maxgrade' => new external_value(PARAM_TEXT, 'maximum mark'),
+                ])
+            ),
+        ]);
+    }
+
+    /**
+     * Returns description of webservice function output.
+     * @return external_single_structure
+     */
+    public static function execute_returns():external_single_structure {
+        return new external_single_structure([
+            'success' => new external_value(PARAM_BOOL, 'Import success?'),
+        ]);
+    }
+
+    /**
+     * Import details of a quiz content and structure.
+     *
+     * @param array $quiz
+     * @param array $sections
+     * @param array $questions
+     * @param array $feedback
+     * @return object containing outcome
+     */
+    public static function execute(array $quiz, array $sections, array $questions, array $feedback):object {
+        global $CFG, $DB;
+        $params = self::validate_parameters(self::execute_parameters(), [
+            'quiz' => $quiz,
+            'sections' => $sections,
+            'questions' => $questions,
+            'feedback' => $feedback,
+        ]);
+        $contextinfo = get_context(\CONTEXT_COURSE, null, $params['quiz']['coursename'], null, $params['quiz']['courseid']);
+
+        $thiscontext = $contextinfo->context;
+
+        // The webservice user needs to have access to the context. They could be given Manager
+        // role at site level to access everything or access could be restricted to certain courses.
+        self::validate_context($thiscontext);
+        require_capability('qbank/gitsync:importquestions', $thiscontext);
+
+        $moduleinfo = new \stdClass();
+        $moduleinfo->name = $params['quiz']['name'];
+        $moduleinfo->modulename = 'quiz';
+        $moduleinfo->course = $contextinfo->instanceid;
+        $moduleinfo->section = 1;
+        $moduleinfo->quizpassword = '';
+        $moduleinfo->visible = true;
+        $moduleinfo->introeditor = ['text' => $params['quiz']['intro'], 'format' => $params['quiz']['introformat']];
+        $moduleinfo->preferredbehaviour = $params['quiz']['preferredbehaviour'];
+        $moduleinfo->grade = $params['quiz']['grade'];
+        $moduleinfo->questionsperpage = $params['quiz']['questionsperpage'];
+        $moduleinfo->shuffleanswers = $params['quiz']['shuffleanswers'];
+        $moduleinfo->navmethod = $params['quiz']['navmethod'];
+        $moduleinfo = create_module($moduleinfo);
+
+        foreach ($params['sections'] as $section) {
+            $section['quizid'] = $moduleinfo->instance;
+            if ($section['firstslot'] == 1) {
+                $sectionid = $DB->get_field('quiz_sections', 'id',
+                    ['quizid' => $moduleinfo->instance, 'firstslot' => 1]);
+                $section['id'] = $sectionid;
+                $DB->update_record('quiz_sections', $section);
+            } else {
+                $sectionid = $DB->insert_record('quiz_sections', $section);
+            }
+            $slotid = $DB->get_field('quiz_slots', 'id',
+                ['quizid' => $moduleinfo->instance, 'slot' => $section['firstslot']]);
+
+            // Log section break created event.
+            $event = \mod_quiz\event\section_break_created::create([
+                'context' => $thiscontext,
+                'objectid' => $sectionid,
+                'other' => [
+                    'quizid' => $section['quizid'],
+                    'firstslotnumber' => $section['firstslot'],
+                    'firstslotid' => $slotid,
+                    'title' => $section['heading'],
+                ]
+            ]);
+            $event->trigger();
+        }
+        $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
+        usort($params['questions'], function($a, $b) {
+            return $a['slot'] > $b['slot'];
+        });
+        foreach ($params['questions'] as $question) {
+            $qdata = get_minimal_question_data($question['questionbankentryid']);
+            quiz_require_question_use($qdata->questionid);
+            quiz_add_quiz_question($qdata->questionid, $module, $params['question']['page'], $params['question']['maxmark']);
+            if ($question['requireprevious']) {
+                $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
+                $x = $quizcontext->context->id;
+                $itemid = $DB->get_field('question_references', 'itemid',
+                    ['usingcontextid' => $quizcontext->context->id, 'questionbankentryid' => $question['questionbankentryid']]);
+                $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $itemid]);
+            }
+        }
+        quiz_update_sumgrades($module);
+
+        $response = new \stdClass();
+        $response->success = true;
+        return $response;
+    }
+}
