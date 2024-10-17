@@ -56,10 +56,8 @@ class import_quiz_data extends external_api {
                 'introformat' => new external_value(PARAM_SEQUENCE, 'id of course category, course or module'),
                 'coursename' => new external_value(PARAM_TEXT, 'course to import quiz into'),
                 'courseid' => new external_value(PARAM_SEQUENCE, 'course to import quiz into'),
-                'preferredbehaviour' => new external_value(PARAM_TEXT, 'preferred behaviour'),
-                'grade' => new external_value(PARAM_SEQUENCE, 'maximum grade'),
                 'questionsperpage' => new external_value(PARAM_SEQUENCE, 'default questions per page'),
-                'shuffleanswers' => new external_value(PARAM_BOOL, 'shuffle answers if question allows?'),
+                'grade' => new external_value(PARAM_SEQUENCE, 'maximum grade'),
                 'navmethod' => new external_value(PARAM_TEXT, 'navigation method'),
             ]),
             'sections' => new external_multiple_structure(
@@ -133,12 +131,23 @@ class import_quiz_data extends external_api {
         $moduleinfo->quizpassword = '';
         $moduleinfo->visible = true;
         $moduleinfo->introeditor = ['text' => $params['quiz']['intro'], 'format' => $params['quiz']['introformat']];
-        $moduleinfo->preferredbehaviour = $params['quiz']['preferredbehaviour'];
+        $moduleinfo->preferredbehaviour = 'deferredfeedback';
         $moduleinfo->grade = $params['quiz']['grade'];
         $moduleinfo->questionsperpage = $params['quiz']['questionsperpage'];
-        $moduleinfo->shuffleanswers = $params['quiz']['shuffleanswers'];
+        $moduleinfo->shuffleanswers = true;
         $moduleinfo->navmethod = $params['quiz']['navmethod'];
         $moduleinfo = create_module($moduleinfo);
+        $reviewchoice = [];
+        $reviewchoice['reviewattempt'] = 69888;
+        $reviewchoice['reviewcorrectness'] = 4352;
+        $reviewchoice['reviewmarks'] = 4352;
+        $reviewchoice['reviewspecificfeedback'] = 4352;
+        $reviewchoice['reviewgeneralfeedback'] = 4352;
+        $reviewchoice['reviewrightanswer'] = 4352;
+        $reviewchoice['reviewoverallfeedback'] = 4352;
+        $reviewchoice['id'] = $moduleinfo->instance;
+
+        $DB->update_record('quiz', $reviewchoice);
 
         foreach ($params['sections'] as $section) {
             $section['quizid'] = $moduleinfo->instance;
@@ -176,14 +185,20 @@ class import_quiz_data extends external_api {
             quiz_add_quiz_question($qdata->questionid, $module, $params['question']['page'], $params['question']['maxmark']);
             if ($question['requireprevious']) {
                 $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
-                $x = $quizcontext->context->id;
                 $itemid = $DB->get_field('question_references', 'itemid',
                     ['usingcontextid' => $quizcontext->context->id, 'questionbankentryid' => $question['questionbankentryid']]);
                 $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $itemid]);
             }
         }
         quiz_update_sumgrades($module);
-
+        if ($params['feedback']) {
+            // Delete auto created feedback if we have something to replace it with.
+            $DB->delete_records('quiz_feedback', ['id' => $moduleinfo->instance]);
+        }
+        foreach ($params['feedback'] as $feedback) {
+            $feedback['quizid'] = $moduleinfo->instance;
+            $DB->insert_record('quiz_feedback', $feedback);
+        }
         $response = new \stdClass();
         $response->success = true;
         return $response;

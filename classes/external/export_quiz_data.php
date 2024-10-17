@@ -62,10 +62,8 @@ class export_quiz_data extends external_api {
                 'name' => new external_value(PARAM_TEXT, 'context level description'),
                 'intro' => new external_value(PARAM_RAW, 'course category name (course category context)'),
                 'introformat' => new external_value(PARAM_SEQUENCE, 'id of course category, course or module'),
-                'preferredbehaviour' => new external_value(PARAM_TEXT, 'preferred behaviour'),
-                'grade' => new external_value(PARAM_SEQUENCE, 'maximum grade'),
                 'questionsperpage' => new external_value(PARAM_SEQUENCE, 'default questions per page'),
-                'shuffleanswers' => new external_value(PARAM_BOOL, 'shuffle answers if question allows?'),
+                'grade' => new external_value(PARAM_TEXT, 'maximum grade'),
                 'navmethod' => new external_value(PARAM_TEXT, 'navigation method'),
             ]),
             'sections' => new external_multiple_structure(
@@ -121,14 +119,14 @@ class export_quiz_data extends external_api {
         $response->quiz = new \stdClass();
         $response->sections = [];
         $response->questions = [];
-        $instanceid = (int) $contextinfo->moduleid;
+        $quizid = (int) $contextinfo->quizid;
 
-        $quiz = $DB->get_record('quiz', ['id' => $instanceid], 'intro, introformat');
-        $response->quiz->name = $contextinfo->modulename;
-        $response->quiz->intro = $quiz->intro;
-        $response->quiz->introformat = $quiz->introformat;
+        $quiz = $DB->get_record('quiz', ['id' => $quizid], 'intro, introformat, questionsperpage, grade, navmethod');
+        $quiz->name = $contextinfo->modulename;
+        $response->quiz = $quiz;
 
-        $response->sections = $DB->get_records('quiz_sections', ['quizid' => $instanceid], null, 'firstslot, heading, shufflequestions');
+        $response->sections = $DB->get_records('quiz_sections', ['quizid' => $quizid], null, 'firstslot, heading, shufflequestions');
+
         $response->questions = $DB->get_records_sql("
         SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark
             FROM {quiz_slots} qs
@@ -137,6 +135,7 @@ class export_quiz_data extends external_api {
             AND qr.questionarea = 'slot'",
         ['contextid' => $contextinfo->context->id]);
 
+        $response->feedback = $DB->get_records('quiz_feedback', ['quizid' => $quizid], null, 'feedbacktext, feedbacktextformat, mingrade, maxgrade');
         return $response;
     }
 }
