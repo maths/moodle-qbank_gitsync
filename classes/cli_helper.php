@@ -59,6 +59,10 @@ class cli_helper {
      */
     public const MANIFEST_FILE = '_question_manifest.json';
     /**
+     * QUIZ_FILE - File name ending for quiz structure file.
+     */
+    public const QUIZ_FILE = '_quiz.json';
+    /**
      * TEMP_MANIFEST_FILE - File name ending for temporary manifest file.
      * Appended to name of moodle instance.
      */
@@ -270,7 +274,7 @@ class cli_helper {
                     break;
             }
         }
-        if (!isset($cliargs['manifestpath']) && !isset($cliargs['contextlevel'])) {
+        if (!(isset($cliargs['manifestpath']) || isset($cliargs['quizmanifestpath']) || isset($cliargs['nonquizmanifestpath'])) && !isset($cliargs['contextlevel'])) {
             echo "\nYou have not specified context. " .
                  "You must specify context level (--contextlevel) unless " .
                  "using a function where this information can be read from a manifest file, in which case " .
@@ -396,6 +400,21 @@ class cli_helper {
         $filename = $directory . '/' .
                     preg_replace(self::BAD_CHARACTERS, '-', strtolower(substr($moodleinstance, 0, 50) . $filenamemod)) .
                     self::MANIFEST_FILE;
+        return $filename;
+    }
+
+    /**
+     * Create quiz structure path.
+     *
+     * @param string|null $modulename
+     * @param string $directory
+     * @return string
+     */
+    public static function get_quiz_structure_path(string $modulename, string $directory):string {
+        $filename = substr($modulename, 0, 100);
+        $filename = $directory . '/' .
+                    preg_replace(self::BAD_CHARACTERS, '-', strtolower($filename)) .
+                    self::QUIZ_FILE;
         return $filename;
     }
 
