@@ -15,9 +15,9 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Wrapper class for processing performed by command line interface for exporting quiz data from Moodle.
+ * Wrapper class for processing performed by command line interface for importing quiz data to Moodle.
  *
- * Utilised in cli\exportquizstructurefrommoodle.php
+ * Utilised in cli\importquizstructuretomoodle.php
  *
  * Allows mocking and unit testing via PHPUnit.
  * Used outside Moodle.
@@ -29,9 +29,15 @@
 namespace qbank_gitsync;
 
 /**
- * Export structure data of a Moodle quiz.
+ * Import structure data of a Moodle quiz.
  */
-class export_quiz {
+class import_quiz {
+    /**
+     * CLI helper for this import
+     *
+     * @var cli_helper
+     */
+    public cli_helper $clihelper;
     /**
      * Settings for POST request
      *
@@ -47,6 +53,20 @@ class export_quiz {
      */
     public curl_request $curlrequest;
     /**
+     * cURL request handle for question list retrieve
+     *
+     * @var curl_request
+     */
+    public curl_request $listcurlrequest;
+    /**
+     * Settings for question list request
+     *
+     * These are the parameters for the webservice list call.
+     *
+     * @var array
+     */
+    public array $listpostsettings;
+    /**
      * Full path to manifest file
      *
      * @var string|null
@@ -58,12 +78,6 @@ class export_quiz {
      * @var \stdClass|null
      */
     public ?\stdClass $quizmanifestcontents;
-    /**
-     * URL of Moodle instance
-     *
-     * @var string
-     */
-    public string $moodleurl;
     /**
      * Full path to manifest file
      *
@@ -81,12 +95,19 @@ class export_quiz {
      *
      * @var string
      */
+    public string $moodleurl;
     /**
-     * Full path to output file
+     * Full path to data file
      *
      * @var string
      */
-    public string $filepath;
+    public string $quizdatapath;
+    /**
+     * Parsed content of JSON data file
+     *
+     * @var \stdClass|null
+     */
+    public ?\stdClass $quizdatacontents;
 
     /**
      * Constructor
@@ -96,6 +117,7 @@ class export_quiz {
      */
     public function __construct(cli_helper $clihelper, array $moodleinstances) {
         // Convert command line options into variables.
+        $this->clihelper = $clihelper;
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
         // TODO Use additional manifest file as well.
@@ -103,6 +125,7 @@ class export_quiz {
                 $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
         $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
                 $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : null;
+        $this->quizdatapath = $arguments['rootdirectory'] . '/' . $arguments['quizdatapath'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -113,31 +136,52 @@ class export_quiz {
             echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
             $this->call_exit();
         }
+        $this->quizdatacontents = json_decode(file_get_contents($this->quizdatapath));
+        if (!$this->quizdatacontents) {
+            echo "\nUnable to access or parse data file: {$this->quizdatapath}\nAborting.\n";
+            $this->call_exit();
+        }
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
+        $this->listcurlrequest = $this->get_curl_request($wsurl);
+        $this->listpostsettings = [
+            'wstoken' => $token,
+            'wsfunction' => 'qbank_gitsync_get_question_list',
+            'moodlewsrestformat' => 'json',
+            'contextlevel' => 50,
+            'coursename' => $arguments['coursename'],
+            'modulename' => null,
+            'coursecategory' => null,
+            'qcategoryname' => 'top',
+            'qcategoryid' => null,
+            'instanceid' => $arguments['instanceid'],
+            'contextonly' => 1,
+            'qbankentryids[]' => null,
+            'ignorecat' => null,
+        ];
+        $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+        $this->listcurlrequest->set_option(CURLOPT_POST, 1);
+
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->postsettings = [
             'wstoken' => $token,
-            'wsfunction' => 'qbank_gitsync_export_quiz_data',
+            'wsfunction' => 'qbank_gitsync_import_quiz_data',
             'moodlewsrestformat' => 'json',
-            'quizname' => $arguments['moodlename'],
-            'moduleid' => $arguments['instanceid'],
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
-        $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
     }
 
     /**
-     * Get quiz data from webservice, convert question ids to file locations
-     * and then write to file.
+     * Get quiz data from file, convert question file locations to ids
+     * and then import to Moodle.
      *
      * @return void
      */
     public function process():void {
-        $this->export_quiz_data();
+        $this->import_quiz_data();
     }
 
     /**
@@ -151,39 +195,56 @@ class export_quiz {
     }
 
     /**
-     * Get quiz data from webservice, convert question ids to file locations
-     * and then write to file.
+     * Get quiz data from file, convert question file locations to ids
+     * and then import to Moodle.
      *
      * @return void
      */
-    public function export_quiz_data() {
+    public function import_quiz_data() {
+        $instanceinfo = $this->clihelper->check_context($this, false, true);
+        // TODO - Message to user.
+        $manifestentries = array_column($this->quizmanifestcontents->questions, null, 'filepath');
+        foreach ($this->quizdatacontents->quiz as $key => $quizparam) {
+            $this->postsettings["quiz[{$key}]"] = $quizparam;
+        }
+        $this->postsettings['quiz[coursename]'] = $instanceinfo->contextinfo->coursename;
+        $this->postsettings['quiz[courseid]'] = $instanceinfo->contextinfo->instanceid;
+        foreach ($this->quizdatacontents->sections as $sectionkey => $section) {
+            foreach ($section as $key => $sectionparam) {
+                $this->postsettings["sections[{$sectionkey}][{$key}]"] = $sectionparam;
+            }
+        }
+        foreach ($this->quizdatacontents->questions as $questionkey => $question) {
+            foreach ($question as $key => $questionparam) {
+                $this->postsettings["questions[{$questionkey}][{$key}]"] = $questionparam;
+            }
+            $manifestentry = $manifestentries["{$question->quizfilepath}"] ?? false;
+            if ($manifestentry) {
+                $this->postsettings["questions[{$questionkey}][questionbankentryid]"] = $manifestentry->questionbankentryid;
+                unset($this->postsettings["questions[{$questionkey}][quizfilepath]"]);
+            } else {
+                // TODO - what happens here?
+            }
+        }
+        foreach ($this->quizdatacontents->feedback as $feedbackkey => $feedback) {
+            foreach ($feedback as $key => $feedbackparam) {
+                $this->postsettings["feedback[{$feedbackkey}][{$key}]"] = $feedbackparam;
+            }
+        }
+        $this->curlrequest->set_option(CURLOPT_POSTFIELDS,$this->postsettings);
         $response = $this->curlrequest->execute();
         $responsejson = json_decode($response);
         if (!$responsejson) {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
-            echo "{$this->filepath} not updated.\n";
             $this->call_exit();
         } else if (property_exists($responsejson, 'exception')) {
             echo "{$responsejson->message}\n";
             if (property_exists($responsejson, 'debuginfo')) {
                 echo "{$responsejson->debuginfo}\n";
             }
-            echo "{$this->filepath} not updated.\n";
             $this->call_exit();
         }
-        $this->filepath = cli_helper::get_quiz_structure_path($responsejson->quiz->name, dirname($this->quizmanifestpath));
-        $manifestentries = array_column($this->quizmanifestcontents->questions, null, 'questionbankentryid');
-        foreach ($responsejson->questions as $question) {
-            $manifestentry = $manifestentries["{$question->questionbankentryid}"] ?? false;
-            if ($manifestentry) {
-                $question->quizfilepath = $manifestentry->filepath;
-                unset($question->questionbankentryid);
-            } else {
-                // TODO - what happens here?
-            }
-        }
-        file_put_contents($this->filepath, json_encode($responsejson));
     }
 
     /**

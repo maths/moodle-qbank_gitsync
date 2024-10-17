@@ -57,7 +57,7 @@ class import_quiz_data extends external_api {
                 'coursename' => new external_value(PARAM_TEXT, 'course to import quiz into'),
                 'courseid' => new external_value(PARAM_SEQUENCE, 'course to import quiz into'),
                 'questionsperpage' => new external_value(PARAM_SEQUENCE, 'default questions per page'),
-                'grade' => new external_value(PARAM_SEQUENCE, 'maximum grade'),
+                'grade' => new external_value(PARAM_TEXT, 'maximum grade'),
                 'navmethod' => new external_value(PARAM_TEXT, 'navigation method'),
             ]),
             'sections' => new external_multiple_structure(

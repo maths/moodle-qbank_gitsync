@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Export structure (not questions) of a quiz.
+ * Import structure (not questions) of a quiz to Moodle.
  *
  * @package    qbank_gitsync
  * @copyright  2024 University of Edinburgh
@@ -27,7 +27,7 @@ define('CLI_SCRIPT', true);
 require_once('./config.php');
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
-require_once('../classes/export_quiz.php');
+require_once('../classes/import_quiz.php');
 
 $options = [
     [
@@ -64,6 +64,30 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'quizdatapath',
+        'shortopt' => 'a',
+        'description' => 'Filepath of quiz data file relative to root directory.',
+        'default' => null,
+        'variable' => 'quizdatapath',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'coursename',
+        'shortopt' => 'c',
+        'description' => 'Unique course name of course.',
+        'default' => null,
+        'variable' => 'coursename',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'instanceid',
+        'shortopt' => 'n',
+        'description' => 'Numerical id of the course.',
+        'default' => null,
+        'variable' => 'instanceid',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'token',
         'shortopt' => 't',
         'description' => 'Security token for webservice.',
@@ -86,22 +110,6 @@ $options = [
         'default' => $usegit,
         'variable' => 'usegit',
         'valuerequired' => false,
-    ],
-    [
-        'longopt' => 'modulename',
-        'shortopt' => 'm',
-        'description' => 'Unique (within course) quiz name.',
-        'default' => null,
-        'variable' => 'modulename',
-        'valuerequired' => true,
-    ],
-    [
-        'longopt' => 'instanceid',
-        'shortopt' => 'n',
-        'description' => 'Numerical course module id of quiz.',
-        'default' => null,
-        'variable' => 'instanceid',
-        'valuerequired' => true,
     ]
 ];
 
@@ -109,14 +117,15 @@ if (!function_exists('simplexml_load_file')) {
     echo 'Please install the PHP library SimpleXML.' . "\n";
     exit;
 }
+
 $clihelper = new cli_helper($options);
-$exportquiz = new export_quiz($clihelper, $moodleinstances);
-if ($exportquiz->nonquizmanifestpath) {
+$importquiz = new import_quiz($clihelper, $moodleinstances);
+if ($importquiz->nonquizmanifestpath) {
     echo 'Checking repo...';
-    $clihelper->check_for_changes($exportquiz->nonquizmanifestpath);
+    $clihelper->check_for_changes($importquiz->nonquizmanifestpath);
 }
-if ($exportquiz->quizmanifestpath) {
+if ($importquiz->quizmanifestpath) {
     echo 'Checking quiz repo...';
-    $clihelper->check_for_changes($exportquiz->quizmanifestpath);
+    $clihelper->check_for_changes($importquiz->quizmanifestpath);
 }
-$exportquiz->process();
+$importquiz->process();
