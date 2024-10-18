@@ -70,7 +70,7 @@ class export_quiz_data extends external_api {
                 new external_single_structure([
                     'firstslot' => new external_value(PARAM_SEQUENCE, 'first slot of section'),
                     'heading' => new external_value(PARAM_TEXT, 'heading'),
-                    'shufflequestions' => new external_value(PARAM_BOOL, 'shuffle questions?'),
+                    'shufflequestions' => new external_value(PARAM_INT, 'shuffle questions?'),
                 ])
             ),
             'questions' => new external_multiple_structure(
@@ -78,7 +78,7 @@ class export_quiz_data extends external_api {
                     'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'questionbankentry id'),
                     'slot' => new external_value(PARAM_SEQUENCE, 'slot number'),
                     'page' => new external_value(PARAM_SEQUENCE, 'page number'),
-                    'requireprevious' => new external_value(PARAM_BOOL, 'Require completion of previous question'),
+                    'requireprevious' => new external_value(PARAM_INT, 'Require completion of previous question?'),
                     'maxmark' => new external_value(PARAM_TEXT, 'maximum mark'),
                 ])
             ),

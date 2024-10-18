@@ -120,26 +120,34 @@ class import_quiz {
         $this->clihelper = $clihelper;
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        // TODO Use additional manifest file as well.
-        $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
-                $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
-        $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
-                $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : null;
+        if ($arguments['quizmanifestpath']) {
+            $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
+                    $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
+            $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
+            if (!$this->quizmanifestcontents) {
+                echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
+                $this->call_exit();
+            }
+        }
+        if ($arguments['nonquizmanifestpath']) {
+            $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
+                    $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : null;
+            $this->nonquizmanifestcontents = json_decode(file_get_contents($this->nonquizmanifestpath));
+            if (!$this->nonquizmanifestcontents) {
+                echo "\nUnable to access or parse manifest file: {$this->nonquizmanifestpath}\nAborting.\n";
+                $this->call_exit();
+            }
+        }
         $this->quizdatapath = $arguments['rootdirectory'] . '/' . $arguments['quizdatapath'];
-        if (is_array($arguments['token'])) {
-            $token = $arguments['token'][$moodleinstance];
-        } else {
-            $token = $arguments['token'];
-        }
-        $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
-        if (!$this->quizmanifestcontents) {
-            echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
-            $this->call_exit();
-        }
         $this->quizdatacontents = json_decode(file_get_contents($this->quizdatapath));
         if (!$this->quizdatacontents) {
             echo "\nUnable to access or parse data file: {$this->quizdatapath}\nAborting.\n";
             $this->call_exit();
+        }
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
         }
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
@@ -202,35 +210,69 @@ class import_quiz {
      */
     public function import_quiz_data() {
         $instanceinfo = $this->clihelper->check_context($this, false, true);
-        // TODO - Message to user.
-        $manifestentries = array_column($this->quizmanifestcontents->questions, null, 'filepath');
+        echo "Preparing to create a new quiz in Moodle.\n";
+        echo "Moodle URL: {$this->moodleurl}\n";
+        echo "Course: {$instanceinfo->contextinfo->coursename}\n";
+        echo "Quiz: {$this->quizdatacontents->quiz->name}\n";
+        cli_helper::handle_abort();
+        $quizmanifestentries = [];
+        $nonquizmanifestentries = [];
+        if ($this->quizmanifestpath) {
+            $quizmanifestentries = array_column($this->quizmanifestcontents->questions, null, 'filepath');
+        }
+        if ($this->nonquizmanifestpath) {
+            $nonquizmanifestentries = array_column($this->nonquizmanifestcontents->questions, null, 'filepath');
+        }
+
         foreach ($this->quizdatacontents->quiz as $key => $quizparam) {
             $this->postsettings["quiz[{$key}]"] = $quizparam;
         }
         $this->postsettings['quiz[coursename]'] = $instanceinfo->contextinfo->coursename;
         $this->postsettings['quiz[courseid]'] = $instanceinfo->contextinfo->instanceid;
+
         foreach ($this->quizdatacontents->sections as $sectionkey => $section) {
             foreach ($section as $key => $sectionparam) {
                 $this->postsettings["sections[{$sectionkey}][{$key}]"] = $sectionparam;
             }
         }
+
         foreach ($this->quizdatacontents->questions as $questionkey => $question) {
             foreach ($question as $key => $questionparam) {
                 $this->postsettings["questions[{$questionkey}][{$key}]"] = $questionparam;
-            }
-            $manifestentry = $manifestentries["{$question->quizfilepath}"] ?? false;
-            if ($manifestentry) {
-                $this->postsettings["questions[{$questionkey}][questionbankentryid]"] = $manifestentry->questionbankentryid;
-                unset($this->postsettings["questions[{$questionkey}][quizfilepath]"]);
-            } else {
-                // TODO - what happens here?
+                $manifestentry = false;
+                $qidentifier = '';
+                if (isset($question->quizfilepath)) {
+                    $manifestentry = $quizmanifestentries["{$question->quizfilepath}"] ?? false;
+                    $qidentifier = "Quiz repo: {$question->quizfilepath}";
+                    unset($this->postsettings["questions[{$questionkey}][quizfilepath]"]);
+                } else if (isset($question->nonquizfilepath)) {
+                    $manifestentry = $nonquizmanifestentries["{$question->nonquizfilepath}"] ?? false;
+                    $qidentifier = "Non-quiz repo: {$question->nonquizfilepath}";
+                    unset($this->postsettings["questions[{$questionkey}][nonquizfilepath]"]);
+                }
+
+                if ($manifestentry) {
+                    $this->postsettings["questions[{$questionkey}][questionbankentryid]"] = $manifestentry->questionbankentryid;
+                } else {
+                    $multiple = ($this->quizmanifestpath && $this->nonquizmanifestpath) ? 's' : '';
+                    echo "Question: {$qidentifier}\n";
+                    echo "This question is in the quiz but not in the supplied manifest file" . $multiple . ".\n";
+                    echo "Questions must either be in the repo for the quiz context defined by a supplied quiz manifest " .
+                        "(--quizmanifestpath) or in the context (e.g. course) " .
+                        "defined by a different manifest (--nonquizmanifestpath).\n";
+                    echo "You can supply either or both.\n";
+                    echo "Aborting.\n";
+                    $this->call_exit();;
+                }
             }
         }
+
         foreach ($this->quizdatacontents->feedback as $feedbackkey => $feedback) {
             foreach ($feedback as $key => $feedbackparam) {
                 $this->postsettings["feedback[{$feedbackkey}][{$key}]"] = $feedbackparam;
             }
         }
+
         $this->curlrequest->set_option(CURLOPT_POSTFIELDS,$this->postsettings);
         $response = $this->curlrequest->execute();
         $responsejson = json_decode($response);
@@ -245,6 +287,7 @@ class import_quiz {
             }
             $this->call_exit();
         }
+        echo "Quiz imported.\n";
     }
 
     /**

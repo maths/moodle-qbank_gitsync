@@ -51,13 +51,13 @@ class export_quiz {
      *
      * @var string|null
      */
-    public ?string $quizmanifestpath;
+    public ?string $quizmanifestpath = null;
     /**
      * Parsed content of JSON manifest file
      *
      * @var \stdClass|null
      */
-    public ?\stdClass $quizmanifestcontents;
+    public ?\stdClass $quizmanifestcontents = null;
     /**
      * URL of Moodle instance
      *
@@ -69,13 +69,13 @@ class export_quiz {
      *
      * @var string|null
      */
-    public ?string $nonquizmanifestpath;
+    public ?string $nonquizmanifestpath = null;
     /**
      * Parsed content of JSON manifest file
      *
      * @var \stdClass|null
      */
-    public ?\stdClass $nonquizmanifestcontents;
+    public ?\stdClass $nonquizmanifestcontents = null;
     /**
      * URL of Moodle instance
      *
@@ -98,20 +98,28 @@ class export_quiz {
         // Convert command line options into variables.
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        // TODO Use additional manifest file as well.
-        $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
-                $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
-        $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
-                $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : null;
+        if ($arguments['quizmanifestpath']) {
+            $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
+                    $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
+            $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
+            if (!$this->quizmanifestcontents) {
+                echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
+                $this->call_exit();
+            }
+        }
+        if ($arguments['nonquizmanifestpath']) {
+            $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
+                    $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : null;
+            $this->nonquizmanifestcontents = json_decode(file_get_contents($this->nonquizmanifestpath));
+            if (!$this->nonquizmanifestcontents) {
+                echo "\nUnable to access or parse manifest file: {$this->nonquizmanifestpath}\nAborting.\n";
+                $this->call_exit();
+            }
+        }
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
             $token = $arguments['token'];
-        }
-        $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
-        if (!$this->quizmanifestcontents) {
-            echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
-            $this->call_exit();
         }
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
@@ -122,7 +130,7 @@ class export_quiz {
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_export_quiz_data',
             'moodlewsrestformat' => 'json',
-            'quizname' => $arguments['moodlename'],
+            'quizname' => $arguments['modulename'],
             'moduleid' => $arguments['instanceid'],
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
@@ -172,18 +180,42 @@ class export_quiz {
             echo "{$this->filepath} not updated.\n";
             $this->call_exit();
         }
-        $this->filepath = cli_helper::get_quiz_structure_path($responsejson->quiz->name, dirname($this->quizmanifestpath));
-        $manifestentries = array_column($this->quizmanifestcontents->questions, null, 'questionbankentryid');
+        $quizmanifestentries = [];
+        $nonquizmanifestentries = [];
+        if ($this->quizmanifestpath) {
+            $this->filepath = cli_helper::get_quiz_structure_path($responsejson->quiz->name, dirname($this->quizmanifestpath));
+            $quizmanifestentries = array_column($this->quizmanifestcontents->questions, null, 'questionbankentryid');
+        } else {
+            $this->filepath = cli_helper::get_quiz_structure_path($responsejson->quiz->name, dirname($this->nonquizmanifestpath));
+        }
+        if ($this->nonquizmanifestpath) {
+            $nonquizmanifestentries = array_column($this->nonquizmanifestcontents->questions, null, 'questionbankentryid');
+        }
         foreach ($responsejson->questions as $question) {
-            $manifestentry = $manifestentries["{$question->questionbankentryid}"] ?? false;
-            if ($manifestentry) {
-                $question->quizfilepath = $manifestentry->filepath;
+            $quizmanifestentry = $quizmanifestentries["{$question->questionbankentryid}"] ?? false;
+            $nonquizmanifestentry = $nonquizmanifestentries["{$question->questionbankentryid}"] ?? false;
+            if ($quizmanifestentry) {
+                $question->quizfilepath = $quizmanifestentry->filepath;
+                unset($question->questionbankentryid);
+            } else if ($nonquizmanifestentry) {
+                $question->nonquizfilepath = $nonquizmanifestentry->filepath;
                 unset($question->questionbankentryid);
             } else {
-                // TODO - what happens here?
+                $multiple = ($this->quizmanifestpath && $this->nonquizmanifestpath) ? 's' : '';
+                echo "Question: {$question->name}\n";
+                echo "This question is in the quiz but not in the supplied manifest file" . $multiple . ".\n";
+                echo "Questions must either be in the repo for the quiz context defined by a supplied quiz manifest " .
+                     "(--quizmanifestpath) or in the context (e.g. course) " .
+                     "defined by a different manifest (--nonquizmanifestpath).\n";
+                echo "You can supply either or both. If your quiz questions are spread between 3 or more contexts " .
+                     "consider consolidating them.\n";
+                echo "Aborting.\n";
+                $this->call_exit();
             }
         }
         file_put_contents($this->filepath, json_encode($responsejson));
+        echo "Quiz data exported to:\n";
+        echo "{$this->filepath}\n";
     }
 
     /**

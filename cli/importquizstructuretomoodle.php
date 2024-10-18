@@ -121,11 +121,11 @@ if (!function_exists('simplexml_load_file')) {
 $clihelper = new cli_helper($options);
 $importquiz = new import_quiz($clihelper, $moodleinstances);
 if ($importquiz->nonquizmanifestpath) {
-    echo 'Checking repo...';
+    echo "Checking repo...\n";
     $clihelper->check_for_changes($importquiz->nonquizmanifestpath);
 }
 if ($importquiz->quizmanifestpath) {
-    echo 'Checking quiz repo...';
+    echo "Checking quiz repo...\n";
     $clihelper->check_for_changes($importquiz->quizmanifestpath);
 }
 $importquiz->process();
