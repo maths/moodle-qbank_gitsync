@@ -50,6 +50,10 @@ class cli_helper {
      */
     public ?array $processedoptions = null;
     /**
+     * @var bool Are we processing quizzes as part of a multiple repo shortcut?
+     */
+    public bool $ischildquiz = false;
+    /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
     public const CATEGORY_FILE = 'gitsync_category';
@@ -419,6 +423,20 @@ class cli_helper {
     }
 
     /**
+     * Create quiz directory name.
+     *
+     * @param string $basedirectory
+     * @param string $directory
+     * @return string
+     */
+    public static function get_quiz_directory(string $basedirectory, string $quizname):string {
+        $quizname = substr($quizname, 0, 100);
+        $directoryname = $basedirectory . '_quiz_' .
+                    preg_replace(self::BAD_CHARACTERS, '-', strtolower($quizname));
+        return $directoryname;
+    }
+
+    /**
      * Create manifest file from temporary file.
      *
      * @param object $manifestcontents \stdClass Current contents of manifest file
@@ -643,6 +661,27 @@ class cli_helper {
     }
 
     /**
+     * Create initialised repo
+     *
+     * @param string $directory
+     * @return string updated directory name
+     */
+    public function create_initialised_repo(string $directory):string {
+        $basename = $directory;
+        $i = 0;
+        while (is_dir($directory)) {
+            $i++;
+            $directory = $basename . '_' . $i;
+        }
+        if (!$this->get_arguments()['usegit']) {
+            mkdir($directory);
+        } else {
+            exec('git init "' . $directory . '" --quiet');
+        }
+        return $directory;
+    }
+
+    /**
      * Check the git repo containing the manifest file to see if there
      * are any uncommited changes and stop if there are.
      *
@@ -724,7 +763,7 @@ class cli_helper {
             echo "Failed to get list of questions from Moodle.\n";
             static::call_exit();
             return new \stdClass(); // Required for PHPUnit.
-        } else if (!$silent) {
+        } else if (!$silent && !$this->ischildquiz) {
             $activityname = get_class($activity);
             switch ($activityname) {
                 case 'qbank_gitsync\export_repo':

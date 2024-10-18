@@ -134,8 +134,8 @@ class create_repo {
         }
         $contextlevel = $arguments['contextlevel'];
         $coursename = $arguments['coursename'];
-        $modulename = $arguments['modulename'];
-        $coursecategory = $arguments['coursecategory'];
+        $modulename = (isset($arguments['modulename'])) ? $arguments['modulename'] : null;
+        $coursecategory = (isset($arguments['coursecategory'])) ? $arguments['coursecategory'] : null;
         $qcategoryid = $arguments['qcategoryid'];
         $instanceid = $arguments['instanceid'];
         $this->ignorecat = $arguments['ignorecat'];

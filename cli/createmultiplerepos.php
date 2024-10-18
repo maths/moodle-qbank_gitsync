@@ -15,10 +15,12 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Create a git repo containing questions from Moodle.
+ * Create git repos containing questions from Moodle.
+ * Exports a course context into one repo and associated
+ * quizzes into sibling repos.
  *
  * @package    qbank_gitsync
- * @copyright  2023 University of Edinburgh
+ * @copyright  2024 University of Edinburgh
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -60,6 +62,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'contextlevel',
+        'shortopt' => 'l',
+        'description' => 'Context from which to extract questions. Should always be course.',
+        'default' => 'course',
+        'variable' => 'contextlevel',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'subcategory',
         'shortopt' => 's',
         'description' => 'Relative subcategory of question to actually export.',
@@ -68,35 +78,11 @@ $options = [
         'valuerequired' => true,
     ],
     [
-        'longopt' => 'contextlevel',
-        'shortopt' => 'l',
-        'description' => 'Context from which to extract questions. Set to system, coursecategory, course or module',
-        'default' => null,
-        'variable' => 'contextlevel',
-        'valuerequired' => true,
-    ],
-    [
         'longopt' => 'coursename',
         'shortopt' => 'c',
         'description' => 'Unique course name for course or module context.',
         'default' => null,
         'variable' => 'coursename',
-        'valuerequired' => true,
-    ],
-    [
-        'longopt' => 'modulename',
-        'shortopt' => 'm',
-        'description' => 'Unique (within course) module name for module context.',
-        'default' => null,
-        'variable' => 'modulename',
-        'valuerequired' => true,
-    ],
-    [
-        'longopt' => 'coursecategory',
-        'shortopt' => 'g',
-        'description' => 'Unique course category name for coursecategory context.',
-        'default' => null,
-        'variable' => 'coursecategory',
         'valuerequired' => true,
     ],
     [
@@ -154,8 +140,36 @@ if (!function_exists('simplexml_load_file')) {
     exit;
 }
 
+// Create course repo.
 $clihelper = new cli_helper($options);
+$arguments = $clihelper->get_arguments();
+$arguments['contextlevel'] = 'course';
+$clihelper->processedoptions = $arguments;
+echo "Exporting a course. Associated quiz contexts will also be exported to individual repos.\n";
 $createrepo = new create_repo($clihelper, $moodleinstances);
 $clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
+
+// Create quiz repos.
+$clihelper->ischildquiz = true;
+$contextinfo = $clihelper->check_context($createrepo, false, true);
+if ($arguments['directory']) {
+    $basedirectory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+} else {
+    $basedirectory = $arguments['rootdirectory'];
+}
+$arguments['directory'] = '';
+$arguments['contextlevel'] = 'module';
+$arguments['subcategory'] = null;
+$arguments['coursename'] = null;
+$arguments['questioncategoryid'] = null;
+foreach ($contextinfo->quizzes as $quiz) {
+    $arguments['instanceid'] = "{$quiz->instanceid}";
+    $arguments['rootdirectory'] = $clihelper->create_initialised_repo(cli_helper::get_quiz_directory($basedirectory, $quiz->name));
+    echo "\nExporting quiz: {$quiz->name} to {$arguments['rootdirectory']}\n";
+    $clihelper->processedoptions = $arguments;
+    $createrepo = new create_repo($clihelper, $moodleinstances);
+    $createrepo->process();
+    $clihelper->commit_hash_setup($createrepo);
+}

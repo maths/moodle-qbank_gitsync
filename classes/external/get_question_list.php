@@ -86,6 +86,12 @@ class get_question_list extends external_api {
                     'version' => new external_value(PARAM_SEQUENCE, 'version'),
                 ])
             ),
+            'quizzes' => new external_multiple_structure(
+                new external_single_structure([
+                    'instanceid' => new external_value(PARAM_SEQUENCE, 'course module id of quiz'),
+                    'name' => new external_value(PARAM_TEXT, 'name of quiz'),
+                ])
+            ),
         ]);
     }
 
@@ -139,6 +145,7 @@ class get_question_list extends external_api {
         $response->contextinfo = $contextinfo;
         unset($response->contextinfo->context);
         $response->questions = [];
+        $response->quizzes = [];
         $response->contextinfo->qcategoryname = '';
         $response->contextinfo->qcategoryid = null;
         $response->contextinfo->ignorecat = $ignorecat;
@@ -177,6 +184,19 @@ class get_question_list extends external_api {
 
             $response->contextinfo->qcategoryname = self::get_category_path($category);
             $response->contextinfo->qcategoryid = $category->id;
+
+
+            if ((int) $params['contextlevel'] === \CONTEXT_COURSE) {
+                $response->quizzes = $DB->get_records_sql(
+                    "SELECT cm.id as instanceid, q.name
+                        FROM {course_modules} cm
+                        INNER JOIN {quiz} q ON q.id = cm.instance
+                        INNER JOIN {modules} m ON m.id = cm.module
+                    WHERE cm.course = :courseid
+                        AND m.name = 'quiz'",
+                    ['courseid' => (int) $contextinfo->instanceid]);
+            }
+
             if ($contextonly) {
                 return $response;
             }
@@ -215,6 +235,7 @@ class get_question_list extends external_api {
                 array_push($response->questions, $qinfo);
             }
         }
+
         return $response;
     }
 
