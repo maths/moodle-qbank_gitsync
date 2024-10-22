@@ -141,6 +141,7 @@ if (!function_exists('simplexml_load_file')) {
 }
 
 // Create course repo.
+$scriptdirectory = dirname(__FILE__);
 $clihelper = new cli_helper($options);
 $arguments = $clihelper->get_arguments();
 $arguments['contextlevel'] = 'course';
@@ -152,24 +153,22 @@ $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
 
 // Create quiz repos.
-$clihelper->ischildquiz = true;
 $contextinfo = $clihelper->check_context($createrepo, false, true);
 if ($arguments['directory']) {
     $basedirectory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
 } else {
     $basedirectory = $arguments['rootdirectory'];
 }
-$arguments['directory'] = '';
-$arguments['contextlevel'] = 'module';
-$arguments['subcategory'] = null;
-$arguments['coursename'] = null;
-$arguments['questioncategoryid'] = null;
+$moodleinstance = $arguments['moodleinstance'];
+$instanceid = $arguments['instanceid'];
+$token = $arguments['token'][$moodleinstance];
+$ignorecat = $arguments['ignorecat'];
+$ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
 foreach ($contextinfo->quizzes as $quiz) {
-    $arguments['instanceid'] = "{$quiz->instanceid}";
-    $arguments['rootdirectory'] = $clihelper->create_initialised_repo(cli_helper::get_quiz_directory($basedirectory, $quiz->name));
-    echo "\nExporting quiz: {$quiz->name} to {$arguments['rootdirectory']}\n";
-    $clihelper->processedoptions = $arguments;
-    $createrepo = new create_repo($clihelper, $moodleinstances);
-    $createrepo->process();
-    $clihelper->commit_hash_setup($createrepo);
+    $instanceid = "{$quiz->instanceid}";
+    $rootdirectory = $clihelper->create_initialised_repo(cli_helper::get_quiz_directory($basedirectory, $quiz->name));
+    echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
+    chdir($scriptdirectory);
+    $output = shell_exec('php createrepo.php -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . (int) $instanceid . ' -t ' . $token . ' -z' . $ignorecat);
+    echo $output;
 }

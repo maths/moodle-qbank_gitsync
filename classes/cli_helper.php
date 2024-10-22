@@ -49,10 +49,7 @@ class cli_helper {
      * @var array|null Full set of options combining command line and defaults
      */
     public ?array $processedoptions = null;
-    /**
-     * @var bool Are we processing quizzes as part of a multiple repo shortcut?
-     */
-    public bool $ischildquiz = false;
+
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -763,7 +760,7 @@ class cli_helper {
             echo "Failed to get list of questions from Moodle.\n";
             static::call_exit();
             return new \stdClass(); // Required for PHPUnit.
-        } else if (!$silent && !$this->ischildquiz) {
+        } else if (!$silent && !isset($this->get_arguments()['quiet'])) {
             $activityname = get_class($activity);
             switch ($activityname) {
                 case 'qbank_gitsync\export_repo':
