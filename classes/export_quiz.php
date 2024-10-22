@@ -98,9 +98,10 @@ class export_quiz {
         // Convert command line options into variables.
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
+                $rootdirectory = ($arguments['rootdirectory']) ?  $arguments['rootdirectory'] . '/' : '';
         if ($arguments['quizmanifestpath']) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
-                    $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
+            $rootdirectory . $arguments['quizmanifestpath'] : null;
             $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
             if (!$this->quizmanifestcontents) {
                 echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
@@ -109,7 +110,7 @@ class export_quiz {
         }
         if ($arguments['nonquizmanifestpath']) {
             $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
-                    $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : null;
+                    $rootdirectory . $arguments['nonquizmanifestpath'] : null;
             $this->nonquizmanifestcontents = json_decode(file_get_contents($this->nonquizmanifestpath));
             if (!$this->nonquizmanifestcontents) {
                 echo "\nUnable to access or parse manifest file: {$this->nonquizmanifestpath}\nAborting.\n";
@@ -202,15 +203,13 @@ class export_quiz {
                 unset($question->questionbankentryid);
             } else {
                 $multiple = ($this->quizmanifestpath && $this->nonquizmanifestpath) ? 's' : '';
-                echo "Question: {$question->name}\n";
+                echo "Question: {$question->questionbankentryid}\n";
                 echo "This question is in the quiz but not in the supplied manifest file" . $multiple . ".\n";
                 echo "Questions must either be in the repo for the quiz context defined by a supplied quiz manifest " .
                      "(--quizmanifestpath) or in the context (e.g. course) " .
                      "defined by a different manifest (--nonquizmanifestpath).\n";
                 echo "You can supply either or both. If your quiz questions are spread between 3 or more contexts " .
                      "consider consolidating them.\n";
-                echo "Aborting.\n";
-                $this->call_exit();
             }
         }
         file_put_contents($this->filepath, json_encode($responsejson));

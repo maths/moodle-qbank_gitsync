@@ -146,8 +146,9 @@ $clihelper = new cli_helper($options);
 $arguments = $clihelper->get_arguments();
 $arguments['contextlevel'] = 'course';
 $clihelper->processedoptions = $arguments;
-echo "Exporting a course. Associated quiz contexts will also be exported to individual repos.\n";
+echo "Exporting a course. Associated quiz contexts will also be exported.\n";
 $createrepo = new create_repo($clihelper, $moodleinstances);
+$clihelper->create_directory(dirname($createrepo->manifestpath));
 $clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
@@ -160,15 +161,26 @@ if ($arguments['directory']) {
     $basedirectory = $arguments['rootdirectory'];
 }
 $moodleinstance = $arguments['moodleinstance'];
+$coursemanifestname = cli_helper::get_manifest_path($moodleinstance, 'course', null,
+                            $contextinfo->contextinfo->coursename, null, $basedirectory);
 $instanceid = $arguments['instanceid'];
 $token = $arguments['token'][$moodleinstance];
 $ignorecat = $arguments['ignorecat'];
 $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
 foreach ($contextinfo->quizzes as $quiz) {
     $instanceid = "{$quiz->instanceid}";
-    $rootdirectory = $clihelper->create_initialised_repo(cli_helper::get_quiz_directory($basedirectory, $quiz->name));
+    $rootdirectory = $clihelper->create_directory(cli_helper::get_quiz_directory($basedirectory, $quiz->name));
     echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
     chdir($scriptdirectory);
     $output = shell_exec('php createrepo.php -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . (int) $instanceid . ' -t ' . $token . ' -z' . $ignorecat);
     echo $output;
+    $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
+                            $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
+    chdir($scriptdirectory);
+    $output = shell_exec('php exportquizstructurefrommoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' . (int) $instanceid . ' -t ' . $token. ' -p "' . $coursemanifestname. '" -f "' . $quizmanifestname . '"');
+    echo $output;
 }
+// Commit the final quiz file.
+chdir($basedirectory);
+exec("git add --all");
+exec('git commit -m "Initial Commit - final update"');

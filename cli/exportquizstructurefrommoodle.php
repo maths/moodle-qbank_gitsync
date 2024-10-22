@@ -102,6 +102,14 @@ $options = [
         'default' => null,
         'variable' => 'instanceid',
         'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'quiet',
+        'shortopt' => 'z',
+        'description' => 'Do not display context info or option to abort.',
+        'default' => false,
+        'variable' => 'quiet',
+        'valuerequired' => false,
     ]
 ];
 
@@ -112,11 +120,15 @@ if (!function_exists('simplexml_load_file')) {
 $clihelper = new cli_helper($options);
 $exportquiz = new export_quiz($clihelper, $moodleinstances);
 if ($exportquiz->nonquizmanifestpath) {
-    echo "Checking repo...\n";
+    if (!isset($clihelper->get_arguments()['quiet'])) {
+        echo "Checking repo...\n";
+    }
     $clihelper->check_for_changes($exportquiz->nonquizmanifestpath);
 }
 if ($exportquiz->quizmanifestpath) {
-    echo "Checking quiz repo...\n";
+    if (!isset($clihelper->get_arguments()['quiet'])) {
+        echo "Checking quiz repo...\n";
+    }
     $clihelper->check_for_changes($exportquiz->quizmanifestpath);
 }
 $exportquiz->process();

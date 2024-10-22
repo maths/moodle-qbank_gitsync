@@ -96,8 +96,10 @@ class cli_helper {
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
         $argcount = count($commandlineargs);
-        echo "\nProcessed {$argcount} valid command line argument" .
-                (($argcount !== 1) ? 's' : '') . ".\n";
+        if (!isset($commandlineargs['z'])) {
+            echo "\nProcessed {$argcount} valid command line argument" .
+                    (($argcount !== 1) ? 's' : '') . ".\n";
+        }
         $this->processedoptions = $this->prioritise_options($commandlineargs);
         if ($this->processedoptions['help']) {
             $this->show_help();
@@ -572,8 +574,8 @@ class cli_helper {
         $this->create_gitignore($activity->manifestpath);
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
-        exec("git add .");
-        exec('git commit -m "Initial Commit"');
+        exec("git add --all");
+        exec('git commit -m "Initial Commit - ' . basename($activity->manifestpath)  . '"');
         foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             if ($commithash) {
@@ -645,10 +647,8 @@ class cli_helper {
         $manifestdirname = dirname($fullmanifestpath);
         if (chdir($manifestdirname)) {
             // Will give path of .git if in repo or error.
-            // Working on the assumption we have to be at the top of the repo.
-            if (exec('git rev-parse --git-dir') !== '.git') {
-                echo "The Git repository has not been initialised or " .
-                     "the manifest directory is not at the top level.\n";
+            if (substr(exec('git rev-parse --git-dir'), -4) !== '.git') {
+                echo "The Git repository has not been initialised.\n";
                 exit;
             }
         } else {
@@ -658,23 +658,19 @@ class cli_helper {
     }
 
     /**
-     * Create initialised repo
+     * Create directory.
      *
      * @param string $directory
      * @return string updated directory name
      */
-    public function create_initialised_repo(string $directory):string {
+    public function create_directory(string $directory):string {
         $basename = $directory;
         $i = 0;
         while (is_dir($directory)) {
             $i++;
             $directory = $basename . '_' . $i;
         }
-        if (!$this->get_arguments()['usegit']) {
-            mkdir($directory);
-        } else {
-            exec('git init "' . $directory . '" --quiet');
-        }
+        mkdir($directory);
         return $directory;
     }
 
