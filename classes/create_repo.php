@@ -212,7 +212,7 @@ class create_repo {
         $this->export_to_repo();
         cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,
                                          $this->manifestpath, $this->moodleurl,
-                                         $this->qcategoryid, $this->subdirectory, false);
+                                         $this->qcategoryid, $this->subdirectory, false, $this);
         unlink($this->tempfilepath);
     }
 

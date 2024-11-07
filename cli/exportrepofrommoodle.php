@@ -105,6 +105,14 @@ $options = [
         'variable' => 'ignorecat',
         'valuerequired' => true,
     ],
+    [
+        'longopt' => 'quiet',
+        'shortopt' => 'z',
+        'description' => 'Do not display context info or option to abort.',
+        'default' => false,
+        'variable' => 'quiet',
+        'valuerequired' => false,
+    ],
 ];
 
 if (!function_exists('simplexml_load_file')) {

@@ -358,7 +358,9 @@ class import_repo {
                                                                    $this->manifestpath,
                                                                    $this->moodleurl,
                                                                    $instanceinfo->contextinfo->qcategoryid,
-                                                                   $this->subdirectory);
+                                                                   $this->subdirectory,
+                                                                   true,
+                                                                   $this);
         unlink($this->tempfilepath);
         $this->delete_no_file_questions(false);
         $this->delete_no_record_questions(false);
@@ -600,7 +602,9 @@ class import_repo {
                                                                     $this->manifestpath,
                                                                     $this->moodleurl,
                                                                     $instanceinfo->contextinfo->qcategoryid,
-                                                                    $this->subdirectory);
+                                                                    $this->subdirectory,
+                                                                    true,
+                                                                    $this);
             unlink($this->tempfilepath);
             echo 'Recovery successful. Continuing...';
         }
