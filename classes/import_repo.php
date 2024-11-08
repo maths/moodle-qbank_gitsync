@@ -174,7 +174,7 @@ class import_repo {
         if ($arguments['directory']) {
             $this->directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
         } else {
-            if ($manifestpath) {
+            if ($manifestpath && dirname($manifestpath) !== '.') {
                 $this->directory = $arguments['rootdirectory'] . '/' . dirname($manifestpath);
             } else {
                 $this->directory = $arguments['rootdirectory'];
@@ -290,7 +290,16 @@ class import_repo {
             $this->call_exit();
         } else if (!$manifestcontents && !$manifestpath) {
             $this->manifestcontents = new \stdClass();
-            $this->manifestcontents->context = null;
+            $this->manifestcontents->context = new \stdClass();
+            $this->manifestcontents->context->contextlevel = cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
+            $this->manifestcontents->context->coursename = $instanceinfo->contextinfo->coursename;
+            $this->manifestcontents->context->modulename = $instanceinfo->contextinfo->modulename;
+            $this->manifestcontents->context->coursecategory = $instanceinfo->contextinfo->categoryname;
+            $this->manifestcontents->context->instanceid = $instanceinfo->contextinfo->instanceid;
+            $this->manifestcontents->context->defaultsubcategoryid = $instanceinfo->contextinfo->qcategoryid;
+            $this->manifestcontents->context->defaultsubdirectory = $this->subdirectory;
+            $this->manifestcontents->context->defaultignorecat = $this->ignorecat;
+            $this->manifestcontents->context->moodleurl = $this->moodleurl;
             $this->manifestcontents->questions = [];
         } else {
             $this->manifestcontents = $manifestcontents;
@@ -336,7 +345,9 @@ class import_repo {
         $this->listpostsettings['qcategoryname'] = $qcategoryname;
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
 
-        if (count($this->manifestcontents->questions) === 0) {
+        if (count($this->manifestcontents->questions) === 0 && !$arguments['quiet']) {
+            // A quiz in a whole course set up can have an empty manifest as
+            // the questions may be in the course.
             echo "\nManifest file is empty. This should only be the case if you are importing ";
             echo "questions for the first time into a Moodle context where they don't already exist.\n";
             $this->handle_abort();
@@ -352,15 +363,10 @@ class import_repo {
     public function process():void {
         $this->import_categories();
         $this->import_questions();
-        $instanceinfo = $this->clihelper->check_context($this, true, true);
         $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
                                                                    $this->tempfilepath,
                                                                    $this->manifestpath,
-                                                                   $this->moodleurl,
-                                                                   $instanceinfo->contextinfo->qcategoryid,
-                                                                   $this->subdirectory,
-                                                                   true,
-                                                                   $this);
+                                                                   true);
         unlink($this->tempfilepath);
         $this->delete_no_file_questions(false);
         $this->delete_no_record_questions(false);
@@ -555,15 +561,8 @@ class import_repo {
                             $fileoutput = [
                                 'questionbankentryid' => $responsejson->questionbankentryid,
                                 'version' => $responsejson->version,
-                                // Questions can be imported in multiple contexts.
-                                'contextlevel' => $this->postsettings['contextlevel'],
                                 'filepath' => str_replace( '\\', '/', $repoitem->getPathname()),
-                                'coursename' => $this->postsettings['coursename'],
-                                'modulename' => $this->postsettings['modulename'],
-                                'coursecategory' => $this->postsettings['coursecategory'],
-                                'instanceid' => $this->postsettings['instanceid'],
                                 'format' => 'xml',
-                                'ignorecat' => $this->ignorecat,
                             ];
                             if ($existingentry && isset($existingentry->currentcommit)) {
                                 $fileoutput['moodlecommit'] = $existingentry->currentcommit;
@@ -596,15 +595,10 @@ class import_repo {
     public function recovery():void {
         if (file_exists($this->tempfilepath)) {
             echo 'Attempting recovery from failure on previous run. Updating manifest:';
-            $instanceinfo = $this->clihelper->check_context($this, true, true);
             $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
                                                                     $this->tempfilepath,
                                                                     $this->manifestpath,
-                                                                    $this->moodleurl,
-                                                                    $instanceinfo->contextinfo->qcategoryid,
-                                                                    $this->subdirectory,
-                                                                    true,
-                                                                    $this);
+                                                                    true);
             unlink($this->tempfilepath);
             echo 'Recovery successful. Continuing...';
         }

@@ -202,14 +202,8 @@ trait export_trait {
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
-                    'contextlevel' => $this->listpostsettings['contextlevel'],
                     'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.xml",
-                    'coursename' => $this->listpostsettings['coursename'],
-                    'modulename' => $this->listpostsettings['modulename'],
-                    'coursecategory' => $this->listpostsettings['coursecategory'],
-                    'instanceid' => $this->listpostsettings['instanceid'],
                     'format' => 'xml',
-                    'ignorecat' => $this->ignorecat,
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");
             }

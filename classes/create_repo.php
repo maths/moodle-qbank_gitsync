@@ -197,6 +197,18 @@ class create_repo {
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
                                           '_export' . cli_helper::TEMP_MANIFEST_FILE,
                                           $this->manifestpath);
+        $this->manifestcontents = new \stdClass();
+        $this->manifestcontents->context = new \stdClass();
+        $this->manifestcontents->context->contextlevel = cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
+        $this->manifestcontents->context->coursename = $instanceinfo->contextinfo->coursename;
+        $this->manifestcontents->context->modulename = $instanceinfo->contextinfo->modulename;
+        $this->manifestcontents->context->coursecategory = $instanceinfo->contextinfo->categoryname;
+        $this->manifestcontents->context->instanceid = $instanceinfo->contextinfo->instanceid;
+        $this->manifestcontents->context->defaultsubcategoryid = $this->qcategoryid;
+        $this->manifestcontents->context->defaultsubdirectory = null;
+        $this->manifestcontents->context->defaultignorecat = $this->ignorecat;
+        $this->manifestcontents->context->moodleurl = $this->moodleurl;
+        $this->manifestcontents->questions = [];
     }
 
     /**
@@ -206,13 +218,10 @@ class create_repo {
      * @return void
      */
     public function process():void {
-        $this->manifestcontents = new \stdClass();
-        $this->manifestcontents->context = null;
-        $this->manifestcontents->questions = [];
         $this->export_to_repo();
+        $this->manifestcontents->context->defaultsubdirectory = $this->subdirectory;
         cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,
-                                         $this->manifestpath, $this->moodleurl,
-                                         $this->qcategoryid, $this->subdirectory, false, $this);
+                                         $this->manifestpath, false);
         unlink($this->tempfilepath);
     }
 

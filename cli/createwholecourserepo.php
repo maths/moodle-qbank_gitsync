@@ -165,28 +165,34 @@ if ($arguments['directory']) {
 $moodleinstance = $arguments['moodleinstance'];
 $coursemanifestname = cli_helper::get_manifest_path($moodleinstance, 'course', null,
                             $contextinfo->contextinfo->coursename, null, $basedirectory);
+$contentsjson = file_get_contents($coursemanifestname);
+$manifestcontents = json_decode($contentsjson);
+
 $instanceid = $arguments['instanceid'];
 $token = $arguments['token'][$moodleinstance];
 $ignorecat = $arguments['ignorecat'];
 $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
-$quizfilepath = $basedirectory . '/' . $clihelper::QUIZPATH_FILE;
-$quiz_locations = [];
+$quizlocations = [];
 foreach ($contextinfo->quizzes as $quiz) {
-    $instanceid = "{$quiz->instanceid}";
+    $instanceid = $quiz->instanceid;
     $quizdirectory = cli_helper::get_quiz_directory($basedirectory, $quiz->name);
     $rootdirectory = $clihelper->create_directory($quizdirectory);
     echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
     chdir($scriptdirectory);
-    $output = shell_exec('php createrepo.php -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . (int) $instanceid . ' -t ' . $token . ' -z' . $ignorecat);
+    $output = shell_exec('php createrepo.php -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -z' . $ignorecat);
     echo $output;
     $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                             $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
     chdir($scriptdirectory);
-    $output = shell_exec('php exportquizstructurefrommoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' . (int) $instanceid . ' -t ' . $token. ' -p "' . $coursemanifestname. '" -f "' . $quizmanifestname . '"');
-    $quiz_locations[$instanceid] = basename($rootdirectory);
-    $success = file_put_contents($quizfilepath, json_encode($quiz_locations));
+    $output = shell_exec('php exportquizstructurefrommoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' . $instanceid . ' -t ' . $token. ' -p "' . $coursemanifestname. '" -f "' . $quizmanifestname . '"');
+    $quizlocation = new StdClass();
+    $quizlocation->moduleid = $instanceid;
+    $quizlocation->directory = basename($rootdirectory);
+    $quizlocations[] = $quizlocation;
+    $manifestcontents->quizzes = $quizlocations;
+    $success = file_put_contents($coursemanifestname, json_encode($manifestcontents));
     if ($success === false) {
-        echo "\nUnable to update quizpath file: {$quizfilepath}\n Aborting.\n";
+        echo "\nUnable to update manifest file: {$coursemanifestname}\n Aborting.\n";
         exit();
     }
     echo $output;

@@ -145,14 +145,6 @@ $options = [
         'variable' => 'ignorecat',
         'valuerequired' => true,
     ],
-    [
-        'longopt' => 'quiet',
-        'shortopt' => 'z',
-        'description' => 'Do not display context info or option to abort.',
-        'default' => false,
-        'variable' => 'quiet',
-        'valuerequired' => false,
-    ],
 ];
 
 if (!function_exists('simplexml_load_file')) {
@@ -160,7 +152,11 @@ if (!function_exists('simplexml_load_file')) {
     exit;
 }
 
+$scriptdirectory = dirname(__FILE__);
 $clihelper = new cli_helper($options);
+$arguments = $clihelper->get_arguments();
+echo "Importing a course into Moodle. Associated quiz contexts will also be imported.\n";
+echo "Structures of existing quizzes in Moodle will not be updated.\n";
 $importrepo = new import_repo($clihelper, $moodleinstances);
 $clihelper->check_for_changes($importrepo->manifestpath);
 $clihelper->backup_manifest($importrepo->manifestpath);
@@ -168,3 +164,72 @@ $importrepo->recovery();
 $importrepo->check_question_versions();
 $clihelper->commit_hash_update($importrepo);
 $importrepo->process();
+
+// Create/update quiz questions.
+$contextinfo = $clihelper->check_context($importrepo, false, true);
+$basedirectory = dirname($importrepo->manifestpath);
+$moodleinstance = $arguments['moodleinstance'];
+$coursemanifestname = cli_helper::get_manifest_path($moodleinstance, 'course', null,
+                            $contextinfo->contextinfo->coursename, null, $basedirectory);
+$contentsjson = file_get_contents($coursemanifestname);
+$manifestcontents = json_decode($contentsjson);
+$token = $arguments['token'][$moodleinstance];
+$ignorecat = $arguments['ignorecat'];
+$ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
+$quizlocations = $manifestcontents->quizzes;
+$topdircontents = scandir(dirname($basedirectory));
+foreach ($topdircontents as $quizdirectory) {
+    if (!is_dir(dirname($basedirectory) . '/' . $quizdirectory) || strpos($quizdirectory, '_quiz_') === false) {
+        continue;
+    }
+    $instanceid = array_column($quizlocations, null, 'directory')[$quizdirectory]->moduleid ?? false;
+    $rootdirectory = dirname($basedirectory) . '/' . $quizdirectory;
+    $quizfiles = scandir($rootdirectory);
+    $structurefile = null;
+    foreach($quizfiles as $quizfile) {
+        if (preg_match('/.*_quiz\.json/', $quizfile)) {
+            $structurefile = $quizfile;
+            break;
+        }
+    }
+    $structurefile = $rootdirectory . '/' . $structurefile;
+    $contentsjson = file_get_contents($structurefile);
+    $structurecontents = json_decode($contentsjson);
+    chdir($scriptdirectory);
+    $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
+                        $contextinfo->contextinfo->coursename, $structurecontents->quiz->name, '');
+    if (is_dir($rootdirectory . '/top')) {
+        // Quiz could have no questions in its context.
+        echo "\nImporting quiz context: {$structurecontents->quiz->name}\n";
+        $output = shell_exec('php importrepotomoodle.php -z -r "' . $rootdirectory .
+                '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
+        echo $output;
+    }
+    if ($instanceid === false) {
+        chdir($scriptdirectory);
+        echo "\nImporting quiz structure: {$structurecontents->quiz->name}\n";
+        $output = shell_exec('php importquizstructuretomoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' .
+            $contextinfo->contextinfo->instanceid . ' -t ' . $token. ' -p "' .
+            $coursemanifestname. '" -f "' . $quizmanifestname . '" -a "' . $structurefile . '"');
+        echo $output;
+        $quizlocation = new \StdClass();
+        $quizlocation->moduleid = $instanceid;
+        $quizlocation->directory = basename($rootdirectory);
+        $quizlocations[] = $quizlocation;
+        $manifestcontents->quizzes = $quizlocations;
+        $success = file_put_contents($coursemanifestname, json_encode($manifestcontents));
+        if ($success === false) {
+            echo "\nUnable to update manifest file: {$coursemanifestname}\n Aborting.\n";
+            exit();
+        }
+    }
+}
+
+$quizlocations = $manifestcontents->quizzes;
+$locarray = array_column($quizlocations, null, 'moduleid');
+foreach ($contextinfo->quizzes as $quiz) {
+    $instanceid = (int) $quiz->instanceid;
+    if (!isset($locarray[$instanceid])) {
+        echo "\nQuiz {$quiz->name} should be exported from Moodle or deleted.\n";
+    }
+}

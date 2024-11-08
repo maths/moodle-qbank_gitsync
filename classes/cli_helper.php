@@ -64,10 +64,6 @@ class cli_helper {
      */
     public const QUIZ_FILE = '_quiz.json';
     /**
-     * QUIZPATH_FILE - File name for quiz location file.
-     */
-    public const QUIZPATH_FILE = 'quizlocation.json';
-    /**
      * TEMP_MANIFEST_FILE - File name ending for temporary manifest file.
      * Appended to name of moodle instance.
      */
@@ -445,19 +441,13 @@ class cli_helper {
      * @param object $manifestcontents \stdClass Current contents of manifest file
      * @param string $tempfilepath
      * @param string $manifestpath
-     * @param string $moodleurl
-     * @param int|null $subcategoryid
-     * @param string|null $subdirectory
      * @param bool $showupdated
-     * @param object $activity
      * @return object
      */
-    public static function create_manifest_file(object $manifestcontents, string $tempfilepath,
-                                                string $manifestpath, string $moodleurl,
-                                                ?int $subcategoryid=null,
-                                                ?string $subdirectory=null,
-                                                bool $showupdated=true,
-                                                object $activity=null):object {
+    public static function create_manifest_file(object $manifestcontents,
+                                                string $tempfilepath,
+                                                string $manifestpath,
+                                                bool $showupdated=true):object {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
@@ -498,33 +488,7 @@ class cli_helper {
                         $existingentries["{$questioninfo->questionbankentryid}"]->moodlecommit = $questioninfo->moodlecommit;
                     }
                 }
-                if ($manifestcontents->context === null) {
-                    $manifestcontents->context = new \stdClass();
-                    $manifestcontents->context->contextlevel = $questioninfo->contextlevel;
-                    $manifestcontents->context->coursename = $questioninfo->coursename;
-                    $manifestcontents->context->modulename = $questioninfo->modulename;
-                    $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
-                    $manifestcontents->context->instanceid = $questioninfo->instanceid;
-                    $manifestcontents->context->defaultsubcategoryid = $subcategoryid;
-                    $manifestcontents->context->defaultsubdirectory = $subdirectory;
-                    $manifestcontents->context->defaultignorecat = $questioninfo->ignorecat;
-                    $manifestcontents->context->moodleurl = $moodleurl;
-                }
             }
-        }
-        // If there are no questions, we'll need to get context.
-        if ($manifestcontents->context === null) {
-            $context = $activity->cli_helper->check_context($activity, false, true);
-            $manifestcontents->context = new \stdClass();
-            $manifestcontents->context->contextlevel = $questioninfo->contextlevel;
-            $manifestcontents->context->coursename = $questioninfo->coursename;
-            $manifestcontents->context->modulename = $questioninfo->modulename;
-            $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
-            $manifestcontents->context->instanceid = $questioninfo->instanceid;
-            $manifestcontents->context->defaultsubcategoryid = $subcategoryid;
-            $manifestcontents->context->defaultsubdirectory = $subdirectory;
-            $manifestcontents->context->defaultignorecat = $questioninfo->ignorecat;
-            $manifestcontents->context->moodleurl = $moodleurl;
         }
         echo "\nAdded {$addedcount} question" . (($addedcount !== 1) ? 's' : '') . ".\n";
         if ($showupdated) {
@@ -650,7 +614,7 @@ class cli_helper {
             $ignore = fopen($manifestdirname . '/.gitignore', 'a');
 
             $contents = "**/*" . self::MANIFEST_FILE . "\n**/*" .
-                self::TEMP_MANIFEST_FILE . "\n**/" . self::QUIZPATH_FILE . "\n";
+                self::TEMP_MANIFEST_FILE . "\n";
             fwrite($ignore, $contents);
             fclose($ignore);
         }
