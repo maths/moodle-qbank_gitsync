@@ -319,7 +319,9 @@ class cli_helper {
         foreach ($this->options as $option) {
             $variablename = $option['variable'];
             if ($option['valuerequired']) {
-                if (isset($commandlineargs[$option['longopt']])) {
+                if (isset($option['hidden'])) {
+                    $variables[$variablename] = $option['default'];
+                } else if (isset($commandlineargs[$option['longopt']])) {
                     $variables[$variablename] = $commandlineargs[$option['longopt']];
                 } else if (isset($commandlineargs[$option['shortopt']])) {
                     $variables[$variablename] = $commandlineargs[$option['shortopt']];
@@ -346,7 +348,9 @@ class cli_helper {
      */
     public function show_help() {
         foreach ($this->options as $option) {
-            echo "-{$option['shortopt']} --{$option['longopt']}  \t{$option['description']}\n";
+            if (!isset($option['hidden'])) {
+                echo "-{$option['shortopt']} --{$option['longopt']}  \t{$option['description']}\n";
+            }
         }
         exit;
     }

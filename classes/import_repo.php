@@ -27,7 +27,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace qbank_gitsync;
-use stdClass;
 /**
  * Import a Git repo.
  */
@@ -860,6 +859,79 @@ class import_repo {
         }
         $this->listpostsettings['qbankentryids[]'] = null;
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+    }
+
+    /**
+     * Create/update quizzes.
+     * @param object $clihelper
+     * @param string $scriptdirectory - directory of CLI scripts
+     * @return void
+     */
+    public function update_quizzes($clihelper, $scriptdirectory) {
+        $arguments = $clihelper->get_arguments();
+        $contextinfo = $clihelper->check_context($this, false, true);
+        $basedirectory = dirname($this->manifestpath);
+        $moodleinstance = $arguments['moodleinstance'];
+        $token = $arguments['token'][$moodleinstance];
+        $ignorecat = $arguments['ignorecat'];
+        $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
+        $quizlocations = $this->manifestcontents->quizzes;
+        $topdircontents = scandir(dirname($basedirectory));
+        foreach ($topdircontents as $quizdirectory) {
+            if (!is_dir(dirname($basedirectory) . '/' . $quizdirectory) || strpos($quizdirectory, '_quiz_') === false) {
+                continue;
+            }
+            $instanceid = array_column($quizlocations, null, 'directory')[$quizdirectory]->moduleid ?? false;
+            $rootdirectory = dirname($basedirectory) . '/' . $quizdirectory;
+            $quizfiles = scandir($rootdirectory);
+            $structurefile = null;
+            foreach($quizfiles as $quizfile) {
+                if (preg_match('/.*_quiz\.json/', $quizfile)) {
+                    $structurefile = $quizfile;
+                    break;
+                }
+            }
+            $structurefile = $rootdirectory . '/' . $structurefile;
+            $contentsjson = file_get_contents($structurefile);
+            $structurecontents = json_decode($contentsjson);
+            chdir($scriptdirectory);
+            $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
+                                $contextinfo->contextinfo->coursename, $structurecontents->quiz->name, '');
+            if (is_dir($rootdirectory . '/top')) {
+                // Quiz could have no questions in its context.
+                echo "\nImporting quiz context: {$structurecontents->quiz->name}\n";
+                $output = shell_exec('php importrepotomoodle.php -z -r "' . $rootdirectory .
+                        '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
+                echo $output;
+            }
+            if ($instanceid === false) {
+                chdir($scriptdirectory);
+                echo "\nImporting quiz structure: {$structurecontents->quiz->name}\n";
+                $output = shell_exec('php importquizstructuretomoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' .
+                    $contextinfo->contextinfo->instanceid . ' -t ' . $token. ' -p "' .
+                    $this->manifestpath. '" -f "' . $quizmanifestname . '" -a "' . $structurefile . '"');
+                echo $output;
+                $quizlocation = new \StdClass();
+                $quizlocation->moduleid = $instanceid;
+                $quizlocation->directory = basename($rootdirectory);
+                $quizlocations[] = $quizlocation;
+                $this->manifestcontents->quizzes = $quizlocations;
+                $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+                if ($success === false) {
+                    echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
+                    exit();
+                }
+            }
+        }
+
+        $quizlocations = $this->manifestcontents->quizzes;
+        $locarray = array_column($quizlocations, null, 'moduleid');
+        foreach ($contextinfo->quizzes as $quiz) {
+            $instanceid = (int) $quiz->instanceid;
+            if (!isset($locarray[$instanceid])) {
+                echo "\nQuiz {$quiz->name} should be exported from Moodle or deleted.\n";
+            }
+        }
     }
 
     /**

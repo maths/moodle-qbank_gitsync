@@ -234,4 +234,57 @@ class create_repo {
     public function get_curl_request($wsurl):curl_request {
         return new \qbank_gitsync\curl_request($wsurl);
     }
+
+    /**
+     * Create quiz directories and populate.
+     * @param object $clihelper
+     * @param string $scriptdirectory - directory of CLI scripts
+     * @return void
+     */
+    public function create_quiz_directories($clihelper, $scriptdirectory) {
+        $contextinfo = $clihelper->check_context($this, false, true);
+        $arguments = $clihelper->get_arguments();
+        if ($arguments['directory']) {
+            $basedirectory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+        } else {
+            $basedirectory = $arguments['rootdirectory'];
+        }
+        $moodleinstance = $arguments['moodleinstance'];
+        $instanceid = $arguments['instanceid'];
+        $token = $arguments['token'][$moodleinstance];
+        $ignorecat = $arguments['ignorecat'];
+        $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
+        $quizlocations = [];
+        foreach ($contextinfo->quizzes as $quiz) {
+            $instanceid = $quiz->instanceid;
+            $quizdirectory = cli_helper::get_quiz_directory($basedirectory, $quiz->name);
+            $rootdirectory = $clihelper->create_directory($quizdirectory);
+            echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
+            chdir($scriptdirectory);
+            $output = shell_exec('php createrepo.php -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -z' . $ignorecat);
+            echo $output;
+            $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
+                                    $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
+            chdir($scriptdirectory);
+            $output = shell_exec('php exportquizstructurefrommoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' . $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestname . '"');
+            $quizlocation = new \StdClass();
+            $quizlocation->moduleid = $instanceid;
+            $quizlocation->directory = basename($rootdirectory);
+            $quizlocations[] = $quizlocation;
+            $this->manifestcontents->quizzes = $quizlocations;
+            $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+            if ($success === false) {
+                echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
+                exit();
+            }
+            echo $output;
+        }
+        if ($arguments['usegit']) {
+            // Commit the final quiz file.
+            // The others are committed by the following createrepo.
+            chdir($basedirectory);
+            exec("git add --all");
+            exec('git commit -m "Initial Commit - final update"');
+        }
+    }
 }

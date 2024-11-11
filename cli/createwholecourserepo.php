@@ -26,7 +26,6 @@
 
 namespace qbank_gitsync;
 
-use stdClass;
 define('CLI_SCRIPT', true);
 require_once('./config.php');
 require_once('../classes/curl_request.php');
@@ -70,6 +69,7 @@ $options = [
         'default' => 'course',
         'variable' => 'contextlevel',
         'valuerequired' => true,
+        'hidden' => true,
     ],
     [
         'longopt' => 'subcategory',
@@ -145,59 +145,11 @@ if (!function_exists('simplexml_load_file')) {
 // Create course directory and populate.
 $scriptdirectory = dirname(__FILE__);
 $clihelper = new cli_helper($options);
-$arguments = $clihelper->get_arguments();
-$arguments['contextlevel'] = 'course';
-$clihelper->processedoptions = $arguments;
 echo "Exporting a course. Associated quiz contexts will also be exported.\n";
 $createrepo = new create_repo($clihelper, $moodleinstances);
 $clihelper->create_directory(dirname($createrepo->manifestpath));
 $clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
+$createrepo->create_quiz_directories($clihelper, $scriptdirectory);
 
-// Create quiz directories and populate.
-$contextinfo = $clihelper->check_context($createrepo, false, true);
-if ($arguments['directory']) {
-    $basedirectory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
-} else {
-    $basedirectory = $arguments['rootdirectory'];
-}
-$moodleinstance = $arguments['moodleinstance'];
-$coursemanifestname = cli_helper::get_manifest_path($moodleinstance, 'course', null,
-                            $contextinfo->contextinfo->coursename, null, $basedirectory);
-$contentsjson = file_get_contents($coursemanifestname);
-$manifestcontents = json_decode($contentsjson);
-
-$instanceid = $arguments['instanceid'];
-$token = $arguments['token'][$moodleinstance];
-$ignorecat = $arguments['ignorecat'];
-$ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
-$quizlocations = [];
-foreach ($contextinfo->quizzes as $quiz) {
-    $instanceid = $quiz->instanceid;
-    $quizdirectory = cli_helper::get_quiz_directory($basedirectory, $quiz->name);
-    $rootdirectory = $clihelper->create_directory($quizdirectory);
-    echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
-    chdir($scriptdirectory);
-    $output = shell_exec('php createrepo.php -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -z' . $ignorecat);
-    echo $output;
-    $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
-                            $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
-    chdir($scriptdirectory);
-    $output = shell_exec('php exportquizstructurefrommoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' . $instanceid . ' -t ' . $token. ' -p "' . $coursemanifestname. '" -f "' . $quizmanifestname . '"');
-    $quizlocation = new StdClass();
-    $quizlocation->moduleid = $instanceid;
-    $quizlocation->directory = basename($rootdirectory);
-    $quizlocations[] = $quizlocation;
-    $manifestcontents->quizzes = $quizlocations;
-    $success = file_put_contents($coursemanifestname, json_encode($manifestcontents));
-    if ($success === false) {
-        echo "\nUnable to update manifest file: {$coursemanifestname}\n Aborting.\n";
-        exit();
-    }
-    echo $output;
-}
-// Commit the final quiz file.
-chdir($basedirectory);
-exec("git add --all");
-exec('git commit -m "Initial Commit - final update"');
