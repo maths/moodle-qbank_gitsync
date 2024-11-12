@@ -109,8 +109,17 @@ $options = [
         'description' => 'Is the repo controlled using Git?',
         'default' => $usegit,
         'variable' => 'usegit',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'subcall',
+        'shortopt' => 'w',
+        'description' => 'Is this a subcall of the script?',
+        'default' => false,
+        'variable' => 'subcall',
         'valuerequired' => false,
-    ]
+        'hidden' => true,
+    ],
 ];
 
 if (!function_exists('simplexml_load_file')) {

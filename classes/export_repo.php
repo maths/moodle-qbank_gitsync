@@ -308,32 +308,34 @@ class export_repo {
             $instanceid = (int) $quiz->instanceid;
             if (!isset($locarray[$instanceid]) || !is_dir(dirname($basedirectory) . '/' . $locarray[$instanceid]->directory)) {
                 $rootdirectory = $clihelper->create_directory(cli_helper::get_quiz_directory($basedirectory, $quiz->name));
-                $quizlocation = new \StdClass();
-                $quizlocation->moduleid = $instanceid;
-                $quizlocation->directory = basename($rootdirectory);
-                $quizlocations[] = $quizlocation;
-                $this->manifestcontents->quizzes = $quizlocations;
-                $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
-                if ($success === false) {
-                    echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
-                    exit();
+                if (!isset($locarray[$instanceid])) {
+                    $quizlocation = new \StdClass();
+                    $quizlocation->moduleid = $instanceid;
+                    $quizlocation->directory = basename($rootdirectory);
+                    $quizlocations[] = $quizlocation;
+                    $this->manifestcontents->quizzes = $quizlocations;
+                    $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+                    if ($success === false) {
+                        echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
+                        exit();
+                    }
                 }
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
                 chdir($scriptdirectory);
-                $output = shell_exec('php createrepo.php -r "' . $rootdirectory . '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -z' . $ignorecat);
+                $output = shell_exec('php createrepo.php -w -z -r "' . $rootdirectory . '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
             } else {
                 $rootdirectory = dirname($basedirectory) . '/' . $locarray[$instanceid]->directory;
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
                 chdir($scriptdirectory);
                 $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, '');
-                $output = shell_exec('php exportrepofrommoodle.php -z -r "' . $rootdirectory . '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
+                $output = shell_exec('php exportrepofrommoodle.php -w -z -r "' . $rootdirectory . '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
             }
             echo $output;
             $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
             chdir($scriptdirectory);
-            $output = shell_exec('php exportquizstructurefrommoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' . $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath. '" -f "' . $quizmanifestname . '"');
+            $output = shell_exec('php exportquizstructurefrommoodle.php -w -z -r "" -i "' . $moodleinstance . '" -n ' . $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath. '" -f "' . $quizmanifestname . '"');
             echo $output;
         }
     }

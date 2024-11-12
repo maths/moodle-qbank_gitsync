@@ -139,6 +139,10 @@ class cli_helper {
      */
     public function validate_and_clean_args(): void {
         $cliargs = $this->processedoptions;
+        if (!isset($cliargs['usegit'])) {
+            echo "\nAre you using Git? You will need to specify true or false for --usegit.\n";
+            static::call_exit();
+        }
         if (!isset($cliargs['token'])) {
             echo "\nYou will need a security token (--token).\n";
             static::call_exit();
@@ -327,6 +331,10 @@ class cli_helper {
                     $variables[$variablename] = $commandlineargs[$option['shortopt']];
                 } else {
                     $variables[$variablename] = $option['default'];
+                }
+                if (in_array($variablename, ['usegit'])) {
+                    $variables[$variablename] = ($variables[$variablename] === 'true') ? true : $variables[$variablename];
+                    $variables[$variablename] = ($variables[$variablename] === 'false') ? false : $variables[$variablename];
                 }
             } else {
                 if (isset($commandlineargs[$option['longopt']]) || isset($commandlineargs[$option['shortopt']])) {
@@ -562,8 +570,10 @@ class cli_helper {
         $this->create_gitignore($activity->manifestpath);
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
-        exec("git add --all");
-        exec('git commit -m "Initial Commit - ' . basename($activity->manifestpath)  . '"');
+        if (!(isset($this->get_arguments()['subcall']) && $this->get_arguments()['subcall'])) {
+            exec("git add --all");
+            exec('git commit -m "Initial Commit - ' . basename($activity->manifestpath)  . '"');
+        }
         foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             if ($commithash) {
@@ -672,7 +682,7 @@ class cli_helper {
      * @return void
      */
     public function check_for_changes($fullmanifestpath) {
-        if (!$this->get_arguments()['usegit']) {
+        if (!$this->get_arguments()['usegit'] || (isset($this->get_arguments()['subcall']) && $this->get_arguments()['subcall'])) {
             return;
         }
         $this->check_repo_initialised($fullmanifestpath);

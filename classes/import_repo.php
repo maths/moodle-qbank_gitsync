@@ -900,14 +900,14 @@ class import_repo {
             if (is_dir($rootdirectory . '/top')) {
                 // Quiz could have no questions in its context.
                 echo "\nImporting quiz context: {$structurecontents->quiz->name}\n";
-                $output = shell_exec('php importrepotomoodle.php -z -r "' . $rootdirectory .
+                $output = shell_exec('php importrepotomoodle.php -w -z -r "' . $rootdirectory .
                         '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
                 echo $output;
             }
             if ($instanceid === false) {
                 chdir($scriptdirectory);
                 echo "\nImporting quiz structure: {$structurecontents->quiz->name}\n";
-                $output = shell_exec('php importquizstructuretomoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' .
+                $output = shell_exec('php importquizstructuretomoodle.php -w -z -r "" -i "' . $moodleinstance . '" -n ' .
                     $contextinfo->contextinfo->instanceid . ' -t ' . $token. ' -p "' .
                     $this->manifestpath. '" -f "' . $quizmanifestname . '" -a "' . $structurefile . '"');
                 echo $output;

@@ -261,7 +261,7 @@ class create_repo {
             $rootdirectory = $clihelper->create_directory($quizdirectory);
             echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
             chdir($scriptdirectory);
-            $output = shell_exec('php createrepo.php -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -z' . $ignorecat);
+            $output = shell_exec('php createrepo.php -z -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
             echo $output;
             $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
@@ -279,7 +279,7 @@ class create_repo {
             }
             echo $output;
         }
-        if ($arguments['usegit']) {
+        if ($arguments['usegit'] && !(isset($arguments()['subcall']) && $arguments()['subcall'])) {
             // Commit the final quiz file.
             // The others are committed by the following createrepo.
             chdir($basedirectory);
