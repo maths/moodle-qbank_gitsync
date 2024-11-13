@@ -130,13 +130,20 @@ class import_quiz_data extends external_api {
         $moduleinfo->section = 1;
         $moduleinfo->quizpassword = '';
         $moduleinfo->visible = true;
-        $moduleinfo->introeditor = ['text' => $params['quiz']['intro'], 'format' => $params['quiz']['introformat']];
+        $moduleinfo->introeditor = ['text' => $params['quiz']['intro'], 'format' => $params['quiz']['introformat'], 'itemid' => 0];
         $moduleinfo->preferredbehaviour = 'deferredfeedback';
         $moduleinfo->grade = $params['quiz']['grade'];
         $moduleinfo->questionsperpage = $params['quiz']['questionsperpage'];
         $moduleinfo->shuffleanswers = true;
         $moduleinfo->navmethod = $params['quiz']['navmethod'];
+        $moduleinfo->timeopen = 0;
+        $moduleinfo->timeclose = 0;
+        $moduleinfo->decimalpoints = 2;
+        $moduleinfo->questiondecimalpoints = -1;
+        $moduleinfo->cmidnumber = '';
         $moduleinfo = create_module($moduleinfo);
+
+        // Post-creation updates.
         $reviewchoice = [];
         $reviewchoice['reviewattempt'] = 69888;
         $reviewchoice['reviewcorrectness'] = 4352;
@@ -151,6 +158,7 @@ class import_quiz_data extends external_api {
 
         foreach ($params['sections'] as $section) {
             $section['quizid'] = $moduleinfo->instance;
+            // First slot will have been automatically created so we need to overwrite.
             if ($section['firstslot'] == 1) {
                 $sectionid = $DB->get_field('quiz_sections', 'id',
                     ['quizid' => $moduleinfo->instance, 'firstslot' => 1]);
@@ -176,13 +184,15 @@ class import_quiz_data extends external_api {
             $event->trigger();
         }
         $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
+        // Sort questions by slot.
         usort($params['questions'], function($a, $b) {
-            return $a['slot'] > $b['slot'];
+            return (int) $a['slot'] > (int) $b['slot'];
         });
         foreach ($params['questions'] as $question) {
             $qdata = get_minimal_question_data($question['questionbankentryid']);
+            // Double-check user has question access.
             quiz_require_question_use($qdata->questionid);
-            quiz_add_quiz_question($qdata->questionid, $module, $params['question']['page'], $params['question']['maxmark']);
+            quiz_add_quiz_question($qdata->questionid, $module, $question['page'], $question['maxmark']);
             if ($question['requireprevious']) {
                 $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
                 $itemid = $DB->get_field('question_references', 'itemid',
@@ -191,14 +201,21 @@ class import_quiz_data extends external_api {
             }
         }
         quiz_update_sumgrades($module);
-        if ($params['feedback']) {
-            // Delete auto created feedback if we have something to replace it with.
-            $DB->delete_records('quiz_feedback', ['id' => $moduleinfo->instance]);
+        if (!count($params['feedback'])) {
+            $params['feedback'] = [
+                [
+                    'feedbacktext' => '',
+                    'feedbacktextformat' => '1',
+                    'mingrade' => '0',
+                    'maxgrade' => (string)((int) $params['quiz']['grade'] + 1),
+                ]
+                ];
         }
         foreach ($params['feedback'] as $feedback) {
             $feedback['quizid'] = $moduleinfo->instance;
             $DB->insert_record('quiz_feedback', $feedback);
         }
+
         $response = new \stdClass();
         $response->success = true;
         return $response;

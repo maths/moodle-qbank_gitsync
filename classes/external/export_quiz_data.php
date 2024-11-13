@@ -48,6 +48,7 @@ class export_quiz_data extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters([
             'moduleid' => new external_value(PARAM_SEQUENCE, 'Course module id'),
+            'coursename' => new external_value(PARAM_TEXT, 'Course name'),
             'quizname' => new external_value(PARAM_TEXT, 'Quiz name'),
         ]);
     }
@@ -97,16 +98,18 @@ class export_quiz_data extends external_api {
      * Export details of a quiz content and structure.
      *
      * @param string|null $moduleid course module id of the quiz to export
+     * @param string|null $coursename Name of the course
      * @param string|null $quizname Name of the quiz
      * @return object containing quiz data
      */
-    public static function execute(?string $moduleid = null, ?string $quizname = null):object {
+    public static function execute(?string $moduleid = null, ?string $coursename = null, ?string $quizname = null):object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'moduleid' => $moduleid,
+            'coursename' => $coursename,
             'quizname' => $quizname,
         ]);
-        $contextinfo = get_context(\CONTEXT_MODULE, null, null, $params['quizname'], $params['moduleid']);
+        $contextinfo = get_context(\CONTEXT_MODULE, null, $params['coursename'], $params['quizname'], $params['moduleid']);
 
         $thiscontext = $contextinfo->context;
 

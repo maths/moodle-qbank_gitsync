@@ -131,6 +131,7 @@ class export_quiz {
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_export_quiz_data',
             'moodlewsrestformat' => 'json',
+            'coursename' => $arguments['coursename'],
             'quizname' => $arguments['modulename'],
             'moduleid' => $arguments['instanceid'],
         ];
