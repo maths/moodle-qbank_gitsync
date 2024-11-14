@@ -154,7 +154,7 @@ class export_quiz {
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-        if (!$arguments()['subcall']) {
+        if (!$arguments['subcall']) {
             $this->listcurlrequest = $this->get_curl_request($wsurl);
             $this->listpostsettings = [
                 'wstoken' => $token,
@@ -221,6 +221,7 @@ class export_quiz {
         }
         $quizmanifestentries = [];
         $nonquizmanifestentries = [];
+        // Determine quiz info location based on loactions of manifest paths.
         if ($this->quizmanifestpath) {
             $this->filepath = cli_helper::get_quiz_structure_path($responsejson->quiz->name, dirname($this->quizmanifestpath));
             $quizmanifestentries = array_column($this->quizmanifestcontents->questions, null, 'questionbankentryid');
@@ -230,6 +231,7 @@ class export_quiz {
         if ($this->nonquizmanifestpath) {
             $nonquizmanifestentries = array_column($this->nonquizmanifestcontents->questions, null, 'questionbankentryid');
         }
+        // Convert the returned QBE ids into file locations using the manifest files to translate.
         foreach ($responsejson->questions as $question) {
             $quizmanifestentry = $quizmanifestentries["{$question->questionbankentryid}"] ?? false;
             $nonquizmanifestentry = $nonquizmanifestentries["{$question->questionbankentryid}"] ?? false;
@@ -250,6 +252,7 @@ class export_quiz {
                      "consider consolidating them.\n";
             }
         }
+        // Save exported information (including relative file location but not QBE id so Moodle independent).
         file_put_contents($this->filepath, json_encode($responsejson));
         echo "Quiz data exported to:\n";
         echo "{$this->filepath}\n";

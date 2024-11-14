@@ -59,7 +59,7 @@ class fake_export_cli_helper extends cli_helper {
  *
  * @covers \gitsync\export_repo::class
  */
-class export_repo_test extends advanced_testcase {
+class export_quiz_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -68,33 +68,82 @@ class export_repo_test extends advanced_testcase {
     public cli_helper $clihelper;
     /** @var curl_request mocked curl_request */
     public curl_request $curl;
-    /** @var export_repo mocked export_repo */
-    public export_repo $exportrepo;
+    /** @var export_quiz mocked export_quiz */
+    public export_quiz $exportquiz;
     /** @var curl_request mocked curl_request for question list */
     public curl_request $listcurl;
     /** @var string root of virtual file system */
     public string $rootpath;
     /** @var string used to store output of multiple calls to a function */
-    const MOODLE = 'fakeexport';
+    const MOODLE = 'fakeexportquiz';    /** Name of question to be generated and exported. */
+    const QUIZNAME = 'Quiz 1';
+    const QUIZINTRO = 'Quiz intro';
+    const FEEDBACK = 'Quiz feedback';
+    const HEADING1 = 'Heading 1';
+    const HEADING2 = 'Heading 2';
+    /** @var array input parameters */
+    protected array $quizoutput = [
+        'quiz' => [
+            'name' => self::QUIZNAME,
+            'intro' => self::QUIZINTRO,
+            'introformat' => '0',
+            'coursename' => null,
+            'courseid' => null,
+            'questionsperpage' => '0',
+            'grade' => '100.00000',
+            'navmethod' => 'free',
+        ],
+        'sections' => [
+            [
+                'firstslot' => '1',
+                'heading' => self::HEADING1,
+                'shufflequestions' => 0,
+            ],
+            [
+                'firstslot' => '2',
+                'heading' => self::HEADING2,
+                'shufflequestions' => 0,
+            ]
+        ],
+        'questions' => [
+            [
+                'questionbankentryid' => '36001',
+                'slot' => '1',
+                'page' => '1',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ]
+        ],
+        'feedback' => [
+            [
+                'feedbacktext' => self::FEEDBACK,
+                'feedbacktextformat' => '0',
+                'mingrade' => '0.0000000',
+                'maxgrade' => '50.000000',
+            ]
+        ],
+    ];
 
     public function setUp(): void {
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
         $root = vfsStream::setup();
-        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepo/', $root);
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
         $this->rootpath = vfsStream::url('root');
 
         // Mock the combined output of command line options and defaults.
         $this->options = [
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
-            'subcategory' => null,
-            'qcategoryid' => null,
-            'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
+            'nonquizmanifestpath' => '/testrepo/' . self::MOODLE . '_course_course-1' . cli_helper::MANIFEST_FILE,
+            'quizmanifestpath' => '/testrepo_quiz_quiz-1/' . self::MOODLE . '_module_course-1_quiz-1' . cli_helper::MANIFEST_FILE,
+            'coursename' => null,
+            'modulename' => null,
+            'instanceid' => null,
             'token' => 'XXXXXX',
             'help' => false,
-            'ignorecat' => null,
+            'subcall' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',
@@ -112,38 +161,11 @@ class export_repo_test extends advanced_testcase {
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
-        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+        $this->exportquiz = $this->getMockBuilder(\qbank_gitsync\export_quiz::class)->onlyMethods([
             'get_curl_request', 'call_exit',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
-        $this->exportrepo->curlrequest = $this->curl;
-        $this->exportrepo->listcurlrequest = $this->listcurl;
-
-        $this->exportrepo->postsettings = ['questionbankentryid' => null];
-    }
-
-    /**
-     * Redo mock set up
-     *
-     * Required if we want to change options so that they affect contructor output.
-     *
-     * @return void
-     */
-    public function replace_mock_default() {
-        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context',
-        ])->setConstructorArgs([[]])->getMock();
-        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
-        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
-            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/cat 2/subcat 2_1"},
-              "questions": []}')
-        );
-        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit',
-        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
-
-        $this->exportrepo->curlrequest = $this->curl;
-        $this->exportrepo->listcurlrequest = $this->listcurl;
+        $this->exportquiz->curlrequest = $this->curl;
+        $this->exportquiz->listcurlrequest = $this->listcurl;
     }
 
     /**
@@ -151,275 +173,18 @@ class export_repo_test extends advanced_testcase {
      */
     public function test_process(): void {
         // Will get questions in order from manifest file in testrepo.
-        $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<quiz><question><Name>One</Name></question></quiz>", "version": "10"}',
-            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
-            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}',
-            '{"question": "<quiz><question><Name>Two</Name></question></quiz>", "version": "1"}'
+        $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            json_encode($this->quizoutput)
         );
 
-        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
-                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
-              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
-              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
-            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
-                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
-              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
-              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
-        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
-        $this->exportrepo->process();
+        $this->exportquiz->process();
 
+        $quizstructure = file_get_contents($this->rootpath . '/testrepo_quiz_quiz-1/' . 'quiz-1' . cli_helper::QUIZ_FILE);
         // Check question files updated.
-        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
+        $quizstructure = json_decode($quizstructure);
+        $this->assertEquals('/top/Quiz-Question.xml', $quizstructure->questions[0]->quizfilepath);
 
-        // Check manifest file updated.
-        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
-        $this->assertCount(4, $manifestcontents->questions);
-
-        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
-        $this->assertArrayHasKey('35001', $existingentries);
-        $this->assertArrayHasKey('35002', $existingentries);
-        $this->assertArrayHasKey('35003', $existingentries);
-        $this->assertArrayHasKey('35004', $existingentries);
-
-        $this->assertEquals('1', $existingentries['35001']->importedversion);
-        $this->assertEquals('10', $existingentries['35001']->exportedversion);
-        // Question category id should be default from manifest.
-        $this->assertEquals(5, $this->exportrepo->listpostsettings["qcategoryid"]);
-
-        $this->expectOutputRegex('/^\nExported 4 previously linked questions.*Added 0 questions.\n$/s');
-    }
-
-    /**
-     * Test the export of questions which aren't in the manifest
-     * @covers \gitsync\export_trait\export_to_repo()
-     */
-    public function test_export_to_repo(): void {
-        // Will get questions in order from manifest file in testrepo.
-        $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<quiz><question><Name>One</Name></question></quiz>", "version": "10"}',
-            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
-            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}',
-            '{"question": "<quiz><question><Name>Two</Name></question></quiz>", "version": "1"}'
-        );
-
-        $this->listcurl->expects($this->exactly(3))->method('execute')->willReturn(
-            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
-              "questions": []}'
-        );
-
-        $this->exportrepo->process();
-
-        // Check question files updated.
-        $this->assertStringContainsString('One', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
-        $this->assertStringContainsString('Two', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
-        $this->expectOutputRegex('/^\nExported 4 previously linked questions.*Added 0 questions.\n$/s');
-    }
-
-    /**
-     * Test message if export JSON broken.
-     */
-    public function test_broken_json_on_export(): void {
-        $this->curl->expects($this->any())->method('execute')->willReturn(
-            '{"question": <Question><Name>One</Name></Question>", "version": "10"}'
-        );
-
-        $this->exportrepo->export_questions_in_manifest();
-
-        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
-                                 '.*{"question": <Question><Name>One<\/Name><\/Question>", "version": "10"}/s');
-    }
-
-    /**
-     * Test message if export exception.
-     */
-    public function test_exception_on_export(): void {
-        $this->curl->expects($this->any())->method('execute')->willReturn(
-            '{"exception":"moodle_exception","message":"No token"}'
-        );
-
-        $this->exportrepo->export_questions_in_manifest();
-
-        $this->expectOutputRegex('/No token/');
-    }
-
-    /**
-     * Test message if manifest file update issue.
-     */
-    public function test_manifest_file_update_error(): void {
-        $this->curl->expects($this->any())->method('execute')->willReturn(
-            '{"question": "<Question><Name>One</Name></Question>", "version": "10"}'
-        );
-
-        chmod($this->exportrepo->manifestpath, 0000);
-
-        @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/\nUnable to update manifest file.*Aborting.\n$/s');
-    }
-
-    /**
-     * Test message if manifest file open issue.
-     */
-    public function test_manifest_file_open_error(): void {
-        chmod($this->exportrepo->manifestpath, 0000);
-        @$this->exportrepo->__construct($this->clihelper, $this->moodleinstances);
-        $this->expectOutputRegex('/^\nUnable to access or parse manifest file.*Aborting.\n$/s');
-    }
-
-    /**
-     * Test message if question file update issue.
-     */
-    public function test_question_file_update_error(): void {
-        $this->curl->expects($this->any())->method('execute')->willReturn(
-            '{"question": "<Question><Name>One</Name></Question>", "version": "10"}'
-        );
-
-        chmod($this->rootpath . '/top/cat-1/First-Question.xml', 0000);
-
-        @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/^\nAccess issue.\n\/top\/cat-1\/First-Question.xml not updated.\n/s');
-    }
-
-    /**
-     * Test message if question reformat issue.
-     */
-    public function test_reformat_error(): void {
-        $this->curl->expects($this->any())->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<quiz><question><Name>One</question></quiz>", "version": "10"}', // Broken.
-            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
-            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}',
-            '{"question": "<quiz><question><Name>Two</Name></question></quiz>", "version": "1"}',
-        );
-
-        // Make sure no attempt is made to update first file.
-        chmod($this->rootpath . '/top/cat-1/First-Question.xml', 0000);
-
-        @$this->exportrepo->export_questions_in_manifest();
-        $this->expectOutputRegex('/^\nBroken XML\n\/top\/cat-1\/First-Question.xml not updated.\n/s');
-    }
-
-    /**
-     * Test the full process with subcategory name.
-     */
-    public function test_process_with_subcategory_name(): void {
-        $this->options['subcategory'] = 'top/cat-2/subcat-2_1';
-        $this->replace_mock_default();
-        // Will get questions in order from manifest file in testrepo.
-        $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
-            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}'
-        );
-
-        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
-                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/cat 2/subcat 2_1"},
-              "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
-            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
-                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
-              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
-              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
-        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
-        $this->exportrepo->process();
-
-        // Check question files updated.
-        $this->assertStringContainsString('First Question', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
-        $this->assertStringContainsString('Second Question', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
-
-        // Check manifest file updated.
-        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
-        $this->assertCount(4, $manifestcontents->questions);
-
-        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
-        $this->assertArrayHasKey('35001', $existingentries);
-        $this->assertArrayHasKey('35002', $existingentries);
-        $this->assertArrayHasKey('35003', $existingentries);
-        $this->assertArrayHasKey('35004', $existingentries);
-        $this->assertEquals(null, $this->exportrepo->listpostsettings["qcategoryid"]);
-
-        $this->expectOutputRegex('/^\nExported 2 previously linked questions.*Added 0 questions.\n$/s');
-    }
-
-    /**
-     * Test the full process with subcategory id.
-     */
-    public function test_process_with_subcategory_id(): void {
-        global $DB;
-        $this->options['qcategoryid'] = 17;
-        $this->replace_mock_default();
-
-        // Will get questions in order from manifest file in testrepo.
-        $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
-            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}'
-        );
-
-        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
-                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/cat 2/subcat 2_1"},
-              "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
-            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
-                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
-              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
-              {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
-              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
-              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
-        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
-        $this->exportrepo->process();
-
-        // Check question files updated.
-        $this->assertStringContainsString('First Question', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
-        $this->assertStringContainsString('Second Question', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
-        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
-        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
-
-        // Check manifest file updated.
-        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
-        $this->assertCount(4, $manifestcontents->questions);
-
-        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
-        $this->assertArrayHasKey('35001', $existingentries);
-        $this->assertArrayHasKey('35002', $existingentries);
-        $this->assertArrayHasKey('35003', $existingentries);
-        $this->assertArrayHasKey('35004', $existingentries);
-        // Question category id should be as supplied.
-        $this->assertEquals(17, $this->exportrepo->listpostsettings["qcategoryid"]);
-
-        $this->expectOutputRegex('/^\nExported 2 previously linked questions.*Added 0 questions.\n$/s');
-    }
-
-    /**
-     * Test checking context default warning
-     * @covers \gitsync\cli_helper\check_context()
-     */
-    public function test_check_content_default_warning(): void {
-        $clihelper = new fake_export_cli_helper([]);
-        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
-            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
-              "questions": []}',
-        );
-        $clihelper->check_context($this->exportrepo, true, false);
-        $this->expectOutputRegex('/Using default question category from manifest file./');
+        $this->expectOutputRegex('/^Quiz data exported to:\n.*testrepo_quiz_quiz-1\/quiz-1_quiz.json\n$/s');
     }
 
 }
