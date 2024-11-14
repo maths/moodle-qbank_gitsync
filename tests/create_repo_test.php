@@ -92,7 +92,7 @@ class create_repo_test extends advanced_testcase {
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();;
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
-            'get_curl_request', 'handle_abort',
+            'get_curl_request',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->createrepo->curlrequest = $this->curl;
         $this->createrepo->listcurlrequest = $this->listcurl;
@@ -214,7 +214,7 @@ class create_repo_test extends advanced_testcase {
               "questions": []}')
         );
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'handle_abort',
+            'get_curl_request', 'call_exit',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
 
         $this->createrepo->curlrequest = $this->curl;
@@ -268,7 +268,7 @@ class create_repo_test extends advanced_testcase {
               "questions": []}')
         );
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'handle_abort',
+            'get_curl_request', 'call_exit',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
 
         $this->createrepo->curlrequest = $this->curl;

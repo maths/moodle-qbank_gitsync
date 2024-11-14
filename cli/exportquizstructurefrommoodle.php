@@ -104,14 +104,6 @@ $options = [
         'valuerequired' => true,
     ],
     [
-        'longopt' => 'quiet',
-        'shortopt' => 'z',
-        'description' => 'Do not display context info or option to abort.',
-        'default' => false,
-        'variable' => 'quiet',
-        'valuerequired' => false,
-    ],
-    [
         'longopt' => 'subcall',
         'shortopt' => 'w',
         'description' => 'Is this a subcall of the script?',
@@ -129,13 +121,13 @@ if (!function_exists('simplexml_load_file')) {
 $clihelper = new cli_helper($options);
 $exportquiz = new export_quiz($clihelper, $moodleinstances);
 if ($exportquiz->nonquizmanifestpath) {
-    if (!isset($clihelper->get_arguments()['quiet'])) {
+    if (!isset($clihelper->get_arguments()['subcall'])) {
         echo "Checking repo...\n";
     }
     $clihelper->check_for_changes($exportquiz->nonquizmanifestpath);
 }
 if ($exportquiz->quizmanifestpath) {
-    if (!isset($clihelper->get_arguments()['quiet'])) {
+    if (!isset($clihelper->get_arguments()['subcall'])) {
         echo "Checking quiz repo...\n";
     }
     $clihelper->check_for_changes($exportquiz->quizmanifestpath);

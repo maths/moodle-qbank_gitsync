@@ -344,7 +344,7 @@ class import_repo {
         $this->listpostsettings['qcategoryname'] = $qcategoryname;
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
 
-        if (count($this->manifestcontents->questions) === 0 && !$arguments['quiet']) {
+        if (count($this->manifestcontents->questions) === 0 && !$arguments['subcall']) {
             // A quiz in a whole course set up can have an empty manifest as
             // the questions may be in the course.
             echo "\nManifest file is empty. This should only be the case if you are importing ";
@@ -785,10 +785,13 @@ class import_repo {
             $questionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
         } else if (property_exists($questionsinmoodle, 'exception')) {
             if (isset($questionsinmoodle->errorcode) && $questionsinmoodle->errorcode === 'categoryerror') {
-                echo "Target category {$this->listpostsettings['qcategoryname']} does not exist in Moodle.\n";
-                echo "This should only be the case if you're importing it for the first time and\n";
-                echo "want to create new questions in Moodle.\n";
-                $this->handle_abort();
+                $arguments = $this->clihelper->get_arguments();
+                if (!$arguments['subcall']) {
+                    echo "Target category {$this->listpostsettings['qcategoryname']} does not exist in Moodle.\n";
+                    echo "This should only be the case if you're importing it for the first time and\n";
+                    echo "want to create new questions in Moodle.\n";
+                    $this->handle_abort();
+                }
                 return;
             } else {
                 echo "{$questionsinmoodle->message}\n";
@@ -900,14 +903,14 @@ class import_repo {
             if (is_dir($rootdirectory . '/top')) {
                 // Quiz could have no questions in its context.
                 echo "\nImporting quiz context: {$structurecontents->quiz->name}\n";
-                $output = shell_exec('php importrepotomoodle.php -w -z -r "' . $rootdirectory .
+                $output = shell_exec('php importrepotomoodle.php -w -r "' . $rootdirectory .
                         '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
                 echo $output;
             }
             if ($instanceid === false) {
                 chdir($scriptdirectory);
                 echo "\nImporting quiz structure: {$structurecontents->quiz->name}\n";
-                $output = shell_exec('php importquizstructuretomoodle.php -w -z -r "" -i "' . $moodleinstance . '" -n ' .
+                $output = shell_exec('php importquizstructuretomoodle.php -w -r "" -i "' . $moodleinstance . '" -n ' .
                     $contextinfo->contextinfo->instanceid . ' -t ' . $token. ' -p "' .
                     $this->manifestpath. '" -f "' . $quizmanifestname . '" -a "' . $structurefile . '"');
                 echo $output;

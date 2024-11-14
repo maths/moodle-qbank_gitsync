@@ -210,11 +210,16 @@ class import_quiz {
      */
     public function import_quiz_data() {
         $instanceinfo = $this->clihelper->check_context($this, false, true);
-        echo "Preparing to create a new quiz in Moodle.\n";
-        echo "Moodle URL: {$this->moodleurl}\n";
-        echo "Course: {$instanceinfo->contextinfo->coursename}\n";
-        echo "Quiz: {$this->quizdatacontents->quiz->name}\n";
-        cli_helper::handle_abort();
+        $arguments = $this->clihelper->get_arguments();
+        if ($arguments['subcall']) {
+            echo "Creating quiz: {$this->quizdatacontents->quiz->name}\n";
+        } else {
+            echo "Preparing to create a new quiz in Moodle.\n";
+            echo "Moodle URL: {$this->moodleurl}\n";
+            echo "Course: {$instanceinfo->contextinfo->coursename}\n";
+            echo "Quiz: {$this->quizdatacontents->quiz->name}\n";
+            $this->handle_abort();
+        }
         $quizmanifestentries = [];
         $nonquizmanifestentries = [];
         if ($this->quizmanifestpath) {
@@ -299,5 +304,20 @@ class import_quiz {
      */
     public function call_exit():void {
         exit;
+    }
+
+    /**
+     * Prompt user whether they want to continue.
+     *
+     * @return void
+     */
+    public function handle_abort():void {
+        echo "Abort? y/n\n";
+        $handle = fopen ("php://stdin", "r");
+        $line = fgets($handle);
+        if (trim($line) === 'y') {
+            $this->call_exit();
+        }
+        fclose($handle);
     }
 }

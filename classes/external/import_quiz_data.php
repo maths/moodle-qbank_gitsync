@@ -130,10 +130,10 @@ class import_quiz_data extends external_api {
         $moduleinfo->section = 1;
         $moduleinfo->quizpassword = '';
         $moduleinfo->visible = true;
-        $moduleinfo->introeditor = ['text' => $params['quiz']['intro'], 'format' => $params['quiz']['introformat'], 'itemid' => 0];
+        $moduleinfo->introeditor = ['text' => $params['quiz']['intro'], 'format' => (int) $params['quiz']['introformat'], 'itemid' => 0];
         $moduleinfo->preferredbehaviour = 'deferredfeedback';
         $moduleinfo->grade = $params['quiz']['grade'];
-        $moduleinfo->questionsperpage = $params['quiz']['questionsperpage'];
+        $moduleinfo->questionsperpage = (int) $params['quiz']['questionsperpage'];
         $moduleinfo->shuffleanswers = true;
         $moduleinfo->navmethod = $params['quiz']['navmethod'];
         $moduleinfo->timeopen = 0;
@@ -156,8 +156,29 @@ class import_quiz_data extends external_api {
 
         $DB->update_record('quiz', $reviewchoice);
 
+        $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
+        // Sort questions by slot.
+        usort($params['questions'], function($a, $b) {
+            return (int) $a['slot'] > (int) $b['slot'];
+        });
+        foreach ($params['questions'] as $question) {
+            $qdata = get_minimal_question_data($question['questionbankentryid']);
+            // Double-check user has question access.
+            quiz_require_question_use($qdata->questionid);
+            quiz_add_quiz_question($qdata->questionid, $module, (int) $question['page'], (float) $question['maxmark']);
+            if ($question['requireprevious']) {
+                $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
+                $itemid = $DB->get_field('question_references', 'itemid',
+                    ['usingcontextid' => $quizcontext->context->id, 'questionbankentryid' => $question['questionbankentryid']]);
+                $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $itemid]);
+            }
+        }
+        quiz_update_sumgrades($module);
+
+        // NB Must add questions before updating sections.
         foreach ($params['sections'] as $section) {
             $section['quizid'] = $moduleinfo->instance;
+            $section['firstslot'] = (int) $section['firstslot'];
             // First slot will have been automatically created so we need to overwrite.
             if ($section['firstslot'] == 1) {
                 $sectionid = $DB->get_field('quiz_sections', 'id',
@@ -168,7 +189,7 @@ class import_quiz_data extends external_api {
                 $sectionid = $DB->insert_record('quiz_sections', $section);
             }
             $slotid = $DB->get_field('quiz_slots', 'id',
-                ['quizid' => $moduleinfo->instance, 'slot' => $section['firstslot']]);
+                ['quizid' => $moduleinfo->instance, 'slot' => (int) $section['firstslot']]);
 
             // Log section break created event.
             $event = \mod_quiz\event\section_break_created::create([
@@ -183,31 +204,14 @@ class import_quiz_data extends external_api {
             ]);
             $event->trigger();
         }
-        $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
-        // Sort questions by slot.
-        usort($params['questions'], function($a, $b) {
-            return (int) $a['slot'] > (int) $b['slot'];
-        });
-        foreach ($params['questions'] as $question) {
-            $qdata = get_minimal_question_data($question['questionbankentryid']);
-            // Double-check user has question access.
-            quiz_require_question_use($qdata->questionid);
-            quiz_add_quiz_question($qdata->questionid, $module, $question['page'], $question['maxmark']);
-            if ($question['requireprevious']) {
-                $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
-                $itemid = $DB->get_field('question_references', 'itemid',
-                    ['usingcontextid' => $quizcontext->context->id, 'questionbankentryid' => $question['questionbankentryid']]);
-                $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $itemid]);
-            }
-        }
-        quiz_update_sumgrades($module);
+
         if (!count($params['feedback'])) {
             $params['feedback'] = [
                 [
                     'feedbacktext' => '',
-                    'feedbacktextformat' => '1',
-                    'mingrade' => '0',
-                    'maxgrade' => (string)((int) $params['quiz']['grade'] + 1),
+                    'feedbacktextformat' => 1,
+                    'mingrade' => 0,
+                    'maxgrade' => (float) $params['quiz']['grade'] + 1,
                 ]
                 ];
         }

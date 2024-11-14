@@ -148,14 +148,6 @@ $options = [
         'valuerequired' => true,
     ],
     [
-        'longopt' => 'quiet',
-        'shortopt' => 'z',
-        'description' => 'Do not display context info or option to abort.',
-        'default' => false,
-        'variable' => 'quiet',
-        'valuerequired' => false,
-    ],
-    [
         'longopt' => 'subcall',
         'shortopt' => 'w',
         'description' => 'Is this a subcall of the script?',

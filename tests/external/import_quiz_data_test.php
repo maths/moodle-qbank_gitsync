@@ -76,7 +76,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
             'introformat' => '0',
             'coursename' => null,
             'courseid' => null,
-            'questionsperpage' => '3',
+            'questionsperpage' => '0',
             'grade' => '100.00000',
             'navmethod' => 'free',
         ],
@@ -105,7 +105,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
                 'slot' => '2',
                 'page' => '2',
                 'requireprevious' => 0,
-                'maxmark' => '1.0000000',
+                'maxmark' => '2.0000000',
             ]
         ],
         'feedback' => [
@@ -145,7 +145,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
     /**
      * Test the execute function when capabilities are present.
      */
-    public function x_test_capabilities(): void {
+    public function test_capabilities(): void {
         global $DB;
         // Set the required capabilities - webservice access and export rights on course.
         $context = context_course::instance($this->course->id);
@@ -170,7 +170,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
     /**
      * Test the execute function fails when not logged in.
      */
-    public function x_test_not_logged_in(): void {
+    public function test_not_logged_in(): void {
         global $DB;
         $this->setUser();
         $this->expectException(require_login_exception::class);
@@ -183,7 +183,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
     /**
      * Test the execute function fails when no webservice export capability assigned.
      */
-    public function x_test_no_webservice_access(): void {
+    public function test_no_webservice_access(): void {
         global $DB;
         $context = context_course::instance($this->course->id);
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
@@ -198,7 +198,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
     /**
      * Test the execute function fails when user has no access to supplied context.
      */
-    public function x_test_import_capability(): void {
+    public function test_import_capability(): void {
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
         import_quiz_data::execute($this->quizinput['quiz'], $this->quizinput['sections'],
@@ -208,7 +208,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
     /**
      * Test the execute function fails when the question is not accessible in the supplied context.
      */
-    public function x_test_question_is_in_supplied_context(): void {
+    public function test_question_is_in_supplied_context(): void {
         global $DB;
         $context = context_course::instance($this->course->id);
         $course2 = $this->getDataGenerator()->create_course();
@@ -226,7 +226,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
     /**
      * Test output of execute function.
      */
-    public function x_test_import_with_sections_and_feedback(): void {
+    public function test_import_with_sections_and_feedback(): void {
         global $DB;
         // Set the required capabilities - webservice access and export rights on course.
         $context = context_course::instance($this->course->id);
@@ -244,35 +244,39 @@ class import_quiz_data_test extends externallib_advanced_testcase {
         $quiz = array_shift($quizzes);
         $this->assertEquals(self::QUIZNAME, $quiz->name);
         $this->assertEquals(self::QUIZINTRO, $quiz->intro);
-        $this->assertEquals('3', $quiz->questionsperpage);
+        $this->assertEquals(0, $quiz->questionsperpage);
         $this->assertEquals('deferredfeedback', $quiz->preferredbehaviour);
-        $this->assertEquals('2', $quiz->decimalpoints);
-        $this->assertEquals('4352', $quiz->reviewmarks);
-        $this->assertEquals('100.00000', $quiz->grade);
+        $this->assertEquals(2, $quiz->decimalpoints);
+        $this->assertEquals(4352, $quiz->reviewmarks);
+        $this->assertEquals(100, $quiz->grade);
 
         $sections = $DB->get_records('quiz_sections');
         $this->assertEquals(2, count($sections));
         $section1 = array_shift($sections);
         $section2 = array_shift($sections);
         $this->assertEquals(self::HEADING1, $section1->heading);
-        $this->assertEquals("1", $section1->firstslot);
+        $this->assertEquals(1, $section1->firstslot);
         $this->assertEquals(self::HEADING2, $section2->heading);
-        $this->assertEquals("2", $section2->firstslot);
+        $this->assertEquals(2, $section2->firstslot);
 
         $slots = $DB->get_records('quiz_slots');
         $this->assertEquals(2, count($slots));
         $slot1 = array_shift($slots);
         $slot2 = array_shift($slots);
-        $this->assertEquals('0', $slot1->requireprevious);
-        $this->assertEquals('0', $slot2->requireprevious);
+        $this->assertEquals(0, $slot1->requireprevious);
+        $this->assertEquals(1, $slot1->page);
+        $this->assertEquals(1, $slot1->maxmark);
+        $this->assertEquals(0, $slot2->requireprevious);
+        $this->assertEquals(2, $slot2->page);
+        $this->assertEquals(2, $slot2->maxmark);
 
         $feedback = $DB->get_records('quiz_feedback');
         $this->assertEquals(1, count($feedback));
         $feedback1 = array_shift($feedback);
         $this->assertEquals(self::FEEDBACK, $feedback1->feedbacktext);
-        $this->assertEquals('0', $feedback1->feedbacktextformat);
-        $this->assertEquals('0.00000', $feedback1->mingrade);
-        $this->assertEquals('50.00000', $feedback1->maxgrade);
+        $this->assertEquals(0, $feedback1->feedbacktextformat);
+        $this->assertEquals(0, $feedback1->mingrade);
+        $this->assertEquals(50, $feedback1->maxgrade);
     }
 
     /**
@@ -296,22 +300,47 @@ class import_quiz_data_test extends externallib_advanced_testcase {
         $this->assertEquals(1, count($sections));
         $section1 = array_shift($sections);
         $this->assertEquals('', $section1->heading);
-        $this->assertEquals("1", $section1->firstslot);
+        $this->assertEquals(1, $section1->firstslot);
 
         $slots = $DB->get_records('quiz_slots');
         $this->assertEquals(2, count($slots));
         $slot1 = array_shift($slots);
         $slot2 = array_shift($slots);
-        $this->assertEquals('0', $slot1->requireprevious);
-        $this->assertEquals('0', $slot2->requireprevious);
+        $this->assertEquals(0, $slot1->requireprevious);
+        $this->assertEquals(0, $slot2->requireprevious);
 
         $feedback = $DB->get_records('quiz_feedback');
         $this->assertEquals(1, count($feedback));
         $feedback1 = array_shift($feedback);
         $this->assertEquals('', $feedback1->feedbacktext);
-        $this->assertEquals('1', $feedback1->feedbacktextformat);
-        $this->assertEquals('0.00000', $feedback1->mingrade);
-        $this->assertEquals('101.00000', $feedback1->maxgrade);
+        $this->assertEquals(1, $feedback1->feedbacktextformat);
+        $this->assertEquals(0, $feedback1->mingrade);
+        $this->assertEquals(101, $feedback1->maxgrade);
     }
-    //todo requireprev
+
+    /**
+     * Test output of execute function.
+     */
+    public function test_import_with_require_previous(): void {
+        global $DB;
+        // Set the required capabilities - webservice access and export rights on course.
+        $context = context_course::instance($this->course->id);
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $this->quizinput['questions'][1]['requireprevious'] = '1';
+        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], [],
+                        $this->quizinput['questions'], []);
+
+        $returnvalue = external_api::clean_returnvalue(
+            import_quiz_data::execute_returns(),
+            $returnvalue
+        );
+
+        $slots = $DB->get_records('quiz_slots');
+        $this->assertEquals(2, count($slots));
+        $slot1 = array_shift($slots);
+        $slot2 = array_shift($slots);
+        $this->assertEquals(0, $slot1->requireprevious);
+        $this->assertEquals(1, $slot2->requireprevious);
+    }
 }

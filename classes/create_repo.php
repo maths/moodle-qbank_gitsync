@@ -261,12 +261,12 @@ class create_repo {
             $rootdirectory = $clihelper->create_directory($quizdirectory);
             echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
             chdir($scriptdirectory);
-            $output = shell_exec('php createrepo.php -z -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
+            $output = shell_exec('php createrepo.php -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
             echo $output;
             $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
             chdir($scriptdirectory);
-            $output = shell_exec('php exportquizstructurefrommoodle.php -z -r "" -i "' . $moodleinstance . '" -n ' . $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestname . '"');
+            $output = shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . '" -n ' . $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestname . '"');
             $quizlocation = new \StdClass();
             $quizlocation->moduleid = $instanceid;
             $quizlocation->directory = basename($rootdirectory);

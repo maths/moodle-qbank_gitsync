@@ -89,7 +89,7 @@ class export_trait_test extends advanced_testcase {
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'handle_abort',
+            'get_curl_request', 'call_exit',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;

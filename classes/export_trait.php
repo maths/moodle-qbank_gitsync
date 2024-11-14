@@ -211,21 +211,6 @@ trait export_trait {
     }
 
     /**
-     * Prompt user whether they want to continue.
-     *
-     * @return void
-     */
-    public function handle_abort():void {
-        echo "Abort? y/n\n";
-        $handle = fopen ("php://stdin", "r");
-        $line = fgets($handle);
-        if (trim($line) === 'y') {
-            $this->call_exit();
-        }
-        fclose($handle);
-    }
-
-    /**
      * Mockable function that just exits code.
      *
      * Required to stop PHPUnit displaying output after exit.
