@@ -47,6 +47,20 @@ class export_quiz {
      */
     public curl_request $curlrequest;
     /**
+     * cURL request handle for question list retrieve
+     *
+     * @var curl_request
+     */
+    public curl_request $listcurlrequest;
+    /**
+     * Settings for question list request
+     *
+     * These are the parameters for the webservice list call.
+     *
+     * @var array
+     */
+    public array $listpostsettings;
+    /**
      * Full path to manifest file
      *
      * @var string|null
@@ -98,7 +112,8 @@ class export_quiz {
         // Convert command line options into variables.
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-                $rootdirectory = ($arguments['rootdirectory']) ?  $arguments['rootdirectory'] . '/' : '';
+        $instanceid = $arguments['instanceid'];
+        $rootdirectory = ($arguments['rootdirectory']) ?  $arguments['rootdirectory'] . '/' : '';
         if ($arguments['quizmanifestpath']) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
             $rootdirectory . $arguments['quizmanifestpath'] : null;
@@ -107,6 +122,7 @@ class export_quiz {
                 echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
                 $this->call_exit();
             }
+            $instanceid = $this->quizmanifestcontents->context->instanceid;
         }
         if ($arguments['nonquizmanifestpath']) {
             $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
@@ -133,11 +149,32 @@ class export_quiz {
             'moodlewsrestformat' => 'json',
             'coursename' => $arguments['coursename'],
             'quizname' => $arguments['modulename'],
-            'moduleid' => $arguments['instanceid'],
+            'moduleid' => $instanceid,
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
+        if (!$arguments()['subcall']) {
+            $this->listcurlrequest = $this->get_curl_request($wsurl);
+            $this->listpostsettings = [
+                'wstoken' => $token,
+                'wsfunction' => 'qbank_gitsync_get_question_list',
+                'moodlewsrestformat' => 'json',
+                'contextlevel' => 70,
+                'coursename' => $arguments['coursename'],
+                'modulename' => $arguments['modulename'],
+                'coursecategory' => null,
+                'qcategoryname' => 'top',
+                'qcategoryid' => null,
+                'instanceid' => $instanceid,
+                'contextonly' => 1,
+                'qbankentryids[]' => null,
+                'ignorecat' => null,
+            ];
+            $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
+            $this->listcurlrequest->set_option(CURLOPT_POST, 1);
+            $clihelper->check_context($this, false, false);
+        }
     }
 
     /**

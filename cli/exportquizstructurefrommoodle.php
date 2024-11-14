@@ -88,6 +88,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'coursename',
+        'shortopt' => 'c',
+        'description' => 'Unique course name for course or module context.',
+        'default' => null,
+        'variable' => 'coursename',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'modulename',
         'shortopt' => 'm',
         'description' => 'Unique (within course) quiz name.',

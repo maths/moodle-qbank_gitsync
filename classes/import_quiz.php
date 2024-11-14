@@ -120,6 +120,7 @@ class import_quiz {
         $this->clihelper = $clihelper;
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
+        $instanceid = $arguments['instanceid'];
         if ($arguments['quizmanifestpath']) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
                     $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
@@ -137,6 +138,7 @@ class import_quiz {
                 echo "\nUnable to access or parse manifest file: {$this->nonquizmanifestpath}\nAborting.\n";
                 $this->call_exit();
             }
+            $instanceid = $this->quizmanifestcontents->context->instanceid;
         }
         $this->quizdatapath = $arguments['rootdirectory'] . '/' . $arguments['quizdatapath'];
         $this->quizdatacontents = json_decode(file_get_contents($this->quizdatapath));
@@ -164,7 +166,7 @@ class import_quiz {
             'coursecategory' => null,
             'qcategoryname' => 'top',
             'qcategoryid' => null,
-            'instanceid' => $arguments['instanceid'],
+            'instanceid' => $instanceid,
             'contextonly' => 1,
             'qbankentryids[]' => null,
             'ignorecat' => null,
@@ -263,7 +265,7 @@ class import_quiz {
                     echo "Question: {$qidentifier}\n";
                     echo "This question is in the quiz but not in the supplied manifest file" . $multiple . ".\n";
                     echo "Questions must either be in the repo for the quiz context defined by a supplied quiz manifest " .
-                        "(--quizmanifestpath) or in the context (e.g. course) " .
+                        "(--quizmanifestpath) or in the course context " .
                         "defined by a different manifest (--nonquizmanifestpath).\n";
                     echo "You can supply either or both.\n";
                     echo "Aborting.\n";

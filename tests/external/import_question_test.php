@@ -72,7 +72,7 @@ class import_question_test extends externallib_advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->user = $user;
         $this->setUser($user);
-        $this->testrepo = $CFG->dirroot . '/question/bank/gitsync/testrepo/';
+        $this->testrepo = $CFG->dirroot . '/question/bank/gitsync/testrepoparent/testrepo/';
         $this->fileinfo = ['contextid' => '', 'component' => '', 'filearea' => '', 'userid' => '',
                            'itemid' => '', 'filepath' => '', 'filename' => '',
                         ];

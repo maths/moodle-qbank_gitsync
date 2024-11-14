@@ -82,7 +82,7 @@ class export_repo_test extends advanced_testcase {
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
         $root = vfsStream::setup();
-        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/testrepo/', $root);
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepo/', $root);
         $this->rootpath = vfsStream::url('root');
 
         // Mock the combined output of command line options and defaults.
