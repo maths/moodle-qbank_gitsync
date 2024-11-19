@@ -2,7 +2,7 @@
 <quiz>
   <question type="category">
     <category>
-      <text>top</text>
+      <text>top/quiz-cat</text>
     </category>
     <info format="moodle_auto_format">
       <text>First imported folder</text>

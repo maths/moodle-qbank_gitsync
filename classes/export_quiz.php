@@ -91,11 +91,6 @@ class export_quiz {
      */
     public ?\stdClass $nonquizmanifestcontents = null;
     /**
-     * URL of Moodle instance
-     *
-     * @var string
-     */
-    /**
      * Full path to output file
      *
      * @var string
@@ -112,18 +107,15 @@ class export_quiz {
         // Convert command line options into variables.
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $instanceid = $arguments['instanceid'];
-        $rootdirectory = ($arguments['rootdirectory']) ?  $arguments['rootdirectory'] . '/' : '';
-        if ($arguments['quizmanifestpath']) {
-            $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
-            $rootdirectory . $arguments['quizmanifestpath'] : null;
-            $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
-            if (!$this->quizmanifestcontents) {
-                echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
-                $this->call_exit();
-            }
-            $instanceid = $this->quizmanifestcontents->context->instanceid;
+        $rootdirectory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' : '';
+        $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
+                    $rootdirectory . $arguments['quizmanifestpath'] : null;
+        $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
+        if (!$this->quizmanifestcontents) {
+            echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
+            $this->call_exit();
         }
+        $instanceid = $this->quizmanifestcontents->context->instanceid;
         if ($arguments['nonquizmanifestpath']) {
             $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
                     $rootdirectory . $arguments['nonquizmanifestpath'] : null;
@@ -147,8 +139,6 @@ class export_quiz {
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_export_quiz_data',
             'moodlewsrestformat' => 'json',
-            'coursename' => $arguments['coursename'],
-            'quizname' => $arguments['modulename'],
             'moduleid' => $instanceid,
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
@@ -209,19 +199,22 @@ class export_quiz {
         if (!$responsejson) {
             echo "Broken JSON returned from Moodle:\n";
             echo $response . "\n";
-            echo "{$this->filepath} not updated.\n";
+            echo "Quiz data file not updated.\n";
             $this->call_exit();
+            $responsejson = json_decode('{"quiz": {"name": ""}, "questions": []}'); // For unit test purposes.
         } else if (property_exists($responsejson, 'exception')) {
             echo "{$responsejson->message}\n";
             if (property_exists($responsejson, 'debuginfo')) {
                 echo "{$responsejson->debuginfo}\n";
             }
-            echo "{$this->filepath} not updated.\n";
+            echo "Quiz data file not updated.\n";
             $this->call_exit();
+            $responsejson = json_decode('{"quiz": {"name": ""}, "questions": []}'); // For unit test purposes.
         }
         $quizmanifestentries = [];
         $nonquizmanifestentries = [];
-        // Determine quiz info location based on loactions of manifest paths.
+        $missingquestions = false;
+        // Determine quiz info location based on locations of manifest paths.
         if ($this->quizmanifestpath) {
             $this->filepath = cli_helper::get_quiz_structure_path($responsejson->quiz->name, dirname($this->quizmanifestpath));
             $quizmanifestentries = array_column($this->quizmanifestcontents->questions, null, 'questionbankentryid');
@@ -242,20 +235,29 @@ class export_quiz {
                 $question->nonquizfilepath = $nonquizmanifestentry->filepath;
                 unset($question->questionbankentryid);
             } else {
+                $missingquestions = true;
                 $multiple = ($this->quizmanifestpath && $this->nonquizmanifestpath) ? 's' : '';
-                echo "Question: {$question->questionbankentryid}\n";
-                echo "This question is in the quiz but not in the supplied manifest file" . $multiple . ".\n";
-                echo "Questions must either be in the repo for the quiz context defined by a supplied quiz manifest " .
-                     "(--quizmanifestpath) or in the context (e.g. course) " .
-                     "defined by a different manifest (--nonquizmanifestpath).\n";
-                echo "You can supply either or both. If your quiz questions are spread between 3 or more contexts " .
-                     "consider consolidating them.\n";
+                echo "\nQuestion: {$question->questionbankentryid}\n";
+                echo "This question is in the quiz but not in the supplied manifest file{$multiple}\n";
             }
         }
-        // Save exported information (including relative file location but not QBE id so Moodle independent).
-        file_put_contents($this->filepath, json_encode($responsejson));
-        echo "Quiz data exported to:\n";
-        echo "{$this->filepath}\n";
+        if ($missingquestions) {
+            echo "Questions must either be in the repo for the quiz context defined by a supplied quiz manifest " .
+                    "(--quizmanifestpath) or in the context (e.g. course) " .
+                    "defined by a different manifest (--nonquizmanifestpath).\n";
+            echo "You can supply either or both. If your quiz questions are spread between 3 or more contexts " .
+                    "you will need to consolidate them.\n";
+            echo "Quiz structure file: {$this->filepath} not updated.\n";
+        } else {
+            // Save exported information (including relative file location but not QBE id so Moodle independent).
+            $success = file_put_contents($this->filepath, json_encode($responsejson));
+            if ($success === false) {
+                echo "\nUnable to update quiz structure file: {$this->filepath}\n Aborting.\n";
+                $this->call_exit();
+            }
+            echo "Quiz data exported to:\n";
+            echo "{$this->filepath}\n";
+        }
     }
 
     /**

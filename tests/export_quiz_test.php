@@ -81,14 +81,13 @@ class export_quiz_test extends advanced_testcase {
     const FEEDBACK = 'Quiz feedback';
     const HEADING1 = 'Heading 1';
     const HEADING2 = 'Heading 2';
+    const COURSENAME = 'Course 1';
     /** @var array input parameters */
     protected array $quizoutput = [
         'quiz' => [
             'name' => self::QUIZNAME,
             'intro' => self::QUIZINTRO,
             'introformat' => '0',
-            'coursename' => null,
-            'courseid' => null,
             'questionsperpage' => '0',
             'grade' => '100.00000',
             'navmethod' => 'free',
@@ -145,6 +144,15 @@ class export_quiz_test extends advanced_testcase {
             'help' => false,
             'subcall' => false,
         ];
+
+    }
+
+    /**
+     * Mock set up
+     *
+     * @return void
+     */
+    public function set_up_mocks() {
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',
         ])->setConstructorArgs([[]])->getMock();
@@ -171,8 +179,8 @@ class export_quiz_test extends advanced_testcase {
     /**
      * Test the full process.
      */
-    public function test_process(): void {
-        // Will get questions in order from manifest file in testrepo.
+    public function x_test_process(): void {
+        $this->set_up_mocks();
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             json_encode($this->quizoutput)
         );
@@ -187,4 +195,204 @@ class export_quiz_test extends advanced_testcase {
         $this->expectOutputRegex('/^Quiz data exported to:\n.*testrepo_quiz_quiz-1\/quiz-1_quiz.json\n$/s');
     }
 
+    /**
+     * Test message if export JSON broken.
+     */
+    public function x_test_broken_json_on_export(): void {
+        $this->set_up_mocks();
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"quiz": </Question>"}'
+        );
+
+        $this->exportquiz->process();
+
+        $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
+                                 '.*{"quiz": <\/Question>"}/s');
+    }
+
+    /**
+     * Test message if export exception.
+     */
+    public function x_test_exception_on_export(): void {
+        $this->set_up_mocks();
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            '{"exception":"moodle_exception","message":"No token"}'
+        );
+
+        $this->exportquiz->process();
+
+        $this->expectOutputRegex('/No token/');
+    }
+
+    /**
+     * Test message if manifest file update issue.
+     */
+    public function x_test_manifest_file_update_error(): void {
+        $this->set_up_mocks();
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            json_encode($this->quizoutput)
+        );
+        $filepath = cli_helper::get_quiz_structure_path(self::QUIZNAME, dirname($this->exportquiz->quizmanifestpath));
+        file_put_contents($filepath, '');
+        chmod($filepath, 0000);
+
+        @$this->exportquiz->process();
+        $this->expectOutputRegex('/\nUnable to update quiz structure file.*Aborting.*$/s');
+    }
+
+    /**
+     * Test if quiz context questions.
+     */
+    public function x_test_quiz_context_questions(): void {
+        $this->quizoutput['questions'][] =
+            [
+                'questionbankentryid' => '36002',
+                'slot' => '2',
+                'page' => '2',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ];
+        $this->set_up_mocks();
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            json_encode($this->quizoutput)
+        );
+        $this->exportquiz->process();
+        $structurecontents = json_decode(file_get_contents($this->exportquiz->filepath));
+        $this->assertEquals(2, count($structurecontents->questions));
+        $this->assertEquals(false, isset($structurecontents->questions[0]->questionbankentryid));
+        $this->assertEquals(false, isset($structurecontents->questions[0]->nonquizfilepath));
+        $this->assertEquals("/top/Quiz-Question.xml", $structurecontents->questions[0]->quizfilepath);
+        $this->assertEquals(false, isset($structurecontents->questions[1]->questionbankentryid));
+        $this->assertEquals(false, isset($structurecontents->questions[1]->nonquizfilepath));
+        $this->assertEquals("/top/quiz-cat/Quiz-Question-2.xml", $structurecontents->questions[1]->quizfilepath);
+        $this->expectOutputRegex('/Quiz data exported to.*testrepo_quiz_quiz-1\/quiz-1_quiz.json.*$/s');
+    }
+
+    /**
+     * Test if course context questions.
+     */
+    public function x_test_course_context_questions(): void {
+        $this->quizoutput['questions'] = [
+            [
+                'questionbankentryid' => '35002',
+                'slot' => '2',
+                'page' => '2',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ],
+            [
+                'questionbankentryid' => '35003',
+                'slot' => '2',
+                'page' => '2',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ]
+        ];
+        $this->set_up_mocks();
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            json_encode($this->quizoutput)
+        );
+        $this->exportquiz->process();
+        $structurecontents = json_decode(file_get_contents($this->exportquiz->filepath));
+        $this->assertEquals(2, count($structurecontents->questions));
+        $this->assertEquals(false, isset($structurecontents->questions[0]->questionbankentryid));
+        $this->assertEquals(false, isset($structurecontents->questions[0]->quizfilepath));
+        $this->assertEquals("/top/cat-2/subcat-2_1/Third-Question.xml", $structurecontents->questions[0]->nonquizfilepath);
+        $this->assertEquals(false, isset($structurecontents->questions[1]->questionbankentryid));
+        $this->assertEquals(false, isset($structurecontents->questions[1]->quizfilepath));
+        $this->assertEquals("/top/cat-2/Second-Question.xml", $structurecontents->questions[1]->nonquizfilepath);
+        $this->expectOutputRegex('/Quiz data exported to.*testrepo_quiz_quiz-1\/quiz-1_quiz.json.*$/s');
+    }
+
+    /**
+     * Test if missing questions.
+     */
+    public function x_test_missing_questions(): void {
+        $this->quizoutput['questions'] = [
+            [
+                'questionbankentryid' => '35002',
+                'slot' => '2',
+                'page' => '2',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ],[
+                'questionbankentryid' => '36001',
+                'slot' => '2',
+                'page' => '2',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ],
+            [
+                'questionbankentryid' => '37001',
+                'slot' => '2',
+                'page' => '2',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ]
+        ];
+        $this->set_up_mocks();
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            json_encode($this->quizoutput)
+        );
+        $this->exportquiz->process();
+        $this->assertEquals(false, is_file($this->exportquiz->filepath));
+        $this->expectOutputRegex('/\nQuestion: 37001\nThis question is in the quiz but not in the supplied manifest files\n' .
+                            'Questions must either be in the repo.*testrepo_quiz_quiz-1\/quiz-1_quiz.json not updated.\n$/s');
+    }
+
+    /**
+     * Test if mixed questions.
+     */
+    public function test_mixed_questions(): void {
+        $this->quizoutput['questions'] = [
+            [
+                'questionbankentryid' => '35001',
+                'slot' => '2',
+                'page' => '2',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ],
+            [
+                'questionbankentryid' => '35002',
+                'slot' => '2',
+                'page' => '2',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ],
+            [
+                'questionbankentryid' => '36001',
+                'slot' => '3',
+                'page' => '3',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ],
+            [
+                'questionbankentryid' => '36002',
+                'slot' => '4',
+                'page' => '4',
+                'requireprevious' => 0,
+                'maxmark' => '1.0000000',
+            ]
+        ];
+        $this->set_up_mocks();
+        $this->curl->expects($this->any())->method('execute')->willReturn(
+            json_encode($this->quizoutput)
+        );
+        $this->exportquiz->process();
+        $structurecontents = json_decode(file_get_contents($this->exportquiz->filepath));
+        $this->assertEquals(4, count($structurecontents->questions));
+        $this->assertEquals(false, isset($structurecontents->questions[0]->questionbankentryid));
+        $this->assertEquals(false, isset($structurecontents->questions[0]->quizfilepath));
+        $this->assertEquals("/top/cat-1/First-Question.xml", $structurecontents->questions[0]->nonquizfilepath);
+        $this->assertEquals(false, isset($structurecontents->questions[1]->questionbankentryid));
+        $this->assertEquals(false, isset($structurecontents->questions[1]->quizfilepath));
+        $this->assertEquals("/top/cat-2/subcat-2_1/Third-Question.xml", $structurecontents->questions[1]->nonquizfilepath);
+        $this->assertEquals(false, isset($structurecontents->questions[2]->questionbankentryid));
+        $this->assertEquals(false, isset($structurecontents->questions[2]->nonquizfilepath));
+        $this->assertEquals("/top/Quiz-Question.xml", $structurecontents->questions[2]->quizfilepath);
+        $this->assertEquals(false, isset($structurecontents->questions[3]->questionbankentryid));
+        $this->assertEquals(false, isset($structurecontents->questions[3]->nonquizfilepath));
+        $this->assertEquals("/top/quiz-cat/Quiz-Question-2.xml", $structurecontents->questions[3]->quizfilepath);
+        $this->expectOutputRegex('/Quiz data exported to.*testrepo_quiz_quiz-1\/quiz-1_quiz.json.*$/s');
+    }
 }

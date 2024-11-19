@@ -266,7 +266,7 @@ class create_repo {
             $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
             chdir($scriptdirectory);
-            $output = shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . '" -n ' . $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestname . '"');
+            $output = shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . ' -t ' . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestname . '"');
             $quizlocation = new \StdClass();
             $quizlocation->moduleid = $instanceid;
             $quizlocation->directory = basename($rootdirectory);
