@@ -94,7 +94,11 @@ class export_quiz_data_test extends externallib_advanced_testcase {
         $this->quizmoduleid = $this->quiz->cmid;
         \quiz_add_quiz_question($this->q->id, $this->quiz);
         \quiz_add_quiz_question($q2->id, $this->quiz);
-        $quizobj = \quiz::create($this->quiz->id);
+        if (class_exists('\mod_quiz\quiz_settings')) {
+            $quizobj = \mod_quiz\quiz_settings::create($this->quiz->id);
+        } else {
+            $quizobj = \quiz::create($this->quiz->id);
+        }
         \mod_quiz\structure::create_for_quiz($quizobj);
 
     }
