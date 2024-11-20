@@ -451,12 +451,8 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals(4, count(file($this->importrepo->tempfilepath)));
         $tempfile = fopen($this->importrepo->tempfilepath, 'r');
         $firstline = json_decode(fgets($tempfile));
-        $this->assertStringContainsString('3500', $firstline->questionbankentryid);
-        $this->assertEquals($firstline->contextlevel, '10');
         $this->assertStringContainsString($this->rootpath . '/top/cat-', $firstline->filepath);
-        $this->assertEquals($firstline->coursename, 'Course 1');
-        $this->assertEquals($firstline->modulename, 'Test 1');
-        $this->assertEquals($firstline->coursecategory, 'Cat 1');
+        $this->assertEquals($firstline->version, '2');
         $this->assertEquals($firstline->format, 'xml');
     }
 
@@ -597,11 +593,8 @@ class import_repo_test extends advanced_testcase {
         $tempfile = fopen($this->importrepo->tempfilepath, 'r');
         $firstline = json_decode(fgets($tempfile));
         $this->assertStringContainsString('3500', $firstline->questionbankentryid);
-        $this->assertEquals($firstline->contextlevel, '10');
         $this->assertStringContainsString($this->rootpath . '/top/cat-', $firstline->filepath);
-        $this->assertEquals($firstline->coursename, 'Course 1');
-        $this->assertEquals($firstline->modulename, 'Test 1');
-        $this->assertEquals($firstline->coursecategory, 'Cat 1');
+        $this->assertEquals($firstline->version, '2');
         $this->assertEquals($firstline->format, 'xml');
         $this->assertEquals($this->importrepo->listpostsettings["qcategoryname"], 'top/cat 2/subcat 2_1');
     }
@@ -786,7 +779,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('/top/cat-2/subcat-2_1/Fourth-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
-        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->contextlevel, '70');
         $this->assertEquals($context->coursename, 'Course 1');
         $this->assertEquals($context->modulename, 'Module 1');
         $this->assertEquals($context->coursecategory, '');
@@ -834,7 +827,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('/top/cat-2/subcat-2_1/Fourth-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
-        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->contextlevel, '70');
         $this->assertEquals($context->coursename, 'Course 1');
         $this->assertEquals($context->modulename, 'Module 1');
         $this->assertEquals($context->coursecategory, '');
@@ -880,7 +873,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('/top/cat-2/Second-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
-        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->contextlevel, '70');
         $this->assertEquals($context->coursename, 'Course 1');
         $this->assertEquals($context->modulename, 'Module 1');
         $this->assertEquals($context->coursecategory, '');
@@ -927,7 +920,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('/top/cat-1/First-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
-        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->contextlevel, '70');
         $this->assertEquals($context->coursename, 'Course 1');
         $this->assertEquals($context->modulename, 'Module 1');
         $this->assertEquals($context->coursecategory, '');

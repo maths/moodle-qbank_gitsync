@@ -30,30 +30,6 @@ use advanced_testcase;
 use org\bovigo\vfs\vfsStream;
 
 /**
- * Allows testing of errors that lead to an exit.
- */
-class fake_export_cli_helper extends cli_helper {
-    /**
-     * Override so ignored during testing
-     *
-     * @return void
-     */
-    public static function call_exit():void {
-        return;
-    }
-
-    /**
-     * Override so ignored during testing
-     *
-     * @return void
-     */
-    public static function handle_abort():void {
-        return;
-    }
-}
-
-
-/**
  * Test the CLI script for exporting a repo from Moodle.
  * @group qbank_gitsync
  *

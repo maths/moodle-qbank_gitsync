@@ -144,7 +144,7 @@ class export_quiz {
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
         $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-        if (!$arguments['subcall']) {
+        if (empty($arguments['subcall'])) {
             $this->listcurlrequest = $this->get_curl_request($wsurl);
             $this->listpostsettings = [
                 'wstoken' => $token,

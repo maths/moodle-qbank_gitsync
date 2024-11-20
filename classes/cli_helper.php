@@ -96,12 +96,12 @@ class cli_helper {
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
         $argcount = count($commandlineargs);
-        if (!isset($commandlineargs['z'])) {
+        if (!isset($commandlineargs['w'])) {
             echo "\nProcessed {$argcount} valid command line argument" .
                     (($argcount !== 1) ? 's' : '') . ".\n";
         }
         $this->processedoptions = $this->prioritise_options($commandlineargs);
-        if ($this->processedoptions['help']) {
+        if (!empty($this->processedoptions['help'])) {
             $this->show_help();
             exit;
         }
@@ -572,7 +572,7 @@ class cli_helper {
         $this->create_gitignore($activity->manifestpath);
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
-        if (!(isset($this->get_arguments()['subcall']) && $this->get_arguments()['subcall'])) {
+        if (empty($this->get_arguments()['subcall'])) {
             exec("git add --all");
             exec('git commit -m "Initial Commit - ' . basename($activity->manifestpath)  . '"');
         }
@@ -684,7 +684,7 @@ class cli_helper {
      * @return void
      */
     public function check_for_changes($fullmanifestpath) {
-        if (!$this->get_arguments()['usegit'] || (isset($this->get_arguments()['subcall']) && $this->get_arguments()['subcall'])) {
+        if (!$this->get_arguments()['usegit'] || !empty($this->get_arguments()['subcall'])) {
             return;
         }
         $this->check_repo_initialised($fullmanifestpath);
@@ -758,7 +758,7 @@ class cli_helper {
             echo "Failed to get list of questions from Moodle.\n";
             static::call_exit();
             return new \stdClass(); // Required for PHPUnit.
-        } else if (!$silent && !(isset($this->get_arguments()['subcall']) && $this->get_arguments()['subcall'])) {
+        } else if (!$silent && empty($arguments['subcall'])) {
             $activityname = get_class($activity);
             switch ($activityname) {
                 case 'qbank_gitsync\export_repo':

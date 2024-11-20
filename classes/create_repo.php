@@ -279,7 +279,7 @@ class create_repo {
             }
             echo $output;
         }
-        if ($arguments['usegit'] && !(isset($arguments()['subcall']) && $arguments()['subcall'])) {
+        if ($arguments['usegit'] && empty($arguments['subcall'])) {
             // Commit the final quiz file.
             // The others are committed by the following createrepo.
             chdir($basedirectory);

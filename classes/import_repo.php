@@ -344,7 +344,7 @@ class import_repo {
         $this->listpostsettings['qcategoryname'] = $qcategoryname;
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
 
-        if (count($this->manifestcontents->questions) === 0 && !$arguments['subcall']) {
+        if (count($this->manifestcontents->questions) === 0 && empty($arguments['subcall'])) {
             // A quiz in a whole course set up can have an empty manifest as
             // the questions may be in the course.
             echo "\nManifest file is empty. This should only be the case if you are importing ";
@@ -786,7 +786,7 @@ class import_repo {
         } else if (property_exists($questionsinmoodle, 'exception')) {
             if (isset($questionsinmoodle->errorcode) && $questionsinmoodle->errorcode === 'categoryerror') {
                 $arguments = $this->clihelper->get_arguments();
-                if (!$arguments['subcall']) {
+                if (empty($arguments['subcall'])) {
                     echo "Target category {$this->listpostsettings['qcategoryname']} does not exist in Moodle.\n";
                     echo "This should only be the case if you're importing it for the first time and\n";
                     echo "want to create new questions in Moodle.\n";

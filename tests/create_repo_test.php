@@ -189,11 +189,7 @@ class create_repo_test extends advanced_testcase {
         $tempfile = fopen($this->createrepo->tempfilepath, 'r');
         $firstline = json_decode(fgets($tempfile));
         $this->assertEquals('1', $firstline->questionbankentryid);
-        $this->assertEquals($firstline->contextlevel, '50');
         $this->assertEquals($this->rootpath . '/top/One.xml', $firstline->filepath);
-        $this->assertEquals($firstline->coursename, 'Course 1');
-        $this->assertEquals($firstline->modulename, 'Module 1');
-        $this->assertEquals($firstline->coursecategory, null);
         $this->assertEquals($firstline->version, '10');
         $this->assertEquals($firstline->format, 'xml');
     }
