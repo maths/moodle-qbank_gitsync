@@ -281,12 +281,13 @@ class cli_helper {
                     break;
             }
         }
-        if (!(isset($cliargs['manifestpath']) || isset($cliargs['quizmanifestpath'])) && !isset($cliargs['contextlevel'])) {
+        if (!(isset($cliargs['manifestpath']) || isset($cliargs['quizmanifestpath'])
+                || (isset($cliargs['nonquizmanifestpath']) && isset($cliargs['instanceid']))) && !isset($cliargs['contextlevel'])) {
             echo "\nYou have not specified context. " .
                  "You must specify context level (--contextlevel) unless " .
                  "using a function where this information can be read from a manifest file, in which case " .
                  "you could set a manifest path (--manifestpath) instead. If using exportrepofrommoodle, you " .
-                 "must set manifest path only. If dealing with import/export of quizzes, you must specify --quizmanifestpath. " .
+                 "must set manifest path only. If dealing with export of quizzes, you must specify --quizmanifestpath. " .
                  "If you still see this message, you may be using invalid arguments.\n";
             static::call_exit();
         }

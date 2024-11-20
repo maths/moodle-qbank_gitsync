@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for export repo command line script for gitsync
+ * Unit tests for export quiz command line script for gitsync
  *
  * @package    qbank_gitsync
  * @copyright  2023 The Open University
@@ -75,7 +75,7 @@ class export_quiz_test extends advanced_testcase {
     /** @var string root of virtual file system */
     public string $rootpath;
     /** @var string used to store output of multiple calls to a function */
-    const MOODLE = 'fakeexportquiz';    /** Name of question to be generated and exported. */
+    const MOODLE = 'fakeexportquiz';
     const QUIZNAME = 'Quiz 1';
     const QUIZINTRO = 'Quiz intro';
     const FEEDBACK = 'Quiz feedback';
@@ -179,7 +179,7 @@ class export_quiz_test extends advanced_testcase {
     /**
      * Test the full process.
      */
-    public function x_test_process(): void {
+    public function test_process(): void {
         $this->set_up_mocks();
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             json_encode($this->quizoutput)
@@ -198,7 +198,7 @@ class export_quiz_test extends advanced_testcase {
     /**
      * Test message if export JSON broken.
      */
-    public function x_test_broken_json_on_export(): void {
+    public function test_broken_json_on_export(): void {
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"quiz": </Question>"}'
@@ -213,7 +213,7 @@ class export_quiz_test extends advanced_testcase {
     /**
      * Test message if export exception.
      */
-    public function x_test_exception_on_export(): void {
+    public function test_exception_on_export(): void {
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
@@ -227,7 +227,7 @@ class export_quiz_test extends advanced_testcase {
     /**
      * Test message if manifest file update issue.
      */
-    public function x_test_manifest_file_update_error(): void {
+    public function test_manifest_file_update_error(): void {
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(
             json_encode($this->quizoutput)
@@ -243,7 +243,7 @@ class export_quiz_test extends advanced_testcase {
     /**
      * Test if quiz context questions.
      */
-    public function x_test_quiz_context_questions(): void {
+    public function test_quiz_context_questions(): void {
         $this->quizoutput['questions'][] =
             [
                 'questionbankentryid' => '36002',
@@ -271,7 +271,7 @@ class export_quiz_test extends advanced_testcase {
     /**
      * Test if course context questions.
      */
-    public function x_test_course_context_questions(): void {
+    public function test_course_context_questions(): void {
         $this->quizoutput['questions'] = [
             [
                 'questionbankentryid' => '35002',
@@ -307,7 +307,7 @@ class export_quiz_test extends advanced_testcase {
     /**
      * Test if missing questions.
      */
-    public function x_test_missing_questions(): void {
+    public function test_missing_questions(): void {
         $this->quizoutput['questions'] = [
             [
                 'questionbankentryid' => '35002',
