@@ -179,8 +179,11 @@ class import_quiz_data extends external_api {
                 $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $itemid]);
             }
         }
-        quiz_update_sumgrades($module);
-
+        if (class_exists('\grade_calculator::recompute_quiz_sumgrades')) {
+            \grade_calculator::recompute_quiz_sumgrades($module);
+        } else {
+            quiz_update_sumgrades($module);
+        }
         // NB Must add questions before updating sections.
         foreach ($params['sections'] as $section) {
             $section['quizid'] = $moduleinfo->instance;
