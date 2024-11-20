@@ -159,7 +159,13 @@ class import_quiz_data extends external_api {
         $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
         // Sort questions by slot.
         usort($params['questions'], function($a, $b) {
-            return ((int) $a['slot'] > (int) $b['slot']) ? true : false;
+            if ((int) $a['slot'] > (int) $b['slot']) {
+                return 1;
+            } else if ((int) $a['slot'] < (int) $b['slot']) {
+                return -1;
+            } else {
+                return 0;
+            }
         });
         foreach ($params['questions'] as $question) {
             $qdata = get_minimal_question_data($question['questionbankentryid']);
