@@ -39,7 +39,8 @@ use external_function_parameters;
 use external_multiple_structure;
 use external_single_structure;
 use external_value;
-use quiz;
+use mod_quiz\grade_calculator;
+use mod_quiz\quiz_settings;
 
 /**
  * A webservice function to export details of a quiz content and structure.
@@ -181,8 +182,8 @@ class import_quiz_data extends external_api {
                 $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $itemid]);
             }
         }
-        if (class_exists('\grade_calculator::recompute_quiz_sumgrades')) {
-            \grade_calculator::recompute_quiz_sumgrades($module);
+        if (class_exists('mod_quiz\grade_calculator')) {
+            quiz_settings::create($moduleinfo->instance)->get_grade_calculator()->recompute_quiz_sumgrades();
         } else {
             quiz_update_sumgrades($module);
         }
