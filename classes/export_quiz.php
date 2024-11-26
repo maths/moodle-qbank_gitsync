@@ -140,6 +140,8 @@ class export_quiz {
             'wsfunction' => 'qbank_gitsync_export_quiz_data',
             'moodlewsrestformat' => 'json',
             'moduleid' => $instanceid,
+            'coursename' => null,
+            'quizname' => null,
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
@@ -151,8 +153,8 @@ class export_quiz {
                 'wsfunction' => 'qbank_gitsync_get_question_list',
                 'moodlewsrestformat' => 'json',
                 'contextlevel' => 70,
-                'coursename' => $arguments['coursename'],
-                'modulename' => $arguments['modulename'],
+                'coursename' => null,
+                'modulename' => null,
                 'coursecategory' => null,
                 'qcategoryname' => 'top',
                 'qcategoryid' => null,

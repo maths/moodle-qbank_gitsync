@@ -32,6 +32,7 @@ require_once($CFG->dirroot . '/lib/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+require_once($CFG->dirroot . '/course/modlib.php');
 
 use external_api;
 use external_function_parameters;
@@ -126,6 +127,7 @@ class import_quiz_data extends external_api {
         $moduleinfo = new \stdClass();
         $moduleinfo->name = $params['quiz']['name'];
         $moduleinfo->modulename = 'quiz';
+        $moduleinfo->module = $DB->get_field('modules', 'id', array('name' => 'quiz'));
         $moduleinfo->course = $contextinfo->instanceid;
         $moduleinfo->section = 1;
         $moduleinfo->quizpassword = '';
@@ -141,7 +143,7 @@ class import_quiz_data extends external_api {
         $moduleinfo->decimalpoints = 2;
         $moduleinfo->questiondecimalpoints = -1;
         $moduleinfo->cmidnumber = '';
-        $moduleinfo = create_module($moduleinfo);
+        $moduleinfo = \add_moduleinfo($moduleinfo, \get_course($contextinfo->instanceid));
 
         // Post-creation updates.
         $reviewchoice = [];
