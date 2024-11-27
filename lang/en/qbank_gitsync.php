@@ -24,16 +24,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Gitsync';
-$string['gitsync:exportquestions'] = 'Export';
-$string['gitsync:importquestions'] = 'Import';
-$string['gitsync:deletequestions'] = 'Delete';
-$string['gitsync:listquestions'] = 'List';
-$string['exporterror'] = 'Could not export question id: {$a}';
-$string['importerror'] = 'Could not import question from file: {$a}';
-$string['importversionerror'] = 'Could not import question : {$a->name} Current version in Moodle is {$a->currentversion}. Last imported version is {$a->importedversion}. Last exported version is {$a->exportedversion}. You need to export the question.';
-$string['noquestionerror'] = 'Question does not exist. Questionbankentryid: {$a}';
-$string['contexterror'] = 'The context level is invalid: {$a}';
 $string['categoryerror'] = 'Problem with question category: {$a}';
 $string['categoryerrornew'] = 'Problem with question category: {$a}. If the course is new, please open the question bank in Moodle to initialise it and try Gitsync again.';
 $string['categorymismatcherror'] = 'Problem with question category: {$a}. The category is not in the supplied context.';
+$string['contexterror'] = 'The context level is invalid: {$a}';
+$string['exporterror'] = 'Could not export question id: {$a}';
+$string['gitsync:deletequestions'] = 'Delete';
+$string['gitsync:exportquestions'] = 'Export';
+$string['gitsync:importquestions'] = 'Import';
+$string['gitsync:listquestions'] = 'List';
+$string['importerror'] = 'Could not import question from file: {$a}';
+$string['importversionerror'] = 'Could not import question : {$a->name} Current version in Moodle is {$a->currentversion}. Last imported version is {$a->importedversion}. Last exported version is {$a->exportedversion}. You need to export the question.';
+$string['noquestionerror'] = 'Question does not exist. Questionbankentryid: {$a}';
+$string['pluginname'] = 'Gitsync';

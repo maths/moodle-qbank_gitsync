@@ -44,7 +44,7 @@ use moodle_exception;
  *
  * @covers \gitsync\external\import_quiz_data::execute
  */
-class import_quiz_data_test extends externallib_advanced_testcase {
+final class import_quiz_data_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */
     protected \core_question_generator  $generator;
     /** @var \stdClass generated course object */
@@ -63,10 +63,15 @@ class import_quiz_data_test extends externallib_advanced_testcase {
     protected \stdClass $user;
     /** Name of question to be generated and exported. */
     const QNAME = 'Example short answer question';
+    /** QUIZNAME - Moodle quiz name value. */
     const QUIZNAME = 'Example quiz';
+    /** QUIZINTRO - Moodle quiz intro value. */
     const QUIZINTRO = 'Quiz intro';
+    /** FEEDBACK - Quiz feedback value. */
     const FEEDBACK = 'Quiz feedback';
+    /** HEADING1 - heading value. */
     const HEADING1 = 'Heading 1';
+    /** HEADING2 - heading value. */
     const HEADING2 = 'Heading 2';
     /** @var array input parameters */
     protected array $quizinput = [
@@ -90,7 +95,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
                 'firstslot' => '2',
                 'heading' => self::HEADING2,
                 'shufflequestions' => 0,
-            ]
+            ],
         ],
         'questions' => [
             [
@@ -106,7 +111,7 @@ class import_quiz_data_test extends externallib_advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '2.0000000',
-            ]
+            ],
         ],
         'feedback' => [
             [
@@ -114,11 +119,12 @@ class import_quiz_data_test extends externallib_advanced_testcase {
                 'feedbacktextformat' => '0',
                 'mingrade' => '0.0000000',
                 'maxgrade' => '50.000000',
-            ]
+            ],
         ],
     ];
 
     public function setUp(): void {
+        parent::setUp();
         global $DB;
         $this->resetAfterTest();
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');

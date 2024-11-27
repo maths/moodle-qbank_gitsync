@@ -35,7 +35,7 @@ use org\bovigo\vfs\vfsStream;
  *
  * @covers \gitsync\export_repo::class
  */
-class export_trait_test extends advanced_testcase {
+final class export_trait_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -54,6 +54,7 @@ class export_trait_test extends advanced_testcase {
     const MOODLE = 'fakeexport';
 
     public function setUp(): void {
+        parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
@@ -102,7 +103,7 @@ class export_trait_test extends advanced_testcase {
      *
      * @return void
      */
-    public function set_curl_output():void {
+    public function set_curl_output(): void {
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
@@ -135,7 +136,7 @@ class export_trait_test extends advanced_testcase {
      *
      * @return void
      */
-    public function set_curl_output_same_name():void {
+    public function set_curl_output_same_name(): void {
         $this->curl->expects($this->exactly(5))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .

@@ -302,7 +302,7 @@ class cli_helper {
      * @param string $path
      * @return string
      */
-    public function trim_slashes(string $path):string {
+    public function trim_slashes(string $path): string {
         $path = str_replace( '\\', '/', $path);
         if (substr($path, 0, 1) === '/') {
             $path = substr($path, 1);
@@ -356,7 +356,7 @@ class cli_helper {
      *
      * @return void
      */
-    public function show_help() {
+    public function show_help(): void {
         foreach ($this->options as $option) {
             if (!isset($option['hidden'])) {
                 echo "-{$option['shortopt']} --{$option['longopt']}  \t{$option['description']}\n";
@@ -400,7 +400,7 @@ class cli_helper {
      * @return string
      */
     public static function get_manifest_path(string $moodleinstance, string $contextlevel, ?string $coursecategory,
-                            ?string $coursename, ?string $modulename, string $directory):string {
+                            ?string $coursename, ?string $modulename, string $directory): string {
         $filenamemod = '_' . $contextlevel;
         switch ($contextlevel) {
             case 'coursecategory':
@@ -427,7 +427,7 @@ class cli_helper {
      * @param string $directory
      * @return string
      */
-    public static function get_quiz_structure_path(string $modulename, string $directory):string {
+    public static function get_quiz_structure_path(string $modulename, string $directory): string {
         $filename = substr($modulename, 0, 100);
         $filename = $directory . '/' .
                     preg_replace(self::BAD_CHARACTERS, '-', strtolower($filename)) .
@@ -442,7 +442,7 @@ class cli_helper {
      * @param string $directory
      * @return string
      */
-    public static function get_quiz_directory(string $basedirectory, string $quizname):string {
+    public static function get_quiz_directory(string $basedirectory, string $quizname): string {
         $quizname = substr($quizname, 0, 100);
         $directoryname = $basedirectory . '_quiz_' .
                     preg_replace(self::BAD_CHARACTERS, '-', strtolower($quizname));
@@ -461,7 +461,7 @@ class cli_helper {
     public static function create_manifest_file(object $manifestcontents,
                                                 string $tempfilepath,
                                                 string $manifestpath,
-                                                bool $showupdated=true):object {
+                                                bool $showupdated=true): object {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
@@ -523,7 +523,7 @@ class cli_helper {
      * @param string $question original question XML
      * @return string tidied question XML
      */
-    public static function reformat_question(string $question):string {
+    public static function reformat_question(string $question): string {
         $quiz = simplexml_load_string($question);
         if ($quiz === false) {
             throw new \Exception('Broken XML');
@@ -541,7 +541,7 @@ class cli_helper {
      * @param object $activity e.g. import_repo
      * @return void
      */
-    public function commit_hash_update(object $activity):void {
+    public function commit_hash_update(object $activity): void {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
@@ -565,7 +565,7 @@ class cli_helper {
      * @param object $activity e.g. create_repo
      * @return void
      */
-    public function commit_hash_setup(object $activity):void {
+    public function commit_hash_setup(object $activity): void {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
@@ -595,7 +595,7 @@ class cli_helper {
      * @param object $activity e.g. create_repo
      * @return void
      */
-    public function tidy_repo_xml(object $activity):void {
+    public function tidy_repo_xml(object $activity): void {
         if ($activity->subdirectory) {
             $subdirectory = $activity->directory . '/' . $activity->subdirectory;
         } else {
@@ -621,7 +621,7 @@ class cli_helper {
      * @param string $manifestpath
      * @return void
      */
-    public function create_gitignore(string $manifestpath):void {
+    public function create_gitignore(string $manifestpath): void {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
@@ -642,7 +642,7 @@ class cli_helper {
      * @param string $fullmanifestpath
      * @return void
      */
-    public function check_repo_initialised(string $fullmanifestpath):void {
+    public function check_repo_initialised(string $fullmanifestpath): void {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
@@ -665,7 +665,7 @@ class cli_helper {
      * @param string $directory
      * @return string updated directory name
      */
-    public function create_directory(string $directory):string {
+    public function create_directory(string $directory): string {
         $basename = $directory;
         $i = 0;
         while (is_dir($directory)) {
@@ -683,7 +683,7 @@ class cli_helper {
      * @param string $fullmanifestpath
      * @return void
      */
-    public function check_for_changes($fullmanifestpath) {
+    public function check_for_changes(string $fullmanifestpath): void {
         if (!$this->get_arguments()['usegit'] || !empty($this->get_arguments()['subcall'])) {
             return;
         }
@@ -710,7 +710,7 @@ class cli_helper {
      * @param string $fullmanifestpath
      * @return void
      */
-    public function backup_manifest($fullmanifestpath) {
+    public function backup_manifest(string $fullmanifestpath): void {
         $manifestdirname = dirname($fullmanifestpath);
         $manifestfilename = basename($fullmanifestpath);
         $backupdir = $manifestdirname . '/manifest_backups';
@@ -727,7 +727,7 @@ class cli_helper {
      *
      * @return void
      */
-    public static function call_exit():void {
+    public static function call_exit(): void {
         exit;
     }
 
@@ -740,7 +740,7 @@ class cli_helper {
      * @param bool $silent If true, don't display returned info
      * @return object
      */
-    public function check_context(object $activity, bool $defaultwarning=false, bool $silent=false):object {
+    public function check_context(object $activity, bool $defaultwarning=false, bool $silent=false): object {
         $activity->listpostsettings['contextonly'] = 1;
         $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
         $response = $activity->listcurlrequest->execute();
@@ -813,7 +813,7 @@ class cli_helper {
      *
      * @return void
      */
-    public static function handle_abort():void {
+    public static function handle_abort(): void {
         echo "Abort? y/n\n";
         $handle = fopen ("php://stdin", "r");
         $line = fgets($handle);
@@ -831,7 +831,7 @@ class cli_helper {
      * @param [type] $filename
      * @return string|null $qcategoryname Question category name in format top/cat1/subcat1
      */
-    public static function get_question_category_from_file($filename):?string {
+    public static function get_question_category_from_file($filename): ?string {
         if (!is_file($filename)) {
             echo "\nRequired category file does not exist: {$filename}\n";
             return null;

@@ -175,7 +175,7 @@ class export_quiz {
      *
      * @return void
      */
-    public function process():void {
+    public function process(): void {
         $this->export_quiz_data();
     }
 
@@ -185,7 +185,7 @@ class export_quiz {
      * @param string $wsurl webservice URL
      * @return curl_request
      */
-    public function get_curl_request($wsurl):curl_request {
+    public function get_curl_request($wsurl): curl_request {
         return new \qbank_gitsync\curl_request($wsurl);
     }
 
@@ -269,7 +269,7 @@ class export_quiz {
      *
      * @return void
      */
-    public function call_exit():void {
+    public function call_exit(): void {
         exit;
     }
 }

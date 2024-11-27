@@ -35,7 +35,7 @@ use org\bovigo\vfs\vfsStream;
  *
  * @covers \gitsync\export_repo::class
  */
-class export_quiz_test extends advanced_testcase {
+final class export_quiz_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -50,15 +50,21 @@ class export_quiz_test extends advanced_testcase {
     public curl_request $listcurl;
     /** @var string root of virtual file system */
     public string $rootpath;
-    /** @var string used to store output of multiple calls to a function */
+    /** MOODLE - Moodle instance value. */
     const MOODLE = 'fakeexportquiz';
+    /** QUIZNAME - Moodle quiz name value. */
     const QUIZNAME = 'Quiz 1';
+    /** QUIZINTRO - Moodle quiz intro value. */
     const QUIZINTRO = 'Quiz intro';
+    /** FEEDBACK - Quiz feedback value. */
     const FEEDBACK = 'Quiz feedback';
+    /** HEADING1 - heading value. */
     const HEADING1 = 'Heading 1';
+    /** HEADING2 - heading value. */
     const HEADING2 = 'Heading 2';
+    /** COURSENAME - course name value. */
     const COURSENAME = 'Course 1';
-    /** @var array input parameters */
+    /** @var array expected quiz details output */
     protected array $quizoutput = [
         'quiz' => [
             'name' => self::QUIZNAME,
@@ -78,7 +84,7 @@ class export_quiz_test extends advanced_testcase {
                 'firstslot' => '2',
                 'heading' => self::HEADING2,
                 'shufflequestions' => 0,
-            ]
+            ],
         ],
         'questions' => [
             [
@@ -87,7 +93,7 @@ class export_quiz_test extends advanced_testcase {
                 'page' => '1',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
-            ]
+            ],
         ],
         'feedback' => [
             [
@@ -95,11 +101,12 @@ class export_quiz_test extends advanced_testcase {
                 'feedbacktextformat' => '0',
                 'mingrade' => '0.0000000',
                 'maxgrade' => '50.000000',
-            ]
+            ],
         ],
     ];
 
     public function setUp(): void {
+        parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
@@ -262,7 +269,7 @@ class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
-            ]
+            ],
         ];
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(
@@ -291,7 +298,8 @@ class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
-            ],[
+            ],
+            [
                 'questionbankentryid' => '36001',
                 'slot' => '2',
                 'page' => '2',
@@ -304,7 +312,7 @@ class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
-            ]
+            ],
         ];
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(
@@ -348,7 +356,7 @@ class export_quiz_test extends advanced_testcase {
                 'page' => '4',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
-            ]
+            ],
         ];
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(

@@ -130,7 +130,8 @@ class import_quiz {
                 $this->call_exit();
 
             } else {
-                $this->quizdatapath = cli_helper::get_quiz_structure_path($this->quizmanifestcontents->context->modulename, dirname($this->quizmanifestpath));
+                $this->quizdatapath = cli_helper::get_quiz_structure_path($this->quizmanifestcontents->context->modulename,
+                                                                            dirname($this->quizmanifestpath));
             }
         } else {
             if ($arguments['quizdatapath']) {
@@ -220,7 +221,7 @@ class import_quiz {
      *
      * @return void
      */
-    public function process():void {
+    public function process(): void {
         $this->import_quiz_data();
     }
 
@@ -230,7 +231,7 @@ class import_quiz {
      * @param string $wsurl webservice URL
      * @return curl_request
      */
-    public function get_curl_request($wsurl):curl_request {
+    public function get_curl_request($wsurl): curl_request {
         return new \qbank_gitsync\curl_request($wsurl);
     }
 
@@ -297,7 +298,7 @@ class import_quiz {
             }
         }
 
-        $this->curlrequest->set_option(CURLOPT_POSTFIELDS,$this->postsettings);
+        $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
         $response = $this->curlrequest->execute();
         $responsejson = json_decode($response);
         if (!$responsejson) {
@@ -321,7 +322,7 @@ class import_quiz {
      *
      * @return void
      */
-    public function call_exit():void {
+    public function call_exit(): void {
         exit;
     }
 
@@ -330,7 +331,7 @@ class import_quiz {
      *
      * @return void
      */
-    public function handle_abort():void {
+    public function handle_abort(): void {
         echo "Abort? y/n\n";
         $handle = fopen ("php://stdin", "r");
         $line = fgets($handle);

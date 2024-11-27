@@ -35,7 +35,7 @@ use org\bovigo\vfs\vfsStream;
  *
  * @covers \gitsync\export_repo::class
  */
-class tidy_trait_test extends advanced_testcase {
+final class tidy_trait_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -54,6 +54,7 @@ class tidy_trait_test extends advanced_testcase {
     const MOODLE = 'fakeexport';
 
     public function setUp(): void {
+        parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
@@ -101,7 +102,7 @@ class tidy_trait_test extends advanced_testcase {
      * Check entry is removed from manifest if question no longer in Moodle.
      * @covers \gitsync\tidy_trait\tidy_manifest()
      */
-    public function test_tidy_manifest():void {
+    public function test_tidy_manifest(): void {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                              "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -189,7 +190,7 @@ class tidy_trait_test extends advanced_testcase {
      * Check nothing removed normal pass.
      * @covers \gitsync\tidy_trait\tidy_manifest()
      */
-    public function test_tidy_manifest_nothing_removed():void {
+    public function test_tidy_manifest_nothing_removed(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                              "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -215,7 +216,7 @@ class tidy_trait_test extends advanced_testcase {
      * Check nothing removed with two passes.
      * @covers \gitsync\tidy_trait\tidy_manifest()
      */
-    public function test_tidy_manifest_nothing_removed_two_passes():void {
+    public function test_tidy_manifest_nothing_removed_two_passes(): void {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
              '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},

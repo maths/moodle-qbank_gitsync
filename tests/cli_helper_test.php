@@ -39,7 +39,7 @@ class fake_cli_helper extends cli_helper {
      *
      * @return void
      */
-    public static function call_exit():void {
+    public static function call_exit(): void {
         return;
     }
 }
@@ -53,7 +53,7 @@ class fake_cli_helper extends cli_helper {
  *
  * @covers \gitsync\cli_helper::class
  */
-class cli_helper_test extends advanced_testcase {
+final class cli_helper_test extends advanced_testcase {
     /** @var array defining options for a CLI script */
     protected array $options = [
         [
@@ -378,12 +378,14 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_manifestpath(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'manifestpath' => '/path/subpath/'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system',
+                                     'manifestpath' => '/path/subpath/'];
         $helper->validate_and_clean_args();
         $this->assertEquals('path/subpath', $helper->processedoptions['manifestpath']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'manifestpath' => '/path/subpath/',
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system',
+                                     'manifestpath' => '/path/subpath/',
                                      'coursename' => 'course1', 'instanceid' => '2',
                                     ];
         $helper->validate_and_clean_args();
@@ -592,7 +594,8 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_ignorecat_replace(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'manifestpath' => 'path/subpath', 'ignorecat' => '//hello\//'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'manifestpath' => 'path/subpath',
+                                     'ignorecat' => '//hello\//', ];
         $helper->validate_and_clean_args();
         $this->expectOutputString('');
         $this->assertEquals('/hello\//', $helper->processedoptions['ignorecat']);

@@ -66,7 +66,7 @@ class get_question_list extends external_api {
      * Returns description of webservice function output.
      * @return external_multiple_structure
      */
-    public static function execute_returns():external_single_structure {
+    public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'contextinfo' => new external_single_structure([
                 'contextlevel' => new external_value(PARAM_TEXT, 'context level description'),
@@ -115,7 +115,7 @@ class get_question_list extends external_api {
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null, ?string $qcategoryid = null,
                                     ?string $instanceid = null, bool $contextonly = false,
-                                    ?array $qbankentryids = [''], ?string $ignorecat = null):object {
+                                    ?array $qbankentryids = [''], ?string $ignorecat = null): object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'qcategoryname' => $qcategoryname,
@@ -185,7 +185,6 @@ class get_question_list extends external_api {
             $response->contextinfo->qcategoryname = self::get_category_path($category);
             $response->contextinfo->qcategoryid = $category->id;
 
-
             if ((int) $params['contextlevel'] === \CONTEXT_COURSE) {
                 $response->quizzes = $DB->get_records_sql(
                     "SELECT cm.id as instanceid, q.name
@@ -246,7 +245,7 @@ class get_question_list extends external_api {
      * @param string|null $ignorecat Regex of categories to ignore (along with their descendants)
      * @return array of question categories
      */
-    public static function get_category_descendants(int $parentid, ?string $ignorecat):array {
+    public static function get_category_descendants(int $parentid, ?string $ignorecat): array {
         global $DB;
         $children = $DB->get_records('question_categories', ['parent' => $parentid], null, 'id, parent, name');
         if ($ignorecat) {

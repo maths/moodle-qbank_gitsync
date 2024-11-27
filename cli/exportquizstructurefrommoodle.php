@@ -95,7 +95,7 @@ $options = [
         'variable' => 'subcall',
         'valuerequired' => false,
         'hidden' => true,
-    ]
+    ],
 ];
 
 if (!function_exists('simplexml_load_file')) {

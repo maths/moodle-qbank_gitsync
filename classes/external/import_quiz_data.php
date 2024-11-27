@@ -93,7 +93,7 @@ class import_quiz_data extends external_api {
      * Returns description of webservice function output.
      * @return external_single_structure
      */
-    public static function execute_returns():external_single_structure {
+    public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Import success?'),
         ]);
@@ -108,7 +108,7 @@ class import_quiz_data extends external_api {
      * @param array $feedback
      * @return object containing outcome
      */
-    public static function execute(array $quiz, array $sections, array $questions, array $feedback):object {
+    public static function execute(array $quiz, array $sections, array $questions, array $feedback): object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'quiz' => $quiz,
@@ -128,12 +128,16 @@ class import_quiz_data extends external_api {
         $moduleinfo = new \stdClass();
         $moduleinfo->name = $params['quiz']['name'];
         $moduleinfo->modulename = 'quiz';
-        $moduleinfo->module = $DB->get_field('modules', 'id', array('name' => 'quiz'));
+        $moduleinfo->module = $DB->get_field('modules', 'id', ['name' => 'quiz']);
         $moduleinfo->course = $contextinfo->instanceid;
         $moduleinfo->section = 1;
         $moduleinfo->quizpassword = '';
         $moduleinfo->visible = true;
-        $moduleinfo->introeditor = ['text' => $params['quiz']['intro'], 'format' => (int) $params['quiz']['introformat'], 'itemid' => 0];
+        $moduleinfo->introeditor = [
+                                    'text' => $params['quiz']['intro'],
+                                    'format' => (int) $params['quiz']['introformat'],
+                                    'itemid' => 0,
+                                    ];
         $moduleinfo->preferredbehaviour = 'deferredfeedback';
         $moduleinfo->grade = $params['quiz']['grade'];
         $moduleinfo->questionsperpage = (int) $params['quiz']['questionsperpage'];
@@ -212,7 +216,7 @@ class import_quiz_data extends external_api {
                     'firstslotnumber' => $section['firstslot'],
                     'firstslotid' => $slotid,
                     'title' => $section['heading'],
-                ]
+                ],
             ]);
             $event->trigger();
         }
@@ -224,8 +228,8 @@ class import_quiz_data extends external_api {
                     'feedbacktextformat' => 1,
                     'mingrade' => 0,
                     'maxgrade' => (float) $params['quiz']['grade'] + 1,
-                ]
-                ];
+                ],
+            ];
         }
         foreach ($params['feedback'] as $feedback) {
             $feedback['quizid'] = $moduleinfo->instance;

@@ -290,7 +290,8 @@ class import_repo {
         } else if (!$manifestcontents && !$manifestpath) {
             $this->manifestcontents = new \stdClass();
             $this->manifestcontents->context = new \stdClass();
-            $this->manifestcontents->context->contextlevel = cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
+            $this->manifestcontents->context->contextlevel =
+                        cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
             $this->manifestcontents->context->coursename = $instanceinfo->contextinfo->coursename;
             $this->manifestcontents->context->modulename = $instanceinfo->contextinfo->modulename;
             $this->manifestcontents->context->coursecategory = $instanceinfo->contextinfo->categoryname;
@@ -359,7 +360,7 @@ class import_repo {
      *
      * @return void
      */
-    public function process():void {
+    public function process(): void {
         $this->import_categories();
         $this->import_questions();
         $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
@@ -377,7 +378,7 @@ class import_repo {
      * @param string $wsurl webservice URL
      * @return curl_request
      */
-    public function get_curl_request($wsurl):curl_request {
+    public function get_curl_request($wsurl): curl_request {
         return new \qbank_gitsync\curl_request($wsurl);
     }
 
@@ -386,7 +387,7 @@ class import_repo {
      *
      * @return void
      */
-    public function import_categories():void {
+    public function import_categories(): void {
         $this->repoiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->directory, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
@@ -447,7 +448,7 @@ class import_repo {
      * @param resource $repoitem
      * @return bool success or failure
      */
-    public function upload_file($repoitem):bool {
+    public function upload_file($repoitem): bool {
         $this->uploadpostsettings['file_1'] = new \CURLFile($repoitem->getPathname());
         $this->uploadcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->uploadpostsettings);
         $fileinfo = json_decode($this->uploadcurlrequest->execute());
@@ -591,7 +592,7 @@ class import_repo {
      *
      * @return void
      */
-    public function recovery():void {
+    public function recovery(): void {
         if (file_exists($this->tempfilepath)) {
             echo 'Attempting recovery from failure on previous run. Updating manifest:';
             $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
@@ -610,7 +611,7 @@ class import_repo {
      * @param bool $deleteenabled Allows question delete if true, otherwise just lists applicable questions
      * @return void
      */
-    public function delete_no_file_questions(bool $deleteenabled=false):void {
+    public function delete_no_file_questions(bool $deleteenabled=false): void {
         // Get all manifest entries for imported subdirectory.
         // Filepath should equal subdirectory or path must be longer and continue with
         // one (and only) one slash.
@@ -662,7 +663,7 @@ class import_repo {
      * @param bool $deleteenabled Allows question delete if true, otherwise just lists applicable questions
      * @return void
      */
-    public function delete_no_record_questions(bool $deleteenabled=false):void {
+    public function delete_no_record_questions(bool $deleteenabled=false): void {
         if (count($this->manifestcontents->questions) === 0 && $deleteenabled) {
             echo 'Manifest file is empty or inaccessible. You probably want to abort.\n';
             $this->handle_abort();
@@ -719,7 +720,7 @@ class import_repo {
      * @param object $question \stdClass question to be deleted
      * @return bool Was the question deleted
      */
-    public function handle_delete(object $question):bool {
+    public function handle_delete(object $question): bool {
         $deleted = false;
         $handle = fopen ("php://stdin", "r");
         $line = fgets($handle);
@@ -754,7 +755,7 @@ class import_repo {
      *
      * @return void
      */
-    public function handle_abort():void {
+    public function handle_abort(): void {
         echo "Abort? y/n\n";
         $handle = fopen ("php://stdin", "r");
         $line = fgets($handle);
@@ -888,7 +889,7 @@ class import_repo {
             $rootdirectory = dirname($basedirectory) . '/' . $quizdirectory;
             $quizfiles = scandir($rootdirectory);
             $structurefile = null;
-            foreach($quizfiles as $quizfile) {
+            foreach ($quizfiles as $quizfile) {
                 if (preg_match('/.*_quiz\.json/', $quizfile)) {
                     $structurefile = $quizfile;
                     break;
@@ -944,7 +945,7 @@ class import_repo {
      *
      * @return void
      */
-    public function call_exit():void {
+    public function call_exit(): void {
         exit;
     }
 }

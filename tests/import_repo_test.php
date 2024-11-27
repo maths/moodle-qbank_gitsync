@@ -39,7 +39,7 @@ class fake_helper extends cli_helper {
      *
      * @return void
      */
-    public static function call_exit():void {
+    public static function call_exit(): void {
         return;
     }
 
@@ -48,7 +48,7 @@ class fake_helper extends cli_helper {
      *
      * @return void
      */
-    public static function handle_abort():void {
+    public static function handle_abort(): void {
         return;
     }
 }
@@ -59,7 +59,7 @@ class fake_helper extends cli_helper {
  *
  * @covers \gitsync\import_repo::class
  */
-class import_repo_test extends advanced_testcase {
+final class import_repo_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -84,6 +84,7 @@ class import_repo_test extends advanced_testcase {
     const MOODLE = 'fakeexport';
 
     public function setUp(): void {
+        parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
@@ -148,7 +149,7 @@ class import_repo_test extends advanced_testcase {
      *
      * @return void
      */
-    public function replace_mock_default() {
+    public function replace_mock_default(): void {
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',
         ])->setConstructorArgs([$this->options])->getMock();
@@ -1203,7 +1204,7 @@ class import_repo_test extends advanced_testcase {
      * Check abort if question version in Moodle doesn't match a version in manifest.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_versions():void {
+    public function test_check_question_versions(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1225,7 +1226,7 @@ class import_repo_test extends advanced_testcase {
      * Test version check passes if exported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_export_version_success():void {
+    public function test_check_question_export_version_success(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1241,7 +1242,7 @@ class import_repo_test extends advanced_testcase {
      * Test version check passes if imported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_import_version_success():void {
+    public function test_check_question_import_version_success(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1257,7 +1258,7 @@ class import_repo_test extends advanced_testcase {
      * Check abort if question version in Moodle doesn't match a version in manifest.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_versions_moved_question():void {
+    public function test_check_question_versions_moved_question(): void {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1281,7 +1282,7 @@ class import_repo_test extends advanced_testcase {
      * Test version check passes if imported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_import_version_success_moved_question():void {
+    public function test_check_question_import_version_success_moved_question(): void {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},

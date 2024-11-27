@@ -76,7 +76,7 @@ class export_question extends external_api {
      * @param bool $includecategory Include a 'category' question
      * @return object \stdClass question details
      */
-    public static function execute(string $questionbankentryid, bool $includecategory):object {
+    public static function execute(string $questionbankentryid, bool $includecategory): object {
         global $DB, $SITE;
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,

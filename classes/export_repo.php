@@ -186,7 +186,7 @@ class export_repo {
      *
      * @return void
      */
-    public function process():void {
+    public function process(): void {
         // Export latest versions of questions in manifest from Moodle.
         $this->export_questions_in_manifest();
         // Export any questions that are in Moodle but not in the manifest.
@@ -205,7 +205,7 @@ class export_repo {
      * @param string $wsurl webservice URL
      * @return curl_request
      */
-    public function get_curl_request($wsurl):curl_request {
+    public function get_curl_request($wsurl): curl_request {
         return new \qbank_gitsync\curl_request($wsurl);
     }
 
@@ -322,20 +322,23 @@ class export_repo {
                 }
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
                 chdir($scriptdirectory);
-                $output = shell_exec('php createrepo.php -w -r "' . $rootdirectory . '" -i "' . $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
+                $output = shell_exec('php createrepo.php -w -r "' . $rootdirectory . '" -i "' .
+                    $moodleinstance . '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
             } else {
                 $rootdirectory = dirname($basedirectory) . '/' . $locarray[$instanceid]->directory;
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
                 chdir($scriptdirectory);
                 $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, '');
-                $output = shell_exec('php exportrepofrommoodle.php -w -r "' . $rootdirectory . '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
+                $output = shell_exec('php exportrepofrommoodle.php -w -r "' . $rootdirectory . '" -i "' .
+                    $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
             }
             echo $output;
             $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
             chdir($scriptdirectory);
-            $output = shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . ' -t ' . $token. ' -p "' . $this->manifestpath. '" -f "' . $quizmanifestname . '"');
+            $output = shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . ' -t '
+                . $token. ' -p "' . $this->manifestpath. '" -f "' . $quizmanifestname . '"');
             echo $output;
         }
     }

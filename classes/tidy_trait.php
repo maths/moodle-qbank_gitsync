@@ -38,7 +38,7 @@ trait tidy_trait {
      *
      * @return void
      */
-    public function tidy_manifest():void {
+    public function tidy_manifest(): void {
         // We want to check the whole context or we'll be flagging
         // entries outside the subcategory/subdirectory.
         $oldsetting = $this->listpostsettings['qcategoryname'];

@@ -38,7 +38,7 @@ class fake_import_cli_helper extends cli_helper {
      *
      * @return void
      */
-    public static function call_exit():void {
+    public static function call_exit(): void {
         return;
     }
 
@@ -47,7 +47,7 @@ class fake_import_cli_helper extends cli_helper {
      *
      * @return void
      */
-    public static function handle_abort():void {
+    public static function handle_abort(): void {
         return;
     }
 }
@@ -59,7 +59,7 @@ class fake_import_cli_helper extends cli_helper {
  *
  * @covers \gitsync\import_repo::class
  */
-class import_quiz_test extends advanced_testcase {
+final class import_quiz_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -74,14 +74,21 @@ class import_quiz_test extends advanced_testcase {
     public curl_request $listcurl;
     /** @var string root of virtual file system */
     public string $rootpath;
-    /** @var string used to store output of multiple calls to a function */
+    /** MOODLE Moodle instance value */
     const MOODLE = 'fakeimportquiz';
+    /** QUIZNAME - Moodle quiz name value. */
     const QUIZNAME = 'Quiz 1';
+    /** QUIZINTRO - Moodle quiz intro value. */
     const QUIZINTRO = 'Quiz intro';
+    /** FEEDBACK - Quiz feedback value. */
     const FEEDBACK = 'Quiz feedback';
+    /** HEADING1 - heading value. */
     const HEADING1 = 'Heading 1';
+    /** HEADING2 - heading value. */
     const HEADING2 = 'Heading 2';
+    /** COURSENAME - course name value. */
     const COURSENAME = 'Course 1';
+    /** @var array Expected quiz output. */
     protected array $quizoutput = [
         "wstoken" => "XXXXXX",
         "wsfunction" => "qbank_gitsync_import_quiz_data",
@@ -108,10 +115,11 @@ class import_quiz_test extends advanced_testcase {
         "feedback[0][feedbacktext]" => "Quiz feedback",
         "feedback[0][feedbacktextformat]" => "0",
         "feedback[0][mingrade]" => "0.0000000",
-        "feedback[0][maxgrade]" => "50.000000"
+        "feedback[0][maxgrade]" => "50.000000",
     ];
 
     public function setUp(): void {
+        parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
@@ -213,7 +221,8 @@ class import_quiz_test extends advanced_testcase {
         $this->set_up_mocks();
         chmod($this->importquiz->quizmanifestpath, 0000);
         @$this->importquiz->__construct($this->clihelper, $this->moodleinstances);
-        $this->expectOutputRegex('/.*Unable to access or parse manifest file:.*testrepo_quiz_quiz-1\/fakeimportquiz_module_course-1_quiz-1_question_manifest.json.*Aborting.*$/s');
+        $this->expectOutputRegex('/.*Unable to access or parse manifest file:.*testrepo_quiz_quiz-1\/' .
+                        'fakeimportquiz_module_course-1_quiz-1_question_manifest.json.*Aborting.*$/s');
     }
 
     /**
@@ -223,7 +232,9 @@ class import_quiz_test extends advanced_testcase {
         $this->set_up_mocks();
         chmod($this->importquiz->nonquizmanifestpath, 0000);
         @$this->importquiz->__construct($this->clihelper, $this->moodleinstances);
-        $this->expectOutputRegex('/.*Unable to access or parse manifest file:.*fakeimportquiz_course_course-1_question_manifest.json.*Aborting.*$/s');
+        $this->expectOutputRegex(
+            '/.*Unable to access or parse manifest file:.*fakeimportquiz_course_course-1_question_manifest.json.*Aborting.*$/s'
+        );
     }
 
     /**
@@ -234,7 +245,9 @@ class import_quiz_test extends advanced_testcase {
         $this->set_up_mocks();
         chmod($this->importquiz->quizdatapath, 0000);
         @$this->importquiz->__construct($this->clihelper, $this->moodleinstances);
-        $this->expectOutputRegex('/.*Unable to access or parse data file:.*testrepo_quiz_quiz-1\/import-quiz_quiz.json.*Aborting.*$/s');
+        $this->expectOutputRegex(
+            '/.*Unable to access or parse data file:.*testrepo_quiz_quiz-1\/import-quiz_quiz.json.*Aborting.*$/s'
+        );
     }
 
     /**
@@ -285,7 +298,7 @@ class import_quiz_test extends advanced_testcase {
             "questions[1][page]" => "2",
             "questions[1][requireprevious]" => 0,
             "questions[1][maxmark]" => "1.0000000",
-            "questions[1][questionbankentryid]" => "36002"
+            "questions[1][questionbankentryid]" => "36002",
         ];
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(
@@ -329,7 +342,7 @@ class import_quiz_test extends advanced_testcase {
             "questions[1][page]" => "2",
             "questions[1][requireprevious]" => 0,
             "questions[1][maxmark]" => "1.0000000",
-            "questions[1][questionbankentryid]" => "36002"
+            "questions[1][questionbankentryid]" => "36002",
         ];
         $this->options['nonquizmanifestpath'] = null;
         $this->set_up_mocks();
@@ -366,7 +379,7 @@ class import_quiz_test extends advanced_testcase {
             "questions[1][page]" => "2",
             "questions[1][requireprevious]" => 0,
             "questions[1][maxmark]" => "1.0000000",
-            "questions[1][questionbankentryid]" => "36002"
+            "questions[1][questionbankentryid]" => "36002",
         ];
         $this->options['nonquizmanifestpath'] = null;
         $this->options['coursename'] = 'Course 1';
@@ -412,7 +425,7 @@ class import_quiz_test extends advanced_testcase {
             "questions[1][page]" => "2",
             "questions[1][requireprevious]" => 0,
             "questions[1][maxmark]" => "1.0000000",
-            "questions[1][questionbankentryid]" => "35001"
+            "questions[1][questionbankentryid]" => "35001",
         ];
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(
@@ -456,7 +469,7 @@ class import_quiz_test extends advanced_testcase {
             "questions[1][page]" => "2",
             "questions[1][requireprevious]" => 0,
             "questions[1][maxmark]" => "1.0000000",
-            "questions[1][questionbankentryid]" => "35001"
+            "questions[1][questionbankentryid]" => "35001",
         ];
         $this->options['quizmanifestpath'] = null;
         $this->options['quizdatapath']  = '/testrepo_quiz_quiz-1/' . 'import-quiz' . cli_helper::QUIZ_FILE;
@@ -499,7 +512,8 @@ class import_quiz_test extends advanced_testcase {
         $questions = json_decode($questions);
         $this->importquiz->quizdatacontents->questions = $questions;
         $this->importquiz->process();
-        $this->expectOutputRegex('/.*Question: Non-quiz repo: \/top\/cat-2\/subcat-2_1\/Fake-Question.xml\nThis question is in the quiz but not in the supplied manifest file.*/s');
+        $this->expectOutputRegex('/.*Question: Non-quiz repo: \/top\/cat-2\/subcat-2_1\/Fake-Question.xml\nThis' .
+                                    ' question is in the quiz but not in the supplied manifest file.*/s');
     }
 
     /**
@@ -556,7 +570,7 @@ class import_quiz_test extends advanced_testcase {
             "questions[3][page]" => "4",
             "questions[3][requireprevious]" => 0,
             "questions[3][maxmark]" => "1.0000000",
-            "questions[3][questionbankentryid]" => "35001"
+            "questions[3][questionbankentryid]" => "35001",
         ];
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(

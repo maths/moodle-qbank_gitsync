@@ -44,7 +44,7 @@ use moodle_exception;
  *
  * @covers \gitsync\external\export_quiz_data::execute
  */
-class export_quiz_data_test extends externallib_advanced_testcase {
+final class export_quiz_data_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */
     protected \core_question_generator  $generator;
     /** @var \mod_quiz_generator plugin generator */
@@ -66,9 +66,11 @@ class export_quiz_data_test extends externallib_advanced_testcase {
     protected \stdClass $user;
     /** Name of question to be generated and exported. */
     const QNAME = 'Example short answer question';
+    /** Name of quiz to be generated and exported. */
     const QUIZNAME = 'Example quiz';
 
     public function setUp(): void {
+        parent::setUp();
         global $DB;
         $this->resetAfterTest();
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
@@ -85,11 +87,12 @@ class export_quiz_data_test extends externallib_advanced_testcase {
         $q2 = $this->generator->create_question('shortanswer', null,
                         ['name' => self::QNAME . '2', 'category' => $this->qcategory->id]);
 
-        $quizgenerator =  new \testing_data_generator();
-        $this->quizgenerator =  $quizgenerator->get_plugin_generator('mod_quiz');
+        $quizgenerator = new \testing_data_generator();
+        $this->quizgenerator = $quizgenerator->get_plugin_generator('mod_quiz');
 
-        $this->quiz = $this->quizgenerator->create_instance(array('course' => $this->course->id, 'name' => self::QUIZNAME, 'questionsperpage' => 0,
-            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback'));
+        $this->quiz = $this->quizgenerator->create_instance(['course' => $this->course->id,
+            'name' => self::QUIZNAME, 'questionsperpage' => 0,
+            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback']);
 
         $this->quizmoduleid = $this->quiz->cmid;
         \quiz_add_quiz_question($this->q->id, $this->quiz);
@@ -171,8 +174,8 @@ class export_quiz_data_test extends externallib_advanced_testcase {
         $course2 = $this->getDataGenerator()->create_course();
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
-        $quiz2 = $this->quizgenerator->create_instance(array('course' => $course2, 'questionsperpage' => 0,
-        'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback'));
+        $quiz2 = $this->quizgenerator->create_instance(['course' => $course2, 'questionsperpage' => 0,
+        'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback']);
         $this->expectException(moodle_exception::class);
         $this->expectExceptionMessage('Not enrolled');
         // User has list capability on course 1 but not course 2.

@@ -58,7 +58,7 @@ function split_category_path(?string $path): array {
  * @return object
  */
 function get_context(int $contextlevel, ?string $categoryname = null,
-                    ?string $coursename = null, ?string $modulename = null, ?string $instanceid = null):object {
+                    ?string $coursename = null, ?string $modulename = null, ?string $instanceid = null): object {
     global $DB;
     if ($instanceid === '') {
         $instanceid = null;
@@ -142,7 +142,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
  * @param string $questionbankentryid
  * @return stdClass Contains properties of question such as version and context
  */
-function get_question_data(string $questionbankentryid):stdClass {
+function get_question_data(string $questionbankentryid): stdClass {
     global $DB;
     $questiondata = $DB->get_record_sql("
     SELECT qc.contextid as contextid, c.contextlevel as contextlevel,
@@ -167,7 +167,7 @@ function get_question_data(string $questionbankentryid):stdClass {
  * @param string $questionbankentryid
  * @return stdClass Contains properties of question such as version and context
  */
-function get_minimal_question_data(string $questionbankentryid):stdClass {
+function get_minimal_question_data(string $questionbankentryid): stdClass {
     global $DB;
     $questiondata = $DB->get_record_sql("
     SELECT q.id as questionid, q.name as name, qv.version as version, qv.status as status

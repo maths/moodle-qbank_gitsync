@@ -74,7 +74,7 @@ trait export_trait {
      * @param object $moodlequestionlist
      * @return void
      */
-    public function export_to_repo_main_process(object $moodlequestionlist):void {
+    public function export_to_repo_main_process(object $moodlequestionlist): void {
         $this->subdirectory = 'top';
         $questionsinmoodle = $moodlequestionlist->questions;
         $this->postsettings['includecategory'] = 1;
@@ -217,7 +217,7 @@ trait export_trait {
      *
      * @return void
      */
-    public function call_exit():void {
+    public function call_exit(): void {
         exit;
     }
 }

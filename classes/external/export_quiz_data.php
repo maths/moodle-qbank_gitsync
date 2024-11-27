@@ -57,7 +57,7 @@ class export_quiz_data extends external_api {
      * Returns description of webservice function output.
      * @return external_multiple_structure
      */
-    public static function execute_returns():external_single_structure {
+    public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'quiz' => new external_single_structure([
                 'name' => new external_value(PARAM_TEXT, 'context level description'),
@@ -102,7 +102,7 @@ class export_quiz_data extends external_api {
      * @param string|null $quizname Name of the quiz
      * @return object containing quiz data
      */
-    public static function execute(?string $moduleid = null, ?string $coursename = null, ?string $quizname = null):object {
+    public static function execute(?string $moduleid = null, ?string $coursename = null, ?string $quizname = null): object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'moduleid' => $moduleid,
@@ -128,7 +128,8 @@ class export_quiz_data extends external_api {
         $quiz->name = $contextinfo->modulename;
         $response->quiz = $quiz;
 
-        $response->sections = $DB->get_records('quiz_sections', ['quizid' => $quizid], null, 'firstslot, heading, shufflequestions');
+        $response->sections = $DB->get_records('quiz_sections', ['quizid' => $quizid], null,
+                                                'firstslot, heading, shufflequestions');
 
         $response->questions = $DB->get_records_sql("
         SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark
@@ -138,7 +139,8 @@ class export_quiz_data extends external_api {
             AND qr.questionarea = 'slot'",
         ['contextid' => $contextinfo->context->id]);
 
-        $response->feedback = $DB->get_records('quiz_feedback', ['quizid' => $quizid], null, 'feedbacktext, feedbacktextformat, mingrade, maxgrade');
+        $response->feedback = $DB->get_records('quiz_feedback', ['quizid' => $quizid], null,
+                                                'feedbacktext, feedbacktextformat, mingrade, maxgrade');
         return $response;
     }
 }

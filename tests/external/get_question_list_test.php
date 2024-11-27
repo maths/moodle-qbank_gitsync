@@ -44,7 +44,7 @@ use moodle_exception;
  *
  * @covers \gitsync\external\get_question_list::execute
  */
-class get_question_list_test extends externallib_advanced_testcase {
+final class get_question_list_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */
     protected \core_question_generator  $generator;
     /** @var \stdClass generated course object */
@@ -61,6 +61,7 @@ class get_question_list_test extends externallib_advanced_testcase {
     const QNAME = 'Example short answer question';
 
     public function setUp(): void {
+        parent::setUp();
         global $DB;
         $this->resetAfterTest();
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
@@ -346,7 +347,7 @@ class get_question_list_test extends externallib_advanced_testcase {
      *
      * @return void
      */
-    public function test_get_category_path() {
+    public function test_get_category_path(): void {
         $contextid = \context_course::instance($this->course->id)->id;
         $qcategory2 = $this->generator->create_question_category(
             ['contextid' => $contextid, 'parent' => $this->qcategory->id, 'name' => "Tim's questions"]);

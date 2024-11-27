@@ -38,7 +38,7 @@ class fake_export_cli_helper extends cli_helper {
      *
      * @return void
      */
-    public static function call_exit():void {
+    public static function call_exit(): void {
         return;
     }
 
@@ -47,7 +47,7 @@ class fake_export_cli_helper extends cli_helper {
      *
      * @return void
      */
-    public static function handle_abort():void {
+    public static function handle_abort(): void {
         return;
     }
 }
@@ -59,7 +59,7 @@ class fake_export_cli_helper extends cli_helper {
  *
  * @covers \gitsync\export_repo::class
  */
-class export_repo_test extends advanced_testcase {
+final class export_repo_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -78,6 +78,7 @@ class export_repo_test extends advanced_testcase {
     const MOODLE = 'fakeexport';
 
     public function setUp(): void {
+        parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
