@@ -114,7 +114,7 @@ final class export_repo_test extends advanced_testcase {
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit',
+            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo'
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -423,4 +423,133 @@ final class export_repo_test extends advanced_testcase {
         $this->expectOutputRegex('/Using default question category from manifest file./');
     }
 
+    /**
+     * Test full course where quizzes are not in manifest.
+     */
+    public function test_full_course_not_in_manifest(): void {
+        global $CFG;
+        $root = vfsStream::setup();
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
+        $this->rootpath = vfsStream::url('root');
+        $this->options['rootdirectory'] = $this->rootpath;
+        $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->exactly(2))->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":123},
+              "questions": [],
+              "quizzes": [{"instanceid":"1", "name":"Quiz 1"}, {"instanceid":"2", "name":"Quiz 2"}]}')
+        );
+        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo'
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+
+        $this->exportrepo->curlrequest = $this->curl;
+        $this->exportrepo->listcurlrequest = $this->listcurl;
+        $this->exportrepo->update_quiz_directories($this->clihelper, $this->rootpath . '/testrepoparent');
+
+        // Should have created a directory for each quiz and updated the manifest with locations.
+        $this->assertEquals(true, is_dir($this->rootpath . "/testrepo_quiz_quiz-1"));
+        $this->assertEquals(true, is_dir($this->rootpath . "/testrepo_quiz_quiz-2"));
+        $this->assertEquals(false, is_dir($this->rootpath . "/testrepo_quiz_quiz-3"));
+
+        $manifestcontents = json_decode(file_get_contents($this->rootpath . '/testrepo/fakeexport_system_question_manifest.json'));
+        $this->assertEquals('1', $manifestcontents->quizzes[0]->moduleid);
+        $this->assertEquals('2', $manifestcontents->quizzes[1]->moduleid);
+        $this->assertEquals('testrepo_quiz_quiz-1_1', $manifestcontents->quizzes[0]->directory);
+        $this->assertEquals('testrepo_quiz_quiz-2', $manifestcontents->quizzes[1]->directory);
+        $this->expectOutputRegex(
+            '/^\nExporting quiz: Quiz 1.*testrepo_quiz_quiz-1_1.*Exporting quiz: Quiz 2.*testrepo_quiz_quiz-2.*$/s'
+        );
+    }
+
+    /**
+     * Test full course where quizzes are in manifest but there's no directories.
+     */
+    public function test_full_course_in_manifest_no_directories(): void {
+        global $CFG;
+        $root = vfsStream::setup();
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
+        $this->rootpath = vfsStream::url('root');
+        $this->options['rootdirectory'] = $this->rootpath;
+        $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->exactly(2))->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":123},
+              "questions": [],
+              "quizzes": [{"instanceid":"1", "name":"Quiz 1"}, {"instanceid":"2", "name":"Quiz 2"}]}')
+        );
+        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo'
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+
+        $this->exportrepo->curlrequest = $this->curl;
+        $this->exportrepo->listcurlrequest = $this->listcurl;
+        $holder1 = new \StdClass();
+        $holder1->moduleid = '1';
+        $holder1->directory = '/quiz_1_dir';
+        $holder2 = new \StdClass();
+        $holder2->moduleid = '2';
+        $holder2->directory = '/quiz_2_dir';
+        $this->exportrepo->manifestcontents->quizzes = [$holder1, $holder2];
+        $this->exportrepo->update_quiz_directories($this->clihelper, $this->rootpath . '/testrepoparent');
+
+        // Should have created a directory for each quiz and but not updated the manifest.
+        $this->assertEquals(true, is_dir($this->rootpath . "/quiz_1_dir"));
+        $this->assertEquals(true, is_dir($this->rootpath . "/quiz_2_dir"));
+        $this->assertEquals(false, is_dir($this->rootpath . "/testrepo_quiz_quiz-2"));
+
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->assertEquals(false, isset($manifestcontents->quizzes));
+        $this->expectOutputRegex(
+            '/^\nExporting quiz: Quiz 1.*quiz_1_dir.*Exporting quiz: Quiz 2.*quiz_2_dir.*$/s'
+        );
+    }
+
+    /**
+     * Test full course where quizzes are in manifest and directory already exists.
+     */
+    public function test_full_course_in_manifest_existing_directories(): void {
+        global $CFG;
+        $root = vfsStream::setup();
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
+        $this->rootpath = vfsStream::url('root');
+        $this->options['rootdirectory'] = $this->rootpath;
+        $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->exactly(2))->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":123},
+              "questions": [],
+              "quizzes": [{"instanceid":"1", "name":"Quiz 1"}]}')
+        );
+        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo'
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+
+        $this->exportrepo->curlrequest = $this->curl;
+        $this->exportrepo->listcurlrequest = $this->listcurl;
+        $holder1 = new \StdClass();
+        $holder1->moduleid = '1';
+        $holder1->directory = '/testrepo_quiz_quiz-1';
+        $this->exportrepo->manifestcontents->quizzes = [$holder1];
+        $this->exportrepo->update_quiz_directories($this->clihelper, $this->rootpath . '/testrepoparent');
+
+        // Should have not updated the manifest.
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->assertEquals(false, isset($manifestcontents->quizzes));
+        $this->expectOutputRegex(
+            '/^\nExporting quiz: Quiz 1.*testrepo_quiz_quiz-1\n$/s'
+        );
+    }
 }

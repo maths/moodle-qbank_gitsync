@@ -241,7 +241,7 @@ class create_repo {
      * @param string $scriptdirectory - directory of CLI scripts
      * @return void
      */
-    public function create_quiz_directories($clihelper, $scriptdirectory) {
+    public function create_quiz_directories(object $clihelper, string $scriptdirectory): void {
         $contextinfo = $clihelper->check_context($this, false, true);
         $arguments = $clihelper->get_arguments();
         if ($arguments['directory']) {
@@ -251,7 +251,11 @@ class create_repo {
         }
         $moodleinstance = $arguments['moodleinstance'];
         $instanceid = $arguments['instanceid'];
-        $token = $arguments['token'][$moodleinstance];
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
+        }
         $ignorecat = $arguments['ignorecat'];
         $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
         $quizlocations = [];
@@ -260,15 +264,11 @@ class create_repo {
             $quizdirectory = cli_helper::get_quiz_directory($basedirectory, $quiz->name);
             $rootdirectory = $clihelper->create_directory($quizdirectory);
             echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
-            chdir($scriptdirectory);
-            $output = shell_exec('php createrepo.php -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
-                '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
+            $output = $this->call_repo_creation($rootdirectory, $moodleinstance, $instanceid, $token, $ignorecat, $scriptdirectory);
             echo $output;
             $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
-            chdir($scriptdirectory);
-            $output = shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . ' -t '
-                . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestname . '"');
+            $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestname, $scriptdirectory);
             $quizlocation = new \StdClass();
             $quizlocation->moduleid = $instanceid;
             $quizlocation->directory = basename($rootdirectory);
@@ -288,5 +288,38 @@ class create_repo {
             exec("git add --all");
             exec('git commit -m "Initial Commit - final update"');
         }
+    }
+
+    /**
+     * Separate out exec call for mocking.
+     *
+     * @param string $rootdirectory
+     * @param string $moodleinstance
+     * @param string $instanceid
+     * @param string $token
+     * @param string $ignorecat
+     * @return string
+     */
+    public function call_repo_creation(string $rootdirectory, string $moodleinstance, string $instanceid,
+                                       string $token, string $ignorecat, string $scriptdirectory
+                                      ): string {
+        chdir($scriptdirectory);
+        return shell_exec('php createrepo.php -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
+                '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
+    }
+
+    /**
+     * Separate out exec call for mocking.
+     *
+     * @param string $moodleinstance
+     * @param string $token
+     * @param string $quizmanifestname
+     * @return string
+     */
+    public function call_export_quiz(string $moodleinstance, string $token,
+                                    string $quizmanifestname, string $scriptdirectory): string {
+        chdir($scriptdirectory);
+        return shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . ' -t '
+                . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestname . '"');
     }
 }
