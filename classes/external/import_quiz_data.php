@@ -61,6 +61,7 @@ class import_quiz_data extends external_api {
                 'questionsperpage' => new external_value(PARAM_SEQUENCE, 'default questions per page'),
                 'grade' => new external_value(PARAM_TEXT, 'maximum grade'),
                 'navmethod' => new external_value(PARAM_TEXT, 'navigation method'),
+                'cmid' => new external_value(PARAM_TEXT, 'id of quiz if it already exists'),
             ]),
             'sections' => new external_multiple_structure(
                 new external_single_structure([
@@ -76,7 +77,7 @@ class import_quiz_data extends external_api {
                     'page' => new external_value(PARAM_SEQUENCE, 'page number'),
                     'requireprevious' => new external_value(PARAM_INT, 'Require completion of previous question?'),
                     'maxmark' => new external_value(PARAM_TEXT, 'maximum mark'),
-                ])
+                ]), '', VALUE_DEFAULT, []
             ),
             'feedback' => new external_multiple_structure(
                 new external_single_structure([
@@ -147,23 +148,27 @@ class import_quiz_data extends external_api {
         $moduleinfo->timeclose = 0;
         $moduleinfo->decimalpoints = 2;
         $moduleinfo->questiondecimalpoints = -1;
-        $moduleinfo->cmidnumber = '';
-        $moduleinfo = \add_moduleinfo($moduleinfo, \get_course($contextinfo->instanceid));
+        if ($params['quiz']['cmid']) {
+            $moduleinfo->coursemodule = (int) $params['quiz']['cmid'];
+            $module = get_coursemodule_from_id('', $moduleinfo->coursemodule, 0, false, \MUST_EXIST);
+            list($module, $moduleinfo) = \update_moduleinfo($module, $moduleinfo, \get_course($contextinfo->instanceid));
+            $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
+        } else {
+            $moduleinfo = \add_moduleinfo($moduleinfo, \get_course($contextinfo->instanceid));
+            // Post-creation updates.
+            $reviewchoice = [];
+            $reviewchoice['reviewattempt'] = 69888;
+            $reviewchoice['reviewcorrectness'] = 4352;
+            $reviewchoice['reviewmarks'] = 4352;
+            $reviewchoice['reviewspecificfeedback'] = 4352;
+            $reviewchoice['reviewgeneralfeedback'] = 4352;
+            $reviewchoice['reviewrightanswer'] = 4352;
+            $reviewchoice['reviewoverallfeedback'] = 4352;
+            $reviewchoice['id'] = $moduleinfo->instance;
+            $DB->update_record('quiz', $reviewchoice);
+            $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
+        }
 
-        // Post-creation updates.
-        $reviewchoice = [];
-        $reviewchoice['reviewattempt'] = 69888;
-        $reviewchoice['reviewcorrectness'] = 4352;
-        $reviewchoice['reviewmarks'] = 4352;
-        $reviewchoice['reviewspecificfeedback'] = 4352;
-        $reviewchoice['reviewgeneralfeedback'] = 4352;
-        $reviewchoice['reviewrightanswer'] = 4352;
-        $reviewchoice['reviewoverallfeedback'] = 4352;
-        $reviewchoice['id'] = $moduleinfo->instance;
-
-        $DB->update_record('quiz', $reviewchoice);
-
-        $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
         // Sort questions by slot.
         usort($params['questions'], function($a, $b) {
             if ((int) $a['slot'] > (int) $b['slot']) {
@@ -174,51 +179,56 @@ class import_quiz_data extends external_api {
                 return 0;
             }
         });
-        foreach ($params['questions'] as $question) {
-            $qdata = get_minimal_question_data($question['questionbankentryid']);
-            // Double-check user has question access.
-            quiz_require_question_use($qdata->questionid);
-            quiz_add_quiz_question($qdata->questionid, $module, (int) $question['page'], (float) $question['maxmark']);
-            if ($question['requireprevious']) {
-                $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
-                $itemid = $DB->get_field('question_references', 'itemid',
-                    ['usingcontextid' => $quizcontext->context->id, 'questionbankentryid' => $question['questionbankentryid']]);
-                $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $itemid]);
+        if ($params['quiz']['cmid']) {
+            foreach ($params['questions'] as $question) {
+                $qdata = get_minimal_question_data($question['questionbankentryid']);
+                // Double-check user has question access.
+                quiz_require_question_use($qdata->questionid);
+                quiz_add_quiz_question($qdata->questionid, $module, (int) $question['page'], (float) $question['maxmark']);
+                if ($question['requireprevious']) {
+                    $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
+                    $itemid = $DB->get_field('question_references', 'itemid',
+                        ['usingcontextid' => $quizcontext->context->id, 'questionbankentryid' => $question['questionbankentryid']]);
+                    $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $itemid]);
+                }
             }
-        }
-        if (class_exists('mod_quiz\grade_calculator')) {
-            quiz_settings::create($moduleinfo->instance)->get_grade_calculator()->recompute_quiz_sumgrades();
-        } else {
-            quiz_update_sumgrades($module);
-        }
-        // NB Must add questions before updating sections.
-        foreach ($params['sections'] as $section) {
-            $section['quizid'] = $moduleinfo->instance;
-            $section['firstslot'] = (int) $section['firstslot'];
-            // First slot will have been automatically created so we need to overwrite.
-            if ($section['firstslot'] == 1) {
-                $sectionid = $DB->get_field('quiz_sections', 'id',
-                    ['quizid' => $moduleinfo->instance, 'firstslot' => 1]);
-                $section['id'] = $sectionid;
-                $DB->update_record('quiz_sections', $section);
+            if (class_exists('mod_quiz\grade_calculator')) {
+                quiz_settings::create($moduleinfo->instance)->get_grade_calculator()->recompute_quiz_sumgrades();
             } else {
-                $sectionid = $DB->insert_record('quiz_sections', $section);
+                quiz_update_sumgrades($module);
             }
-            $slotid = $DB->get_field('quiz_slots', 'id',
-                ['quizid' => $moduleinfo->instance, 'slot' => (int) $section['firstslot']]);
+            // NB Must add questions before updating sections.
+            foreach ($params['sections'] as $section) {
+                $section['quizid'] = $moduleinfo->instance;
+                $section['firstslot'] = (int) $section['firstslot'];
+                // First slot will have been automatically created so we need to overwrite.
+                if ($section['firstslot'] == 1) {
+                    $sectionid = $DB->get_field('quiz_sections', 'id',
+                        ['quizid' => $moduleinfo->instance, 'firstslot' => 1]);
+                    $section['id'] = $sectionid;
+                    $DB->update_record('quiz_sections', $section);
+                } else {
+                    $sectionid = $DB->insert_record('quiz_sections', $section);
+                }
+                $slotid = $DB->get_field('quiz_slots', 'id',
+                    ['quizid' => $moduleinfo->instance, 'slot' => (int) $section['firstslot']]);
 
-            // Log section break created event.
-            $event = \mod_quiz\event\section_break_created::create([
-                'context' => $thiscontext,
-                'objectid' => $sectionid,
-                'other' => [
-                    'quizid' => $section['quizid'],
-                    'firstslotnumber' => $section['firstslot'],
-                    'firstslotid' => $slotid,
-                    'title' => $section['heading'],
-                ],
-            ]);
-            $event->trigger();
+                // Log section break created event.
+                $event = \mod_quiz\event\section_break_created::create([
+                    'context' => $thiscontext,
+                    'objectid' => $sectionid,
+                    'other' => [
+                        'quizid' => $section['quizid'],
+                        'firstslotnumber' => $section['firstslot'],
+                        'firstslotid' => $slotid,
+                        'title' => $section['heading'],
+                    ],
+                ]);
+                $event->trigger();
+            }
+        } else {
+            $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
+            \question_make_default_categories([$quizcontext->context]);
         }
 
         if (!count($params['feedback'])) {

@@ -357,11 +357,11 @@ class export_repo {
      * @param string $instanceid
      * @param string $token
      * @param string $ignorecat
-     * @return string
+     * @return string|null
      */
     public function call_repo_creation(string $rootdirectory, string $moodleinstance, string $instanceid,
                                        string $token, string $ignorecat, string $scriptdirectory
-                                      ): string {
+                                      ): ?string {
         chdir($scriptdirectory);
         return shell_exec('php createrepo.php -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
@@ -373,10 +373,10 @@ class export_repo {
      * @param string $moodleinstance
      * @param string $token
      * @param string $quizmanifestname
-     * @return string
+     * @return string|null
      */
     public function call_export_quiz(string $moodleinstance, string $token,
-                                    string $quizmanifestname, string $scriptdirectory): string {
+                                    string $quizmanifestname, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
         return shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . ' -t '
                 . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestname . '"');
@@ -390,10 +390,10 @@ class export_repo {
      * @param string $token
      * @param string $quizmanifestname
      * @param string $scriptdirectory
-     * @return string
+     * @return string|null
      */
     public function call_export_repo(string $rootdirectory, string $moodleinstance, string $token,
-                string $quizmanifestname, string $scriptdirectory): string {
+                string $quizmanifestname, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
         return shell_exec('php exportrepofrommoodle.php -w -r "' . $rootdirectory . '" -i "' .
                             $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);

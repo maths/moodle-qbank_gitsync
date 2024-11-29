@@ -758,7 +758,7 @@ class cli_helper {
             echo "Failed to get list of questions from Moodle.\n";
             static::call_exit();
             return new \stdClass(); // Required for PHPUnit.
-        } else if (!$silent && empty($arguments['subcall'])) {
+        } else if (!$silent && empty($this->get_arguments()['subcall'])) {
             $activityname = get_class($activity);
             switch ($activityname) {
                 case 'qbank_gitsync\export_repo':

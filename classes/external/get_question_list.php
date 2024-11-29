@@ -192,7 +192,8 @@ class get_question_list extends external_api {
                         INNER JOIN {quiz} q ON q.id = cm.instance
                         INNER JOIN {modules} m ON m.id = cm.module
                     WHERE cm.course = :courseid
-                        AND m.name = 'quiz'",
+                        AND m.name = 'quiz'
+                        AND cm.deletioninprogress = 0",
                     ['courseid' => (int) $contextinfo->instanceid]);
             }
 

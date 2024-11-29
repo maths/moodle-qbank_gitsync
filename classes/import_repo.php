@@ -876,47 +876,88 @@ class import_repo {
         $contextinfo = $clihelper->check_context($this, false, true);
         $basedirectory = dirname($this->manifestpath);
         $moodleinstance = $arguments['moodleinstance'];
-        $token = $arguments['token'][$moodleinstance];
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
+        }
         $ignorecat = $arguments['ignorecat'];
         $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
-        $quizlocations = $this->manifestcontents->quizzes;
+        $quizlocations = (isset($this->manifestcontents->quizzes)) ? $this->manifestcontents->quizzes : [];
         $topdircontents = scandir(dirname($basedirectory));
         foreach ($topdircontents as $quizdirectory) {
             if (!is_dir(dirname($basedirectory) . '/' . $quizdirectory) || strpos($quizdirectory, '_quiz_') === false) {
+                // Don't import from anything that isn't a directory or has a name in the wrong format.
                 continue;
             }
             $instanceid = array_column($quizlocations, null, 'directory')[$quizdirectory]->moduleid ?? false;
             $rootdirectory = dirname($basedirectory) . '/' . $quizdirectory;
             $quizfiles = scandir($rootdirectory);
             $structurefile = null;
+            // Find the structure file.
             foreach ($quizfiles as $quizfile) {
                 if (preg_match('/.*_quiz\.json/', $quizfile)) {
                     $structurefile = $quizfile;
                     break;
                 }
             }
-            $structurefile = $rootdirectory . '/' . $structurefile;
-            $contentsjson = file_get_contents($structurefile);
+            $structurefilepath = $rootdirectory . '/' . $structurefile;
+            $contentsjson = file_get_contents($structurefilepath);
             $structurecontents = json_decode($contentsjson);
-            chdir($scriptdirectory);
             $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                 $contextinfo->contextinfo->coursename, $structurecontents->quiz->name, '');
-            if (is_dir($rootdirectory . '/top')) {
-                // Quiz could have no questions in its context.
-                echo "\nImporting quiz context: {$structurecontents->quiz->name}\n";
-                $output = shell_exec('php importrepotomoodle.php -w -r "' . $rootdirectory .
-                        '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
+            $quizmanifestpath = $rootdirectory . $quizmanifestname;
+            if (!is_file($quizmanifestpath)) {
+                // The quiz does not exist in the targetted Moodle instance. We need to create it,
+                // import questions and then add questions to the quiz.
+                echo "\nCreating quiz: {$structurecontents->quiz->name}\n";
+                $output = $this->call_import_quiz_data($moodleinstance, $token,
+                            $contextinfo->contextinfo->instanceid,
+                            null, $structurefilepath, $scriptdirectory);
+            }
+            // Import quiz context questions.
+            echo "\nImporting quiz context: {$structurecontents->quiz->name}\n";
+            if (is_file($quizmanifestpath)) {
+                $output = $this->call_import_repo($moodleinstance, $token,
+                        $quizmanifestpath, null, $scriptdirectory);
+                echo $output;
+            } else {
+                // No quiz manifest. We need to import questions into context of created quiz.
+                $newcontextinfo = $clihelper->check_context($this, false, true);
+                $oldquizzes = array_column($contextinfo->quizzes, null, 'instanceid');
+                $quizcmid = null;
+                foreach ($newcontextinfo->quizzes as $newquiz) {
+                    if (!isset($oldquizzes[$newquiz->instanceid])) {
+                        $quizcmid = $newquiz->instanceid;
+                        break;
+                    }
+                }
+                $contextinfo = $newcontextinfo;
+                if (!$quizcmid) {
+                    echo "\nQuiz was not created for some reason.\n Aborting.\n";
+                    exit();
+                }
+                $output = $this->call_import_repo($rootdirectory, $moodleinstance, $token,
+                        null, $quizcmid, $scriptdirectory);
                 echo $output;
             }
             if ($instanceid === false) {
-                chdir($scriptdirectory);
+                // Import quiz structure as it's not currenty in the nonquizmanifest.
                 echo "\nImporting quiz structure: {$structurecontents->quiz->name}\n";
-                $output = shell_exec('php importquizstructuretomoodle.php -w -r "" -i "' . $moodleinstance . '" -n ' .
-                    $contextinfo->contextinfo->instanceid . ' -t ' . $token. ' -p "' .
-                    $this->manifestpath. '" -f "' . $quizmanifestname . '" -a "' . $structurefile . '"');
+                $output = $this->call_import_quiz_data($moodleinstance, $token,
+                            $contextinfo->contextinfo->instanceid,
+                            $quizmanifestpath, $structurefilepath, $scriptdirectory);
                 echo $output;
                 $quizlocation = new \StdClass();
-                $quizlocation->moduleid = $instanceid;
+                if (!$quizcmid) {
+                    $quizmanifestcontents = json_decode(file_get_contents($quizmanifestpath));
+                    if (!$quizmanifestcontents) {
+                        echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
+                        $this->call_exit();
+                    }
+                    $quizcmid = $quizmanifestcontents->context->instanceid;
+                }
+                $quizlocation->moduleid = $quizcmid;
                 $quizlocation->directory = basename($rootdirectory);
                 $quizlocations[] = $quizlocation;
                 $this->manifestcontents->quizzes = $quizlocations;
@@ -928,13 +969,62 @@ class import_repo {
             }
         }
 
+        // Check for quizzes which are in Moodle but not in the manifest.
         $quizlocations = $this->manifestcontents->quizzes;
         $locarray = array_column($quizlocations, null, 'moduleid');
         foreach ($contextinfo->quizzes as $quiz) {
             $instanceid = (int) $quiz->instanceid;
             if (!isset($locarray[$instanceid])) {
-                echo "\nQuiz {$quiz->name} should be exported from Moodle or deleted.\n";
+                echo "\nQuiz {$quiz->name} is in Moodle but not in the manifest. " .
+                "It should be exported from Moodle or manually deleted within Moodle.\n";
             }
+        }
+    }
+
+    /**
+     * Separate out exec call for mocking.
+     *
+     * @param string $rootdirectory
+     * @param string $moodleinstance
+     * @param string $token
+     * @param string|null $quizmanifestname
+     * @param string|null $cmid
+     * @param string $scriptdirectory
+     * @return string|null
+     */
+    public function call_import_repo(string $rootdirectory, string $moodleinstance, string $token,
+                                    ?string $quizmanifestname, ?string $quizcmid, string $scriptdirectory): string {
+        chdir($scriptdirectory);
+        if ($quizmanifestname) {
+            return shell_exec('php importrepotomoodle.php -w -r "' . $rootdirectory .
+                            '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
+        } else {
+            return shell_exec('php importrepotomoodle.php -w -r "' . $rootdirectory .
+                            '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token);
+        }
+    }
+
+    /**
+     * Separate out exec call for mocking.
+     *
+     * @param string $moodleinstance
+     * @param string $token
+     * @param string $instanceid
+     * @param string|null $quizmanifestpath
+     * @param string $structurefilepath
+     * @param string $scriptdirectory
+     * @return string|null
+     */
+    public function call_import_quiz_data(string $moodleinstance, string $token, string $instanceid,
+                                    ?string $quizmanifestpath, string $structurefilepath, string $scriptdirectory): ?string {
+        chdir($scriptdirectory);
+        if ($quizmanifestpath) {
+            return shell_exec('php importquizstructuretomoodle.php -w -r "" -i "' . $moodleinstance . '" -n ' .
+                    $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath . '" -f "' .
+                    $quizmanifestpath . '" -a "' . $structurefilepath . '"');
+        } else {
+            return shell_exec('php importquizstructuretomoodle.php -w -r "" -i "' . $moodleinstance . '" -n ' .
+                    $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath. '" -a "' . $structurefilepath . '"');
         }
     }
 
