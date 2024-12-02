@@ -98,8 +98,8 @@ class export_question extends external_api {
             case \CONTEXT_MODULE:
                 $course = $DB->get_record_sql("
                     SELECT c.*
-                      FROM mdl_course_modules cm
-                      JOIN mdl_course c ON c.id = cm.course
+                      FROM {course_modules} cm
+                      JOIN {course} c ON c.id = cm.course
                      WHERE cm.id = :moduleid",
                 ['moduleid' => $questiondata->instanceid],
                 MUST_EXIST);
