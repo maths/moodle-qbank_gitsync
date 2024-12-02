@@ -84,6 +84,7 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
             'questionsperpage' => '0',
             'grade' => '100.00000',
             'navmethod' => 'free',
+            'cmid' => null,
         ],
         'sections' => [
             [
@@ -246,6 +247,17 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
             $returnvalue
         );
 
+        $quizref = $DB->get_field('modules', 'id', ['name' => 'quiz']);
+        $quiz = $DB->get_record('course_modules', ['module' => $quizref]);
+        $this->quizinput['quiz']['cmid'] = $quiz->id;
+        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], $this->quizinput['sections'],
+                       $this->quizinput['questions'], $this->quizinput['feedback']);
+
+        $returnvalue = external_api::clean_returnvalue(
+            import_quiz_data::execute_returns(),
+            $returnvalue
+        );
+
         $quizzes = $DB->get_records('quiz');
         $quiz = array_shift($quizzes);
         $this->assertEquals(self::QUIZNAME, $quiz->name);
@@ -297,6 +309,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], [],
                         $this->quizinput['questions'], []);
 
+        $quizref = $DB->get_field('modules', 'id', ['name' => 'quiz']);
+        $quiz = $DB->get_record('course_modules', ['module' => $quizref]);
+        $this->quizinput['quiz']['cmid'] = $quiz->id;
+        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], [],
+        $this->quizinput['questions'], []);
+
         $returnvalue = external_api::clean_returnvalue(
             import_quiz_data::execute_returns(),
             $returnvalue
@@ -334,6 +352,17 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->quizinput['questions'][1]['requireprevious'] = '1';
+        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], [],
+                        $this->quizinput['questions'], []);
+
+        $returnvalue = external_api::clean_returnvalue(
+            import_quiz_data::execute_returns(),
+            $returnvalue
+        );
+
+        $quizref = $DB->get_field('modules', 'id', ['name' => 'quiz']);
+        $quiz = $DB->get_record('course_modules', ['module' => $quizref]);
+        $this->quizinput['quiz']['cmid'] = $quiz->id;
         $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], [],
                         $this->quizinput['questions'], []);
 

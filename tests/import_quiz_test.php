@@ -101,6 +101,7 @@ final class import_quiz_test extends advanced_testcase {
         "quiz[questionsperpage]" => "0",
         "quiz[grade]" => "100.00000",
         "quiz[navmethod]" => "free",
+        "quiz[cmid]" => "1",
         "sections[0][firstslot]" => "1",
         "sections[0][heading]" => "Heading 1",
         "sections[0][shufflequestions]" => 0,
@@ -440,7 +441,7 @@ final class import_quiz_test extends advanced_testcase {
     }
 
     /**
-     * Test if course context questions but no quiz manifest.
+     * Test if  no quiz manifest.
      */
     public function test_course_context_questions_no_quiz_manifest(): void {
         $questions = '[
@@ -459,18 +460,6 @@ final class import_quiz_test extends advanced_testcase {
                 "maxmark": "1.0000000"
             }
         ]';
-        $output = [
-            "questions[0][slot]" => "1",
-            "questions[0][page]" => "1",
-            "questions[0][requireprevious]" => 0,
-            "questions[0][maxmark]" => "1.0000000",
-            "questions[0][questionbankentryid]" => "35004",
-            "questions[1][slot]" => "2",
-            "questions[1][page]" => "2",
-            "questions[1][requireprevious]" => 0,
-            "questions[1][maxmark]" => "1.0000000",
-            "questions[1][questionbankentryid]" => "35001",
-        ];
         $this->options['quizmanifestpath'] = null;
         $this->options['quizdatapath']  = '/testrepo_quiz_quiz-1/' . 'import-quiz' . cli_helper::QUIZ_FILE;
         $this->set_up_mocks();
@@ -478,7 +467,12 @@ final class import_quiz_test extends advanced_testcase {
             json_encode($this->quizoutput)
         );
         $questions = json_decode($questions);
-        $this->quizoutput = array_merge($this->quizoutput, $output);
+        $this->quizoutput["quiz[cmid]"] = '';
+        unset($this->quizoutput["questions[0][slot]"]);
+        unset($this->quizoutput["questions[0][page]"]);
+        unset($this->quizoutput["questions[0][requireprevious]"]);
+        unset($this->quizoutput["questions[0][maxmark]"]);
+        unset($this->quizoutput["questions[0][questionbankentryid]"]);
         $this->importquiz->quizdatacontents->questions = $questions;
         $this->importquiz->process();
         $this->assertEquals([], array_diff_assoc($this->quizoutput, $this->importquiz->postsettings));

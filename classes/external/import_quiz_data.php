@@ -148,26 +148,33 @@ class import_quiz_data extends external_api {
         $moduleinfo->timeclose = 0;
         $moduleinfo->decimalpoints = 2;
         $moduleinfo->questiondecimalpoints = -1;
+        $moduleinfo->grademethod = 1;
+        $moduleinfo->graceperiod = 0;
+        $moduleinfo->timelimit = 0;
         if ($params['quiz']['cmid']) {
             $moduleinfo->coursemodule = (int) $params['quiz']['cmid'];
+            $moduleinfo->cmidnumber = $moduleinfo->coursemodule;
             $module = get_coursemodule_from_id('', $moduleinfo->coursemodule, 0, false, \MUST_EXIST);
             list($module, $moduleinfo) = \update_moduleinfo($module, $moduleinfo, \get_course($contextinfo->instanceid));
             $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
         } else {
+            $moduleinfo->cmidnumber = '';
             $moduleinfo = \add_moduleinfo($moduleinfo, \get_course($contextinfo->instanceid));
-            // Post-creation updates.
-            $reviewchoice = [];
-            $reviewchoice['reviewattempt'] = 69888;
-            $reviewchoice['reviewcorrectness'] = 4352;
-            $reviewchoice['reviewmarks'] = 4352;
-            $reviewchoice['reviewspecificfeedback'] = 4352;
-            $reviewchoice['reviewgeneralfeedback'] = 4352;
-            $reviewchoice['reviewrightanswer'] = 4352;
-            $reviewchoice['reviewoverallfeedback'] = 4352;
-            $reviewchoice['id'] = $moduleinfo->instance;
-            $DB->update_record('quiz', $reviewchoice);
+
             $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
         }
+
+        // Post-creation updates.
+        $reviewchoice = [];
+        $reviewchoice['reviewattempt'] = 69888;
+        $reviewchoice['reviewcorrectness'] = 4352;
+        $reviewchoice['reviewmarks'] = 4352;
+        $reviewchoice['reviewspecificfeedback'] = 4352;
+        $reviewchoice['reviewgeneralfeedback'] = 4352;
+        $reviewchoice['reviewrightanswer'] = 4352;
+        $reviewchoice['reviewoverallfeedback'] = 4352;
+        $reviewchoice['id'] = $moduleinfo->instance;
+        $DB->update_record('quiz', $reviewchoice);
 
         // Sort questions by slot.
         usort($params['questions'], function($a, $b) {

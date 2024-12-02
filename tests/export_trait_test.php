@@ -306,8 +306,8 @@ final class export_trait_test extends advanced_testcase {
                                  "questioncategory": "subcat 2_1"}]}');
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
-                          '<text>top/Source 2/cat 2/subcat 2_1</category></question>' .
-                          '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
+                          '<text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
+                          '<question><name><text>Third Question</name></question></quiz>", "version": "10"}',
         );
 
         @$this->exportrepo->export_to_repo_main_process($questions);

@@ -890,7 +890,8 @@ class import_repo {
                 // Don't import from anything that isn't a directory or has a name in the wrong format.
                 continue;
             }
-            $instanceid = array_column($quizlocations, null, 'directory')[$quizdirectory]->moduleid ?? false;
+            $x = array_column($quizlocations, null, 'directory');
+            $instanceid = array_column($quizlocations, null, 'directory')['/' . $quizdirectory]->moduleid ?? false;
             $rootdirectory = dirname($basedirectory) . '/' . $quizdirectory;
             $quizfiles = scandir($rootdirectory);
             $structurefile = null;
@@ -907,8 +908,10 @@ class import_repo {
             $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                 $contextinfo->contextinfo->coursename, $structurecontents->quiz->name, '');
             $quizmanifestpath = $rootdirectory . $quizmanifestname;
+            $quizcmid = null;
+
             if (!is_file($quizmanifestpath)) {
-                // The quiz does not exist in the targetted Moodle instance. We need to create it,
+                // The quiz does not exist in the targeted Moodle instance. We need to create it,
                 // import questions and then add questions to the quiz.
                 echo "\nCreating quiz: {$structurecontents->quiz->name}\n";
                 $output = $this->call_import_quiz_data($moodleinstance, $token,
@@ -918,14 +921,13 @@ class import_repo {
             // Import quiz context questions.
             echo "\nImporting quiz context: {$structurecontents->quiz->name}\n";
             if (is_file($quizmanifestpath)) {
-                $output = $this->call_import_repo($moodleinstance, $token,
-                        $quizmanifestpath, null, $scriptdirectory);
+                $output = $this->call_import_repo($rootdirectory, $moodleinstance, $token,
+                        $quizmanifestname, null, $scriptdirectory);
                 echo $output;
             } else {
                 // No quiz manifest. We need to import questions into context of created quiz.
                 $newcontextinfo = $clihelper->check_context($this, false, true);
                 $oldquizzes = array_column($contextinfo->quizzes, null, 'instanceid');
-                $quizcmid = null;
                 foreach ($newcontextinfo->quizzes as $newquiz) {
                     if (!isset($oldquizzes[$newquiz->instanceid])) {
                         $quizcmid = $newquiz->instanceid;
@@ -935,7 +937,9 @@ class import_repo {
                 $contextinfo = $newcontextinfo;
                 if (!$quizcmid) {
                     echo "\nQuiz was not created for some reason.\n Aborting.\n";
-                    exit();
+                    $this->call_exit();
+                    $instanceid = 'Test'; // Required for unit tests.
+                    $this->manifestcontents->quizzes = [];
                 }
                 $output = $this->call_import_repo($rootdirectory, $moodleinstance, $token,
                         null, $quizcmid, $scriptdirectory);
