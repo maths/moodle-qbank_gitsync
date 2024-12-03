@@ -78,6 +78,7 @@ $options = [
         'default' => null,
         'variable' => 'coursename',
         'valuerequired' => true,
+        'hidden' => true,
     ],
     [
         'longopt' => 'instanceid',
@@ -86,6 +87,7 @@ $options = [
         'default' => null,
         'variable' => 'instanceid',
         'valuerequired' => true,
+        'hidden' => true,
     ],
     [
         'longopt' => 'token',

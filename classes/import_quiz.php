@@ -261,7 +261,8 @@ class import_quiz {
 
     /**
      * Get quiz data from file, convert question file locations to ids
-     * and then import to Moodle.
+     * and then import to Moodle. This needs to be called twice - once
+     * to create the quiz and then again to add the questions.
      *
      * @return void
      */

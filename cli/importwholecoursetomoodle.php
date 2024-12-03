@@ -85,7 +85,7 @@ $options = [
     [
         'longopt' => 'coursename',
         'shortopt' => 'c',
-        'description' => 'Unique course name for course or module context.',
+        'description' => 'Unique course name.',
         'default' => null,
         'variable' => 'coursename',
         'valuerequired' => true,
@@ -93,15 +93,16 @@ $options = [
     [
         'longopt' => 'modulename',
         'shortopt' => 'm',
-        'description' => 'Unique (within course) module name for module context.',
+        'description' => 'Not used',
         'default' => null,
         'variable' => 'modulename',
         'valuerequired' => true,
+        'hidden' => true
     ],
     [
         'longopt' => 'instanceid',
         'shortopt' => 'n',
-        'description' => 'Numerical id of the course, module of course category.',
+        'description' => 'Numerical id of the course.',
         'default' => null,
         'variable' => 'instanceid',
         'valuerequired' => true,
