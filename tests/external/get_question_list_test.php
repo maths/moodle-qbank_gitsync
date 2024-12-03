@@ -179,6 +179,21 @@ final class get_question_list_test extends externallib_advanced_testcase {
                                                 ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
+        $quizgenerator = new \testing_data_generator();
+        $quizgenerator = $quizgenerator->get_plugin_generator('mod_quiz');
+
+        $quiz = $quizgenerator->create_instance(['course' => $this->course->id,
+            'name' => 'Quiz 1', 'questionsperpage' => 0,
+            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback']);
+
+        \quiz_add_quiz_question($this->q->id, $quiz);
+        \quiz_add_quiz_question($q2->id, $quiz);
+        if (class_exists('\mod_quiz\quiz_settings')) {
+            $quizobj = \mod_quiz\quiz_settings::create($quiz->id);
+        } else {
+            $quizobj = \quiz::create($quiz->id);
+        }
+        \mod_quiz\structure::create_for_quiz($quizobj);
         $sink = $this->redirectEvents();
         $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
                                                   null, null, false, ['']);
@@ -208,6 +223,9 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $this->assertEquals($this->course->id, $returnvalue['contextinfo']['instanceid']);
         $this->assertEquals(null, $returnvalue['contextinfo']['categoryname']);
         $this->assertEquals(null, $returnvalue['contextinfo']['modulename']);
+        $this->assertEquals(1, count($returnvalue['quizzes']));
+        $this->assertEquals('Quiz 1', $returnvalue['quizzes'][0]['name']);
+        $this->assertEquals($quiz->cmid, $returnvalue['quizzes'][0]['instanceid']);
 
         $events = $sink->get_events();
         $this->assertEquals(count($events), 0);

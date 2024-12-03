@@ -330,6 +330,7 @@ class export_repo {
             } else if (!is_dir(dirname($basedirectory) . '/' . $locarray[$instanceid]->directory)) {
                 $rootdirectory = dirname($basedirectory) . '/' . $locarray[$instanceid]->directory;
                 mkdir($rootdirectory);
+                mkdir($rootdirectory . '/top');
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
                 $output = $this->call_repo_creation($rootdirectory, $moodleinstance,
                                                     $instanceid, $token, $ignorecat, $scriptdirectory);
@@ -342,9 +343,9 @@ class export_repo {
                                     $quizmanifestname, $scriptdirectory);
             }
             echo $output;
-            $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
+            $quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
-            $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestname, $scriptdirectory);
+            $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath, $scriptdirectory);
             echo $output;
         }
     }
@@ -372,14 +373,14 @@ class export_repo {
      *
      * @param string $moodleinstance
      * @param string $token
-     * @param string $quizmanifestname
+     * @param string $quizmanifestpath
      * @return string|null
      */
     public function call_export_quiz(string $moodleinstance, string $token,
-                                    string $quizmanifestname, string $scriptdirectory): ?string {
+                                    string $quizmanifestpath, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
         return shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . ' -t '
-                . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestname . '"');
+                . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestpath . '"');
     }
 
     /**

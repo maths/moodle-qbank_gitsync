@@ -75,6 +75,10 @@ trait export_trait {
      * @return void
      */
     public function export_to_repo_main_process(object $moodlequestionlist): void {
+        // Make top folder in case we don't have any questions.
+        if (!is_dir(dirname($this->manifestpath) . '/top')) {
+            mkdir(dirname($this->manifestpath) . '/top');
+        }
         $this->subdirectory = 'top';
         $questionsinmoodle = $moodlequestionlist->questions;
         $this->postsettings['includecategory'] = 1;

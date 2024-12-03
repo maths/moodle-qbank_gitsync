@@ -187,6 +187,7 @@ class import_quiz_data extends external_api {
             }
         });
         if ($params['quiz']['cmid']) {
+            // We can only add questions if the quiz already exists.
             foreach ($params['questions'] as $question) {
                 $qdata = get_minimal_question_data($question['questionbankentryid']);
                 // Double-check user has question access.

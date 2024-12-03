@@ -76,10 +76,11 @@ $options = [
     [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
-        'description' => 'Context in which to place questions. Set to system, coursecategory, course or module',
-        'default' => null,
+        'description' => 'Context from which to extract questions. Should always be course.',
+        'default' => 'course',
         'variable' => 'contextlevel',
         'valuerequired' => true,
+        'hidden' => true,
     ],
     [
         'longopt' => 'coursename',
@@ -95,14 +96,6 @@ $options = [
         'description' => 'Unique (within course) module name for module context.',
         'default' => null,
         'variable' => 'modulename',
-        'valuerequired' => true,
-    ],
-    [
-        'longopt' => 'coursecategory',
-        'shortopt' => 'g',
-        'description' => 'Unique course category name for coursecategory context.',
-        'default' => null,
-        'variable' => 'coursecategory',
         'valuerequired' => true,
     ],
     [
