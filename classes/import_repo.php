@@ -921,7 +921,7 @@ class import_repo {
             echo "\nImporting quiz context: {$structurecontents->quiz->name}\n";
             if (is_file($quizmanifestpath)) {
                 $output = $this->call_import_repo($rootdirectory, $moodleinstance, $token,
-                        $quizmanifestname, null, $scriptdirectory);
+                        $quizmanifestname, null, $ignorecat, $scriptdirectory);
                 echo $output;
             } else {
                 // No quiz manifest. We need to import questions into context of created quiz.
@@ -941,7 +941,7 @@ class import_repo {
                     $this->manifestcontents->quizzes = [];
                 }
                 $output = $this->call_import_repo($rootdirectory, $moodleinstance, $token,
-                        null, $quizcmid, $scriptdirectory);
+                        null, $quizcmid, $ignorecat, $scriptdirectory);
                 echo $output;
             }
             if ($instanceid === false) {
@@ -992,18 +992,20 @@ class import_repo {
      * @param string $token
      * @param string|null $quizmanifestname
      * @param string|null $cmid
+     * @param string $ignorecat
      * @param string $scriptdirectory
      * @return string|null
      */
     public function call_import_repo(string $rootdirectory, string $moodleinstance, string $token,
-                                    ?string $quizmanifestname, ?string $quizcmid, string $scriptdirectory): string {
+                                    ?string $quizmanifestname, ?string $quizcmid,
+                                    string $ignorecat, string $scriptdirectory): string {
         chdir($scriptdirectory);
         if ($quizmanifestname) {
             return shell_exec('php importrepotomoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .
-                            '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
+                            '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat);
         } else {
             return shell_exec('php importrepotomoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .
-                            '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token);
+                            '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat);
         }
     }
 

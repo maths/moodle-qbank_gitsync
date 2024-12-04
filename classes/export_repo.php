@@ -347,7 +347,7 @@ class export_repo {
                 $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, '');
                 $output = $this->call_export_repo($rootdirectory, $moodleinstance, $token,
-                                    $quizmanifestname, $scriptdirectory);
+                                    $quizmanifestname, $ignorecat, $scriptdirectory);
             }
             echo $output;
             $quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
@@ -372,7 +372,7 @@ class export_repo {
                                       ): ?string {
         chdir($scriptdirectory);
         return shell_exec('php createrepo.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
-                '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
+                '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat);
     }
 
     /**
@@ -397,13 +397,14 @@ class export_repo {
      * @param string $moodleinstance
      * @param string $token
      * @param string $quizmanifestname
+     * @param string $ignorecat
      * @param string $scriptdirectory
      * @return string|null
      */
     public function call_export_repo(string $rootdirectory, string $moodleinstance, string $token,
-                string $quizmanifestname, string $scriptdirectory): ?string {
+                string $quizmanifestname, string $ignorecat, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
         return shell_exec('php exportrepofrommoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory . '" -i "' .
-                            $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
+                            $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat);
     }
 }

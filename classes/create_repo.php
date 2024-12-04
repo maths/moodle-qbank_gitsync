@@ -313,7 +313,7 @@ class create_repo {
         chdir($scriptdirectory);
         return shell_exec('php createrepo.php -u ' . $this->usegit . ' -w -r "' .
                 $rootdirectory .  '" -i "' . $moodleinstance .
-                '" -l "module" -n ' . $instanceid . ' -t "' . $token . '" -x ' . $ignorecat);
+                '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat);
     }
 
     /**
