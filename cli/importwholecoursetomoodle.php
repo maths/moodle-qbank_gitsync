@@ -77,10 +77,9 @@ $options = [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
         'description' => 'Context from which to extract questions. Should always be course.',
-        'default' => 'course',
+        'default' => null,
         'variable' => 'contextlevel',
         'valuerequired' => true,
-        'hidden' => true,
     ],
     [
         'longopt' => 'coursename',
@@ -98,6 +97,15 @@ $options = [
         'variable' => 'modulename',
         'valuerequired' => true,
         'hidden' => true
+    ],
+    [
+        'longopt' => 'coursecategory',
+        'shortopt' => 'g',
+        'description' => 'Not used.',
+        'default' => null,
+        'variable' => 'coursecategory',
+        'valuerequired' => true,
+        'hidden' => true,
     ],
     [
         'longopt' => 'instanceid',

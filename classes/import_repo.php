@@ -890,8 +890,7 @@ class import_repo {
                 // Don't import from anything that isn't a directory or has a name in the wrong format.
                 continue;
             }
-            $x = array_column($quizlocations, null, 'directory');
-            $instanceid = array_column($quizlocations, null, 'directory')['/' . $quizdirectory]->moduleid ?? false;
+            $instanceid = array_column($quizlocations, null, 'directory')[$quizdirectory]->moduleid ?? false;
             $rootdirectory = dirname($basedirectory) . '/' . $quizdirectory;
             $quizfiles = scandir($rootdirectory);
             $structurefile = null;
@@ -1000,10 +999,10 @@ class import_repo {
                                     ?string $quizmanifestname, ?string $quizcmid, string $scriptdirectory): string {
         chdir($scriptdirectory);
         if ($quizmanifestname) {
-            return shell_exec('php importrepotomoodle.php -w -r "' . $rootdirectory .
+            return shell_exec('php importrepotomoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .
                             '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
         } else {
-            return shell_exec('php importrepotomoodle.php -w -r "' . $rootdirectory .
+            return shell_exec('php importrepotomoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .
                             '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token);
         }
     }
@@ -1023,11 +1022,13 @@ class import_repo {
                                     ?string $quizmanifestpath, string $structurefilepath, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
         if ($quizmanifestpath) {
-            return shell_exec('php importquizstructuretomoodle.php -w -r "" -i "' . $moodleinstance . '" -n ' .
+            return shell_exec('php importquizstructuretomoodle.php -u ' . $this->usegit .
+                    ' -w -r "" -i "' . $moodleinstance . '" -n ' .
                     $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath . '" -f "' .
                     $quizmanifestpath . '" -a "' . $structurefilepath . '"');
         } else {
-            return shell_exec('php importquizstructuretomoodle.php -w -r "" -i "' . $moodleinstance . '" -n ' .
+            return shell_exec('php importquizstructuretomoodle.php -u ' . $this->usegit .
+                    ' -w -r "" -i "' . $moodleinstance . '" -n ' .
                     $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath. '" -a "' . $structurefilepath . '"');
         }
     }

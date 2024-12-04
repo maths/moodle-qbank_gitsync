@@ -334,12 +334,7 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $this->assertEquals(0, $slot2->requireprevious);
 
         $feedback = $DB->get_records('quiz_feedback');
-        $this->assertEquals(1, count($feedback));
-        $feedback1 = array_shift($feedback);
-        $this->assertEquals('', $feedback1->feedbacktext);
-        $this->assertEquals(1, $feedback1->feedbacktextformat);
-        $this->assertEquals(0, $feedback1->mingrade);
-        $this->assertEquals(101, $feedback1->maxgrade);
+        $this->assertEquals(0, count($feedback));
     }
 
     /**

@@ -72,6 +72,7 @@ final class tidy_trait_test extends advanced_testcase {
             'token' => 'XXXXXX',
             'help' => false,
             'ignorecat' => null,
+            'usegit' => true,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',

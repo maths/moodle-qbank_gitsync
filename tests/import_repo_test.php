@@ -1526,7 +1526,7 @@ final class import_repo_test extends advanced_testcase {
         $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json');
         $holder1 = new \StdClass();
         $holder1->moduleid = '1';
-        $holder1->directory = '/testrepo_quiz_quiz-1';
+        $holder1->directory = 'testrepo_quiz_quiz-1';
         $this->importrepo->manifestcontents->quizzes = [$holder1];
         $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
 
@@ -1563,7 +1563,7 @@ final class import_repo_test extends advanced_testcase {
         $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json');
         $holder1 = new \StdClass();
         $holder1->moduleid = '1';
-        $holder1->directory = '/testrepo_quiz_quiz-1';
+        $holder1->directory = 'testrepo_quiz_quiz-1';
         $this->importrepo->manifestcontents->quizzes = [$holder1];
         $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
 

@@ -36,8 +36,8 @@ To update the questions in Moodle from the repo, point the script to your course
 `php importrepotomoodle.php -f "scratch-wholecourse/scratch-course"`
 
 Example 2:
-To import course context questions, quiz context questions and quiz structures into a course for the first time, you will need to point the script to the course directory and the course to import into (using either coursename or id).
-`php importwholecoursetomoodle.php -r "C:\question_repos" -d "scratch-wholecourse/scratch-course" -c "Course 2"`
+To import course context questions, quiz context questions and quiz structures into a course for the first time, you will need to point the script to the course directory and the course to import into (using either coursename -c or id -n). You will also need to specify context level but this will always be course (`-l "course"`).
+`php importwholecoursetomoodle.php -r "C:\question_repos" -d "scratch-wholecourse/scratch-course" -l "course" -c "Course 2"`
 
 ## Scenario 1: Importing questions into Moodle from an existing repo
 

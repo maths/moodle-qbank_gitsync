@@ -198,8 +198,8 @@ class cli_helper {
         if (isset($cliargs['manifestpath'])) {
             $cliargs['manifestpath'] = $this->trim_slashes($cliargs['manifestpath']);
             if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
-                        || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid'])
-                        || isset($cliargs['contextlevel']) )) {
+                        || isset($cliargs['coursecategory']) || isset($cliargs['instanceid'])
+                        || isset($cliargs['contextlevel'])) {
                 echo "\nYou have specified a manifest file (possibly as a default in your config file). " .
                         "Contextlevel, instance id, course name, module name and/or course category are not needed. " .
                         "Context data can be extracted from the file.\n";
@@ -281,8 +281,8 @@ class cli_helper {
                     break;
             }
         }
-        if (!(isset($cliargs['manifestpath']) || isset($cliargs['quizmanifestpath'])
-                || (isset($cliargs['nonquizmanifestpath']) && isset($cliargs['instanceid']))) && !isset($cliargs['contextlevel'])) {
+        if (!isset($cliargs['manifestpath']) && !isset($cliargs['quizmanifestpath'])
+                    && !isset($cliargs['contextlevel']) && !isset($cliargs['quizdatapath'])) {
             echo "\nYou have not specified context. " .
                  "You must specify context level (--contextlevel) unless " .
                  "using a function where this information can be read from a manifest file, in which case " .
@@ -545,6 +545,7 @@ class cli_helper {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
+        chdir(dirname($activity->manifestpath));
         foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             if ($commithash) {
@@ -572,10 +573,8 @@ class cli_helper {
         $this->create_gitignore($activity->manifestpath);
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
-        if (empty($this->get_arguments()['subcall'])) {
-            exec("git add --all");
-            exec('git commit -m "Initial Commit - ' . basename($activity->manifestpath)  . '"');
-        }
+        exec("git add --all");
+        exec('git commit -m "Initial Commit - ' . basename($activity->manifestpath)  . '"');
         foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             if ($commithash) {

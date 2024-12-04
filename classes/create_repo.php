@@ -109,6 +109,12 @@ class create_repo {
      * @var string
      */
     public string $moodleurl;
+    /**
+     * Are we using git?.
+     * Set in config. Adds commit hash to manifest.
+     * @var bool
+     */
+    public bool $usegit;
 
     /**
      * Constructor.
@@ -121,6 +127,7 @@ class create_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
+        $this->usegit = $arguments['usegit'];
         if ($arguments['directory']) {
             $this->directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
         } else {
@@ -304,7 +311,8 @@ class create_repo {
                                        string $token, string $ignorecat, string $scriptdirectory
                                       ): ?string {
         chdir($scriptdirectory);
-        return shell_exec('php createrepo.php -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
+        return shell_exec('php createrepo.php -u ' . $this->usegit . ' -w -r "' .
+                $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t "' . $token . '" -x ' . $ignorecat);
     }
 
@@ -319,7 +327,8 @@ class create_repo {
     public function call_export_quiz(string $moodleinstance, string $token,
                                     string $quizmanifestpath, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
-        return shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . '" -t "'
+        return shell_exec('php exportquizstructurefrommoodle.php -u ' . $this->usegit .
+                ' -w -r "" -i "' . $moodleinstance . '" -t "'
                 . $token. '" -p "' . $this->manifestpath . '" -f "' . $quizmanifestpath . '"');
     }
 }

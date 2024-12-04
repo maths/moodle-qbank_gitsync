@@ -98,6 +98,12 @@ class export_repo {
      * @var string|null
      */
     public ?string $ignorecat;
+    /**
+     * Are we using git?.
+     * Set in config. Adds commit hash to manifest.
+     * @var bool
+     */
+   public bool $usegit;
 
     /**
      * Constructor
@@ -110,6 +116,7 @@ class export_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
+        $this->usegit = $arguments['usegit'];
         $defaultwarning = false;
         $this->manifestpath = $arguments['rootdirectory'] . '/' . $arguments['manifestpath'];
         if (is_array($arguments['token'])) {
@@ -364,7 +371,7 @@ class export_repo {
                                        string $token, string $ignorecat, string $scriptdirectory
                                       ): ?string {
         chdir($scriptdirectory);
-        return shell_exec('php createrepo.php -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
+        return shell_exec('php createrepo.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t ' . $token . ' -x ' . $ignorecat);
     }
 
@@ -379,7 +386,7 @@ class export_repo {
     public function call_export_quiz(string $moodleinstance, string $token,
                                     string $quizmanifestpath, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
-        return shell_exec('php exportquizstructurefrommoodle.php -w -r "" -i "' . $moodleinstance . ' -t '
+        return shell_exec('php exportquizstructurefrommoodle.php -u ' . $this->usegit . ' -w -r "" -i "' . $moodleinstance . '" -t '
                 . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestpath . '"');
     }
 
@@ -396,7 +403,7 @@ class export_repo {
     public function call_export_repo(string $rootdirectory, string $moodleinstance, string $token,
                 string $quizmanifestname, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
-        return shell_exec('php exportrepofrommoodle.php -w -r "' . $rootdirectory . '" -i "' .
+        return shell_exec('php exportrepofrommoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory . '" -i "' .
                             $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token);
     }
 }

@@ -81,11 +81,11 @@ class import_quiz_data extends external_api {
             ),
             'feedback' => new external_multiple_structure(
                 new external_single_structure([
-                    'feedbacktext' => new external_value(PARAM_TEXT, 'Feedback text'),
-                    'feedbacktextformat' => new external_value(PARAM_SEQUENCE, 'Format of feedback'),
-                    'mingrade' => new external_value(PARAM_TEXT, 'minimum mark'),
-                    'maxgrade' => new external_value(PARAM_TEXT, 'maximum mark'),
-                ])
+                    'feedbacktext' => new external_value(PARAM_TEXT, 'Feedback text', VALUE_OPTIONAL),
+                    'feedbacktextformat' => new external_value(PARAM_SEQUENCE, 'Format of feedback', VALUE_OPTIONAL),
+                    'mingrade' => new external_value(PARAM_TEXT, 'minimum mark', VALUE_OPTIONAL),
+                    'maxgrade' => new external_value(PARAM_TEXT, 'maximum mark', VALUE_OPTIONAL),
+                ]), '', VALUE_DEFAULT, []
             ),
         ]);
     }
@@ -106,10 +106,10 @@ class import_quiz_data extends external_api {
      * @param array $quiz
      * @param array $sections
      * @param array $questions
-     * @param array $feedback
+     * @param array|null $feedback
      * @return object containing outcome
      */
-    public static function execute(array $quiz, array $sections, array $questions, array $feedback): object {
+    public static function execute(array $quiz, array $sections, array $questions, ?array $feedback = []): object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'quiz' => $quiz,
@@ -239,16 +239,6 @@ class import_quiz_data extends external_api {
             \question_make_default_categories([$quizcontext->context]);
         }
 
-        if (!count($params['feedback'])) {
-            $params['feedback'] = [
-                [
-                    'feedbacktext' => '',
-                    'feedbacktextformat' => 1,
-                    'mingrade' => 0,
-                    'maxgrade' => (float) $params['quiz']['grade'] + 1,
-                ],
-            ];
-        }
         foreach ($params['feedback'] as $feedback) {
             $feedback['quizid'] = $moduleinfo->instance;
             $DB->insert_record('quiz_feedback', $feedback);
