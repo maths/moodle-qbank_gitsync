@@ -214,6 +214,38 @@ trait export_trait {
         }
     }
 
+    public function export_quiz_structure($clihelper, $scriptdirectory) {
+        $arguments = $clihelper->get_arguments();
+        $moodleinstance = $arguments['moodleinstance'];
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
+        }
+        $quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
+                    $this->manifestcontents->context->coursename,
+                    $this->manifestcontents->context->modulename, dirname($this->manifestpath));
+        $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath, $scriptdirectory);
+        echo $output;
+    }
+
+    /**
+     * Separate out exec call for mocking.
+     *
+     * @param string $moodleinstance
+     * @param string $token
+     * @param string $quizmanifestpath
+     * @param string $scriptdirectory
+     * @return string|null
+     */
+    public function call_export_quiz(string $moodleinstance, string $token,
+                                    string $quizmanifestpath, string $scriptdirectory): ?string {
+        chdir($scriptdirectory);
+        return shell_exec('php exportquizstructurefrommoodle.php -u ' . $this->usegit .
+                ' -w -r "" -i "' . $moodleinstance . '" -t "'
+                . $token. '" -p "' . $this->manifestpath . '" -f "' . $quizmanifestpath . '"');
+    }
+
     /**
      * Mockable function that just exits code.
      *

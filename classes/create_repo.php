@@ -305,6 +305,7 @@ class create_repo {
      * @param string $instanceid
      * @param string $token
      * @param string $ignorecat
+     * @param string $scriptdirectory
      * @return string|null
      */
     public function call_repo_creation(string $rootdirectory, string $moodleinstance, string $instanceid,
@@ -314,21 +315,5 @@ class create_repo {
         return shell_exec('php createrepo.php -u ' . $this->usegit . ' -w -r "' .
                 $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat);
-    }
-
-    /**
-     * Separate out exec call for mocking.
-     *
-     * @param string $moodleinstance
-     * @param string $token
-     * @param string $quizmanifestpath
-     * @return string|null
-     */
-    public function call_export_quiz(string $moodleinstance, string $token,
-                                    string $quizmanifestpath, string $scriptdirectory): ?string {
-        chdir($scriptdirectory);
-        return shell_exec('php exportquizstructurefrommoodle.php -u ' . $this->usegit .
-                ' -w -r "" -i "' . $moodleinstance . '" -t "'
-                . $token. '" -p "' . $this->manifestpath . '" -f "' . $quizmanifestpath . '"');
     }
 }

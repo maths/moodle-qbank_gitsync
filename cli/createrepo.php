@@ -168,3 +168,11 @@ $createrepo = new create_repo($clihelper, $moodleinstances);
 $clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
+if ($createrepo->manifestcontents->context->contextlevel === 70) {
+    $scriptdirectory = dirname(__FILE__);
+    $createrepo->export_quiz_structure($clihelper, $scriptdirectory);
+    chdir(dirname($createrepo->manifestpath));
+    exec("git add --all");
+    exec('git commit -m "Initial Commit - Quiz structure"');
+}
+

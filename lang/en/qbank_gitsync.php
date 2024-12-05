@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['categoryerror'] = 'Problem with question category: {$a}';
-$string['categoryerrornew'] = 'Problem with question category: {$a}. If the course is new, please open the question bank in Moodle to initialise it and try Gitsync again.';
+$string['categoryerrornew'] = 'Problem with question category: {$a}. If the course or module is new, please open the question bank in Moodle to initialise it and try Gitsync again.';
 $string['categorymismatcherror'] = 'Problem with question category: {$a}. The category is not in the supplied context.';
 $string['contexterror'] = 'The context level is invalid: {$a}';
 $string['exporterror'] = 'Could not export question id: {$a}';
