@@ -127,7 +127,7 @@ class import_quiz {
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
         $instanceid = $arguments['instanceid'];
-        if ($arguments['quizmanifestpath']) {
+        if (!empty($arguments['quizmanifestpath'])) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
                     $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
             $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
@@ -137,19 +137,43 @@ class import_quiz {
 
             } else {
                 $this->cmid = $this->quizmanifestcontents->context->instanceid;
-                $this->quizdatapath = cli_helper::get_quiz_structure_path($this->quizmanifestcontents->context->modulename,
-                                                                            dirname($this->quizmanifestpath));
+                $this->quizdatapath = ($arguments['quizdatapath']) ? $arguments['rootdirectory'] . '/' . $arguments['quizdatapath']
+                                        : cli_helper::get_quiz_structure_path($this->quizmanifestcontents->context->modulename,
+                                                                                dirname($this->quizmanifestpath));
             }
         } else {
             if ($arguments['quizdatapath']) {
                 $this->quizdatapath = $arguments['rootdirectory'] . '/' . $arguments['quizdatapath'];
             } else {
-                echo "\nPlease supply a quiz manifest filepath or a quiz data filepath.\nAborting.\n";
-                $this->call_exit();
-                return; // Required for unit tests.
+                if (empty($arguments['createquiz'])) {
+                    echo "\nPlease supply a quiz manifest filepath or a quiz data filepath.\nAborting.\n";
+                    $this->call_exit();
+                    return; // Required for unit tests.
+                } else {
+                    if ($arguments['directory']) {
+                        $directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+                    } else {
+                        $directory = $arguments['rootdirectory'];
+                    }
+                    $quizfiles = scandir($directory);
+                    $structurefile = null;
+                    // Find the structure file.
+                    foreach ($quizfiles as $quizfile) {
+                        if (preg_match('/.*_quiz\.json/', $quizfile)) {
+                            $structurefile = $quizfile;
+                            break;
+                        }
+                    }
+                    if (!$structurefile) {
+                        echo "\nNo quiz structure file found.\nAborting.\n";
+                        $this->call_exit();
+                        return; // Required for unit tests.
+                    }
+                    $this->quizdatapath = $directory . '/' . $structurefile;
+                }
             }
         }
-        if ($arguments['nonquizmanifestpath']) {
+        if (!empty($arguments['nonquizmanifestpath'])) {
             $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
                     $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : null;
             $this->nonquizmanifestcontents = json_decode(file_get_contents($this->nonquizmanifestpath));
@@ -212,7 +236,7 @@ class import_quiz {
         if ($arguments['subcall']) {
             echo "\nCreating quiz: {$this->quizdatacontents->quiz->name}\n";
         } else {
-            echo "\nPreparing to create a new quiz in Moodle.\n";
+            echo "\nPreparing to create/update a quiz in Moodle.\n";
             echo "Moodle URL: {$this->moodleurl}\n";
             echo "Course: {$instanceinfo->contextinfo->coursename}\n";
             echo "Quiz: {$this->quizdatacontents->quiz->name}\n";
@@ -246,6 +270,29 @@ class import_quiz {
      * @return void
      */
     public function process(): void {
+        $this->import_quiz_data();
+    }
+
+    public function import_all($clihelper, $scriptdirectory): void {
+        $arguments = $clihelper->get_arguments();
+        $moodleinstance = $arguments['moodleinstance'];
+        if ($arguments['directory']) {
+            $directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+        } else {
+            $directory = $arguments['rootdirectory'];
+        }
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
+        }
+        $ignorecat = $arguments['ignorecat'];
+        $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
+        $this->import_quiz_data();
+        chdir($scriptdirectory);
+        $output = shell_exec('php importrepotomoodle.php -u ' . $arguments['usegit'] . ' -w -r "' . $directory .
+                            '" -i "' . $moodleinstance . '" -l "module" -n ' . $this->cmid . ' -t ' . $token . $ignorecat);
+        echo $output;
         $this->import_quiz_data();
     }
 

@@ -97,6 +97,7 @@ class import_quiz_data extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Import success?'),
+            'cmid' => new external_value(PARAM_SEQUENCE, 'CMID of quiz'),
         ]);
     }
 
@@ -246,6 +247,7 @@ class import_quiz_data extends external_api {
 
         $response = new \stdClass();
         $response->success = true;
+        $response->cmid = (int) $module->cmid;
         return $response;
     }
 }
