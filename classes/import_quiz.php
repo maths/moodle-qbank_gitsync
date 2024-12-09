@@ -195,7 +195,7 @@ class import_quiz {
                 echo "\nUnable to access or parse manifest file: {$this->nonquizmanifestpath}\nAborting.\n";
                 $this->call_exit();
             }
-            if ($this->nonquizmanifestcontents->context->contextlevel === cli_helper::get_context_level('course')) {
+            if (!$instanceid && $this->nonquizmanifestcontents->context->contextlevel === cli_helper::get_context_level('course')) {
                 $instanceid = $this->nonquizmanifestcontents->context->instanceid;
             }
         }
