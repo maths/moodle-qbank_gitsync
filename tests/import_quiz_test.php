@@ -140,6 +140,7 @@ final class import_quiz_test extends advanced_testcase {
             'token' => 'XXXXXX',
             'help' => false,
             'subcall' => false,
+            'usegit' => true,
         ];
 
     }
@@ -156,7 +157,7 @@ final class import_quiz_test extends advanced_testcase {
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->any())->method('check_context')->willReturn(
             json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"5", "qcategoryname":"top"},
+                             "courseid":"5", "modulename":"Module 1", "instanceid":"5", "qcategoryname":"top"},
               "questions": []}')
         );
         // Mock call to webservice.
@@ -179,7 +180,7 @@ final class import_quiz_test extends advanced_testcase {
     public function test_process(): void {
         $this->set_up_mocks();
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"success": true}'
+            '{"success": true, "cmid": "23"}'
         );
         $this->importquiz->process();
         $this->assertEquals(json_encode($this->quizoutput), json_encode($this->importquiz->postsettings));
@@ -265,6 +266,8 @@ final class import_quiz_test extends advanced_testcase {
      */
     public function test_no_course_info(): void {
         $this->options['nonquizmanifestpath'] = null;
+        $this->options['quizmanifestpath'] = null;
+        $this->options['quizdatapath']  = '/testrepo_quiz_quiz-1/' . 'import-quiz' . cli_helper::QUIZ_FILE;
         $this->set_up_mocks();
         $this->expectOutputRegex('/^\nYou must identify the course you wish to add the quiz to.*Aborting.\n$/s');
     }
@@ -317,35 +320,10 @@ final class import_quiz_test extends advanced_testcase {
      * Test if quiz context questions with no course.
      */
     public function test_quiz_context_questions_no_course(): void {
-        $questions = '[
-            {
-                "quizfilepath": "\/top\/Quiz-Question.xml",
-                "slot": "1",
-                "page": "1",
-                "requireprevious": 0,
-                "maxmark": "1.0000000"
-            },
-            {
-                "quizfilepath": "\/top\/quiz-cat\/Quiz-Question-2.xml",
-                "slot": "2",
-                "page": "2",
-                "requireprevious": 0,
-                "maxmark": "1.0000000"
-            }
-        ]';
-        $output = [
-            "questions[0][slot]" => "1",
-            "questions[0][page]" => "1",
-            "questions[0][requireprevious]" => 0,
-            "questions[0][maxmark]" => "1.0000000",
-            "questions[0][questionbankentryid]" => "36001",
-            "questions[1][slot]" => "2",
-            "questions[1][page]" => "2",
-            "questions[1][requireprevious]" => 0,
-            "questions[1][maxmark]" => "1.0000000",
-            "questions[1][questionbankentryid]" => "36002",
-        ];
+        $this->options['instanceid'] = null;
         $this->options['nonquizmanifestpath'] = null;
+        $this->options['quizmanifestpath'] = null;
+        $this->options['quizdatapath']  = '/testrepo_quiz_quiz-1/' . 'import-quiz' . cli_helper::QUIZ_FILE;
         $this->set_up_mocks();
         $this->expectOutputRegex('/^\nYou must identify the course you wish to add the quiz to.*Aborting.\n$/s');
     }

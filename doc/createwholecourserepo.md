@@ -20,7 +20,7 @@
 |h|help|
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
-This is very similar to [`createrepo.php`](createrepo.md) but normally Gitsync retrieves questions within a Moodle context, returning all or a subselection of question categories with the repo directory structure matching the category structure in Moodle. Courses and quizzes are in separate contexts, however. `createwholecourserepo.php` keep quizzes with their parent course in a single repo.
+This is very similar to [`createrepo.php`](createrepo.md) but normally Gitsync retrieves questions within a Moodle context, returning all or a subselection of question categories with the repo directory structure matching the category structure in Moodle. Courses and quizzes are in separate contexts, however. Use `createwholecourserepo.php` to keep quizzes with their parent course in a single repo.
 
 You can use all the same command line arguments as a basic `createrepo` to narrow down the questions exported. You will need to supply either the course name or its ID. You will also need to supply the destination directory for the course - this should be a child directory of the main repo directory.
 

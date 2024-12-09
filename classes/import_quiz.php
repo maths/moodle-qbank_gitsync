@@ -197,7 +197,7 @@ class import_quiz {
                 $instanceid = $this->nonquizmanifestcontents->context->instanceid;
             }
         }
-        if (!$instanceid && !$arguments['coursename'] && !$this->quizmanifestpath) {
+        if (!$instanceid && !$arguments['coursename'] && !$this->quizmanifestcontents) {
             echo "\nYou must identify the course you wish to add the quiz to. Use a course manifest path (--nonquizmanifestpath)" .
                     " or specify the course id (--instanceid) or course name (--coursename).\nAborting.\n";
             $this->call_exit();
@@ -443,7 +443,7 @@ class import_quiz {
             $this->call_exit();
         }
 
-        $this->cmid = $responsejson->cmid;
+        $this->cmid = isset($responsejson->cmid) ? $responsejson->cmid : '';
         echo "Quiz imported.\n";
     }
 
