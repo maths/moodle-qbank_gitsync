@@ -129,7 +129,8 @@ class create_repo {
         $moodleinstance = $arguments['moodleinstance'];
         $this->usegit = $arguments['usegit'];
         if ($arguments['directory']) {
-            $this->directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+            $this->directory = ($arguments['rootdirectory']) ?
+                    $arguments['rootdirectory'] . '/' . $arguments['directory'] : $arguments['directory'];
         } else {
             $this->directory = $arguments['rootdirectory'];
         }

@@ -132,10 +132,12 @@ class import_quiz {
         $this->clihelper = $clihelper;
         $arguments = $clihelper->get_arguments();
         if (isset($arguments['directory'])) {
-            $directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+            $directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
+                                                    $arguments['directory'] ;
         } else {
             $directory = $arguments['rootdirectory'];
         }
+        $directoryprefix = ($directory) ? $directory . '/' : '';
         $coursename = $arguments['coursename'];
         $moodleinstance = $arguments['moodleinstance'];
         $instanceid = $arguments['instanceid'];
@@ -143,7 +145,7 @@ class import_quiz {
         $this->usegit = $arguments['usegit'];
         if (!empty($arguments['quizmanifestpath'])) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
-                    $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
+                                $directoryprefix . $arguments['quizmanifestpath'] : null;
             $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
             if (!$this->quizmanifestcontents) {
                 echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
@@ -151,7 +153,7 @@ class import_quiz {
 
             } else {
                 $this->cmid = $this->quizmanifestcontents->context->instanceid;
-                $this->quizdatapath = ($arguments['quizdatapath']) ? $arguments['rootdirectory'] . '/' . $arguments['quizdatapath']
+                $this->quizdatapath = ($arguments['quizdatapath']) ? $directoryprefix . $arguments['quizdatapath']
                                         : cli_helper::get_quiz_structure_path($this->quizmanifestcontents->context->modulename,
                                                                                 dirname($this->quizmanifestpath));
                 $instanceid = $this->cmid;
@@ -160,7 +162,7 @@ class import_quiz {
             }
         } else {
             if ($arguments['quizdatapath']) {
-                $this->quizdatapath = $arguments['rootdirectory'] . '/' . $arguments['quizdatapath'];
+                $this->quizdatapath = $directoryprefix . $arguments['quizdatapath'];
             } else {
                 if (empty($arguments['createquiz'])) {
                     echo "\nPlease supply a quiz manifest filepath or a quiz data filepath.\nAborting.\n";
@@ -181,13 +183,13 @@ class import_quiz {
                         $this->call_exit();
                         return; // Required for unit tests.
                     }
-                    $this->quizdatapath = $directory . '/' . $structurefile;
+                    $this->quizdatapath = $directoryprefix . $structurefile;
                 }
             }
         }
         if (!empty($arguments['nonquizmanifestpath'])) {
             $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
-                    $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : null;
+                                $directoryprefix . $arguments['nonquizmanifestpath'] : null;
             $this->nonquizmanifestcontents = json_decode(file_get_contents($this->nonquizmanifestpath));
             if (!$this->nonquizmanifestcontents) {
                 echo "\nUnable to access or parse manifest file: {$this->nonquizmanifestpath}\nAborting.\n";
@@ -303,7 +305,8 @@ class import_quiz {
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
         if ($arguments['directory']) {
-            $directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+            $directory = ($arguments['rootdirectory']) ?
+                        $arguments['rootdirectory'] . '/' . $arguments['directory'] : $arguments['directory'];
         } else {
             $directory = $arguments['rootdirectory'];
         }

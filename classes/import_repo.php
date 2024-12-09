@@ -171,10 +171,12 @@ class import_repo {
         $moodleinstance = $arguments['moodleinstance'];
         $manifestpath = $arguments['manifestpath'];
         if ($arguments['directory']) {
-            $this->directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+            $this->directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
+                                            $arguments['directory'];
         } else {
             if ($manifestpath && dirname($manifestpath) !== '.') {
-                $this->directory = $arguments['rootdirectory'] . '/' . dirname($manifestpath);
+                $this->directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . dirname($manifestpath) :
+                                        dirname($manifestpath);
             } else {
                 $this->directory = $arguments['rootdirectory'];
             }
@@ -249,7 +251,8 @@ class import_repo {
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);
 
         if ($manifestpath) {
-            $this->manifestpath = $arguments['rootdirectory'] . '/' . $manifestpath;
+            $this->manifestpath = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $manifestpath :
+                                                        $manifestpath;
         } else {
             $this->subdirectory = ($arguments['subdirectory']) ? $arguments['subdirectory'] : 'top';
             $instanceinfo = $this->clihelper->check_context($this, false, false);
@@ -333,7 +336,9 @@ class import_repo {
         if ($this->subdirectory === 'top') {
             $qcategoryname = 'top';
         } else {
-            $listqcategoryfile = $this->directory . '/' . $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
+            $listqcategoryfile = ($this->directory ) ?
+                $this->directory . '/' . $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml' :
+                $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
             $qcategoryname = cli_helper::get_question_category_from_file($listqcategoryfile);
         }
         if (!$qcategoryname) {
@@ -482,7 +487,7 @@ class import_repo {
      */
     public function import_questions() {
         if ($this->subdirectory) {
-            $subdirectory = $this->directory . '/' . $this->subdirectory;
+            $subdirectory = ($this->directory) ? $this->directory . '/' . $this->subdirectory : $this->subdirectory;
         } else {
             $subdirectory = $this->directory;
         }

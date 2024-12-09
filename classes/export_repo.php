@@ -118,7 +118,8 @@ class export_repo {
         $moodleinstance = $arguments['moodleinstance'];
         $this->usegit = $arguments['usegit'];
         $defaultwarning = false;
-        $this->manifestpath = $arguments['rootdirectory'] . '/' . $arguments['manifestpath'];
+        $this->manifestpath = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['manifestpath'] :
+                                                            $arguments['manifestpath'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {

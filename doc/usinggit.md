@@ -168,9 +168,9 @@ Initialise repo for quiz:
 Export quiz with `cmid=50` into directory `quizexport` (assuming rootdirectory, token, moodleinstance, usegit, etc, all set in your config file.):  
 `php createrepo.php -d 'quizexport' -l module -n 50`  
 Export questions/structures again after updates in Moodle:  
-`php exportrepofrommoodle -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
+`php exportrepofrommoodle.php -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
 Import questions again after updates in the repo:  
-`php importrepotomoodle -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
+`php importrepotomoodle.php -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
 Create quiz and import into course with `id=2`:  
 `php importquiztomoodle.php -d 'quizexport' -n 2`
 
@@ -190,10 +190,10 @@ Export quiz with `cmid=50` into directory `quizexport` (assuming rootdirectory, 
 Export quiz structure by supplying quiz and course manifests:  
 `php exportquizstructurefrommoodle.php -f 'quizexport/instance1_module_course-1_mixed-quiz_question_manifest.json' -p 'course1/instance1_course_course-1_question_manifest.json'`  
 Export questions/structures again after updates in Moodle:  
-`php exportrepofrommoodle -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
+`php exportrepofrommoodle.php -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
 `php exportquizstructurefrommoodle.php -f 'quizexport/instance1_module_course-1_mixed-quiz_question_manifest.json' -p 'course1/instance1_course_course-1_question_manifest.json'`  
 Import questions again after updates in the repo:  
-`php importrepotomoodle -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
+`php importrepotomoodle.php -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
 Create quiz and import into course with `id=2`:  
 `php importquiztomoodle.php -d 'quizexport' -n 2 -p 'course1/instance1_course_course-1_question_manifest.json'`  
 

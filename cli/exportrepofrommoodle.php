@@ -125,7 +125,7 @@ $exportrepo = new export_repo($clihelper, $moodleinstances);
 $clihelper->check_for_changes($exportrepo->manifestpath);
 $clihelper->backup_manifest($exportrepo->manifestpath);
 $exportrepo->process();
-if ($exportrepo->manifestcontents->context->contextlevel === 70) {
+if ($exportrepo->manifestcontents->context->contextlevel === 70 && !$clihelper->get_arguments()['subcall']) {
     $scriptdirectory = dirname(__FILE__);
     $exportrepo->export_quiz_structure($clihelper, $scriptdirectory);
 }
