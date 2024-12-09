@@ -114,6 +114,12 @@ class import_quiz {
      * @var \stdClass|null
      */
     public ?\stdClass $quizdatacontents;
+    /**
+     * Are we using git?.
+     * Set in config. Adds commit hash to manifest.
+     * @var bool
+     */
+    public bool $usegit;
 
     /**
      * Constructor
@@ -125,8 +131,16 @@ class import_quiz {
         // Convert command line options into variables.
         $this->clihelper = $clihelper;
         $arguments = $clihelper->get_arguments();
+        if (isset($arguments['directory'])) {
+            $directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
+        } else {
+            $directory = $arguments['rootdirectory'];
+        }
+        $coursename = $arguments['coursename'];
         $moodleinstance = $arguments['moodleinstance'];
         $instanceid = $arguments['instanceid'];
+        $contextlevel = 50;
+        $this->usegit = $arguments['usegit'];
         if (!empty($arguments['quizmanifestpath'])) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
                     $arguments['rootdirectory'] . '/' . $arguments['quizmanifestpath'] : null;
@@ -140,6 +154,9 @@ class import_quiz {
                 $this->quizdatapath = ($arguments['quizdatapath']) ? $arguments['rootdirectory'] . '/' . $arguments['quizdatapath']
                                         : cli_helper::get_quiz_structure_path($this->quizmanifestcontents->context->modulename,
                                                                                 dirname($this->quizmanifestpath));
+                $instanceid = $this->cmid;
+                $coursename = '';
+                $contextlevel = 70;
             }
         } else {
             if ($arguments['quizdatapath']) {
@@ -150,11 +167,6 @@ class import_quiz {
                     $this->call_exit();
                     return; // Required for unit tests.
                 } else {
-                    if ($arguments['directory']) {
-                        $directory = $arguments['rootdirectory'] . '/' . $arguments['directory'];
-                    } else {
-                        $directory = $arguments['rootdirectory'];
-                    }
                     $quizfiles = scandir($directory);
                     $structurefile = null;
                     // Find the structure file.
@@ -185,9 +197,9 @@ class import_quiz {
                 $instanceid = $this->nonquizmanifestcontents->context->instanceid;
             }
         }
-        if (!$instanceid && !$arguments['coursename']) {
+        if (!$instanceid && !$arguments['coursename'] && !$this->quizmanifestpath) {
             echo "\nYou must identify the course you wish to add the quiz to. Use a course manifest path (--nonquizmanifestpath)" .
-                    "or specify the course id (--instanceid) or course name (--coursename).\nAborting.\n";
+                    " or specify the course id (--instanceid) or course name (--coursename).\nAborting.\n";
             $this->call_exit();
             return; // Required for unit tests.
         }
@@ -210,8 +222,8 @@ class import_quiz {
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_get_question_list',
             'moodlewsrestformat' => 'json',
-            'contextlevel' => 50,
-            'coursename' => $arguments['coursename'],
+            'contextlevel' => $contextlevel,
+            'coursename' => $coursename,
             'modulename' => null,
             'coursecategory' => null,
             'qcategoryname' => 'top',
@@ -243,13 +255,13 @@ class import_quiz {
             $this->handle_abort();
         }
         $this->postsettings['quiz[coursename]'] = $instanceinfo->contextinfo->coursename;
-        $this->postsettings['quiz[courseid]'] = $instanceinfo->contextinfo->instanceid;
+        $this->postsettings['quiz[courseid]'] = $instanceinfo->contextinfo->courseid;
 
         if (!$this->quizmanifestpath) {
-            $this->quizmanifestpath = $arguments['rootdirectory'] . '/' . cli_helper::get_manifest_path($moodleinstance, 'module', null,
-                                $instanceinfo->contextinfo->coursename, $this->quizdatacontents->quiz->name, '');
+            $this->quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
+                                $instanceinfo->contextinfo->coursename, $this->quizdatacontents->quiz->name, $directory);
             if (!is_file($this->quizmanifestpath)) {
-                $this->quizmanifestpath = null;
+                $this->quizmanifestcontents = null;
                 $this->cmid = '';
             } else {
                 $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
@@ -274,6 +286,13 @@ class import_quiz {
     }
 
     public function import_all($clihelper, $scriptdirectory): void {
+        if ($this->quizmanifestcontents) {
+            echo "\nA question manifest already exists for this quiz in this Moodle instance.\n";
+            echo "Use importrepotomoodle.php to update questions.\n";
+            echo "Use importquizstructuretomoodle if the quiz structure has not been imported.\n";
+            echo "Aborting.\n";
+            $this->call_exit();
+        }
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
         if ($arguments['directory']) {
@@ -289,11 +308,45 @@ class import_quiz {
         $ignorecat = $arguments['ignorecat'];
         $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
         $this->import_quiz_data();
-        chdir($scriptdirectory);
-        $output = shell_exec('php importrepotomoodle.php -u ' . $arguments['usegit'] . ' -w -r "' . $directory .
-                            '" -i "' . $moodleinstance . '" -l "module" -n ' . $this->cmid . ' -t ' . $token . $ignorecat);
+        $output = $this->call_import_repo($directory, $moodleinstance, $token,
+                        $this->cmid, $ignorecat, $scriptdirectory);
         echo $output;
-        $this->import_quiz_data();
+        $output = $this->call_import_quiz_data($moodleinstance, $token, $scriptdirectory);
+        echo $output;
+    }
+
+        /**
+     * Separate out exec call for mocking.
+     *
+     * @param string $rootdirectory
+     * @param string $moodleinstance
+     * @param string $token
+     * @param string|null $cmid
+     * @param string $ignorecat
+     * @param string $scriptdirectory
+     * @return string|null
+     */
+    public function call_import_repo(string $rootdirectory, string $moodleinstance, string $token,
+                                    ?string $quizcmid, string $ignorecat, string $scriptdirectory): string {
+        chdir($scriptdirectory);
+        return shell_exec('php importrepotomoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .
+                        '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat);
+    }
+
+    /**
+     * Separate out exec call for mocking.
+     *
+     * @param string $moodleinstance
+     * @param string $token
+     * @param string $scriptdirectory
+     * @return string|null
+     */
+    public function call_import_quiz_data(string $moodleinstance, string $token, string $scriptdirectory): ?string {
+        chdir($scriptdirectory);
+        return shell_exec('php importquizstructuretomoodle.php -u ' . $this->usegit .
+                    ' -w -r "" -i "' . $moodleinstance . '" -t ' . $token. ' -p "' . $this->nonquizmanifestpath.
+                    '" -a "' . $this->quizdatapath .
+                    '" -f "' . $this->quizmanifestpath. '"');
     }
 
     /**
@@ -316,7 +369,7 @@ class import_quiz {
     public function import_quiz_data() {
         $quizmanifestentries = [];
         $nonquizmanifestentries = [];
-        if ($this->quizmanifestpath) {
+        if ($this->quizmanifestcontents) {
             $quizmanifestentries = array_column($this->quizmanifestcontents->questions, null, 'filepath');
         }
         if ($this->nonquizmanifestpath) {
@@ -356,7 +409,7 @@ class import_quiz {
                 if ($manifestentry) {
                     $this->postsettings["questions[{$questionkey}][questionbankentryid]"] = $manifestentry->questionbankentryid;
                 } else {
-                    $multiple = ($this->quizmanifestpath && $this->nonquizmanifestpath) ? 's' : '';
+                    $multiple = ($this->quizmanifestcontents && $this->nonquizmanifestpath) ? 's' : '';
                     echo "Question: {$qidentifier}\n";
                     echo "This question is in the quiz but not in the supplied manifest file" . $multiple . ".\n";
                     echo "Questions must either be in the repo for the quiz context defined by a supplied quiz manifest " .
@@ -389,6 +442,8 @@ class import_quiz {
             }
             $this->call_exit();
         }
+
+        $this->cmid = $responsejson->cmid;
         echo "Quiz imported.\n";
     }
 

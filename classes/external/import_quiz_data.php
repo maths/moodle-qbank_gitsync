@@ -247,7 +247,7 @@ class import_quiz_data extends external_api {
 
         $response = new \stdClass();
         $response->success = true;
-        $response->cmid = (int) $module->cmid;
+        $response->cmid = $module->cmid;
         return $response;
     }
 }

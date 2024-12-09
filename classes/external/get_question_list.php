@@ -72,6 +72,7 @@ class get_question_list extends external_api {
                 'contextlevel' => new external_value(PARAM_TEXT, 'context level description'),
                 'categoryname' => new external_value(PARAM_TEXT, 'course category name (course category context)'),
                 'coursename' => new external_value(PARAM_TEXT, 'course name (course or module context)'),
+                'courseid' => new external_value(PARAM_SEQUENCE, 'course id (course or module context)'),
                 'modulename' => new external_value(PARAM_TEXT, 'module name (module context)'),
                 'instanceid' => new external_value(PARAM_SEQUENCE, 'id of course category, course or module'),
                 'qcategoryname' => new external_value(PARAM_TEXT, 'name of question category'),

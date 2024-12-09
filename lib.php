@@ -66,6 +66,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
     $result = new \stdClass();
     $result->categoryname = null;
     $result->coursename = null;
+    $result->courseid = null;
     $result->modulename = null;
     $result->instanceid = null;
     switch ($contextlevel) {
@@ -95,12 +96,13 @@ function get_context(int $contextlevel, ?string $categoryname = null,
             $result->contextlevel = 'course';
             $result->context = context_course::instance($instanceid);
             $result->instanceid = $instanceid;
+            $result->courseid = $instanceid;
             return $result;
         case \CONTEXT_MODULE:
             if (is_null($instanceid)) {
                 // Assuming here that the module is a quiz.
                 $instancedata = $DB->get_record_sql("
-                    SELECT cm.id as cmid, q.id as quizid
+                    SELECT cm.id as cmid, q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
                         JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
@@ -111,6 +113,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                     ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
                     $instanceid = $instancedata->cmid;
                     $result->coursename = $coursename;
+                    $result->courseid = $instancedata->courseid;
                     $result->modulename = $modulename;
                     $result->quizid = $instancedata->quizid;
             } else {
