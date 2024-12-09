@@ -1454,7 +1454,7 @@ final class import_repo_test extends advanced_testcase {
                                 ]}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data'
+            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
 
         $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
@@ -1488,7 +1488,7 @@ final class import_repo_test extends advanced_testcase {
                             "questions": [], "quizzes": [{"instanceid":"1", "name":"Quiz Wrong"}]}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data'
+            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
 
         $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
@@ -1520,7 +1520,7 @@ final class import_repo_test extends advanced_testcase {
                             "questions": [], "quizzes": [{"instanceid":"1", "name":"Quiz 1"}]}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data'
+            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         copy($this->rootpath . '/testrepo_quiz_quiz-1/fakeexportquiz_module_course-1_quiz-1_question_manifest.json',
         $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json');
@@ -1557,7 +1557,7 @@ final class import_repo_test extends advanced_testcase {
                                 {"instanceid":"2", "name":"Quiz 2"}]}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data'
+            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         copy($this->rootpath . '/testrepo_quiz_quiz-1/fakeexportquiz_module_course-1_quiz-1_question_manifest.json',
         $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json');

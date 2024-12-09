@@ -103,7 +103,7 @@ class export_repo {
      * Set in config. Adds commit hash to manifest.
      * @var bool
      */
-   public bool $usegit;
+    public bool $usegit;
 
     /**
      * Constructor

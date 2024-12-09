@@ -285,6 +285,13 @@ class import_quiz {
         $this->import_quiz_data();
     }
 
+    /**
+     * Import quiz including structure.
+     * Creates quiz, imports questions, updates structure.
+     * @param mixed $clihelper
+     * @param mixed $scriptdirectory
+     * @return void
+     */
     public function import_all($clihelper, $scriptdirectory): void {
         if ($this->quizmanifestcontents) {
             echo "\nA question manifest already exists for this quiz in this Moodle instance.\n";
@@ -315,7 +322,7 @@ class import_quiz {
         echo $output;
     }
 
-        /**
+    /**
      * Separate out exec call for mocking.
      *
      * @param string $rootdirectory

@@ -96,7 +96,7 @@ $options = [
         'default' => null,
         'variable' => 'modulename',
         'valuerequired' => true,
-        'hidden' => true
+        'hidden' => true,
     ],
     [
         'longopt' => 'coursecategory',

@@ -214,6 +214,12 @@ trait export_trait {
         }
     }
 
+    /**
+     * Export quiz structure
+     * @param mixed $clihelper
+     * @param mixed $scriptdirectory
+     * @return void
+     */
     public function export_quiz_structure($clihelper, $scriptdirectory) {
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];

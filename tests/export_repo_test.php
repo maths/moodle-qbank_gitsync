@@ -115,7 +115,7 @@ final class export_repo_test extends advanced_testcase {
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo'
+            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -445,7 +445,7 @@ final class export_repo_test extends advanced_testcase {
               "quizzes": [{"instanceid":"1", "name":"Quiz 1"}, {"instanceid":"2", "name":"Quiz 2"}]}')
         );
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo'
+            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
 
         $this->exportrepo->curlrequest = $this->curl;
@@ -488,7 +488,7 @@ final class export_repo_test extends advanced_testcase {
               "quizzes": [{"instanceid":"1", "name":"Quiz 1"}, {"instanceid":"2", "name":"Quiz 2"}]}')
         );
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo'
+            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
 
         $this->exportrepo->curlrequest = $this->curl;
@@ -535,7 +535,7 @@ final class export_repo_test extends advanced_testcase {
               "quizzes": [{"instanceid":"1", "name":"Quiz 1"}]}')
         );
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo'
+            'get_curl_request', 'call_exit', 'call_repo_creation', 'call_export_quiz', 'call_export_repo',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
 
         $this->exportrepo->curlrequest = $this->curl;
