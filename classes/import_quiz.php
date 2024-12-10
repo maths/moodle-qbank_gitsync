@@ -133,7 +133,7 @@ class import_quiz {
         $arguments = $clihelper->get_arguments();
         if (isset($arguments['directory'])) {
             $directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
-                                                    $arguments['directory'] ;
+                                                    $arguments['directory'];
         } else {
             $directory = $arguments['rootdirectory'];
         }
