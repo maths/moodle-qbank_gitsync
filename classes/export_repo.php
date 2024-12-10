@@ -122,6 +122,7 @@ class export_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
+        $this->moodleurl = $moodleinstances[$moodleinstance];
         $this->usegit = $arguments['usegit'];
         $defaultwarning = false;
         $this->manifestpath = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['manifestpath'] :
@@ -165,7 +166,6 @@ class export_repo {
         $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
                                           '_export' . cli_helper::TEMP_MANIFEST_FILE,
                                           $this->manifestpath);
-        $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
         $this->curlrequest = $this->get_curl_request($wsurl);

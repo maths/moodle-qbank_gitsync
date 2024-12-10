@@ -66,6 +66,7 @@ final class export_trait_test extends advanced_testcase {
         $this->options = [
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
+            'nonquizmanifestpath' => null,
             'subcategory' => null,
             'qcategoryid' => null,
             'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,

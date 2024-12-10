@@ -6,7 +6,8 @@
         "coursecategory": "",
         "instanceid": "",
         "defaultsubdirectory": "top\/cat-2",
-        "defaultsubcategoryid": 5
+        "defaultsubcategoryid": 5,
+        "moodleurl": "fakeurl.com"
     },
     "questions": [
         {

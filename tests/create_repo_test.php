@@ -67,6 +67,7 @@ final class create_repo_test extends advanced_testcase {
             'rootdirectory' => $this->rootpath,
             'directory' => '',
             'subcategory' => null,
+            'nonquizmanifestpath' => null,
             'contextlevel' => 'system',
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
