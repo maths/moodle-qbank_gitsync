@@ -12,7 +12,7 @@
 |-|-|-|
 |i|moodleinstance|Key of Moodle instance in $moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
-|f|nonquizmanifestpath|Filepath of non-quiz manifest file relative to root directory.|
+|p|nonquizmanifestpath|Quiz export: Filepath of non-quiz manifest file relative to root directory.|
 |f|manifestpath|Filepath of manifest file relative to root directory.|
 |s|subcategory|Relative subcategory of repo to actually export.|
 |q|questioncategoryid|Numerical id of subcategory to actually export.

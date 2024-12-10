@@ -21,6 +21,7 @@
 |g|coursecategory|Unique course category name for coursecategory context.
 |q|questioncategoryid|Numerical id of subcategory to actually export.
 |n|instanceid|Numerical id of the course, module of course category.
+|p|nonquizmanifestpath|Quiz export: Filepath of non-quiz manifest file relative to root directory.|
 |t|token|Security token for webservice.
 |h|help|
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.

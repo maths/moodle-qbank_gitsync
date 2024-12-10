@@ -20,7 +20,7 @@ Commit this update.
 |-|-|-|
 |i|moodleinstance|Key of Moodle instance in  moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
-|p|nonquizmanifestpath|Filepath of manifest file relative to root directory.|
+|p|nonquizmanifestpath|Filepath of non-quiz manifest file relative to root directory.|
 |a|quizdatapath|Filepath of quiz data file relative to root directory.
 |d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
 |s|subdirectory|Relative subdirectory of repo to actually import.|

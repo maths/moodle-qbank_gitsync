@@ -4,6 +4,7 @@ It is recommended you at least skim the whole of this document before attempting
 - Creating a repo - [createrepo.php](createrepo.md)
 - Importing questions to Moodle - [importrepotomoodle.php](importrepotomoodle.md)
 - Exporting questions from Moodle - [exportrepofrommoodle.php](exportrepofrommoodle.md)
+- Importing quizzes to Moodle - [importquiztomoodle.php](importquiztomoodle.md)
 
 For detailed information on what happens at each stage of the process, see [Process Details](processdetails.md).
 
@@ -149,16 +150,20 @@ If you have multiple repos and you delete questions in one because you don't wan
 
 ## Quizzes
 
-Quiz contexts can be exported and imported in the same way as other contexts but it is more useful to also include the quiz structure and this makes things more complicated.
+Quiz contexts can be exported and imported in the same way as other contexts but it is more useful to also include the quiz structure. `createrepo.php` and `exportrepofrommoodle.php` will attempt to export the quiz structure when the contextlevel is set to `module`. This may not work as a quiz can contain questions from multiple contexts. Gitsync can currently handle quizzes that have questions in 2 contexts but this requires the user to specify a manifest filepath for the nonquiz context (either in the initial export/create or later using `exportquizstructurefrommoodle.php`). In most cases, this will be a course manifest file. The quiz structure is stored in a file `quiz-name_quiz.json` at the top of the repo. Unlike the manifest, the quiz structure is independent of Moodle and should be tracked by Git. It holds basic quiz information such as headings and the relative location of questions within the directory of the quiz context and of the secondary context.
 
-Normally Gitsync retrieves questions within a Moodle context, returning all or a subselection of question categories with the repo directory structure matching the category structure in Moodle. Courses and quizzes are in separate contexts, however.
+When importing a quiz into a different course, `importquiztomoodle.php` should be used. This creates a quiz, imports the quiz context questions and then populates the structure of the quiz. A quiz structure should only be imported once. Update it manually within Moodle. Using `importrepotomoodle.php` for a `module` context will simply update the questions in Moodle.
 
-A quiz can contain questions from multiple contexts. Gitsync can currently handle quizzes that have questions in 2 contexts. This usually requires the user to specify a manifest filepath for the nonquiz context. In most cases, this will be a course manifest file. 
+### Whole course
+
+Normally Gitsync retrieves questions within a Moodle context, returning all or a subselection of question categories, with the repo directory structure matching the category structure in Moodle. Courses and quizzes are in separate contexts, however. There are scripts specifically to export and import a 'whole course' to and from a single Git repo with the course and quizzes in sibling directories. The course and quizzes still have separate manifests so can also be imported/exported individually if required.
+
+## Quiz examples
 
 ### To handle a quiz that only uses questions from its own context
 - `createrepo.php` will export the quiz structure along with the questions into the new repo.
 - `exportrepofrommoodle.php` will update the quiz structure along with the questions in the repo.
-- Use `importquiztomoodle.php` for initial import of questions and structure into a Moodle instance. (Quiz will be created within a specified course.)
+- Use `importquiztomoodle.php` for initial import of questions and structure into a Moodle instance. (The quiz will be created within a specified course.)
 - Use `importrepotomoodle.php` to update questions in Moodle.
 - Manually update structure in Moodle.
 
@@ -197,7 +202,7 @@ Create quiz and import into course with `id=2`:
 ### To handle a course and its quizzes in a single repo
 - `createwholecourserepo.php` will export a course context and associated quizzes in sibling directories. As long as the quizzes only use questions from the course and their own context, the quiz structures will be exported.
 - `exportwholecoursefrommoodle.php` will update the questions and quiz structures in the repo.
-- Use `importwholecoursetomoodle.php` for initial import of course questions and quiz structures into Moodle. Also use it to update questions in Moodle. (Quizesz will be created within the course.)
+- Use `importwholecoursetomoodle.php` for initial import of course questions and quiz structures into Moodle. Also use it to update questions in Moodle. (Quizzes will be created within the course.)
 - Manually update structure in Moodle.
 
 Example:  
