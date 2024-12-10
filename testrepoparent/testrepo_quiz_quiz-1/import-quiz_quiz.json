@@ -1,0 +1,39 @@
+{
+    "quiz": {
+        "name": "Quiz 1",
+        "intro": "Quiz intro",
+        "introformat": "0",
+        "questionsperpage": "0",
+        "grade": "100.00000",
+        "navmethod": "free"
+    },
+    "sections": [
+        {
+            "firstslot": "1",
+            "heading": "Heading 1",
+            "shufflequestions": 0
+        },
+        {
+            "firstslot": "2",
+            "heading": "Heading 2",
+            "shufflequestions": 0
+        }
+    ],
+    "questions": [
+        {
+            "quizfilepath": "\/top\/Quiz-Question.xml",
+            "slot": "1",
+            "page": "1",
+            "requireprevious": 0,
+            "maxmark": "1.0000000"
+        }
+    ],
+    "feedback": [
+        {
+            "feedbacktext": "Quiz feedback",
+            "feedbacktextformat": "0",
+            "mingrade": "0.0000000",
+            "maxgrade": "50.000000"
+        }
+    ]
+}

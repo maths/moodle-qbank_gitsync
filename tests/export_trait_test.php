@@ -35,7 +35,7 @@ use org\bovigo\vfs\vfsStream;
  *
  * @covers \gitsync\export_repo::class
  */
-class export_trait_test extends advanced_testcase {
+final class export_trait_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -54,23 +54,26 @@ class export_trait_test extends advanced_testcase {
     const MOODLE = 'fakeexport';
 
     public function setUp(): void {
+        parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
         $root = vfsStream::setup();
-        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepo/', $root);
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/testrepo/', $root);
         $this->rootpath = vfsStream::url('root');
 
         // Mock the combined output of command line options and defaults.
         $this->options = [
             'moodleinstance' => self::MOODLE,
             'rootdirectory' => $this->rootpath,
+            'nonquizmanifestpath' => null,
             'subcategory' => null,
             'qcategoryid' => null,
             'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
             'token' => 'XXXXXX',
             'help' => false,
             'ignorecat' => null,
+            'usegit' => true,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',
@@ -89,7 +92,7 @@ class export_trait_test extends advanced_testcase {
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'handle_abort',
+            'get_curl_request', 'call_exit',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->exportrepo->curlrequest = $this->curl;
         $this->exportrepo->listcurlrequest = $this->listcurl;
@@ -102,7 +105,7 @@ class export_trait_test extends advanced_testcase {
      *
      * @return void
      */
-    public function set_curl_output():void {
+    public function set_curl_output(): void {
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
@@ -135,7 +138,7 @@ class export_trait_test extends advanced_testcase {
      *
      * @return void
      */
-    public function set_curl_output_same_name():void {
+    public function set_curl_output_same_name(): void {
         $this->curl->expects($this->exactly(5))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
@@ -305,8 +308,8 @@ class export_trait_test extends advanced_testcase {
                                  "questioncategory": "subcat 2_1"}]}');
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"question": "<quiz><question type=\"category\"><category>' .
-                          '<text>top/Source 2/cat 2/subcat 2_1</category></question>' .
-                          '<question><name><text>Third Question</text></name></question></quiz>", "version": "10"}',
+                          '<text>top/Source 2/cat 2/subcat 2_1</text></category></question>' .
+                          '<question><name><text>Third Question</name></question></quiz>", "version": "10"}',
         );
 
         @$this->exportrepo->export_to_repo_main_process($questions);

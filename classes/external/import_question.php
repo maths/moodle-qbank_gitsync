@@ -105,7 +105,7 @@ class import_question extends external_api {
                                     ?string $qcategoryname, array $fileinfo,
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null,  ?string $qcategoryid = null,
-                                    ?string $instanceid = null):object {
+                                    ?string $instanceid = null): object {
         global $CFG, $DB, $USER;
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,

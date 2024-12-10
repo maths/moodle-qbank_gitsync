@@ -4,11 +4,11 @@
         "coursename": "",
         "modulename": "",
         "coursecategory": "",
-        "qcategoryname": "/top",
         "instanceid": "",
         "defaultsubdirectory": "top\/cat-2",
         "defaultsubcategoryid": 5,
-        "defaultignorecat": "/subcat 2_1/"
+        "defaultignorecat": "/subcat 2_1/",
+        "moodleurl": "fakeurl.com"
     },
     "questions": [
         {

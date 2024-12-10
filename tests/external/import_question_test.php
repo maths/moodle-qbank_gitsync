@@ -46,7 +46,7 @@ use core_files_external;
  *
  * @covers \gitsync\external\import_question::execute
  */
-class import_question_test extends externallib_advanced_testcase {
+final class import_question_test extends externallib_advanced_testcase {
     /** @var core_question_generator plugin generator */
     protected \core_question_generator $generator;
     /** @var generated course object */
@@ -63,6 +63,7 @@ class import_question_test extends externallib_advanced_testcase {
     const QNAME = 'Example STACK question';
 
     public function setUp(): void {
+        parent::setUp();
         global $CFG;
         $this->resetAfterTest();
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
@@ -72,7 +73,7 @@ class import_question_test extends externallib_advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->user = $user;
         $this->setUser($user);
-        $this->testrepo = $CFG->dirroot . '/question/bank/gitsync/testrepo/';
+        $this->testrepo = $CFG->dirroot . '/question/bank/gitsync/testrepoparent/testrepo/';
         $this->fileinfo = ['contextid' => '', 'component' => '', 'filearea' => '', 'userid' => '',
                            'itemid' => '', 'filepath' => '', 'filename' => '',
                         ];
@@ -84,7 +85,7 @@ class import_question_test extends externallib_advanced_testcase {
      * @param string $contentpath Path to test file containing question
      * @return void
      */
-    public function upload_file(string $contentpath):void {
+    public function upload_file(string $contentpath): void {
         global $USER;
         $content = file_get_contents($contentpath);
         $context = \context_user::instance($USER->id);
@@ -114,7 +115,7 @@ class import_question_test extends externallib_advanced_testcase {
      *
      * @return context_course
      */
-    public function give_capabilities():context_course {
+    public function give_capabilities(): context_course {
         global $DB;
         // Set the required capabilities - webservice access and export rights on course.
         $context = context_course::instance($this->course->id);

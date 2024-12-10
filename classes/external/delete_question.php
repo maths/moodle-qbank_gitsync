@@ -68,7 +68,7 @@ class delete_question extends external_api {
      * @param string $questionbankentryid questionbankentry id
      * @return object \stdClass success: true or exception
      */
-    public static function execute(string $questionbankentryid):object {
+    public static function execute(string $questionbankentryid): object {
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,
         ]);

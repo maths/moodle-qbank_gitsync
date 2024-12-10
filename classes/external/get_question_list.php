@@ -66,12 +66,13 @@ class get_question_list extends external_api {
      * Returns description of webservice function output.
      * @return external_multiple_structure
      */
-    public static function execute_returns():external_single_structure {
+    public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'contextinfo' => new external_single_structure([
                 'contextlevel' => new external_value(PARAM_TEXT, 'context level description'),
                 'categoryname' => new external_value(PARAM_TEXT, 'course category name (course category context)'),
                 'coursename' => new external_value(PARAM_TEXT, 'course name (course or module context)'),
+                'courseid' => new external_value(PARAM_SEQUENCE, 'course id (course or module context)'),
                 'modulename' => new external_value(PARAM_TEXT, 'module name (module context)'),
                 'instanceid' => new external_value(PARAM_SEQUENCE, 'id of course category, course or module'),
                 'qcategoryname' => new external_value(PARAM_TEXT, 'name of question category'),
@@ -84,6 +85,12 @@ class get_question_list extends external_api {
                     'name' => new external_value(PARAM_TEXT, 'question name'),
                     'questioncategory' => new external_value(PARAM_TEXT, 'question category'),
                     'version' => new external_value(PARAM_SEQUENCE, 'version'),
+                ])
+            ),
+            'quizzes' => new external_multiple_structure(
+                new external_single_structure([
+                    'instanceid' => new external_value(PARAM_SEQUENCE, 'course module id of quiz'),
+                    'name' => new external_value(PARAM_TEXT, 'name of quiz'),
                 ])
             ),
         ]);
@@ -109,7 +116,7 @@ class get_question_list extends external_api {
                                     int $contextlevel, ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null, ?string $qcategoryid = null,
                                     ?string $instanceid = null, bool $contextonly = false,
-                                    ?array $qbankentryids = [''], ?string $ignorecat = null):object {
+                                    ?array $qbankentryids = [''], ?string $ignorecat = null): object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'qcategoryname' => $qcategoryname,
@@ -139,6 +146,7 @@ class get_question_list extends external_api {
         $response->contextinfo = $contextinfo;
         unset($response->contextinfo->context);
         $response->questions = [];
+        $response->quizzes = [];
         $response->contextinfo->qcategoryname = '';
         $response->contextinfo->qcategoryid = null;
         $response->contextinfo->ignorecat = $ignorecat;
@@ -177,6 +185,19 @@ class get_question_list extends external_api {
 
             $response->contextinfo->qcategoryname = self::get_category_path($category);
             $response->contextinfo->qcategoryid = $category->id;
+
+            if ((int) $params['contextlevel'] === \CONTEXT_COURSE) {
+                $response->quizzes = $DB->get_records_sql(
+                    "SELECT cm.id as instanceid, q.name
+                        FROM {course_modules} cm
+                        INNER JOIN {quiz} q ON q.id = cm.instance
+                        INNER JOIN {modules} m ON m.id = cm.module
+                    WHERE cm.course = :courseid
+                        AND m.name = 'quiz'
+                        AND cm.deletioninprogress = 0",
+                    ['courseid' => (int) $contextinfo->instanceid]);
+            }
+
             if ($contextonly) {
                 return $response;
             }
@@ -215,6 +236,7 @@ class get_question_list extends external_api {
                 array_push($response->questions, $qinfo);
             }
         }
+
         return $response;
     }
 
@@ -225,7 +247,7 @@ class get_question_list extends external_api {
      * @param string|null $ignorecat Regex of categories to ignore (along with their descendants)
      * @return array of question categories
      */
-    public static function get_category_descendants(int $parentid, ?string $ignorecat):array {
+    public static function get_category_descendants(int $parentid, ?string $ignorecat): array {
         global $DB;
         $children = $DB->get_records('question_categories', ['parent' => $parentid], null, 'id, parent, name');
         if ($ignorecat) {

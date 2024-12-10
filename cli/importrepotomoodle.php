@@ -135,7 +135,7 @@ $options = [
         'description' => 'Is the repo controlled using Git?',
         'default' => $usegit,
         'variable' => 'usegit',
-        'valuerequired' => false,
+        'valuerequired' => true,
     ],
     [
         'longopt' => 'ignorecat',
@@ -144,6 +144,15 @@ $options = [
         'default' => $ignorecat,
         'variable' => 'ignorecat',
         'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'subcall',
+        'shortopt' => 'w',
+        'description' => 'Is this a subcall of the script?',
+        'default' => false,
+        'variable' => 'subcall',
+        'valuerequired' => false,
+        'hidden' => true,
     ],
 ];
 

@@ -58,7 +58,7 @@ function split_category_path(?string $path): array {
  * @return object
  */
 function get_context(int $contextlevel, ?string $categoryname = null,
-                    ?string $coursename = null, ?string $modulename = null, ?string $instanceid = null):object {
+                    ?string $coursename = null, ?string $modulename = null, ?string $instanceid = null): object {
     global $DB;
     if ($instanceid === '') {
         $instanceid = null;
@@ -66,6 +66,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
     $result = new \stdClass();
     $result->categoryname = null;
     $result->coursename = null;
+    $result->courseid = null;
     $result->modulename = null;
     $result->instanceid = null;
     switch ($contextlevel) {
@@ -95,12 +96,13 @@ function get_context(int $contextlevel, ?string $categoryname = null,
             $result->contextlevel = 'course';
             $result->context = context_course::instance($instanceid);
             $result->instanceid = $instanceid;
+            $result->courseid = $instanceid;
             return $result;
         case \CONTEXT_MODULE:
             if (is_null($instanceid)) {
                 // Assuming here that the module is a quiz.
-                $instanceid = $DB->get_field_sql("
-                    SELECT cm.id
+                $instancedata = $DB->get_record_sql("
+                    SELECT cm.id as cmid, q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
                         JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
@@ -109,11 +111,14 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                                 AND q.name = :quizname
                                 AND m.name = 'quiz'",
                     ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
+                    $instanceid = $instancedata->cmid;
                     $result->coursename = $coursename;
+                    $result->courseid = $instancedata->courseid;
                     $result->modulename = $modulename;
+                    $result->quizid = $instancedata->quizid;
             } else {
                 $instancedata = $DB->get_record_sql("
-                SELECT c.fullname as coursename, q.name as modulename
+                SELECT c.fullname as coursename, q.name as modulename, q.id as quizid
                     FROM {course_modules} cm
                     JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                     JOIN {course} c ON c.id = cm.course
@@ -123,6 +128,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                 ['instanceid' => $instanceid], $strictness = MUST_EXIST);
                 $result->coursename = $instancedata->coursename;
                 $result->modulename = $instancedata->modulename;
+                $result->quizid = $instancedata->quizid;
             }
             $result->contextlevel = 'module';
             $result->context = context_module::instance($instanceid);
@@ -139,7 +145,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
  * @param string $questionbankentryid
  * @return stdClass Contains properties of question such as version and context
  */
-function get_question_data(string $questionbankentryid):stdClass {
+function get_question_data(string $questionbankentryid): stdClass {
     global $DB;
     $questiondata = $DB->get_record_sql("
     SELECT qc.contextid as contextid, c.contextlevel as contextlevel,
@@ -164,7 +170,7 @@ function get_question_data(string $questionbankentryid):stdClass {
  * @param string $questionbankentryid
  * @return stdClass Contains properties of question such as version and context
  */
-function get_minimal_question_data(string $questionbankentryid):stdClass {
+function get_minimal_question_data(string $questionbankentryid): stdClass {
     global $DB;
     $questiondata = $DB->get_record_sql("
     SELECT q.id as questionid, q.name as name, qv.version as version, qv.status as status

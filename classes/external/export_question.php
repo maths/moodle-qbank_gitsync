@@ -76,7 +76,7 @@ class export_question extends external_api {
      * @param bool $includecategory Include a 'category' question
      * @return object \stdClass question details
      */
-    public static function execute(string $questionbankentryid, bool $includecategory):object {
+    public static function execute(string $questionbankentryid, bool $includecategory): object {
         global $DB, $SITE;
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,
@@ -98,8 +98,8 @@ class export_question extends external_api {
             case \CONTEXT_MODULE:
                 $course = $DB->get_record_sql("
                     SELECT c.*
-                      FROM mdl_course_modules cm
-                      JOIN mdl_course c ON c.id = cm.course
+                      FROM {course_modules} cm
+                      JOIN {course} c ON c.id = cm.course
                      WHERE cm.id = :moduleid",
                 ['moduleid' => $questiondata->instanceid],
                 MUST_EXIST);

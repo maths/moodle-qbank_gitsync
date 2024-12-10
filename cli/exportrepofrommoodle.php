@@ -50,6 +50,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'nonquizmanifestpath',
+        'shortopt' => 'p',
+        'description' => 'Quiz export: Filepath of non-quiz manifest file relative to root directory.',
+        'default' => null,
+        'variable' => 'nonquizmanifestpath',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'manifestpath',
         'shortopt' => 'f',
         'description' => 'Filepath of manifest file relative to root directory.',
@@ -95,7 +103,7 @@ $options = [
         'description' => 'Is the repo controlled using Git?',
         'default' => $usegit,
         'variable' => 'usegit',
-        'valuerequired' => false,
+        'valuerequired' => true,
     ],
     [
         'longopt' => 'ignorecat',
@@ -104,6 +112,15 @@ $options = [
         'default' => $ignorecat,
         'variable' => 'ignorecat',
         'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'subcall',
+        'shortopt' => 'w',
+        'description' => 'Is this a subcall of the script?',
+        'default' => false,
+        'variable' => 'subcall',
+        'valuerequired' => false,
+        'hidden' => true,
     ],
 ];
 
@@ -116,3 +133,7 @@ $exportrepo = new export_repo($clihelper, $moodleinstances);
 $clihelper->check_for_changes($exportrepo->manifestpath);
 $clihelper->backup_manifest($exportrepo->manifestpath);
 $exportrepo->process();
+if ($exportrepo->manifestcontents->context->contextlevel === 70 && !$clihelper->get_arguments()['subcall']) {
+    $scriptdirectory = dirname(__FILE__);
+    $exportrepo->export_quiz_structure($clihelper, $scriptdirectory);
+}

@@ -1,0 +1,28 @@
+{
+    "context": {
+        "contextlevel": 70,
+        "coursename": "",
+        "modulename": "Import quiz",
+        "coursecategory": "",
+        "instanceid": "1",
+        "defaultsubdirectory": "top",
+        "defaultsubcategoryid": 5,
+        "moodleurl": "fakeurl.com"
+    },
+    "questions": [
+        {
+            "questionbankentryid": "36001",
+            "filepath": "\/top\/Quiz-Question.xml",
+            "importedversion": "1",
+            "exportedversion": "1",
+            "format": "xml"
+        },
+        {
+            "questionbankentryid": "36002",
+            "filepath": "\/top\/quiz-cat\/Quiz-Question-2.xml",
+            "importedversion": "1",
+            "exportedversion": "1",
+            "format": "xml"
+        }
+    ]
+}

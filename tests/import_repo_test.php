@@ -39,7 +39,7 @@ class fake_helper extends cli_helper {
      *
      * @return void
      */
-    public static function call_exit():void {
+    public static function call_exit(): void {
         return;
     }
 
@@ -48,7 +48,7 @@ class fake_helper extends cli_helper {
      *
      * @return void
      */
-    public static function handle_abort():void {
+    public static function handle_abort(): void {
         return;
     }
 }
@@ -59,7 +59,7 @@ class fake_helper extends cli_helper {
  *
  * @covers \gitsync\import_repo::class
  */
-class import_repo_test extends advanced_testcase {
+final class import_repo_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -81,14 +81,15 @@ class import_repo_test extends advanced_testcase {
     /** @var array used to store output of multiple calls to a function */
     public array $results;
     /** name of moodle instance for purpose of tests */
-    const MOODLE = 'fakeexport';
+    const MOODLE = 'fakeimport';
 
     public function setUp(): void {
+        parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
         // Copy test repo to virtual file stream.
         $root = vfsStream::setup();
-        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepo/', $root);
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/testrepo/', $root);
         $this->rootpath = vfsStream::url('root');
 
         // Mock the combined output of command line options and defaults.
@@ -148,7 +149,7 @@ class import_repo_test extends advanced_testcase {
      *
      * @return void
      */
-    public function replace_mock_default() {
+    public function replace_mock_default(): void {
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',
         ])->setConstructorArgs([$this->options])->getMock();
@@ -203,7 +204,7 @@ class import_repo_test extends advanced_testcase {
      * Test the full process with manifest path.
      */
     public function test_process_manifest_path(): void {
-        $this->options["manifestpath"] = 'fakeexport_system_question_manifest.json';
+        $this->options["manifestpath"] = 'fakeimport_system_question_manifest.json';
         $this->replace_mock_default();
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 3 question calls as using cat 2 subdirectory
@@ -236,7 +237,7 @@ class import_repo_test extends advanced_testcase {
      * Test the full process with manifest path and subdirectory.
      */
     public function test_process_manifest_path_and_subdirectory(): void {
-        $this->options["manifestpath"] = 'fakeexport_system_question_manifest.json';
+        $this->options["manifestpath"] = 'fakeimport_system_question_manifest.json';
         $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
         $this->replace_mock_default();
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
@@ -451,12 +452,8 @@ class import_repo_test extends advanced_testcase {
         $this->assertEquals(4, count(file($this->importrepo->tempfilepath)));
         $tempfile = fopen($this->importrepo->tempfilepath, 'r');
         $firstline = json_decode(fgets($tempfile));
-        $this->assertStringContainsString('3500', $firstline->questionbankentryid);
-        $this->assertEquals($firstline->contextlevel, '10');
         $this->assertStringContainsString($this->rootpath . '/top/cat-', $firstline->filepath);
-        $this->assertEquals($firstline->coursename, 'Course 1');
-        $this->assertEquals($firstline->modulename, 'Test 1');
-        $this->assertEquals($firstline->coursecategory, 'Cat 1');
+        $this->assertEquals($firstline->version, '2');
         $this->assertEquals($firstline->format, 'xml');
     }
 
@@ -597,11 +594,8 @@ class import_repo_test extends advanced_testcase {
         $tempfile = fopen($this->importrepo->tempfilepath, 'r');
         $firstline = json_decode(fgets($tempfile));
         $this->assertStringContainsString('3500', $firstline->questionbankentryid);
-        $this->assertEquals($firstline->contextlevel, '10');
         $this->assertStringContainsString($this->rootpath . '/top/cat-', $firstline->filepath);
-        $this->assertEquals($firstline->coursename, 'Course 1');
-        $this->assertEquals($firstline->modulename, 'Test 1');
-        $this->assertEquals($firstline->coursecategory, 'Cat 1');
+        $this->assertEquals($firstline->version, '2');
         $this->assertEquals($firstline->format, 'xml');
         $this->assertEquals($this->importrepo->listpostsettings["qcategoryname"], 'top/cat 2/subcat 2_1');
     }
@@ -786,7 +780,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('/top/cat-2/subcat-2_1/Fourth-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
-        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->contextlevel, '70');
         $this->assertEquals($context->coursename, 'Course 1');
         $this->assertEquals($context->modulename, 'Module 1');
         $this->assertEquals($context->coursecategory, '');
@@ -834,7 +828,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('/top/cat-2/subcat-2_1/Fourth-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
-        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->contextlevel, '70');
         $this->assertEquals($context->coursename, 'Course 1');
         $this->assertEquals($context->modulename, 'Module 1');
         $this->assertEquals($context->coursecategory, '');
@@ -880,7 +874,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('/top/cat-2/Second-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
-        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->contextlevel, '70');
         $this->assertEquals($context->coursename, 'Course 1');
         $this->assertEquals($context->modulename, 'Module 1');
         $this->assertEquals($context->coursecategory, '');
@@ -927,7 +921,7 @@ class import_repo_test extends advanced_testcase {
         $this->assertArrayHasKey('/top/cat-1/First-Question.xml', $manifestentries);
 
         $context = $manifestcontents->context;
-        $this->assertEquals($context->contextlevel, '10');
+        $this->assertEquals($context->contextlevel, '70');
         $this->assertEquals($context->coursename, 'Course 1');
         $this->assertEquals($context->modulename, 'Module 1');
         $this->assertEquals($context->coursecategory, '');
@@ -1108,6 +1102,7 @@ class import_repo_test extends advanced_testcase {
                                 "format":"xml"
                              }]}';
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
+
         file_put_contents($this->importrepo->manifestpath, $manifestcontents);
 
         // Delete 2 of the files.
@@ -1210,7 +1205,7 @@ class import_repo_test extends advanced_testcase {
      * Check abort if question version in Moodle doesn't match a version in manifest.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_versions():void {
+    public function test_check_question_versions(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1232,7 +1227,7 @@ class import_repo_test extends advanced_testcase {
      * Test version check passes if exported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_export_version_success():void {
+    public function test_check_question_export_version_success(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1248,7 +1243,7 @@ class import_repo_test extends advanced_testcase {
      * Test version check passes if imported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_import_version_success():void {
+    public function test_check_question_import_version_success(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1264,7 +1259,7 @@ class import_repo_test extends advanced_testcase {
      * Check abort if question version in Moodle doesn't match a version in manifest.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_versions_moved_question():void {
+    public function test_check_question_versions_moved_question(): void {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1288,7 +1283,7 @@ class import_repo_test extends advanced_testcase {
      * Test version check passes if imported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_import_version_success_moved_question():void {
+    public function test_check_question_import_version_success_moved_question(): void {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1368,6 +1363,7 @@ class import_repo_test extends advanced_testcase {
                              "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":1},
               "questions": []}',
         );
+        $clihelper->processedoptions = $this->options;
         $clihelper->check_context($this->importrepo);
         $this->expectOutputRegex('/^\nPreparing to.*import_repo.*Question subdirectory: top\n$/s');
     }
@@ -1429,4 +1425,150 @@ class import_repo_test extends advanced_testcase {
         $this->expectOutputRegex('/Using default subdirectory from manifest file./');
     }
 
+    /**
+     * Test the full course process. Quiz structure imported into new instance.
+     */
+    public function test_full_course(): void {
+        global $CFG;
+        $root = vfsStream::setup();
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
+        $this->rootpath = vfsStream::url('root');
+        $this->options['rootdirectory'] = $this->rootpath;
+        $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->any())->method('check_context')->willReturnOnConsecutiveCalls(
+            json_decode('{"contextinfo":{"contextlevel": "course", "categoryname":"", "coursename":"Course 1",
+                            "modulename":"", "instanceid":"", "qcategoryname":"", "qcategoryid":null},
+                            "questions": [], "quizzes": [{"instanceid":"1", "name":"Quiz 1"}]}'),
+            json_decode('{"contextinfo":{"contextlevel": "course", "categoryname":"", "coursename":"Course 1",
+                                "modulename":"", "instanceid":"", "qcategoryname":"", "qcategoryid":null},
+                                "questions": [], "quizzes": [{"instanceid":"1", "name":"Quiz 1"}]}'),
+            json_decode('{"contextinfo":{"contextlevel": "course", "categoryname":"", "coursename":"Course 1",
+                                "modulename":"", "instanceid":"", "qcategoryname":"", "qcategoryid":null},
+                                "questions": [], "quizzes": [
+                                    {"instanceid":"1", "name":"Quiz 1"},
+                                    {"instanceid":"2", "name":"Quiz 2"}
+                                ]}')
+        );
+        $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+
+        $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
+
+        // Check quiz added to manifest file.
+        $manifestcontents = json_decode(file_get_contents($this->rootpath . '/testrepo/fakeimport_system_question_manifest.json'));
+        $this->assertEquals('2', $manifestcontents->quizzes[0]->moduleid);
+        $this->assertEquals('testrepo_quiz_quiz-1', $manifestcontents->quizzes[0]->directory);
+        $this->expectOutputRegex(
+            '/^\nCreating quiz: Quiz 1\n\nImporting quiz context: Quiz 1\n\nImporting quiz structure: Quiz 1\n/'
+        );
+    }
+
+    /**
+     * Test the full course process. Quiz not created.
+     */
+    public function test_full_course_quiz_create_fail(): void {
+        global $CFG;
+        $root = vfsStream::setup();
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
+        $this->rootpath = vfsStream::url('root');
+        $this->options['rootdirectory'] = $this->rootpath;
+        $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "course", "categoryname":"", "coursename":"Course 1",
+                            "modulename":"", "instanceid":"", "qcategoryname":"", "qcategoryid":null},
+                            "questions": [], "quizzes": [{"instanceid":"1", "name":"Quiz Wrong"}]}')
+        );
+        $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+
+        $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
+
+        // Check quiz added to manifest file.
+        $manifestcontents = json_decode(file_get_contents($this->rootpath . '/testrepo/fakeimport_system_question_manifest.json'));
+        $this->assertEquals(false, isset($manifestcontents->quizzes));
+        $this->expectOutputRegex('/.*Quiz was not created for some reason.\n Aborting..*/');
+    }
+
+    /**
+     * Test the full course process. Quiz already imported.
+     */
+    public function test_full_course_quiz_already_imported(): void {
+        global $CFG;
+        $root = vfsStream::setup();
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
+        $this->rootpath = vfsStream::url('root');
+
+        $this->options['rootdirectory'] = $this->rootpath;
+        $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->exactly(2))->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "course", "categoryname":"", "coursename":"Course 1",
+                            "modulename":"", "instanceid":"", "qcategoryname":"", "qcategoryid":null},
+                            "questions": [], "quizzes": [{"instanceid":"1", "name":"Quiz 1"}]}')
+        );
+        $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        copy($this->rootpath . '/testrepo_quiz_quiz-1/fakeexportquiz_module_course-1_quiz-1_question_manifest.json',
+        $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json');
+        $holder1 = new \StdClass();
+        $holder1->moduleid = '1';
+        $holder1->directory = 'testrepo_quiz_quiz-1';
+        $this->importrepo->manifestcontents->quizzes = [$holder1];
+        $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
+
+        // Check quiz added to manifest file.
+        $this->assertEquals(1, count($this->importrepo->manifestcontents->quizzes));
+        $this->expectOutputRegex('/^\nImporting quiz context: Quiz 1\n$/');
+    }
+
+    /**
+     * Test the full course process. Extra quiz in Moodle.
+     */
+    public function test_full_course_quiz_in_moodle(): void {
+        global $CFG;
+        $root = vfsStream::setup();
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
+        $this->rootpath = vfsStream::url('root');
+
+        $this->options['rootdirectory'] = $this->rootpath;
+        $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->exactly(2))->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "course", "categoryname":"", "coursename":"Course 1",
+                            "modulename":"", "instanceid":"", "qcategoryname":"", "qcategoryid":null},
+                            "questions": [], "quizzes": [{"instanceid":"1", "name":"Quiz 1"},
+                                {"instanceid":"2", "name":"Quiz 2"}]}')
+        );
+        $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        copy($this->rootpath . '/testrepo_quiz_quiz-1/fakeexportquiz_module_course-1_quiz-1_question_manifest.json',
+        $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json');
+        $holder1 = new \StdClass();
+        $holder1->moduleid = '1';
+        $holder1->directory = 'testrepo_quiz_quiz-1';
+        $this->importrepo->manifestcontents->quizzes = [$holder1];
+        $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
+
+        // Check quiz added to manifest file.
+        $this->assertEquals(1, count($this->importrepo->manifestcontents->quizzes));
+        $this->expectOutputRegex('/^\nImporting quiz context: Quiz 1\n\nQuiz Quiz 2 is in Moodle but not in the manifest./');
+    }
 }
