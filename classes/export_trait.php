@@ -231,7 +231,8 @@ trait export_trait {
         $quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                     $this->manifestcontents->context->coursename,
                     $this->manifestcontents->context->modulename, dirname($this->manifestpath));
-        $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath, $scriptdirectory);
+        $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath,
+                                            $this->nonquizmanifestpath, $scriptdirectory);
         echo $output;
     }
 
@@ -241,13 +242,14 @@ trait export_trait {
      * @param string $moodleinstance
      * @param string $token
      * @param string $quizmanifestpath
+     * @param string|null $nonquizmanifestpath
      * @param string $scriptdirectory
      * @return string|null
      */
-    public function call_export_quiz(string $moodleinstance, string $token,
-                                    string $quizmanifestpath, string $scriptdirectory): ?string {
+    public function call_export_quiz(string $moodleinstance, string $token, string $quizmanifestpath,
+                                    ?string $nonquizmanifestpath, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
-        $nonquiz = ($this->nonquizmanifestpath) ? ' -p "' . $this->nonquizmanifestpath . '"' : '';
+        $nonquiz = ($nonquizmanifestpath) ? ' -p "' . $nonquizmanifestpath . '"' : '';
         return shell_exec('php exportquizstructurefrommoodle.php -u ' . $this->usegit .
                 ' -w -r "" -i "' . $moodleinstance . '" -t "'
                 . $token. '" -f "' . $quizmanifestpath . '"' . $nonquiz);

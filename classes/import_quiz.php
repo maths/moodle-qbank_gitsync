@@ -317,8 +317,12 @@ class import_quiz {
         } else {
             $directory = $arguments['rootdirectory'];
         }
-        $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
-                $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : $arguments['nonquizmanifestpath'];
+        if ($arguments['nonquizmanifestpath']) {
+            $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
+                    $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : $arguments['nonquizmanifestpath'];
+        } else {
+            $this->nonquizmanifestpath = null;
+        }
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {

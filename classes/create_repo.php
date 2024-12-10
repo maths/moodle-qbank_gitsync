@@ -87,9 +87,9 @@ class create_repo {
     /**
      * Path to actual manifest file.
      *
-     * @var string
+     * @var string|null
      */
-    public string $nonquizmanifestpath;
+    public ?string $nonquizmanifestpath;
     /**
      * Path to temporary manifest file.
      *
@@ -140,8 +140,12 @@ class create_repo {
         } else {
             $this->directory = $arguments['rootdirectory'];
         }
-        $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
+        if ($arguments['nonquizmanifestpath']) {
+            $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
                     $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : $arguments['nonquizmanifestpath'];
+        } else {
+            $this->nonquizmanifestpath = null;
+        }
         $this->subcategory = ($arguments['subcategory']) ? $arguments['subcategory'] : 'top';
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
@@ -284,7 +288,8 @@ class create_repo {
             echo $output;
             $quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
-            $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath, $scriptdirectory);
+            $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath,
+                                                $this->manifestpath, $scriptdirectory);
             $quizlocation = new \StdClass();
             $quizlocation->moduleid = $instanceid;
             $quizlocation->directory = basename($rootdirectory);

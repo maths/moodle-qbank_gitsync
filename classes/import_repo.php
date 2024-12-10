@@ -910,6 +910,11 @@ class import_repo {
                     break;
                 }
             }
+            if (!$structurefile) {
+                echo "\nNo structure file in {$rootdirectory}\nQuiz not imported.\n";
+                continue;
+            }
+
             $structurefilepath = $rootdirectory . '/' . $structurefile;
             $contentsjson = file_get_contents($structurefilepath);
             $structurecontents = json_decode($contentsjson);

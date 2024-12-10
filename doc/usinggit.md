@@ -156,7 +156,7 @@ When importing a quiz into a different course, `importquiztomoodle.php` should b
 
 ### Whole course
 
-Normally Gitsync retrieves questions within a Moodle context, returning all or a subselection of question categories, with the repo directory structure matching the category structure in Moodle. Courses and quizzes are in separate contexts, however. There are scripts specifically to export and import a 'whole course' to and from a single Git repo with the course and quizzes in sibling directories. The course and quizzes still have separate manifests so can also be imported/exported individually if required.
+Normally Gitsync retrieves questions within a Moodle context, returning all or a subselection of question categories, with the repo directory structure matching the category structure in Moodle. Courses and quizzes are in separate contexts, however. There are scripts specifically to export and import a 'whole course' to and from a single Git repo with the course and quizzes in sibling directories. The course and quizzes still have separate manifests so can also be imported/exported individually if required. The manifest for the course links the quiz instance ids in Moodle to the quiz directories in the repo.
 
 ## Quiz examples
 
