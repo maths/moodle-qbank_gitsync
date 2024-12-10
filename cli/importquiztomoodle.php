@@ -74,6 +74,14 @@ $options = [
         'hidden' => true,
     ],
     [
+        'longopt' => 'nonquizmanifestpath',
+        'shortopt' => 'p',
+        'description' => 'Filepath of non-quiz manifest file relative to root directory.',
+        'default' => null,
+        'variable' => 'nonquizmanifestpath',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'quizdatapath',
         'shortopt' => 'a',
         'description' => 'Filepath of quiz data file relative to root directory.',

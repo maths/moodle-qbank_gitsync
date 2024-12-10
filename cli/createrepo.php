@@ -116,6 +116,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'nonquizmanifestpath',
+        'shortopt' => 'p',
+        'description' => 'Filepath of non-quiz manifest file relative to root directory.',
+        'default' => null,
+        'variable' => 'nonquizmanifestpath',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'token',
         'shortopt' => 't',
         'description' => 'Security token for webservice.',
@@ -169,12 +177,14 @@ $clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
 // If we're exporting a quiz then we try getting the structure as well.
-// Skip if we're creating a whole cpurse repo or we'll do it twice!
+// Skip if we're creating a whole course repo or we'll do it twice!
 if ($createrepo->manifestcontents->context->contextlevel === 70 && !$clihelper->get_arguments()['subcall']) {
     $scriptdirectory = dirname(__FILE__);
     $createrepo->export_quiz_structure($clihelper, $scriptdirectory);
-    chdir(dirname($createrepo->manifestpath));
-    exec("git add --all");
-    exec('git commit -m "Initial Commit - Quiz structure"');
+    if ($clihelper->get_arguments()['usegit']) {
+        chdir(dirname($createrepo->manifestpath));
+        exec("git add --all");
+        exec('git commit -m "Initial Commit - Quiz structure"');
+    }
 }
 

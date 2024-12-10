@@ -85,6 +85,12 @@ class create_repo {
      */
     public string $manifestpath;
     /**
+     * Path to actual manifest file.
+     *
+     * @var string
+     */
+    public string $nonquizmanifestpath;
+    /**
      * Path to temporary manifest file.
      *
      * @var string
@@ -134,6 +140,8 @@ class create_repo {
         } else {
             $this->directory = $arguments['rootdirectory'];
         }
+        $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
+                    $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : $arguments['nonquizmanifestpath'];
         $this->subcategory = ($arguments['subcategory']) ? $arguments['subcategory'] : 'top';
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];

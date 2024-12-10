@@ -306,6 +306,10 @@ class import_repo {
             $this->manifestcontents->questions = [];
         } else {
             $this->manifestcontents = $manifestcontents;
+            if ($this->manifestcontents->context->moodleurl !== $this->moodleurl) {
+                echo "\nManifest file is for the wrong Moodle instance: {$this->manifestcontents}\nAborting.\n";
+                $this->call_exit();
+            }
         }
 
         if ($manifestpath) {
@@ -871,7 +875,7 @@ class import_repo {
     }
 
     /**
-     * Create/update quizzes.
+     * Create/update quizzes for whole course.
      * @param object $clihelper
      * @param string $scriptdirectory - directory of CLI scripts
      * @return void

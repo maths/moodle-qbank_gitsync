@@ -50,6 +50,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'nonquizmanifestpath',
+        'shortopt' => 'p',
+        'description' => 'Filepath of non-quiz manifest file relative to root directory.',
+        'default' => null,
+        'variable' => 'nonquizmanifestpath',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'manifestpath',
         'shortopt' => 'f',
         'description' => 'Filepath of manifest file relative to root directory.',

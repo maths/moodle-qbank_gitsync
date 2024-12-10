@@ -107,12 +107,17 @@ class export_quiz {
         // Convert command line options into variables.
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
+        $this->moodleurl = $moodleinstances[$moodleinstance];
         $rootdirectory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' : '';
         $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
                     $rootdirectory . $arguments['quizmanifestpath'] : null;
         $this->quizmanifestcontents = json_decode(file_get_contents($this->quizmanifestpath));
         if (!$this->quizmanifestcontents) {
             echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
+            $this->call_exit();
+        }
+        if ($this->quizmanifestcontents->context->moodleurl !== $this->moodleurl) {
+            echo "\nManifest file is for the wrong Moodle instance: {$this->quizmanifestpath}\nAborting.\n";
             $this->call_exit();
         }
         $instanceid = $this->quizmanifestcontents->context->instanceid;
@@ -124,6 +129,10 @@ class export_quiz {
                 echo "\nUnable to access or parse manifest file: {$this->nonquizmanifestpath}\nAborting.\n";
                 $this->call_exit();
             }
+            if ($this->nonquizmanifestcontents->context->moodleurl !== $this->moodleurl) {
+                echo "\nManifest file is for the wrong Moodle instance: {$this->nonquizmanifestpath}\nAborting.\n";
+                $this->call_exit();
+            }
         }
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
@@ -131,7 +140,6 @@ class export_quiz {
             $token = $arguments['token'];
         }
 
-        $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
         $this->curlrequest = $this->get_curl_request($wsurl);

@@ -140,6 +140,7 @@ class import_quiz {
         $directoryprefix = ($directory) ? $directory . '/' : '';
         $coursename = $arguments['coursename'];
         $moodleinstance = $arguments['moodleinstance'];
+        $this->moodleurl = $moodleinstances[$moodleinstance];
         $instanceid = $arguments['instanceid'];
         $contextlevel = 50;
         $this->usegit = $arguments['usegit'];
@@ -150,8 +151,11 @@ class import_quiz {
             if (!$this->quizmanifestcontents) {
                 echo "\nUnable to access or parse manifest file: {$this->quizmanifestpath}\nAborting.\n";
                 $this->call_exit();
-
             } else {
+                if ($this->quizmanifestcontents->context->moodleurl !== $this->moodleurl) {
+                    echo "\nManifest file is for the wrong Moodle instance: {$this->quizmanifestpath}\nAborting.\n";
+                    $this->call_exit();
+                }
                 $this->cmid = $this->quizmanifestcontents->context->instanceid;
                 $this->quizdatapath = ($arguments['quizdatapath']) ? $directoryprefix . $arguments['quizdatapath']
                                         : cli_helper::get_quiz_structure_path($this->quizmanifestcontents->context->modulename,
@@ -188,11 +192,15 @@ class import_quiz {
             }
         }
         if (!empty($arguments['nonquizmanifestpath'])) {
-            $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
-                                $directoryprefix . $arguments['nonquizmanifestpath'] : null;
+            $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
+                    $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : $arguments['nonquizmanifestpath'];
             $this->nonquizmanifestcontents = json_decode(file_get_contents($this->nonquizmanifestpath));
             if (!$this->nonquizmanifestcontents) {
                 echo "\nUnable to access or parse manifest file: {$this->nonquizmanifestpath}\nAborting.\n";
+                $this->call_exit();
+            }
+            if ($this->nonquizmanifestcontents->context->moodleurl !== $this->moodleurl) {
+                echo "\nManifest file is for the wrong Moodle instance: {$this->nonquizmanifestpath}\nAborting.\n";
                 $this->call_exit();
             }
             if (!$instanceid && $this->nonquizmanifestcontents->context->contextlevel === cli_helper::get_context_level('course')) {
@@ -216,7 +224,6 @@ class import_quiz {
             $token = $arguments['token'];
         }
 
-        $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
         $this->listcurlrequest = $this->get_curl_request($wsurl);
@@ -310,6 +317,8 @@ class import_quiz {
         } else {
             $directory = $arguments['rootdirectory'];
         }
+        $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
+                $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : $arguments['nonquizmanifestpath'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -353,10 +362,10 @@ class import_quiz {
      */
     public function call_import_quiz_data(string $moodleinstance, string $token, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
+        $nonquiz = ($this->nonquizmanifestpath) ? ' -p "' . $this->nonquizmanifestpath . '"' : '';
         return shell_exec('php importquizstructuretomoodle.php -u ' . $this->usegit .
-                    ' -w -r "" -i "' . $moodleinstance . '" -t ' . $token. ' -p "' . $this->nonquizmanifestpath.
-                    '" -a "' . $this->quizdatapath .
-                    '" -f "' . $this->quizmanifestpath. '"');
+                    ' -w -r "" -i "' . $moodleinstance . '" -t ' . $token. ' -a "' . $this->quizdatapath .
+                    '" -f "' . $this->quizmanifestpath. '"' . $nonquiz);
     }
 
     /**

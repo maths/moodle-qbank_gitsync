@@ -247,9 +247,10 @@ trait export_trait {
     public function call_export_quiz(string $moodleinstance, string $token,
                                     string $quizmanifestpath, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
+        $nonquiz = ($this->nonquizmanifestpath) ? ' -p "' . $this->nonquizmanifestpath . '"' : '';
         return shell_exec('php exportquizstructurefrommoodle.php -u ' . $this->usegit .
                 ' -w -r "" -i "' . $moodleinstance . '" -t "'
-                . $token. '" -p "' . $this->manifestpath . '" -f "' . $quizmanifestpath . '"');
+                . $token. '" -f "' . $quizmanifestpath . '"' . $nonquiz);
     }
 
     /**

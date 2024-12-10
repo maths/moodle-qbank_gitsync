@@ -174,11 +174,11 @@ Import questions again after updates in the repo:
 Create quiz and import into course with `id=2`:  
 `php importquiztomoodle.php -d 'quizexport' -n 2`
 
-### To handle a quiz that only uses questions from another context
-- `createrepo.php` will export the questions into the new repo but will not export the structure and will list the questions from other contexts.
-- `exportrepofrommoodle.php` will update the questions in the repo.
-- Use `exportquizstructurefrommoodle.php` to export the quiz structure from Moodle.
-- Use `importquiztomoodle.php` for initial import of questions and structure into a Moodle instance. (Quiz will be created within a specified course.)
+### To handle a quiz that uses questions from another context
+- `createrepo.php` will export the questions into the new repo but will not export the structure and will list the questions from other contexts unless you also supply a manifest file containing the additional questions.
+- `exportrepofrommoodle.php` will update the questions in the repo (and the quiz structure if you supply the manifest file again).
+- Use `exportquizstructurefrommoodle.php` to export just the quiz structure from Moodle if needed.
+- Use `importquiztomoodle.php` for initial import of questions and structure into a Moodle instance. (The quiz will be created within a specified course.)
 - Use `importrepotomoodle.php` to update questions in Moodle.
 - Manually update structure in Moodle.
 
@@ -186,17 +186,13 @@ Example:
 Initialise repo for quiz:  
 `git init quizexport`  
 Export quiz with `cmid=50` into directory `quizexport` (assuming rootdirectory, token, moodleinstance, usegit, etc, all set in your config file.):  
-`php createrepo.php -d 'quizexport' -l module -n 50`  
-Export quiz structure by supplying quiz and course manifests:  
-`php exportquizstructurefrommoodle.php -f 'quizexport/instance1_module_course-1_mixed-quiz_question_manifest.json' -p 'course1/instance1_course_course-1_question_manifest.json'`  
+`php createrepo.php -d 'quizexport' -l module -n 49 -p 'course1/instance1_course_course-1_question_manifest.json'`  
 Export questions/structures again after updates in Moodle:  
-`php exportrepofrommoodle.php -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
-`php exportquizstructurefrommoodle.php -f 'quizexport/instance1_module_course-1_mixed-quiz_question_manifest.json' -p 'course1/instance1_course_course-1_question_manifest.json'`  
+`php exportrepofrommoodle.php -f 'quizexport/instance1_module_course-1_mixed-quiz_question_manifest.json' -p 'course1/instance1_course_course-1_question_manifest.json'`  
 Import questions again after updates in the repo:  
-`php importrepotomoodle.php -f 'quizexport/instance1_module_course-1_quiz-only_question_manifest.json'`  
+`php importrepotomoodle.php -f 'quizexport/instance1_module_course-1_mixed-quiz_question_manifest.json'`  
 Create quiz and import into course with `id=2`:  
 `php importquiztomoodle.php -d 'quizexport' -n 2 -p 'course1/instance1_course_course-1_question_manifest.json'`  
-
 
 ### To handle a course and its quizzes in a single repo
 - `createwholecourserepo.php` will export a course context and associated quizzes in sibling directories. As long as the quizzes only use questions from the course and their own context, the quiz structures will be exported.

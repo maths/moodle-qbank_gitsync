@@ -69,6 +69,12 @@ class export_repo {
      */
     public string $manifestpath;
     /**
+     * Full path to manifest file
+     *
+     * @var string
+     */
+    public string $nonquizmanifestpath;
+    /**
      * Path to temporary manifest file
      *
      * @var string
@@ -120,6 +126,8 @@ class export_repo {
         $defaultwarning = false;
         $this->manifestpath = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['manifestpath'] :
                                                             $arguments['manifestpath'];
+        $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
+                    $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : $arguments['nonquizmanifestpath'];
         if (is_array($arguments['token'])) {
             $token = $arguments['token'][$moodleinstance];
         } else {
@@ -130,6 +138,11 @@ class export_repo {
             echo "\nUnable to access or parse manifest file: {$this->manifestpath}\nAborting.\n";
             $this->call_exit();
         }
+        if ($this->manifestcontents->context->moodleurl !== $this->moodleurl) {
+            echo "\nManifest file is for the wrong Moodle instance: {$this->manifestcontents}\nAborting.\n";
+            $this->call_exit();
+        }
+
         if ($arguments['subcategory']) {
             $this->subcategory = $arguments['subcategory'];
             $qcategoryid = null;
@@ -374,21 +387,6 @@ class export_repo {
         chdir($scriptdirectory);
         return shell_exec('php createrepo.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat);
-    }
-
-    /**
-     * Separate out exec call for mocking.
-     *
-     * @param string $moodleinstance
-     * @param string $token
-     * @param string $quizmanifestpath
-     * @return string|null
-     */
-    public function call_export_quiz(string $moodleinstance, string $token,
-                                    string $quizmanifestpath, string $scriptdirectory): ?string {
-        chdir($scriptdirectory);
-        return shell_exec('php exportquizstructurefrommoodle.php -u ' . $this->usegit . ' -w -r "" -i "' . $moodleinstance . '" -t '
-                . $token. ' -p "' . $this->manifestpath . '" -f "' . $quizmanifestpath . '"');
     }
 
     /**
