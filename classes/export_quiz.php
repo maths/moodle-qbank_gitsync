@@ -121,7 +121,7 @@ class export_quiz {
             $this->call_exit();
         }
         $instanceid = $this->quizmanifestcontents->context->instanceid;
-        if ($arguments['nonquizmanifestpath']) {
+        if (!empty($arguments['nonquizmanifestpath'])) {
             $this->nonquizmanifestpath = ($arguments['nonquizmanifestpath']) ?
                     $rootdirectory . $arguments['nonquizmanifestpath'] : null;
             $this->nonquizmanifestcontents = json_decode(file_get_contents($this->nonquizmanifestpath));

@@ -140,7 +140,7 @@ class create_repo {
         } else {
             $this->directory = $arguments['rootdirectory'];
         }
-        if ($arguments['nonquizmanifestpath']) {
+        if (!empty($arguments['nonquizmanifestpath'])) {
             $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
                     $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : $arguments['nonquizmanifestpath'];
         } else {

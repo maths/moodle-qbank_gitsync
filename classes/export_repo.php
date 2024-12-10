@@ -131,7 +131,7 @@ class export_repo {
         } else {
             $this->manifestpath = null;
         }
-        if ($arguments['nonquizmanifestpath']) {
+        if (!empty($arguments['nonquizmanifestpath'])) {
             $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
                         $arguments['rootdirectory'] . '/' . $arguments['nonquizmanifestpath'] : $arguments['nonquizmanifestpath'];
         } else {
