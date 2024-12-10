@@ -36,7 +36,7 @@ You need to download the gitsync scripts and set it up locally as described belo
   4) Restart the web server e.g. `systemctl restart apache2`.
 
 ## Setup
-- Open a terminal and clone this repository `git clone https://github.com/maths/moodle-qbank_gitsync.git gitsync`. The repository will be downloaded in a folder `gitsync` inside your current folder.
+- Open a terminal and clone this repository `git clone https://github.com/maths/moodle-qbank_gitsync.git gitsync`. The repository will be downloaded in a folder `gitsync` inside your current folder. If you have a local development environment for Moodle with the gitsync plugin installed, it is recommended to create a new copy of gitsync somewhere else to not confuse the server and the client side.
 - The repository will default to the `main` branch but you may need to switch to another branch if you're testing new features (e.g. `dev` for initial beta testing). In the gitsync directory e.g. `git checkout dev`.
 - In the `cli` folder within `gitsync`, make a copy of `config_sample.txt` and name it `config.php` within the `cli` folder.
 - Update `config.php` with the URLs and names of your Moodle instances.
