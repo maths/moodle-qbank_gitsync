@@ -49,6 +49,7 @@ class get_question_list extends external_api {
         return new external_function_parameters([
             'qcategoryname' => new external_value(PARAM_TEXT, 'Category of questions in form top/$category/$subcat1/$subcat2'),
             'contextlevel' => new external_value(PARAM_SEQUENCE, 'Context level: 10, 40, 50, 70'),
+            'localversion' => new external_value(PARAM_SEQUENCE, 'Version of Gitsync installed locally'),
             'coursename' => new external_value(PARAM_TEXT, 'Unique course name'),
             'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
             'coursecategory' => new external_value(PARAM_TEXT, 'Unique course category name'),
@@ -101,6 +102,7 @@ class get_question_list extends external_api {
      *
      * @param string|null $qcategoryname category to search in form top/$category/$subcat1/$subcat2
      * @param int $contextlevel Moodle code for context level e.g. 10 for system
+     * @param string $localversion Version of Gitsync installed locally
      * @param string|null $coursename Unique course name (optional unless course or module context level)
      * @param string|null $modulename Unique (within course) module name (optional unless module context level)
      * @param string|null $coursecategory course category name (optional unless course catgeory context level)
@@ -113,7 +115,8 @@ class get_question_list extends external_api {
      * @return object containing context info and an array of question data
      */
     public static function execute(?string $qcategoryname,
-                                    int $contextlevel, ?string $coursename = null, ?string $modulename = null,
+                                    int $contextlevel, string $localversion,
+                                    ?string $coursename = null, ?string $modulename = null,
                                     ?string $coursecategory = null, ?string $qcategoryid = null,
                                     ?string $instanceid = null, bool $contextonly = false,
                                     ?array $qbankentryids = [''], ?string $ignorecat = null): object {
@@ -129,7 +132,15 @@ class get_question_list extends external_api {
             'contextonly' => $contextonly,
             'qbankentryids' => $qbankentryids,
             'ignorecat' => $ignorecat,
+            'localversion' => $localversion,
         ]);
+
+        $serverversion = get_config('qbank_gitsync')->version;
+        if ($params['localversion'] !== $serverversion) {
+            throw new \moodle_exception('versionmismatch', 'qbank_gitsync', null,
+                                        ['local' => $params['localversion'], 'moodle' => $serverversion]);
+        }
+
         $contextinfo = get_context($params['contextlevel'], $params['coursecategory'],
                                    $params['coursename'], $params['modulename'],
                                    $params['instanceid']

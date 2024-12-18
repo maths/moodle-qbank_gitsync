@@ -189,6 +189,7 @@ class create_repo {
             'contextonly' => 0,
             'qbankentryids[]' => null,
             'ignorecat' => $this->ignorecat,
+            'localversion' => cli_helper::GITSYNC_VERSION,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);

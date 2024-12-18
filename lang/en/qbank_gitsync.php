@@ -37,3 +37,4 @@ $string['importerror'] = 'Could not import question from file: {$a}';
 $string['importversionerror'] = 'Could not import question : {$a->name} Current version in Moodle is {$a->currentversion}. Last imported version is {$a->importedversion}. Last exported version is {$a->exportedversion}. You need to export the question.';
 $string['noquestionerror'] = 'Question does not exist. Questionbankentryid: {$a}';
 $string['pluginname'] = 'Gitsync';
+$string['versionmismatch'] = 'Your local version of Gitsync ({$a->local}) does not match the version of the plugin installed in Moodle ({$a->moodle}).';

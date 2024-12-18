@@ -241,6 +241,7 @@ class import_quiz {
             'contextonly' => 1,
             'qbankentryids[]' => null,
             'ignorecat' => null,
+            'localversion' => cli_helper::GITSYNC_VERSION,
         ];
         $this->listcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->listcurlrequest->set_option(CURLOPT_POST, 1);

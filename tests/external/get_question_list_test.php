@@ -88,7 +88,8 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
 
-        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
+        $returnvalue = get_question_list::execute('top', 50, get_config('qbank_gitsync')->version,
+                                                  $this->course->fullname, null, null,
                                                   null, null, false, ['']);
 
         // We need to execute the return values cleaning process to simulate
@@ -112,7 +113,23 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        get_question_list::execute('top', 50, $this->course->fullname, null, null,
+        get_question_list::execute('top', 50, get_config('qbank_gitsync')->version, $this->course->fullname, null, null,
+                                   null, null, false, ['']);
+    }
+
+    /**
+     * Test if mismatched versions.
+     */
+    public function test_mismatched_versions(): void {
+        global $DB;
+        // Set the required capabilities - webservice access and list rights on course.
+        $context = context_course::instance($this->course->id);
+        $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
+        role_assign($managerroleid, $this->user->id, $context->id);
+        $this->expectException(moodle_exception::class);
+        // Exception messages don't seem to get translated.
+        $this->expectExceptionMessage('Your local version of Gitsync (12345) does not match');
+        get_question_list::execute('top', 50, '12345', $this->course->fullname, null, null,
                                    null, null, false, ['']);
     }
 
@@ -127,7 +144,7 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $this->unassignUserCapability('qbank/gitsync:listquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
         $this->expectExceptionMessage('you do not currently have permissions to do that (List)');
-        get_question_list::execute('top', 50, $this->course->fullname, null, null,
+        get_question_list::execute('top', 50, get_config('qbank_gitsync')->version, $this->course->fullname, null, null,
                                    null, null, false, ['']);
     }
 
@@ -137,7 +154,7 @@ final class get_question_list_test extends externallib_advanced_testcase {
     public function test_list_capability(): void {
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        get_question_list::execute('top', 50, $this->course->fullname, null, null,
+        get_question_list::execute('top', 50, get_config('qbank_gitsync')->version, $this->course->fullname, null, null,
                                    null, null, false, ['']);
     }
 
@@ -160,7 +177,7 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $this->expectExceptionMessage('Not enrolled');
         // Trying to list question from course 2 using context of course 1.
         // User has list capability on course 1 but not course 2.
-        get_question_list::execute('top', 50, $course2->fullname, null, null,
+        get_question_list::execute('top', 50, get_config('qbank_gitsync')->version, $course2->fullname, null, null,
                                    null, null, false, ['']);
     }
 
@@ -195,7 +212,8 @@ final class get_question_list_test extends externallib_advanced_testcase {
         }
         \mod_quiz\structure::create_for_quiz($quizobj);
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
+        $returnvalue = get_question_list::execute('top', 50, get_config('qbank_gitsync')->version,
+                                                  $this->course->fullname, null, null,
                                                   null, null, false, ['']);
 
         $returnvalue = external_api::clean_returnvalue(
@@ -247,7 +265,7 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 50, null, null, null,
+        $returnvalue = get_question_list::execute('top', 50, get_config('qbank_gitsync')->version, null, null, null,
                                                   null, $this->course->id, false, ['']);
 
         $returnvalue = external_api::clean_returnvalue(
@@ -303,7 +321,7 @@ final class get_question_list_test extends externallib_advanced_testcase {
                                                              ['questionid' => $qincourse2->id], $strictness = MUST_EXIST);
 
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 50, null, null, null,
+        $returnvalue = get_question_list::execute('top', 50, get_config('qbank_gitsync')->version, null, null, null,
                                                   null, $this->course->id, false, [$qbankentryid2, $qbankentryid3]);
 
         $returnvalue = external_api::clean_returnvalue(
@@ -355,7 +373,7 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $this->expectExceptionMessage('The category is not in the supplied context.');
         // Trying to list question from course 2 using context of course 1.
         // User has list capability on course 1 but not course 2.
-        get_question_list::execute('top', 50, $this->course->fullname, null, null,
+        get_question_list::execute('top', 50, get_config('qbank_gitsync')->version, $this->course->fullname, null, null,
                                     $catincourse2->id, null, false, ['']);
     }
 
@@ -404,7 +422,8 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top/' . $qcategory2->name, 50, $this->course->fullname, null, null,
+        $returnvalue = get_question_list::execute('top/' . $qcategory2->name, 50, get_config('qbank_gitsync')->version,
+                                                  $this->course->fullname, null, null,
                                                   null, null, false, ['']);
 
         $returnvalue = external_api::clean_returnvalue(
@@ -448,7 +467,8 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
                              ['questionid' => $q2->id], $strictness = MUST_EXIST);
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
+        $returnvalue = get_question_list::execute('top', 50, get_config('qbank_gitsync')->version,
+                                $this->course->fullname, null, null,
                                 $qcategory2->id, null, false, ['']);
 
         $returnvalue = external_api::clean_returnvalue(
@@ -503,7 +523,8 @@ final class get_question_list_test extends externallib_advanced_testcase {
                                             ['name' => self::QNAME . '4', 'category' => $qcategory4->id]);
 
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 50, $this->course->fullname, null, null,
+        $returnvalue = get_question_list::execute('top', 50, get_config('qbank_gitsync')->version,
+                                                  $this->course->fullname, null, null,
                                                   null, null, false, [''], '/.*DO_NOT_SHARE/');
 
         $returnvalue = external_api::clean_returnvalue(
@@ -563,7 +584,8 @@ final class get_question_list_test extends externallib_advanced_testcase {
                              ['questionid' => $q3->id], $strictness = MUST_EXIST);
 
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top/' . $qcategory2->name, 50, $this->course->fullname, null, null,
+        $returnvalue = get_question_list::execute('top/' . $qcategory2->name, 50, get_config('qbank_gitsync')->version,
+                                                  $this->course->fullname, null, null,
                                                   null, null, false, [''], '/.*DO_NOT_SHARE/');
 
         $returnvalue = external_api::clean_returnvalue(
