@@ -74,6 +74,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'targetcategory',
+        'shortopt' => 'k',
+        'description' => 'Category to import into a subdirectory into.',
+        'default' => null,
+        'variable' => 'targetcategory',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
         'description' => 'Context in which to place questions. Set to system, coursecategory, course or module',

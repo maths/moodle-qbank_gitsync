@@ -426,6 +426,33 @@ class cli_helper {
     }
 
     /**
+     * Create manifest path for targeted import/export of repos.
+     *
+     * This is where the full category tree is not replicated on import/export.
+     * A target folder and question category must both be supplied.
+     *
+     * @param string $moodleinstance
+     * @param string $categoryname
+     * @param string $categoryid
+     * @param string $directory
+     * @return string
+     */
+    public static function get_manifest_path_targeted(string $moodleinstance, string $categoryname, ?string $categoryid,
+                            string $directory): string {
+        $filenamemod = '_';
+        $folders = explode('/', $directory);
+        $folder = array_pop($folders);
+        $parent = array_pop($folders);
+        $filenamemod .= substr($parent, 0, 50) . '_' . substr($folder, 0, 50) .
+                        '_' . substr($categoryname, 0, 50) . '_' . $categoryid;
+
+        $filename = $directory . '/' .
+                    preg_replace(self::BAD_CHARACTERS, '-', strtolower(substr($moodleinstance, 0, 50) . $filenamemod)) .
+                    self::MANIFEST_FILE;
+        return $filename;
+    }
+
+    /**
      * Create quiz structure path.
      *
      * @param string|null $modulename
@@ -832,10 +859,11 @@ class cli_helper {
      * category path from the file. (This will vary from the filepath
      * as the filepath will have potentially had characters sanitised.)
      *
-     * @param [type] $filename
+     * @param string $filename
+     * @param string $replacement New category
      * @return string|null $qcategoryname Question category name in format top/cat1/subcat1
      */
-    public static function get_question_category_from_file($filename): ?string {
+    public static function get_question_category_from_file($filename, $replacement = null): ?string {
         if (!is_file($filename)) {
             echo "\nRequired category file does not exist: {$filename}\n";
             return null;
@@ -850,6 +878,15 @@ class cli_helper {
             echo "\nBroken category XML.\n";
             echo "{$filename}.\n";
             return null;
+        }
+        if ($replacement) {
+            $categoryxml->question->category->text = $replacement;
+            $success = file_put_contents($filename, json_encode($this->manifestcontents));
+            if ($success === false) {
+                echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
+                $this->call_exit();
+            }
+            return $replacement;
         }
         $qcategoryname = $categoryxml->question->category->text->__toString();
         return $qcategoryname;
