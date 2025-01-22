@@ -394,7 +394,8 @@ class export_repo {
                                        string $token, string $ignorecat, string $scriptdirectory
                                       ): ?string {
         chdir($scriptdirectory);
-        return shell_exec('php createrepo.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
+        $usegit = ($this->usegit) ? 'true' : 'false';
+        return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat);
     }
 
@@ -412,7 +413,8 @@ class export_repo {
     public function call_export_repo(string $rootdirectory, string $moodleinstance, string $token,
                 string $quizmanifestname, string $ignorecat, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
-        return shell_exec('php exportrepofrommoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory . '" -i "' .
+        $usegit = ($this->usegit) ? 'true' : 'false';
+        return shell_exec('php exportrepofrommoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory . '" -i "' .
                             $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat);
     }
 }

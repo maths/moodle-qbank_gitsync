@@ -327,7 +327,8 @@ class create_repo {
                                        string $token, string $ignorecat, string $scriptdirectory
                                       ): ?string {
         chdir($scriptdirectory);
-        return shell_exec('php createrepo.php -u ' . $this->usegit . ' -w -r "' .
+        $usegit = ($this->usegit) ? 'true' : 'false';
+        return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r "' .
                 $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat);
     }

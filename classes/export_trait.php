@@ -250,7 +250,8 @@ trait export_trait {
                                     ?string $nonquizmanifestpath, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
         $nonquiz = ($nonquizmanifestpath) ? ' -p "' . $nonquizmanifestpath . '"' : '';
-        return shell_exec('php exportquizstructurefrommoodle.php -u ' . $this->usegit .
+        $usegit = ($this->usegit) ? 'true' : 'false';
+        return shell_exec('php exportquizstructurefrommoodle.php -u ' . $usegit .
                 ' -w -r "" -i "' . $moodleinstance . '" -t "'
                 . $token. '" -f "' . $quizmanifestpath . '"' . $nonquiz);
     }

@@ -1015,11 +1015,12 @@ class import_repo {
                                     ?string $quizmanifestname, ?string $quizcmid,
                                     string $ignorecat, string $scriptdirectory): string {
         chdir($scriptdirectory);
+        $usegit = ($this->usegit) ? 'true' : 'false';
         if ($quizmanifestname) {
-            return shell_exec('php importrepotomoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .
+            return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                             '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat);
         } else {
-            return shell_exec('php importrepotomoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .
+            return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                             '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat);
         }
     }
@@ -1038,13 +1039,14 @@ class import_repo {
     public function call_import_quiz_data(string $moodleinstance, string $token, string $instanceid,
                                     ?string $quizmanifestpath, string $structurefilepath, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
+        $usegit = ($this->usegit) ? 'true' : 'false';
         if ($quizmanifestpath) {
-            return shell_exec('php importquizstructuretomoodle.php -u ' . $this->usegit .
+            return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
                     ' -w -r "" -i "' . $moodleinstance . '" -n ' .
                     $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath . '" -f "' .
                     $quizmanifestpath . '" -a "' . $structurefilepath . '"');
         } else {
-            return shell_exec('php importquizstructuretomoodle.php -u ' . $this->usegit .
+            return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
                     ' -w -r "" -i "' . $moodleinstance . '" -n ' .
                     $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath. '" -a "' . $structurefilepath . '"');
         }
