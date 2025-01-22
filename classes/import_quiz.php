@@ -353,7 +353,8 @@ class import_quiz {
     public function call_import_repo(string $rootdirectory, string $moodleinstance, string $token,
                                     ?string $quizcmid, string $ignorecat, string $scriptdirectory): string {
         chdir($scriptdirectory);
-        return shell_exec('php importrepotomoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .
+        $usegit = ($this->usegit) ? 'true' : 'false';
+        return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                         '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat);
     }
 
@@ -368,7 +369,8 @@ class import_quiz {
     public function call_import_quiz_data(string $moodleinstance, string $token, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
         $nonquiz = ($this->nonquizmanifestpath) ? ' -p "' . $this->nonquizmanifestpath . '"' : '';
-        return shell_exec('php importquizstructuretomoodle.php -u ' . $this->usegit .
+        $usegit = ($this->usegit) ? 'true' : 'false';
+        return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
                     ' -w -r "" -i "' . $moodleinstance . '" -t ' . $token. ' -a "' . $this->quizdatapath .
                     '" -f "' . $this->quizmanifestpath. '"' . $nonquiz);
     }
