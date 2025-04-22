@@ -6,7 +6,7 @@
 
 ## Importing
 - Create a repository of questions with a folder hierarchy akin to question categories i.e. top/category/subcategory or use `createrepo.php` to create a repo from existing questions on Moodle.
-- Each category below top should have a `gitsync_category.xml` file containing a 'category question' with the details of he category. See the `testrepo` folder in this repository for an example.
+- Each category below top should have a `gitsync_category.xml` file containing a 'category question' with the details of the category. See the `testrepo` folder in this repository for an example.
 - If you have created a repository (or copied one) make sure you have a `.gitignore` file and it ignores gitsync's manifest and temporary files.  
 `touch .gitignore`  
 `printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' >> .gitignore`  
@@ -46,7 +46,7 @@ This will only import the questions in the 'My-category' folder and below.
 
 ## Scenario 1: Importing questions into Moodle from an existing repo
 
-e.g. You have exported questions from one Moodle instance to create the repo and you want to import them into a different instance
+E.g. You have exported questions from one Moodle instance to create the repo and you want to import them into a different instance.
 
 Importing will create a manifest file specific to the Moodle instance and context in the root of the repo. This links files in the repo to specific questionbankentries in the Moodle instance.
 
