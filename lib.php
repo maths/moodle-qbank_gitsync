@@ -100,7 +100,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
             return $result;
         case \CONTEXT_MODULE:
             $currentversion = normalize_version(get_config('', 'release'));
-            $isMoodle5plus =  (version_compare($currentversion, '5.0', '<')) ? false : true:
+            $isMoodle5plus =  (version_compare($currentversion, '5.0', '<')) ? false : true;
             if (is_null($instanceid)) {
                 // Assuming here that the module is a quiz or question bank.
                 if ($isMoodle5plus) {
