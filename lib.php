@@ -100,10 +100,10 @@ function get_context(int $contextlevel, ?string $categoryname = null,
             return $result;
         case \CONTEXT_MODULE:
             $currentversion = normalize_version(get_config('', 'release'));
-            $isMoodle5plus =  (version_compare($currentversion, '5.0', '<')) ? false : true;
+            $ismoodle5plus = (version_compare($currentversion, '5.0', '<')) ? false : true;
             if (is_null($instanceid)) {
                 // Assuming here that the module is a quiz or question bank.
-                if ($isMoodle5plus) {
+                if ($ismoodle5plus) {
                      // Assuming here that the module is a quiz or question bank.
                      $instancedata = $DB->get_record_sql("
                      SELECT cm.id as cmid, q.id as quizid, c.id as courseid
@@ -111,7 +111,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                          JOIN {course} c ON c.id = cm.course
                          JOIN {modules} m ON m.id = cm.module
                          LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance AND m.name = 'quiz'
-                         LEFT JOIN {qbank} b ON b.course = cm.course AND b.id = cm.instance AND m.name = 'qbank' 
+                         LEFT JOIN {qbank} b ON b.course = cm.course AND b.id = cm.instance AND m.name = 'qbank'
                          WHERE c.fullname = :coursename
                                  AND (q.name = :modulename1 OR b.name = :modulename2)",
                      ['coursename' => $coursename, 'modulename1' => $modulename, 'modulename2' => $modulename]);
@@ -134,7 +134,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                 $result->modulename = $modulename;
                 $result->quizid = $instancedata->quizid;
             } else {
-                if ($isMoodle5plus) {
+                if ($ismoodle5plus) {
                     $instancedata = $DB->get_record_sql("
                     SELECT c.fullname as coursename, CASE WHEN q.name IS NOT NULL THEN q.name
                                                     WHEN b.name IS NOT NULL THEN b.name
@@ -143,7 +143,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                         FROM {course_modules} cm
                         JOIN {course} c ON c.id = cm.course
                         JOIN {modules} m ON m.id = cm.module
-                        LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance AND m.name = 'quiz' 
+                        LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance AND m.name = 'quiz'
                         LEFT JOIN {qbank} b ON b.course = cm.course AND b.id = cm.instance AND m.name = 'qbank'
                         WHERE cm.id = :instanceid",
                     ['instanceid' => $instanceid], $strictness = MUST_EXIST);

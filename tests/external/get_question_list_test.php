@@ -30,7 +30,7 @@ global $CFG;
 require_once($CFG->dirroot . '/question/engine/tests/helpers.php');
 require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 
-use \context_module;
+use context_module;
 use externallib_advanced_testcase;
 use external_api;
 use required_capability_exception;
