@@ -59,7 +59,7 @@ function split_category_path(?string $path): array {
  */
 function get_context(int $contextlevel, ?string $categoryname = null,
                     ?string $coursename = null, ?string $modulename = null, ?string $instanceid = null): object {
-    global $DB;
+    global $DB, $CFG;
     if ($instanceid === '') {
         $instanceid = null;
     }
@@ -99,6 +99,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
             $result->courseid = $instanceid;
             return $result;
         case \CONTEXT_MODULE:
+            require_once($CFG->libdir . '/environmentlib.php');
             $currentversion = normalize_version(get_config('', 'release'));
             $ismoodle5plus = (version_compare($currentversion, '5.0', '<')) ? false : true;
             if (is_null($instanceid)) {
@@ -139,7 +140,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                     SELECT c.fullname as coursename, CASE WHEN q.name IS NOT NULL THEN q.name
                                                     WHEN b.name IS NOT NULL THEN b.name
                                                     ELSE NULL END as modulename,
-                                                    q.id as quizid
+                                                    q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
                         JOIN {course} c ON c.id = cm.course
                         JOIN {modules} m ON m.id = cm.module
@@ -149,7 +150,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                     ['instanceid' => $instanceid], $strictness = MUST_EXIST);
                 } else {
                     $instancedata = $DB->get_record_sql("
-                    SELECT c.fullname as coursename, q.name as modulename, q.id as quizid
+                    SELECT c.fullname as coursename, q.name as modulename, q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
                         JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
@@ -160,6 +161,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                 }
                 $result->coursename = $instancedata->coursename;
                 $result->modulename = $instancedata->modulename;
+                $result->courseid = $instancedata->courseid;
                 $result->quizid = $instancedata->quizid;
             }
             $result->contextlevel = 'module';
