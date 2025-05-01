@@ -100,17 +100,17 @@ function get_context(int $contextlevel, ?string $categoryname = null,
             return $result;
         case \CONTEXT_MODULE:
             if (is_null($instanceid)) {
-                // Assuming here that the module is a quiz.
+                // Assuming here that the module is a quiz or question bank.
                 $instancedata = $DB->get_record_sql("
                     SELECT cm.id as cmid, q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
-                        JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
                         JOIN {modules} m ON m.id = cm.module
+                        LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance AND m.name = 'quiz'
+                        LEFT JOIN {qbank} b ON b.course = cm.course AND b.id = cm.instance AND m.name = 'qbank' 
                         WHERE c.fullname = :coursename
-                                AND q.name = :quizname
-                                AND m.name = 'quiz'",
-                    ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
+                                AND (q.name = :modulename1 OR b.name = :modulename2)",
+                    ['coursename' => $coursename, 'modulename1' => $modulename, 'modulename2' => $modulename]);
                     $instanceid = $instancedata->cmid;
                     $result->coursename = $coursename;
                     $result->courseid = $instancedata->courseid;
@@ -118,13 +118,16 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                     $result->quizid = $instancedata->quizid;
             } else {
                 $instancedata = $DB->get_record_sql("
-                SELECT c.fullname as coursename, q.name as modulename, q.id as quizid
+                SELECT c.fullname as coursename, CASE WHEN q.name IS NOT NULL THEN q.name
+                                                WHEN b.name IS NOT NULL THEN b.name
+                                                ELSE NULL END as modulename,
+                                                q.id as quizid
                     FROM {course_modules} cm
-                    JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                     JOIN {course} c ON c.id = cm.course
                     JOIN {modules} m ON m.id = cm.module
-                    WHERE cm.id = :instanceid
-                            AND m.name = 'quiz'",
+                    LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance AND m.name = 'quiz' 
+                    LEFT JOIN {qbank} b ON b.course = cm.course AND b.id = cm.instance AND m.name = 'qbank'
+                    WHERE cm.id = :instanceid",
                 ['instanceid' => $instanceid], $strictness = MUST_EXIST);
                 $result->coursename = $instancedata->coursename;
                 $result->modulename = $instancedata->modulename;
