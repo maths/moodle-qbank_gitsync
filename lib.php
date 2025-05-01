@@ -101,21 +101,37 @@ function get_context(int $contextlevel, ?string $categoryname = null,
         case \CONTEXT_MODULE:
             if (is_null($instanceid)) {
                 // Assuming here that the module is a quiz or question bank.
-                $instancedata = $DB->get_record_sql("
+                $currentversion = normalize_version(get_config('', 'release'));
+                if (version_compare($currentversion, '5.0', '<')) {
+                    // Assuming here that the module is a quiz.
+                    $instancedata = $DB->get_record_sql("
                     SELECT cm.id as cmid, q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
+                        JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
                         JOIN {modules} m ON m.id = cm.module
-                        LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance AND m.name = 'quiz'
-                        LEFT JOIN {qbank} b ON b.course = cm.course AND b.id = cm.instance AND m.name = 'qbank' 
                         WHERE c.fullname = :coursename
-                                AND (q.name = :modulename1 OR b.name = :modulename2)",
-                    ['coursename' => $coursename, 'modulename1' => $modulename, 'modulename2' => $modulename]);
-                    $instanceid = $instancedata->cmid;
-                    $result->coursename = $coursename;
-                    $result->courseid = $instancedata->courseid;
-                    $result->modulename = $modulename;
-                    $result->quizid = $instancedata->quizid;
+                                AND q.name = :quizname
+                                AND m.name = 'quiz'",
+                    ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
+                } else {
+                    // Assuming here that the module is a quiz or question bank.
+                    $instancedata = $DB->get_record_sql("
+                        SELECT cm.id as cmid, q.id as quizid, c.id as courseid
+                            FROM {course_modules} cm
+                            JOIN {course} c ON c.id = cm.course
+                            JOIN {modules} m ON m.id = cm.module
+                            LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance AND m.name = 'quiz'
+                            LEFT JOIN {qbank} b ON b.course = cm.course AND b.id = cm.instance AND m.name = 'qbank' 
+                            WHERE c.fullname = :coursename
+                                    AND (q.name = :modulename1 OR b.name = :modulename2)",
+                        ['coursename' => $coursename, 'modulename1' => $modulename, 'modulename2' => $modulename]);
+                }
+                $instanceid = $instancedata->cmid;
+                $result->coursename = $coursename;
+                $result->courseid = $instancedata->courseid;
+                $result->modulename = $modulename;
+                $result->quizid = $instancedata->quizid;
             } else {
                 $instancedata = $DB->get_record_sql("
                 SELECT c.fullname as coursename, CASE WHEN q.name IS NOT NULL THEN q.name

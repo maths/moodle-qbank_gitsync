@@ -35,5 +35,5 @@ $plugin->maturity  = MATURITY_BETA;
 $plugin->release   = '0.10.0 for Moodle 4.1+';
 
 $plugin->dependencies = [
-    'qbank_importasversion'     => 2024041600,
+    'qbank_importasversion'     => 2025041400,
 ];
