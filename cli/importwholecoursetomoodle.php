@@ -76,7 +76,8 @@ $options = [
     [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
-        'description' => 'Context to import questions into. Should always be module for Moodle 5+. Should always be course for Moodle < 5.',
+        'description' => 'Context to import questions into. Should always be module for Moodle 5+. ' .
+                         'Should always be course for Moodle < 5.',
         'default' => null,
         'variable' => 'contextlevel',
         'valuerequired' => true,

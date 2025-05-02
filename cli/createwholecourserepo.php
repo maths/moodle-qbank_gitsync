@@ -65,7 +65,8 @@ $options = [
     [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
-        'description' => 'Context from which to extract questions. Should always be module for Moodle 5+. Should always be course for Moodle < 5.',
+        'description' => 'Context from which to extract questions. Should always be module for Moodle 5+. ' .
+                         'Should always be course for Moodle < 5.',
         'default' => 'course',
         'variable' => 'contextlevel',
         'valuerequired' => true,
