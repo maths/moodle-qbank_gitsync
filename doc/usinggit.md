@@ -15,6 +15,12 @@ If you want to track a course and all its quizzes in a single repo, you will nee
 
 (See [Quizzes](#quizzes).)
 
+# Moodle 5 update
+
+For Moodle 5+, there are no longer course, course category or system context question banks. Questions are contained in module level question banks. This makes things simpler. Where command line parameters for `contextlevel` and `instanceid` are required you will always need to use `module` and the value of `cmid` from the URL of the question bank.
+
+e.g. `php createrepo.php -l module -n 2 -d "master"`
+
 ## Maintaining a one-to-one link between a Moodle instance and a Git repo
 
 ### Creating a Git repo from questions in Moodle
