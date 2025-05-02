@@ -37,7 +37,7 @@ Create and initialise the "scratch-wholecourse" directory using `git init scratc
 
 Along with the "scratch-course" directory, there should be a directory created by the script for each of the quizzes with names in the format "scratch-course_quiz_sanitised-quiz-name".
 
-For Moodle 5+, there is no longer a course context question bank. Questions are contained in module level question banks. GitSync can be made to treat a course with a single question bank like an old course, however. Add `-l "module"` to the command line parameters and `cmid` from the URL of the question bank as `--instanceid`.
+For Moodle 5+, there is no longer a course context question bank. Questions are contained in module level question banks. Gitsync can be made to treat a course with a single question bank like an old course, however. Add `-l "module"` to the command line parameters and `cmid` from the URL of the question bank as `--instanceid`.
 
 `php createwholecourserepo.php -l 'module' -n 7 -d 'moodle-5/scratch-course'`
 

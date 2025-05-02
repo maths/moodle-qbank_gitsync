@@ -36,10 +36,21 @@ To update the questions in Moodle from the repo, point the script to your course
 `php importrepotomoodle.php -f "scratch-wholecourse/scratch-course"`
 
 Example 2:
-To import course context questions, quiz context questions and quiz structures into a course for the first time, you will need to point the script to the course directory and the course to import into (using either coursename -c or id -n). You will also need to specify context level but this will always be course (`-l "course"`).
+To import course context questions, quiz context questions and quiz structures into a course for the first time, you will need to point the script to the course directory and the course to import into (using either coursename -c or id -n). You will also need to specify context level but this will always be course (`-l "course"`) for Moodle 4 and (`-l "module"`) for Moodle 5+.
+
 `php importwholecoursetomoodle.php -r "C:\question_repos" -d "scratch-wholecourse/scratch-course" -l "course" -c "Course 2"`
 
-## Scenario 1: Importing questions into Moodle from an existing repo
+## Scenario 1: Re-importing questions into Moodle when the manifest files already exist
+
+You should specify the course manifest file path and context will be extracted from that. You can still enter a subdirectory to only re-import some of the questions.
+
+Import will only be possible if there are not updates to the questions in Moodle which haven't been exported.
+
+Only questions that have changed in the repo since the last import will be imported to Moodle (to avoid creating a new version in Moodle when nothing has changed).
+
+Quiz structure will not be updated.
+
+## Scenario 2: Importing questions into Moodle from an existing repo
 
 e.g. You have exported questions from one Moodle instance to create the repo and you want to import them into a different instance
 
@@ -49,15 +60,9 @@ You will need to specify the course you want to import the questions and quizzes
 
 If you only want to import a certain question category (and its subcategories) within the course you will need to supply the path of the corresponding folder within your repo relative to the 'top' category e.g. 'category-1/subcategory-2'.
 
-## Scenario 2: Re-importing questions into Moodle when the manifest files already exist
+For Moodle 5+, there is no longer a course context question bank. Questions are contained in module level question banks. Gitsync can be made to treat a course with a single question bank like an old course, however. Add `-l "module"` to the command line parameters and `cmid` from the URL of the question bank as `--instanceid` or `-n`.
 
-You should specify the course manifest file path and context will be extracted from that. You can still enter a subdirectory to only re-import some of the questions.
-
-Import will only be possible if there are not updates to the questions in Moodle which haven't been exported.
-
-Only questions that have changed in the repo since the last import will be imported to Moodle (to avoid creating a new version in Moodle when nothing has changed).
-
-Quiz structure will not be updated.
+`php importwholecoursetomoodle.php -l 'module' -n 7 -d 'moodle-5/scratch-course'`
 
 ## Deletion
 
