@@ -12,10 +12,11 @@
 |i|moodleinstance|Key of Moodle instance in $moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
 |d|directory|Directory of repo on user's computer containing "top" folder, relative to root directory.|
+|l|contextlevel|Context from which to extract questions. Should always be module for Moodle 5+. Should always be course for Moodle < 5.|
 |s|subcategory|Relative subcategory of repo to actually export.|
 |c|coursename|Unique course name for course or module context.
 |q|questioncategoryid|Numerical id of subcategory to actually export.
-|n|instanceid|Numerical id of the course category.
+|n|instanceid|Numerical id of the course.
 |t|token|Security token for webservice.
 |h|help|
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
@@ -35,6 +36,10 @@ Create and initialise the "scratch-wholecourse" directory using `git init scratc
 `php createwholecourserepo.php -c "Scratch" -d "scratch-wholecourse/scratch-course" `
 
 Along with the "scratch-course" directory, there should be a directory created by the script for each of the quizzes with names in the format "scratch-course_quiz_sanitised-quiz-name".
+
+For Moodle 5+, there is no longer a course context question bank. Questions are contained in module level question banks. Gitsync can be made to treat a course with a single question bank like an old course, however. Add `-l "module"` to the command line parameters and `cmid` from the URL of the question bank as `--instanceid`.
+
+`php createwholecourserepo.php -l 'module' -n 7 -d 'moodle-5/scratch-course'`
 
 ### On failure
 

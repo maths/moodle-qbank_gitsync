@@ -54,7 +54,7 @@ class cli_helper {
      * GITSYNC_VERSION - Current version of Gitsync.
      * Should match version in version.php .
      */
-    public const GITSYNC_VERSION = '2024121800';
+    public const GITSYNC_VERSION = '2025012200';
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -76,7 +76,7 @@ class cli_helper {
     /**
      * BAD_CHARACTERS - Characters to remove for filename sanitisation
      */
-    public const BAD_CHARACTERS = '/[\/\\\?\%*:|"<> .$!]+/';
+    public const BAD_CHARACTERS = '/[\/\\\?\%\'*:|"<> .$!]+/';
     /**
      * Constructor
      *
@@ -814,7 +814,7 @@ class cli_helper {
                 echo "Course: {$moodlequestionlist->contextinfo->coursename}\n";
             }
             if ($moodlequestionlist->contextinfo->modulename) {
-                echo "Quiz: {$moodlequestionlist->contextinfo->modulename}\n";
+                echo "Module: {$moodlequestionlist->contextinfo->modulename}\n";
             }
             if (isset($activity->ignorecat)) {
                 echo "Ignoring categories (and their descendants) in form: {$activity->ignorecat}\n";

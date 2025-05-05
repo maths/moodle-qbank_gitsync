@@ -15,6 +15,12 @@ If you want to track a course and all its quizzes in a single repo, you will nee
 
 (See [Quizzes](#quizzes).)
 
+# Moodle 5 update
+
+For Moodle 5+, there are no longer course, course category or system context question banks. Questions are contained in module level question banks. This makes things simpler. Where command line parameters for `contextlevel` and `instanceid` are required you will always need to use `module` and the value of `cmid` from the URL of the question bank.
+
+e.g. `php createrepo.php -l module -n 2 -d "master"`
+
 ## Maintaining a one-to-one link between a Moodle instance and a Git repo
 
 ### Creating a Git repo from questions in Moodle
@@ -210,13 +216,22 @@ Initialise a repo for course and quizzes together:
 `git init course1whole`  
 Export course with `id=3` into directory `course1` (assuming rootdirectory, token, moodleinstance, usegit, etc, all set in your config file.):  
 `php createwholecourserepo.php -n 3 -d 'course1whole/course1'`  
+(Moodle 5+ with course question bank `cmid=7`: `php createwholecourserepo.php -l 'module' -n 7 -d 'course1whole/course1'`)  
 Export questions/structures again after updates in Moodle:  
 `php exportwholecoursefrommoodle.php -f 'course1whole/course1/instance1_course_course-1_question_manifest.json'`  
 Import questions again after updates in the repo:  
 `php importwholecoursetomoodle.php -f 'course1whole/course1/instance1_course_course-1_question_manifest.json'`  
 Import course questions and quizzes into course with `id=2`:  
 `php importwholecoursetomoodle.php -d 'course1whole/course1' -l 'course' -n 2`  
+(Moodle 5+ into course question bank `cmid=9`: `php importwholecoursetomoodle.php -d 'course1whole/course1' -l 'module' -n 9`)
 
 You can use the normal filters like subcategory and ignorecategory e.g.:  
 `php createwholecourserepo.php -n 3 -d 'course1whole/course1' -x '/subcat/'`  
 `php importwholecoursetomoodle.php -f 'course1whole/course1/instance1_course_course-1_question_manifest.json' -x '/subcat/'`
+
+For Moodle 5+, there is no longer a course context question bank. Questions are contained in module level question banks. Gitsync can be made to treat a course with a single question bank like an old course, however. Add `-l "module"` to the command line parameters and `cmid` from the URL of the question bank as `--instanceid` when creating the repo or importing into a new course.
+
+`php createwholecourserepo.php -l 'module' -n 7 -d 'course1whole/course1'`  
+`php importwholecoursetomoodle.php -l 'module' -n 9 -d 'course1whole/course1'`
+
+It is recommended that you do not use Gitsync with courses that have multiple question banks.

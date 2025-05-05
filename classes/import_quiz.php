@@ -142,7 +142,7 @@ class import_quiz {
         $moodleinstance = $arguments['moodleinstance'];
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $instanceid = $arguments['instanceid'];
-        $contextlevel = 50;
+        $contextlevel = cli_helper::get_context_level('course');
         $this->usegit = $arguments['usegit'];
         if (!empty($arguments['quizmanifestpath'])) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
@@ -162,7 +162,7 @@ class import_quiz {
                                                                                 dirname($this->quizmanifestpath));
                 $instanceid = $this->cmid;
                 $coursename = '';
-                $contextlevel = 70;
+                $contextlevel = cli_helper::get_context_level('module');
             }
         } else {
             if ($arguments['quizdatapath']) {
@@ -203,8 +203,11 @@ class import_quiz {
                 echo "\nManifest file is for the wrong Moodle instance: {$this->nonquizmanifestpath}\nAborting.\n";
                 $this->call_exit();
             }
-            if (!$instanceid && $this->nonquizmanifestcontents->context->contextlevel === cli_helper::get_context_level('course')) {
+            if (!$instanceid) {
                 $instanceid = $this->nonquizmanifestcontents->context->instanceid;
+            }
+            if ($this->nonquizmanifestcontents->context->contextlevel === cli_helper::get_context_level('module')) {
+                $contextlevel = cli_helper::get_context_level('module');
             }
         }
         if (!$instanceid && !$arguments['coursename'] && !$this->quizmanifestcontents) {
@@ -353,7 +356,8 @@ class import_quiz {
     public function call_import_repo(string $rootdirectory, string $moodleinstance, string $token,
                                     ?string $quizcmid, string $ignorecat, string $scriptdirectory): string {
         chdir($scriptdirectory);
-        return shell_exec('php importrepotomoodle.php -u ' . $this->usegit . ' -w -r "' . $rootdirectory .
+        $usegit = ($this->usegit) ? 'true' : 'false';
+        return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                         '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat);
     }
 
@@ -368,7 +372,8 @@ class import_quiz {
     public function call_import_quiz_data(string $moodleinstance, string $token, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
         $nonquiz = ($this->nonquizmanifestpath) ? ' -p "' . $this->nonquizmanifestpath . '"' : '';
-        return shell_exec('php importquizstructuretomoodle.php -u ' . $this->usegit .
+        $usegit = ($this->usegit) ? 'true' : 'false';
+        return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
                     ' -w -r "" -i "' . $moodleinstance . '" -t ' . $token. ' -a "' . $this->quizdatapath .
                     '" -f "' . $this->quizmanifestpath. '"' . $nonquiz);
     }

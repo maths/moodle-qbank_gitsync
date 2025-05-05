@@ -76,7 +76,8 @@ $options = [
     [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
-        'description' => 'Context from which to extract questions. Should always be course.',
+        'description' => 'Context to import questions into. Should always be module for Moodle 5+. ' .
+                         'Should always be course for Moodle < 5.',
         'default' => null,
         'variable' => 'contextlevel',
         'valuerequired' => true,
@@ -92,7 +93,7 @@ $options = [
     [
         'longopt' => 'modulename',
         'shortopt' => 'm',
-        'description' => 'Not used',
+        'description' => 'Name of the question bank module',
         'default' => null,
         'variable' => 'modulename',
         'valuerequired' => true,
@@ -110,7 +111,7 @@ $options = [
     [
         'longopt' => 'instanceid',
         'shortopt' => 'n',
-        'description' => 'Numerical id of the course.',
+        'description' => 'Numerical id of the course or module.',
         'default' => null,
         'variable' => 'instanceid',
         'valuerequired' => true,
