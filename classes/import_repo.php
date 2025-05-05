@@ -27,7 +27,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace qbank_gitsync;
-require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
 /**
  * Import a Git repo.
  */
@@ -442,7 +441,11 @@ class import_repo {
             new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
-        $basecategoryname = null;
+        if (!$this->subdirectory or $this->subdirectory === 'top') {
+            $basecategoryname = 'top';
+        } else {
+            $basecategoryname = null;
+        }
         // Find all the category files first and create categories where needed.
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
@@ -518,7 +521,7 @@ class import_repo {
      *
      * Fileinfo parameter is set ready for import call to the webservice.
      *
-     * @param resource $repoitem
+     * @param object $repoitem
      * @return bool success or failure
      */
     public function upload_file($repoitem): bool {
@@ -554,7 +557,9 @@ class import_repo {
      * @return resource Temporary manifest file of added questions, one line per question.
      */
     public function import_questions() {
-        if ($this->subdirectory) {
+        if ($this->subdirectory && $this->targetcategory) {
+            // We only import a subselection of categories if we have a target category and a subdirectory.
+            // Normal subdirectory behaviour is to import all categories but only a subselection of questions.
             $subdirectory = ($this->directory) ? $this->directory . '/' . $this->subdirectory : $this->subdirectory;
         } else {
             $subdirectory = $this->directory;
@@ -563,6 +568,11 @@ class import_repo {
             new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
+        if (!$this->subdirectory or $this->subdirectory === 'top') {
+            $basecategoryname = 'top';
+        } else {
+            $basecategoryname = null;
+        }
         $tempfile = fopen($this->tempfilepath, 'w+');
         if ($tempfile === false) {
             echo "\nUnable to access temp file: {$this->tempfilepath}\nAborting.\n";
@@ -582,6 +592,17 @@ class import_repo {
                     } else {
                         $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
                         $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
+                        if ($this->targetcategory) {
+                            if (!$basecategoryname) {
+                                // The first category file we encounter will be for the target category.
+                                // This must already exist. (We've checked!).
+                                // Set base category name and skip upload.
+                                $basecategoryname = $qcategoryname;
+                                continue;
+                            }
+                            // Strip base name from category name and replace with target category.
+                           $qcategoryname = $this->targetcategoryname . substr($qcategoryname, strlen($basecategoryname));
+                        }
                         $categorynames[$currentdirectory] = $qcategoryname;
                     }
                     $this->postsettings['qcategoryname'] = $qcategoryname;

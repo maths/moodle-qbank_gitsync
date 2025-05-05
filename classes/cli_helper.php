@@ -660,8 +660,7 @@ class cli_helper {
         if (!is_file($manifestdirname . '/.gitignore')) {
             $ignore = fopen($manifestdirname . '/.gitignore', 'a');
 
-            $contents = "**/*" . self::MANIFEST_FILE . "\n**/*" .
-                self::TEMP_MANIFEST_FILE . "\n";
+            $contents = "**/*" . self::MANIFEST_FILE . "\n**/*.tmp\n";
             fwrite($ignore, $contents);
             fclose($ignore);
         }
@@ -898,9 +897,9 @@ class cli_helper {
      * @param string $filepath
      * @param string $tempfilepath Path of main temp file
      * @param string $replacement New category
-     * @return resource $tempcatfilepath
+     * @return object|null $tempcatfilepath
      */
-    public static function create_temp_category_file($filepath, $tempfilepath, $replacement): ?string {
+    public static function create_temp_category_file($filepath, $tempfilepath, $replacement) {
         if (!is_file($filepath)) {
             echo "\nRequired category file does not exist: {$filepath}\n";
             return null;
@@ -917,12 +916,12 @@ class cli_helper {
             return null;
         }
         $categoryxml->question->category->text = $replacement;
-        $tempcatfilepath = dirname($tempfilepath) . '/tempcatfile';
-        $success = file_put_contents($filepath, json_encode($contents));
+        $tempcatfilepath = dirname($tempfilepath) . '/tempcatfile.tmp';
+        $success = file_put_contents($tempcatfilepath, $categoryxml->asXML());
         if ($success === false) {
             echo "\nUnable to update category file: {$contents}. Check your repo carefully before committing.\n";
             return null;
         }
-        return fopen($tempcatfilepath, 'r');
+        return new \SplFileInfo($tempcatfilepath);
     }
 }
