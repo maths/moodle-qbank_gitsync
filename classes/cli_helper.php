@@ -787,7 +787,7 @@ class cli_helper {
                 echo "Course: {$moodlequestionlist->contextinfo->coursename}\n";
             }
             if ($moodlequestionlist->contextinfo->modulename) {
-                echo "Quiz: {$moodlequestionlist->contextinfo->modulename}\n";
+                echo "Module: {$moodlequestionlist->contextinfo->modulename}\n";
             }
             if (isset($activity->ignorecat)) {
                 echo "Ignoring categories (and their descendants) in form: {$activity->ignorecat}\n";

@@ -237,7 +237,17 @@ class import_quiz_data extends external_api {
             }
         } else {
             $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
-            \question_make_default_categories([$quizcontext->context]);
+            if (function_exists('question_get_default_category')) {
+                // This function exists from Moodle 4.5 onwards but the second parameter
+                // which creates the category if it doesn't exist is 5.0 onwards.
+                $topcategory = question_get_default_category($quizcontext->context->id, true);
+                if (!$topcategory) {
+                    \question_make_default_categories([$quizcontext->context]);
+                }
+            } else {
+                // Deprecated from 5.0.
+                \question_make_default_categories([$quizcontext->context]);
+            }
         }
 
         foreach ($params['feedback'] as $feedback) {

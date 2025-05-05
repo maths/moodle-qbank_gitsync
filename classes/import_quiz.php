@@ -142,7 +142,7 @@ class import_quiz {
         $moodleinstance = $arguments['moodleinstance'];
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $instanceid = $arguments['instanceid'];
-        $contextlevel = 50;
+        $contextlevel = cli_helper::get_context_level('course');
         $this->usegit = $arguments['usegit'];
         if (!empty($arguments['quizmanifestpath'])) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
@@ -162,7 +162,7 @@ class import_quiz {
                                                                                 dirname($this->quizmanifestpath));
                 $instanceid = $this->cmid;
                 $coursename = '';
-                $contextlevel = 70;
+                $contextlevel = cli_helper::get_context_level('module');
             }
         } else {
             if ($arguments['quizdatapath']) {
@@ -203,8 +203,11 @@ class import_quiz {
                 echo "\nManifest file is for the wrong Moodle instance: {$this->nonquizmanifestpath}\nAborting.\n";
                 $this->call_exit();
             }
-            if (!$instanceid && $this->nonquizmanifestcontents->context->contextlevel === cli_helper::get_context_level('course')) {
+            if (!$instanceid) {
                 $instanceid = $this->nonquizmanifestcontents->context->instanceid;
+            }
+            if ($this->nonquizmanifestcontents->context->contextlevel === cli_helper::get_context_level('module')) {
+                $contextlevel = cli_helper::get_context_level('module');
             }
         }
         if (!$instanceid && !$arguments['coursename'] && !$this->quizmanifestcontents) {

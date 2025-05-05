@@ -197,7 +197,7 @@ class get_question_list extends external_api {
             $response->contextinfo->qcategoryname = self::get_category_path($category);
             $response->contextinfo->qcategoryid = $category->id;
 
-            if ((int) $params['contextlevel'] === \CONTEXT_COURSE) {
+            if ((int) $params['contextlevel'] === \CONTEXT_COURSE || (int) $params['contextlevel'] === \CONTEXT_MODULE) {
                 $response->quizzes = $DB->get_records_sql(
                     "SELECT cm.id as instanceid, q.name
                         FROM {course_modules} cm
@@ -206,7 +206,7 @@ class get_question_list extends external_api {
                     WHERE cm.course = :courseid
                         AND m.name = 'quiz'
                         AND cm.deletioninprogress = 0",
-                    ['courseid' => (int) $contextinfo->instanceid]);
+                    ['courseid' => (int) $contextinfo->courseid]);
             }
 
             if ($contextonly) {

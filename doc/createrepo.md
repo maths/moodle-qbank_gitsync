@@ -26,6 +26,10 @@
 |h|help|
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
+For Moodle 5+, there are no longer course, course category or system context question banks. Questions are contained in module level question banks. This makes things simpler. Where command line parameters for `contextlevel` and `instanceid` are required you will always need to use `module` and the value of `cmid` from the URL of the question bank.
+
+e.g. `php createrepo.php -l module -n 2 -d "master"`
+
 ### Example 1:
 
 Assume you have correct information in config.php, i.e. the Moodle URL in `$moodleinstances`, and the webservice token stored in `$token`, the default moodle instance in `$instance` and the local root directory for your question files in `$rootdirectory`.
