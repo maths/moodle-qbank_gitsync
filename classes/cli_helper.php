@@ -859,36 +859,70 @@ class cli_helper {
      * category path from the file. (This will vary from the filepath
      * as the filepath will have potentially had characters sanitised.)
      *
-     * @param string $filename
+     * @param string $filepath
      * @param string $replacement New category
      * @return string|null $qcategoryname Question category name in format top/cat1/subcat1
      */
-    public static function get_question_category_from_file($filename, $replacement = null): ?string {
-        if (!is_file($filename)) {
-            echo "\nRequired category file does not exist: {$filename}\n";
+    public static function get_question_category_from_file($filepath, $replacement = null): ?string {
+        if (!is_file($filepath)) {
+            echo "\nRequired category file does not exist: {$filepath}\n";
             return null;
         }
-        $contents = file_get_contents($filename);
+        $contents = file_get_contents($filepath);
         if ($contents === false) {
-            echo "\nUnable to access file: {$filename}\n";
+            echo "\nUnable to access file: {$filepath}\n";
             return null;
         }
         $categoryxml = simplexml_load_string($contents);
         if ($categoryxml === false) {
             echo "\nBroken category XML.\n";
-            echo "{$filename}.\n";
+            echo "{$filepath}.\n";
             return null;
         }
         if ($replacement) {
             $categoryxml->question->category->text = $replacement;
-            $success = file_put_contents($filename, json_encode($this->manifestcontents));
+            $success = file_put_contents($filepath, json_encode($contents));
             if ($success === false) {
-                echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
-                $this->call_exit();
+                echo "\nUnable to update category file: {$contents}. Check your repo carefully before committing.\n";
             }
             return $replacement;
         }
         $qcategoryname = $categoryxml->question->category->text->__toString();
         return $qcategoryname;
+    }
+
+    /**
+     * Given a filepath for a category question file, create a temporary
+     * copy with a different category path.
+     *
+     * @param string $filepath
+     * @param string $tempfilepath Path of main temp file
+     * @param string $replacement New category
+     * @return resource $tempcatfilepath
+     */
+    public static function create_temp_category_file($filepath, $tempfilepath, $replacement): ?string {
+        if (!is_file($filepath)) {
+            echo "\nRequired category file does not exist: {$filepath}\n";
+            return null;
+        }
+        $contents = file_get_contents($filepath);
+        if ($contents === false) {
+            echo "\nUnable to access file: {$filepath}\n";
+            return null;
+        }
+        $categoryxml = simplexml_load_string($contents);
+        if ($categoryxml === false) {
+            echo "\nBroken category XML.\n";
+            echo "{$filepath}.\n";
+            return null;
+        }
+        $categoryxml->question->category->text = $replacement;
+        $tempcatfilepath = dirname($tempfilepath) . '/tempcatfile';
+        $success = file_put_contents($filepath, json_encode($contents));
+        if ($success === false) {
+            echo "\nUnable to update category file: {$contents}. Check your repo carefully before committing.\n";
+            return null;
+        }
+        return fopen($tempcatfilepath, 'r');
     }
 }

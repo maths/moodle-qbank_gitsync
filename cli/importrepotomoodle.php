@@ -75,10 +75,18 @@ $options = [
     ],
     [
         'longopt' => 'targetcategory',
-        'shortopt' => 'k',
+        'shortopt' => 't',
         'description' => 'Category to import into a subdirectory into.',
         'default' => null,
         'variable' => 'targetcategory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'targetcategoryname',
+        'shortopt' => 'k',
+        'description' => 'Category to import into a subdirectory into.',
+        'default' => null,
+        'variable' => 'targetcategoryname',
         'valuerequired' => true,
     ],
     [

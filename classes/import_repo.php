@@ -204,6 +204,7 @@ class import_repo {
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
         $this->targetcategory = $arguments['targetcategory'];
+        $this->targetcategoryname = $arguments['targetcategoryname'];
         $instanceid = $arguments['instanceid'];
         $this->ignorecat = $arguments['ignorecat'];
         $this->usegit = $arguments['usegit'];
@@ -254,7 +255,7 @@ class import_repo {
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
-            'qcategoryname' => ($this->targetcategory) ? null : 'top',
+            'qcategoryname' => ($this->targetcategoryname) ? $this->targetcategoryname : 'top',
             'qcategoryid' => $this->targetcategory,
             'instanceid' => $instanceid,
             'contextonly' => 0,
@@ -277,6 +278,7 @@ class import_repo {
                                                 $instanceinfo->contextinfo->qcategoryid,
                                                 $this->directory);
                 $this->targetcategoryname = $instanceinfo->contextinfo->qcategoryname;
+                $this->targetcategory = $instanceinfo->contextinfo->qcategoryid;
             } else {
                 $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
@@ -376,6 +378,7 @@ class import_repo {
                 $qcategoryname = cli_helper::get_question_category_from_file($listqcategoryfile);
             }
             if (!$qcategoryname) {
+                echo '\nThere is a problem with question category file : ' . $listqcategoryfile . '\n';
                 $this->call_exit();
             }
             // Set question category info after call to check_context.
@@ -429,6 +432,8 @@ class import_repo {
      */
     public function import_categories(): void {
         if ($this->subdirectory && $this->targetcategory) {
+            // We only import a subselection of categories if we have a target category and a subdirectory.
+            // Normal subdirectory behaviour is to import all categories but only a subselection of questions.
             $subdirectory = ($this->directory) ? $this->directory . '/' . $this->subdirectory : $this->subdirectory;
         } else {
             $subdirectory = $this->directory;
@@ -465,7 +470,7 @@ class import_repo {
                             if (!$basecategoryname) {
                                 // The first category file we encounter will be for the target category.
                                 // This must already exist. (We've checked!).
-                                // Set are base category name and skip upload.
+                                // Set base category name and skip upload.
                                 $basecategoryname = $qcategoryname;
                                 continue;
                             }
@@ -474,8 +479,17 @@ class import_repo {
                             $newcategory = $this->targetcategoryname . $qcategoryname;
                         }
                     }
-
-                    $this->upload_file($repoitem);
+                    if ($newcategory) {
+                        $tempcatfile = cli_helper::create_temp_category_file($repoitem, $this->tempfilepath, $newcategory);
+                        if (!$tempcatfile) {
+                            echo "Category {$repoitem} not imported.\n";
+                            echo "Stopping before trying to import questions.\n";
+                            $this->call_exit();
+                        }
+                        $this->upload_file($tempcatfile);
+                    } else {
+                        $this->upload_file($repoitem);
+                    }
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                     $response = $this->curlrequest->execute();
                     $responsejson = json_decode($response);
