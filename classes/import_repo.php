@@ -353,15 +353,19 @@ class import_repo {
                     $arguments['ignorecat'] : $this->manifestcontents->context->defaultignorecat ?? null;
             $this->listpostsettings['ignorecat'] = $this->ignorecat;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-            if ($arguments['subdirectory'] && !$this->manifestcontents->context->istargeted) {
+            if ($arguments['subdirectory'] && !isset($this->manifestcontents->context->istargeted)) {
                 $this->subdirectory = $arguments['subdirectory'];
                 $instanceinfo = $this->clihelper->check_context($this, false, false);
-            } else {
+            } else if ($arguments['subdirectory'] && isset($this->manifestcontents->context->istargeted)) {
                 $this->subdirectory = $this->manifestcontents->context->defaultsubdirectory;
-                $this->targetcategory = $this->manifestcontents->context->defaultsubcategory;
+                $this->targetcategory = $this->manifestcontents->context->defaultsubcategoryid;
                 $this->listpostsettings['qcategoryid'] = $this->targetcategory;
                 $instanceinfo = $this->clihelper->check_context($this, true, false);
+            } else {
+                $this->subdirectory = $this->manifestcontents->context->defaultsubdirectory;
+                $instanceinfo = $this->clihelper->check_context($this, true, false);
             }
+
             if ($this->targetcategory) {
                 $this->targetcategoryname = $instanceinfo->contextinfo->qcategoryname;
             }
@@ -454,6 +458,7 @@ class import_repo {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE) {
                     $this->postsettings['qcategoryname'] = '';
+                    $newcategory = null;
                     if ($this->ignorecat || $this->targetcategory) {
                         $qcategoryname = cli_helper::get_question_category_from_file($repoitem);
                         if (!$qcategoryname) {
@@ -557,9 +562,7 @@ class import_repo {
      * @return resource Temporary manifest file of added questions, one line per question.
      */
     public function import_questions() {
-        if ($this->subdirectory && $this->targetcategory) {
-            // We only import a subselection of categories if we have a target category and a subdirectory.
-            // Normal subdirectory behaviour is to import all categories but only a subselection of questions.
+        if ($this->subdirectory) {
             $subdirectory = ($this->directory) ? $this->directory . '/' . $this->subdirectory : $this->subdirectory;
         } else {
             $subdirectory = $this->directory;

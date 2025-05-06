@@ -105,6 +105,8 @@ final class import_repo_test extends advanced_testcase {
             'qcategoryid' => null,
             'instanceid' => null,
             'manifestpath' => null,
+            'targetcategoryname' => null,
+            'targetcategory' => null,
             'token' => 'XXXXXX',
             'help' => false,
             'usegit' => false,
