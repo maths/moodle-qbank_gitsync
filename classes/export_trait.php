@@ -154,18 +154,39 @@ trait export_trait {
                     $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
                     $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
                     $categorysofar = '';
+                    // Sanitise individual parts of subcategory.
+                    $sanitizedsubcat = '/' . implode('/',
+                                                array_map(
+                                                    fn($x) => preg_replace(cli_helper::BAD_CHARACTERS, '-', $x),
+                                                    explode('/', $this->subcategory)
+                                                )
+                                            );
                     // Create directory structure for category if it doesn't.
+                    $targettopfound = false;
+                    $currentdirectory = null;
                     foreach ($directorylist as $categorydirectory) {
                         $categorydirectory = preg_replace(cli_helper::BAD_CHARACTERS, '-', $categorydirectory);
                         $categorysofar .= "/{$categorydirectory}";
+                        if ($this->targetdirectory && !$targettopfound) {
+                            if (strpos($categorysofar, $sanitizedsubcat) === 0) {
+                                $categorysofar = '/top';
+                                $targettopfound = true;
+                            }
+                            continue;
+                        }
                         $currentdirectory = dirname($this->manifestpath) . $categorysofar;
+
                         if (!is_dir($currentdirectory)) {
                             mkdir($currentdirectory);
                         }
-                        if ($categorypath === $this->subcategory) {
+                        if ($categorypath === $this->subcategory && !$this->targetdirectory) {
                             $this->subdirectory = substr($categorysofar, 1);
                         }
                     }
+                    if (!$currentdirectory) {
+                        continue;
+                    }
+
                     $catfilepath = $currentdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
                     // Question will always be placed at the bottom category level so save
                     // that location for later.
@@ -176,6 +197,10 @@ trait export_trait {
                     // so only create and add file if it doesn't exist already.
                     if (!is_file($catfilepath)) {
                         try {
+                            if ($this->targetdirectory) {
+                                $categoryxml->question->category->text =
+                                    'top' . substr($categoryxml->question->category->text, strlen($this->subcategory));
+                            }
                             $category = cli_helper::reformat_question($categoryxml->asXML());
                         } catch (\Exception $e) {
                             echo "\n{$e->getmessage()}\n";

@@ -353,10 +353,10 @@ class import_repo {
                     $arguments['ignorecat'] : $this->manifestcontents->context->defaultignorecat ?? null;
             $this->listpostsettings['ignorecat'] = $this->ignorecat;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-            if ($arguments['subdirectory'] && !isset($this->manifestcontents->context->istargeted)) {
+            if ($arguments['subdirectory'] && empty($this->manifestcontents->context->istargeted)) {
                 $this->subdirectory = $arguments['subdirectory'];
                 $instanceinfo = $this->clihelper->check_context($this, false, false);
-            } else if ($arguments['subdirectory'] && isset($this->manifestcontents->context->istargeted)) {
+            } else if ($arguments['subdirectory'] && !empty($this->manifestcontents->context->istargeted)) {
                 $this->subdirectory = $this->manifestcontents->context->defaultsubdirectory;
                 $this->targetcategory = $this->manifestcontents->context->defaultsubcategoryid;
                 $this->listpostsettings['qcategoryid'] = $this->targetcategory;
