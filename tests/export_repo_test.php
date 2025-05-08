@@ -92,6 +92,8 @@ final class export_repo_test extends advanced_testcase {
             'rootdirectory' => $this->rootpath,
             'nonquizmanifestpath' => null,
             'subcategory' => null,
+            'targetcategory' => null,
+            'token' => 'XXXXXX',
             'qcategoryid' => null,
             'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
             'token' => 'XXXXXX',

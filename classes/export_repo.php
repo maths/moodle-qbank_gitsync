@@ -103,7 +103,7 @@ class export_repo {
      *
      * @var string|null
      */
-    public ?string $targetdirectory;
+    public ?string $targetdirectory = null;
     /**
      * Regex of categories to ignore.
      *
