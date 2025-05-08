@@ -439,7 +439,7 @@ class import_repo {
             // Normal subdirectory behaviour is to import all categories but only a subselection of questions.
             $subdirectory = ($this->directory) ? $this->directory . '/' . $this->subdirectory : $this->subdirectory;
         } else {
-            $subdirectory = $this->directory;
+            $subdirectory = $this->directory . '/top';
         }
         $this->repoiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
@@ -450,6 +450,47 @@ class import_repo {
         } else {
             $basecategoryname = null;
         }
+        foreach ($this->repoiterator as $repoitem) {
+            if ($repoitem->isDir()) {
+                if (strpos(pathinfo($repoitem, PATHINFO_DIRNAME), $this->directory . '/top') === false) {
+                    // Make sure we're actually in the category structure and below top.
+                    continue;
+                }
+
+                $catfilepath = $repoitem->__toString() . '/' . cli_helper::CATEGORY_FILE . '.xml';
+                $cattext = substr($repoitem->__toString(), strlen($this->directory) + 1);
+                if (!is_file($catfilepath)) {
+                    $catfile = fopen($catfilepath, 'w+');
+                    if ($catfile === false) {
+                        echo "\nUnable to create category file: {$catfilepath}\nAborting.\n";
+                        $this->call_exit();
+                        return; // Required for PHPUnit.
+                    }
+                    $catcontents = '<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+  <question type="category">
+    <category>
+      <text></text>
+    </category>
+    <info format="moodle_auto_format">
+      <text></text>
+    </info>
+    <idnumber></idnumber>
+  </question>
+</quiz>';
+                    $categoryxml = simplexml_load_string($catcontents);
+                    $categoryxml->question->category->text = $cattext;
+                    $success = file_put_contents($catfilepath, $categoryxml->asXML());
+                    if ($success === false) {
+                        echo "\nUnable to update category file: {$catfilepath}\n Aborting.\n";
+                        $this->call_exit();
+                        return; // Required for PHPUnit.
+                    }
+                    fclose($catfile);
+                }
+            }
+        }
+        $this->repoiterator->rewind();
         // Find all the category files first and create categories where needed.
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
@@ -565,7 +606,7 @@ class import_repo {
         if ($this->subdirectory) {
             $subdirectory = ($this->directory) ? $this->directory . '/' . $this->subdirectory : $this->subdirectory;
         } else {
-            $subdirectory = $this->directory;
+            $subdirectory = $this->directory . '/top';
         }
         $this->subdirectoryiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),

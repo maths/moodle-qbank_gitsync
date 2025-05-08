@@ -229,6 +229,7 @@ class create_repo {
                                                 $instanceinfo->contextinfo->qcategoryid,
                                                 $this->directory);
         } else {
+            $this->targetcategory = null;
             $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
