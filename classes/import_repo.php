@@ -272,9 +272,13 @@ class import_repo {
             $this->subdirectory = ($arguments['subdirectory']) ? $arguments['subdirectory'] : 'top';
             $instanceinfo = $this->clihelper->check_context($this, false, false);
             if ($this->targetcategory) {
-                $this->manifestpath = cli_helper::get_manifest_path_targeted($moodleinstance,
+                $this->manifestpath = cli_helper::get_manifest_path_targeted($moodleinstance, $contextlevel,
+                                                $instanceinfo->contextinfo->categoryname,
+                                                $instanceinfo->contextinfo->coursename,
+                                                $instanceinfo->contextinfo->modulename,
                                                 $instanceinfo->contextinfo->qcategoryname,
                                                 $instanceinfo->contextinfo->qcategoryid,
+                                                $this->subdirectory,
                                                 $this->directory);
                 $this->targetcategoryname = $instanceinfo->contextinfo->qcategoryname;
                 $this->targetcategory = $instanceinfo->contextinfo->qcategoryid;

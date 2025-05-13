@@ -234,6 +234,57 @@ final class cli_helper_test extends advanced_testcase {
     }
 
     /**
+     * Manifest path name creation
+     * @covers \gitsync\cli_helper\get_manifest_path_targeted()
+     */
+    public function test_manifest_path_targeted(): void {
+        $helper = new cli_helper($this->options);
+        // Module level, including replacements.
+        $manifestpath = $helper->get_manifest_path_targeted('mood$l!einstanc<name', 'module', 'cat<goryname',
+                                                   'cours<nam>', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                                   '/Dir 1/Dir 2/Dir 3', 'directoryname');
+        $this->assertEquals('directoryname/mood-l-einstanc-name_module_cours-nam-_modul-name_dir-2_dir-3_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+        // Category level, including replacements.
+        $manifestpath = $helper->get_manifest_path_targeted('moodleinstanc<name', 'coursecategory', 'cat<goryname',
+                                                   'cours<nam<', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                                   '/Dir 1/Dir 2/Dir 3', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_coursecategory_cat-goryname_dir-2_dir-3_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+        // Course level, including replacements.
+        $manifestpath = $helper->get_manifest_path_targeted('moodleinstanc<name', 'course', 'cat<goryname',
+                                                   'cours<nam>', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                                   '/Dir 1/Dir 2/Dir 3', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_course_cours-nam-_dir-2_dir-3_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+        // System level.
+        $manifestpath = $helper->get_manifest_path_targeted('moodleinstanc<name', 'system', 'cat<goryname',
+                                            'cours<nam<', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                            '/Dir 1/Dir 2/Dir 3', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_system_dir-2_dir-3_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+        // Shortening.
+        // Module level, including replacements.
+        $manifestpath = $helper->get_manifest_path_targeted('moodleinstanc<name', 'module', 'cat<goryname',
+            'cours<nam<thatisverylongandsoneedstobeshortened and has a space in it just to make sure',
+            'Modulename that is also very long and we want to chop up a bit as well hopefully',
+            'top/Level 1/Level 2 with a very long category name that needs to be cut', '88',
+            '/Dir 1/Dir 2 honestly who makes their directories this long/Dir 3 and this one too its bound to cause problems',
+            'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_module_cours-nam-thatisverylongandson' .
+                            '_modulename-that-is-also-very-l_dir-2-honestly-who-makes-_dir-3-and-this-one-too-it_' .
+                            'top-level-1-level-2-with-a-very-long-category-name_88' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+
+        // Module level, top subdirectory only.
+        $manifestpath = $helper->get_manifest_path_targeted('mood$l!einstanc<name', 'module', 'cat<goryname',
+                                                   'cours<nam>', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                                   'top', 'directoryname');
+        $this->assertEquals('directoryname/mood-l-einstanc-name_module_cours-nam-_modul-name_top_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+    }
+
+    /**
      * Quiz structure path name creation
      * @covers \gitsync\cli_helper\get_quiz_structure_path()
      */

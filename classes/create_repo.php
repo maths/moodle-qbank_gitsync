@@ -224,9 +224,13 @@ class create_repo {
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         if (!empty($arguments['istargeted'])) {
             $this->targetcategory = $this->qcategoryid;
-            $this->manifestpath = cli_helper::get_manifest_path_targeted($moodleinstance,
+            $this->manifestpath = cli_helper::get_manifest_path_targeted($moodleinstance, $contextlevel,
+                                                $instanceinfo->contextinfo->categoryname,
+                                                $instanceinfo->contextinfo->coursename,
+                                                $instanceinfo->contextinfo->modulename,
                                                 $instanceinfo->contextinfo->qcategoryname,
                                                 $instanceinfo->contextinfo->qcategoryid,
+                                                'top',
                                                 $this->directory);
         } else {
             $this->targetcategory = null;

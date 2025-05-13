@@ -171,8 +171,9 @@ trait export_trait {
                             if (strpos($categorysofar, $sanitizedsubcat) === 0) {
                                 $categorysofar = '/top';
                                 $targettopfound = true;
+                            } else {
+                                continue;
                             }
-                            continue;
                         }
                         $currentdirectory = dirname($this->manifestpath) . $categorysofar;
 

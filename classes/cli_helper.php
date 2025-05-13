@@ -432,22 +432,39 @@ class cli_helper {
      * A target folder and question category must both be supplied.
      *
      * @param string $moodleinstance
+     * @param string $contextlevel
+     * @param string|null $coursecategory
+     * @param string|null $coursename
+     * @param string|null $modulename
      * @param string $categoryname
      * @param string $categoryid
+     * @param string $subdirectory
      * @param string $directory
      * @return string
      */
-    public static function get_manifest_path_targeted(string $moodleinstance, string $categoryname, ?string $categoryid,
+    public static function get_manifest_path_targeted(string $moodleinstance, string $contextlevel, ?string $coursecategory,
+                            ?string $coursename, ?string $modulename, string $categoryname, string $categoryid, string $subdirectory,
                             string $directory): string {
-        $filenamemod = '_';
-        $folders = explode('/', $directory);
+        $filenamemod = '_' . $contextlevel;
+        switch ($contextlevel) {
+            case 'coursecategory':
+                $filenamemod = $filenamemod . '_' . substr($coursecategory, 0, 50);
+                break;
+            case 'course':
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 50);
+                break;
+            case 'module':
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 30) . '_' . substr($modulename, 0, 30);
+                break;
+        }
+        $folders = explode('/', $subdirectory);
         $folder = array_pop($folders);
-        $parent = array_pop($folders);
-        $filenamemod .= substr($parent, 0, 50) . '_' . substr($folder, 0, 50) .
+        $parent = ($folders) ? array_pop($folders) : null;
+        $filenamemod .= '_' . (($parent) ? substr($parent, 0, 25) . '_' : '') . substr($folder, 0, 25) .
                         '_' . substr($categoryname, 0, 50) . '_' . $categoryid;
 
         $filename = $directory . '/' .
-                    preg_replace(self::BAD_CHARACTERS, '-', strtolower(substr($moodleinstance, 0, 50) . $filenamemod)) .
+                    preg_replace(self::BAD_CHARACTERS, '-', strtolower(substr($moodleinstance, 0, 30) . $filenamemod)) .
                     self::MANIFEST_FILE;
         return $filename;
     }
