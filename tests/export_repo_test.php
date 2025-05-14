@@ -556,4 +556,56 @@ final class export_repo_test extends advanced_testcase {
             '/^\nExporting quiz: Quiz 1.*testrepo_quiz_quiz-1\n$/s'
         );
     }
+
+    /**
+     * Test the full targeted process with subcategory id.
+     */
+    public function test_targeted_process_with_subcategory_id(): void {
+        $this->options['manifestpath'] = '/' . self::MOODLE . 'target_system' . cli_helper::MANIFEST_FILE;
+        $this->replace_mock_default();
+
+        // Will get questions in order from manifest file in testrepo.
+        $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<quiz><question><Name>Three</Name></question></quiz>", "version": "1"}',
+            '{"question": "<quiz><question><Name>Four</Name></question></quiz>", "version": "1"}'
+        );
+
+        $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/bob/clive/subcat 2_1"},
+              "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
+              '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/bob/clive/subcat 2_1"},
+              "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+                "modulename": "Module 1", "instanceid": "", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
+              {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
+              {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
+              {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
+            );
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->exportrepo->process();
+
+        // Check question files updated.
+        $this->assertStringContainsString('First Question', file_get_contents($this->rootpath . '/top/cat-1/First-Question.xml'));
+        $this->assertStringContainsString('Second Question', file_get_contents($this->rootpath . '/top/cat-2/Second-Question.xml'));
+        $this->assertStringContainsString('Three', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml'));
+        $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml'));
+
+        // Check manifest file updated.
+        $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        $this->assertCount(2, $manifestcontents->questions);
+
+        $existingentries = array_column($manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertArrayHasKey('35003', $existingentries);
+        $this->assertArrayHasKey('35004', $existingentries);
+        // Question category id should be as supplied.
+        $this->assertEquals(5, $this->exportrepo->listpostsettings["qcategoryid"]);
+
+        $this->expectOutputRegex('/^\nExported 2 previously linked questions.*Added 0 questions.\n$/s');
+    }
+
 }

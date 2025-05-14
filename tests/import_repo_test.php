@@ -33,13 +33,15 @@ use org\bovigo\vfs\vfsStream;
 /**
  * Allows testing of errors that lead to an exit.
  */
-class fake_helper extends cli_helper {
+class fake_helper extends cli_helper
+{
     /**
      * Override so ignored during testing
      *
      * @return void
      */
-    public static function call_exit(): void {
+    public static function call_exit(): void
+    {
         return;
     }
 
@@ -48,7 +50,8 @@ class fake_helper extends cli_helper {
      *
      * @return void
      */
-    public static function handle_abort(): void {
+    public static function handle_abort(): void
+    {
         return;
     }
 }
@@ -59,7 +62,8 @@ class fake_helper extends cli_helper {
  *
  * @covers \gitsync\import_repo::class
  */
-final class import_repo_test extends advanced_testcase {
+final class import_repo_test extends advanced_testcase
+{
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -70,7 +74,7 @@ final class import_repo_test extends advanced_testcase {
     public curl_request $curl;
     /** @var curl_request mocked curl_request for doc upload */
     public curl_request $uploadcurl;
-     /** @var curl_request mocked curl_request for question list */
+    /** @var curl_request mocked curl_request for question list */
     public curl_request $listcurl;
     /** @var import_repo mocked for question delete */
     public curl_request $deletecurl;
@@ -79,11 +83,12 @@ final class import_repo_test extends advanced_testcase {
     /** @var string root of virtual file system */
     public string $rootpath;
     /** @var array used to store output of multiple calls to a function */
-    public array $results;
+    public array $results = [];
     /** name of moodle instance for purpose of tests */
     const MOODLE = 'fakeimport';
 
-    public function setUp(): void {
+    public function setUp(): void
+    {
         parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
@@ -102,7 +107,6 @@ final class import_repo_test extends advanced_testcase {
             'coursename' => 'Course 1',
             'modulename' => 'Test 1',
             'coursecategory' => 'Cat 1',
-            'qcategoryid' => null,
             'instanceid' => null,
             'manifestpath' => null,
             'targetcategoryname' => null,
@@ -113,13 +117,15 @@ final class import_repo_test extends advanced_testcase {
             'ignorecat' => null,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context',
+            'get_arguments',
+            'check_context',
         ])->setConstructorArgs([$this->options])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->any())->method('check_context')->willReturn(
             json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":123},
-              "questions": []}')
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top",
+                             "qcategoryid":123},
+                "questions": []}')
         );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
@@ -135,7 +141,10 @@ final class import_repo_test extends advanced_testcase {
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'upload_file', 'handle_delete', 'call_exit', 'handle_abort',
+            'upload_file',
+            'handle_delete',
+            'call_exit',
+            'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->deletecurlrequest = $this->deletecurl;
@@ -151,30 +160,45 @@ final class import_repo_test extends advanced_testcase {
      *
      * @return void
      */
-    public function replace_mock_default(): void {
+    public function replace_mock_default($qcatid = 123, $qcatname = 'top'): void
+    {
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context',
+            'get_arguments',
+            'check_context',
         ])->setConstructorArgs([$this->options])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->any())->method('check_context')->willReturn(
             json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
-                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top", "qcategoryid":123},
-              "questions": []}')
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"' . $qcatname . '",
+                             "qcategoryid":' . $qcatid . '},
+                "questions": []}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'upload_file', 'handle_delete', 'call_exit', 'handle_abort',
+            'upload_file',
+            'handle_delete',
+            'call_exit',
+            'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->deletecurlrequest = $this->deletecurl;
         $this->importrepo->listcurlrequest = $this->listcurl;
         $this->importrepo->uploadcurlrequest = $this->uploadcurl;
-        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
+        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnCallback(
+            function ($arg) {
+                if (!isset($this->results['files'])) {
+                    $this->results['files'] = [];
+                }
+                $this->results['files'][] = $arg->getPathname();
+                return true;
+            }
+        ));
     }
 
     /**
      * Test the full process.
      */
-    public function test_process(): void {
+    public function test_process(): void
+    {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
@@ -205,7 +229,8 @@ final class import_repo_test extends advanced_testcase {
     /**
      * Test the full process with manifest path.
      */
-    public function test_process_manifest_path(): void {
+    public function test_process_manifest_path(): void
+    {
         $this->options["manifestpath"] = 'fakeimport_system_question_manifest.json';
         $this->replace_mock_default();
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
@@ -238,7 +263,8 @@ final class import_repo_test extends advanced_testcase {
     /**
      * Test the full process with manifest path and subdirectory.
      */
-    public function test_process_manifest_path_and_subdirectory(): void {
+    public function test_process_manifest_path_and_subdirectory(): void
+    {
         $this->options["manifestpath"] = 'fakeimport_system_question_manifest.json';
         $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
         $this->replace_mock_default();
@@ -271,7 +297,8 @@ final class import_repo_test extends advanced_testcase {
     /**
      * Test the full process with manifest path and defaultignorecat.
      */
-    public function test_process_manifest_path_and_defaultignore(): void {
+    public function test_process_manifest_path_and_defaultignore(): void
+    {
         $this->options["manifestpath"] = 'fakeignore_system_question_manifest.json';
         $this->replace_mock_default();
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
@@ -301,7 +328,8 @@ final class import_repo_test extends advanced_testcase {
     /**
      * Test the full process with manifest path and defaultignorecat and ignorecat param.
      */
-    public function test_process_manifest_path_and_defaultignore_and_param(): void {
+    public function test_process_manifest_path_and_defaultignore_and_param(): void
+    {
         $this->options["manifestpath"] = 'fakeignore_system_question_manifest.json';
         $this->options["ignorecat"] = '/cat 1/';
         $this->options["subdirectory"] = null;
@@ -335,13 +363,16 @@ final class import_repo_test extends advanced_testcase {
      * Test importing categories.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories(): void {
+    public function test_import_categories(): void
+    {
         $this->results = [];
-        $this->curl->expects($this->exactly(3))->method('execute')->will($this->returnCallback(
-            function() {
-                $this->results[] = $this->importrepo->repoiterator->getPathname();
-                return '{"questionbankentryid": null, "version" : null}';
-            })
+        $this->curl->expects($this->exactly(3))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = $this->importrepo->repoiterator->getPathname();
+                    return '{"questionbankentryid": null, "version" : null}';
+                }
+            )
         );
         $this->importrepo->import_categories();
         $this->assertContains($this->rootpath . '/top/cat-1/gitsync_category.xml', $this->results);
@@ -353,15 +384,18 @@ final class import_repo_test extends advanced_testcase {
      * Test importing categories with ignore.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories_with_ignore(): void {
+    public function test_import_categories_with_ignore(): void
+    {
         $this->options["ignorecat"] = '/^cat 2$/';
         $this->replace_mock_default();
         $this->results = [];
-        $this->curl->expects($this->exactly(1))->method('execute')->will($this->returnCallback(
-            function() {
-                $this->results[] = $this->importrepo->repoiterator->getPathname();
-                return '{"questionbankentryid": null, "version" : null}';
-            })
+        $this->curl->expects($this->exactly(1))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = $this->importrepo->repoiterator->getPathname();
+                    return '{"questionbankentryid": null, "version" : null}';
+                }
+            )
         );
         $this->importrepo->import_categories();
         $this->assertContains($this->rootpath . '/top/cat-1/gitsync_category.xml', $this->results);
@@ -373,15 +407,18 @@ final class import_repo_test extends advanced_testcase {
      * Test importing categories with ignore subcat.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories_with_ignore_subcat(): void {
+    public function test_import_categories_with_ignore_subcat(): void
+    {
         $this->options["ignorecat"] = '/subcat 2_1/';
         $this->replace_mock_default();
         $this->results = [];
-        $this->curl->expects($this->exactly(2))->method('execute')->will($this->returnCallback(
-            function() {
-                $this->results[] = $this->importrepo->repoiterator->getPathname();
-                return '{"questionbankentryid": null, "version" : null}';
-            })
+        $this->curl->expects($this->exactly(2))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = $this->importrepo->repoiterator->getPathname();
+                    return '{"questionbankentryid": null, "version" : null}';
+                }
+            )
         );
         $this->importrepo->import_categories();
         $this->assertContains($this->rootpath . '/top/cat-1/gitsync_category.xml', $this->results);
@@ -393,20 +430,22 @@ final class import_repo_test extends advanced_testcase {
      * Test importing categories broken JSON.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories_broken_json(): void {
+    public function test_import_categories_broken_json(): void
+    {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
         $this->importrepo->import_categories();
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
-                                 '.*{broken/s');
+            '.*{broken/s');
     }
 
     /**
      * Test importing categories exception.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories_exception(): void {
+    public function test_import_categories_exception(): void
+    {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -418,7 +457,8 @@ final class import_repo_test extends advanced_testcase {
      * Test importing questions.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions(): void {
+    public function test_import_questions(): void
+    {
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": "35001", "version": "2"}',
@@ -426,13 +466,15 @@ final class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": "35004", "version": "2"}',
             '{"questionbankentryid": "35003", "version": "2"}',
         );
-        $this->curl->expects($this->exactly(4))->method('execute')->will($this->returnCallback(
-            function() {
-                $this->results[] = [
-                                    $this->importrepo->subdirectoryiterator->getPathname(),
-                                    $this->importrepo->postsettings['qcategoryname'],
-                                   ];
-            })
+        $this->curl->expects($this->exactly(4))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = [
+                        $this->importrepo->subdirectoryiterator->getPathname(),
+                        $this->importrepo->postsettings['qcategoryname'],
+                    ];
+                }
+            )
         );
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
@@ -443,10 +485,14 @@ final class import_repo_test extends advanced_testcase {
         ];
         $this->importrepo->import_questions();
         $this->assertContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1'], $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
-                              $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
-                              $this->results);
+        $this->assertContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
+            $this->results
+        );
+        $this->assertContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
+            $this->results
+        );
         $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2'], $this->results);
 
         // Check temp manifest file created.
@@ -463,7 +509,8 @@ final class import_repo_test extends advanced_testcase {
      * Test importing questions with ignore.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_with_ignore(): void {
+    public function test_import_questions_with_ignore(): void
+    {
         $this->options["ignorecat"] = '/^subcat 2.*/';
         $this->replace_mock_default();
         $this->results = [];
@@ -471,13 +518,15 @@ final class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": "35001", "version": "2"}',
             '{"questionbankentryid": "35002", "version": "2"}',
         );
-        $this->curl->expects($this->exactly(2))->method('execute')->will($this->returnCallback(
-            function() {
-                $this->results[] = [
-                                    $this->importrepo->subdirectoryiterator->getPathname(),
-                                    $this->importrepo->postsettings['qcategoryname'],
-                                   ];
-            })
+        $this->curl->expects($this->exactly(2))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = [
+                        $this->importrepo->subdirectoryiterator->getPathname(),
+                        $this->importrepo->postsettings['qcategoryname'],
+                    ];
+                }
+            )
         );
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
@@ -488,10 +537,14 @@ final class import_repo_test extends advanced_testcase {
         ];
         $this->importrepo->import_questions();
         $this->assertContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1'], $this->results);
-        $this->assertNotContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
-                                $this->results);
-        $this->assertNotContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
-                                $this->results);
+        $this->assertNotContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
+            $this->results
+        );
+        $this->assertNotContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
+            $this->results
+        );
         $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2'], $this->results);
     }
 
@@ -499,7 +552,8 @@ final class import_repo_test extends advanced_testcase {
      * Test importing questions with subcat and ignore.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_with_subcat_and_ignore(): void {
+    public function test_import_questions_with_subcat_and_ignore(): void
+    {
         $this->options["subdirectory"] = 'top/cat-2';
         $this->options["ignorecat"] = '/^subcat 2.*/';
         $this->replace_mock_default();
@@ -507,13 +561,15 @@ final class import_repo_test extends advanced_testcase {
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": "35002", "version": "2"}',
         );
-        $this->curl->expects($this->exactly(1))->method('execute')->will($this->returnCallback(
-            function() {
-                $this->results[] = [
-                                    $this->importrepo->subdirectoryiterator->getPathname(),
-                                    $this->importrepo->postsettings['qcategoryname'],
-                                   ];
-            })
+        $this->curl->expects($this->exactly(1))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = [
+                        $this->importrepo->subdirectoryiterator->getPathname(),
+                        $this->importrepo->postsettings['qcategoryname'],
+                    ];
+                }
+            )
         );
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
@@ -524,10 +580,14 @@ final class import_repo_test extends advanced_testcase {
         ];
         $this->importrepo->import_questions();
         $this->assertNotContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1'], $this->results);
-        $this->assertNotContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
-                                $this->results);
-        $this->assertNotContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
-                                $this->results);
+        $this->assertNotContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
+            $this->results
+        );
+        $this->assertNotContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
+            $this->results
+        );
         $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2'], $this->results);
     }
 
@@ -535,20 +595,22 @@ final class import_repo_test extends advanced_testcase {
      * Test importing questions broken JSON.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_broken_json(): void {
+    public function test_import_questions_broken_json(): void
+    {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
         $this->importrepo->import_questions();
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
-                                 '.*{broken/s');
+            '.*{broken/s');
     }
 
     /**
      * Test importing questions exception.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_exception(): void {
+    public function test_import_questions_exception(): void
+    {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -560,7 +622,8 @@ final class import_repo_test extends advanced_testcase {
      * Test importing questions from only a subdirectory of questions
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_subdirectory_questions(): void {
+    public function test_import_subdirectory_questions(): void
+    {
         $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
         $this->replace_mock_default();
         $this->results = [];
@@ -568,13 +631,15 @@ final class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": "35001", "version": "2"}',
             '{"questionbankentryid": "35002", "version": "2"}',
         );
-        $this->curl->expects($this->exactly(2))->method('execute')->will($this->returnCallback(
-            function() {
-                $this->results[] = [
-                                    $this->importrepo->subdirectoryiterator->getPathname(),
-                                    $this->importrepo->postsettings['qcategoryname'],
-                                   ];
-            })
+        $this->curl->expects($this->exactly(2))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = [
+                        $this->importrepo->subdirectoryiterator->getPathname(),
+                        $this->importrepo->postsettings['qcategoryname'],
+                    ];
+                }
+            )
         );
         $this->importrepo->subdirectory = 'top/cat-2/subcat-2_1';
         $this->importrepo->postsettings = [
@@ -585,10 +650,14 @@ final class import_repo_test extends advanced_testcase {
             'instanceid' => null,
         ];
         $this->importrepo->import_questions();
-        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
-                               $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
-                               $this->results);
+        $this->assertContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1'],
+            $this->results
+        );
+        $this->assertContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1'],
+            $this->results
+        );
 
         // Check temp manifest file created.
         $this->assertEquals(file_exists($this->importrepo->tempfilepath), true);
@@ -606,7 +675,8 @@ final class import_repo_test extends advanced_testcase {
      * Test importing existing questions.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_existing_questions(): void {
+    public function test_import_existing_questions(): void
+    {
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
@@ -629,14 +699,16 @@ final class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": "1", "version": "2"}',
             '{"questionbankentryid": "2", "version": "2"}',
         );
-        $this->curl->expects($this->exactly(4))->method('execute')->will($this->returnCallback(
-            function() {
-                $this->results[] = [
-                                    $this->importrepo->subdirectoryiterator->getPathname(),
-                                    $this->importrepo->postsettings['qcategoryname'],
-                                    $this->importrepo->postsettings['questionbankentryid'],
-                                   ];
-            })
+        $this->curl->expects($this->exactly(4))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = [
+                        $this->importrepo->subdirectoryiterator->getPathname(),
+                        $this->importrepo->postsettings['qcategoryname'],
+                        $this->importrepo->postsettings['questionbankentryid'],
+                    ];
+                }
+            )
         );
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
@@ -648,10 +720,14 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->import_questions();
         // Check questions in manifest pass questionbankentryid to webservice but the others don't.
         $this->assertContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1', '1'], $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1', '2'],
-                              $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1', null],
-                              $this->results);
+        $this->assertContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1', '2'],
+            $this->results
+        );
+        $this->assertContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1', null],
+            $this->results
+        );
         $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2', null], $this->results);
     }
 
@@ -659,7 +735,8 @@ final class import_repo_test extends advanced_testcase {
      * Test importing existing questions only occurs if commit hashes don't match.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_with_commit_hashes(): void {
+    public function test_import_with_commit_hashes(): void
+    {
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                               "questions":[{
                                  "questionbankentryid":"1",
@@ -692,14 +769,16 @@ final class import_repo_test extends advanced_testcase {
             '{"questionbankentryid": "2", "version": "2"}',
             '{"questionbankentryid": "3", "version": "2"}',
         );
-        $this->curl->expects($this->exactly(3))->method('execute')->will($this->returnCallback(
-            function() {
-                $this->results[] = [
-                                    $this->importrepo->subdirectoryiterator->getPathname(),
-                                    $this->importrepo->postsettings['qcategoryname'],
-                                    $this->importrepo->postsettings['questionbankentryid'],
-                                ];
-            })
+        $this->curl->expects($this->exactly(3))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = [
+                        $this->importrepo->subdirectoryiterator->getPathname(),
+                        $this->importrepo->postsettings['qcategoryname'],
+                        $this->importrepo->postsettings['questionbankentryid'],
+                    ];
+                }
+            )
         );
         $this->importrepo->postsettings = [
             'contextlevel' => '10',
@@ -711,10 +790,14 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->import_questions();
         // Check question with matching hashes wasn't imported.
         $this->assertNotContains([$this->rootpath . '/top/cat-1/First-Question.xml', 'top/cat 1', '1'], $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1', '2'],
-                              $this->results);
-        $this->assertContains([$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1', '3'],
-                              $this->results);
+        $this->assertContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1', '2'],
+            $this->results
+        );
+        $this->assertContains(
+            [$this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml', 'top/cat 2/subcat 2_1', '3'],
+            $this->results
+        );
         $this->assertContains([$this->rootpath . '/top/cat-2/Second-Question.xml', 'top/cat 2', null], $this->results);
     }
 
@@ -723,11 +806,13 @@ final class import_repo_test extends advanced_testcase {
      * Test message displayed when an invalid directory is used.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_wrong_directory(): void {
+    public function test_import_questions_wrong_directory(): void
+    {
         $this->importrepo->directory = $this->rootpath;
         $this->importrepo->subdirectory = 'top/cat-1';
         $this->curl->expects($this->any())->method('execute')->will(
-            $this->returnValue('{"questionbankentryid": "35001", "version": "2"}'));
+            $this->returnValue('{"questionbankentryid": "35001", "version": "2"}')
+        );
         unlink($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml');
 
         $this->importrepo->import_questions();
@@ -740,10 +825,14 @@ final class import_repo_test extends advanced_testcase {
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
-    public function test_manifest_file(): void {
+    public function test_manifest_file(): void
+    {
         unlink($this->importrepo->manifestpath);
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'upload_file', 'handle_delete', 'call_exit', 'handle_abort',
+            'upload_file',
+            'handle_delete',
+            'call_exit',
+            'handle_abort',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->deletecurlrequest = $this->deletecurl;
@@ -799,7 +888,8 @@ final class import_repo_test extends advanced_testcase {
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
-    public function test_manifest_file_with_subdirectory(): void {
+    public function test_manifest_file_with_subdirectory(): void
+    {
         unlink($this->importrepo->manifestpath);
         $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
         $this->replace_mock_default();
@@ -847,7 +937,8 @@ final class import_repo_test extends advanced_testcase {
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
-    public function test_manifest_file_with_subdirectory_and_ignore(): void {
+    public function test_manifest_file_with_subdirectory_and_ignore(): void
+    {
         unlink($this->importrepo->manifestpath);
         $this->options["subdirectory"] = 'top/cat-2';
         $this->options["ignorecat"] = '/subcat 2_1/';
@@ -893,7 +984,8 @@ final class import_repo_test extends advanced_testcase {
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
-    public function test_manifest_file_with_ignore(): void {
+    public function test_manifest_file_with_ignore(): void
+    {
         unlink($this->importrepo->manifestpath);
         $this->options["ignorecat"] = '/subcat 2_1/';
         $this->replace_mock_default();
@@ -939,7 +1031,8 @@ final class import_repo_test extends advanced_testcase {
      * Test update of manifest file.
      * @covers \gitsync\cli_helper\create_manifest_file()
      */
-    public function test_manifest_file_update(): void {
+    public function test_manifest_file_update(): void
+    {
         $manifestcontents = '{"context":{"contextlevel":70,
                                 "coursename":"Course 1",
                                 "modulename":"Test 1",
@@ -961,28 +1054,31 @@ final class import_repo_test extends advanced_testcase {
                                 "format":"xml"
                              }]}';
         $tempcontents = '{"questionbankentryid":"1",' .
-                          '"filepath":"/top/cat-1/First-Question.xml",' .
-                          '"version": "5",' .
-                          '"format":"xml"}' . "\n" .
-                        '{"questionbankentryid":"3",' .
-                          '"filepath":"/top/cat-2/Second-Question.xml",' .
-                          '"version": "6",' .
-                          '"format":"xml"}' . "\n" .
-                        '{"questionbankentryid":"2",' .
-                          '"filepath":"/top/cat-2/subcat-2_1/Third-Question.xml",' .
-                          '"version": "7",' .
-                          '"format":"xml"}' . "\n" .
-                        '{"questionbankentryid":"4",' .
-                          '"filepath":"/top/cat-2/subcat-2_1/Fourth-Question.xml",' .
-                          '"version": "8",' .
-                          '"moodlecommit": "test",' .
-                          '"format":"xml"}' . "\n";
+            '"filepath":"/top/cat-1/First-Question.xml",' .
+            '"version": "5",' .
+            '"format":"xml"}' . "\n" .
+            '{"questionbankentryid":"3",' .
+            '"filepath":"/top/cat-2/Second-Question.xml",' .
+            '"version": "6",' .
+            '"format":"xml"}' . "\n" .
+            '{"questionbankentryid":"2",' .
+            '"filepath":"/top/cat-2/subcat-2_1/Third-Question.xml",' .
+            '"version": "7",' .
+            '"format":"xml"}' . "\n" .
+            '{"questionbankentryid":"4",' .
+            '"filepath":"/top/cat-2/subcat-2_1/Fourth-Question.xml",' .
+            '"version": "8",' .
+            '"moodlecommit": "test",' .
+            '"format":"xml"}' . "\n";
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->tempfilepath, $tempcontents);
 
-        cli_helper::create_manifest_file($this->importrepo->manifestcontents,
-                                        $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
-                                        'www.moodle');
+        cli_helper::create_manifest_file(
+            $this->importrepo->manifestcontents,
+            $this->importrepo->tempfilepath,
+            $this->importrepo->manifestpath,
+            'www.moodle'
+        );
 
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(4, $manifestcontents->questions);
@@ -1014,7 +1110,8 @@ final class import_repo_test extends advanced_testcase {
      * Test update of manifest file temp file error.
      * @covers \gitsync\cli_helper\create_manifest_file()
      */
-    public function test_manifest_temp_file_error(): void {
+    public function test_manifest_temp_file_error(): void
+    {
         $manifestcontents = '{"context":{"contextlevel":70,
                                 "coursename":"Course 1",
                                 "modulename":"Test 1",
@@ -1029,15 +1126,18 @@ final class import_repo_test extends advanced_testcase {
                                 "format":"xml"
                              }]}';
         $tempcontents = '{"questionbankentryid":"1",' .
-                          '"filepath":"/top/cat 1/First Question.xml",' .
-                          '"version": "5",' .
-                          '"format":"xml"}' . "\n";
+            '"filepath":"/top/cat 1/First Question.xml",' .
+            '"version": "5",' .
+            '"format":"xml"}' . "\n";
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->tempfilepath, $tempcontents);
         chmod($this->importrepo->tempfilepath, 0000);
-        @fake_helper::create_manifest_file($this->importrepo->manifestcontents,
-                                        $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
-                                        'www.moodle');
+        @fake_helper::create_manifest_file(
+            $this->importrepo->manifestcontents,
+            $this->importrepo->tempfilepath,
+            $this->importrepo->manifestpath,
+            'www.moodle'
+        );
         $this->expectOutputRegex('/^\nUnable to access temp file.*Aborting.\n$/s');
     }
 
@@ -1045,7 +1145,8 @@ final class import_repo_test extends advanced_testcase {
      * Test update of manifest file manifest file error.
      * @covers \gitsync\cli_helper\create_manifest_file()
      */
-    public function test_manifest_manifest_file_error(): void {
+    public function test_manifest_manifest_file_error(): void
+    {
         $manifestcontents = '{"context":{"contextlevel":70,
                                 "coursename":"Course 1",
                                 "modulename":"Test 1",
@@ -1060,15 +1161,18 @@ final class import_repo_test extends advanced_testcase {
                                 "format":"xml"
                              }]}';
         $tempcontents = '{"questionbankentryid":"1",' .
-                          '"filepath":"/top/cat 1/First Question.xml",' .
-                          '"version": "5",' .
-                          '"format":"xml"}' . "\n";
+            '"filepath":"/top/cat 1/First Question.xml",' .
+            '"version": "5",' .
+            '"format":"xml"}' . "\n";
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         file_put_contents($this->importrepo->tempfilepath, $tempcontents);
         chmod($this->importrepo->manifestpath, 0000);
-        @fake_helper::create_manifest_file($this->importrepo->manifestcontents,
-                                        $this->importrepo->tempfilepath, $this->importrepo->manifestpath,
-                                        'www.moodle');
+        @fake_helper::create_manifest_file(
+            $this->importrepo->manifestcontents,
+            $this->importrepo->tempfilepath,
+            $this->importrepo->manifestpath,
+            'www.moodle'
+        );
         $this->expectOutputRegex('/\nUnable to update manifest file.*Aborting.\n$/s');
     }
 
@@ -1076,7 +1180,8 @@ final class import_repo_test extends advanced_testcase {
      * Test delete of questions with no file in repo.
      * @covers \gitsync\import_repo\delete_no_file_questions()
      */
-    public function test_delete_no_file_questions(): void {
+    public function test_delete_no_file_questions(): void
+    {
         $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         // 4 files in the manifest.
         $manifestcontents = '{"context":{
@@ -1113,7 +1218,8 @@ final class import_repo_test extends advanced_testcase {
 
         // One question deleted of two that no longer have files.
         $this->importrepo->expects($this->exactly(2))->method('handle_delete')->willReturnOnConsecutiveCalls(
-            true, false
+            true,
+            false
         );
 
         $this->importrepo->delete_no_file_questions(true);
@@ -1121,7 +1227,7 @@ final class import_repo_test extends advanced_testcase {
         // One manifest record removed.
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertEquals(3, count($manifestcontents->questions));
-        $questionbankentryids = array_map(function($q) {
+        $questionbankentryids = array_map(function ($q) {
             return $q->questionbankentryid;
         }, $manifestcontents->questions);
         $this->assertEquals(3, count($questionbankentryids));
@@ -1131,15 +1237,16 @@ final class import_repo_test extends advanced_testcase {
         // Performing expectOutputRegex multiple times causes them all to pass regardless of content.
         // Modifier 's' handles line breaks within match any characters '.*'.
         $this->expectOutputRegex('/These questions are listed in the manifest but there is no longer a matching file' .
-                                 '.*top\/cat-2\/subcat-2_1\/Third-Question.xml' .
-                                 '.*top\/cat-2\/Second-Question.xml/s');
+            '.*top\/cat-2\/subcat-2_1\/Third-Question.xml' .
+            '.*top\/cat-2\/Second-Question.xml/s');
     }
 
     /**
      * Test delete of questions with no file in repo.
      * @covers \gitsync\import_repo\delete_no_file_questions()
      */
-    public function test_delete_no_record_questions(): void {
+    public function test_delete_no_record_questions(): void
+    {
         // 2 records in the manifest.
         $manifestcontents = '{"context":{
                                 "contextlevel":70,
@@ -1161,7 +1268,8 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->listcurlrequest = $this->listcurl;
         // One question deleted of two that no longer have files.
         $this->importrepo->expects($this->exactly(2))->method('handle_delete')->willReturnOnConsecutiveCalls(
-            true, false
+            true,
+            false
         );
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
@@ -1174,28 +1282,30 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->delete_no_record_questions(true);
 
         $this->expectOutputRegex('/These questions are in Moodle but not linked to your repository:' .
-                                 '.*cat 1 - Second Question' .
-                                 '.*cat 1 - Fourth Question/s');
+            '.*cat 1 - Second Question' .
+            '.*cat 1 - Fourth Question/s');
     }
 
     /**
      * Test deleting questions broken JSON.
      * @covers \gitsync\import_repo\delete_no_record_questions()
      */
-    public function test_delete_questions_broken_json(): void {
+    public function test_delete_questions_broken_json(): void
+    {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
         $this->importrepo->delete_no_record_questions(true);
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
-                                 '.*{broken/s');
+            '.*{broken/s');
     }
 
     /**
      * Test deleting questions exception.
      * @covers \gitsync\import_repo\delete_no_record_questions()
      */
-    public function test_delete_questions_exception(): void {
+    public function test_delete_questions_exception(): void
+    {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -1207,7 +1317,8 @@ final class import_repo_test extends advanced_testcase {
      * Check abort if question version in Moodle doesn't match a version in manifest.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_versions(): void {
+    public function test_check_question_versions(): void
+    {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1215,21 +1326,22 @@ final class import_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "2"},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]}'
-            );
+        );
         $this->importrepo->check_question_versions();
 
         $this->expectOutputRegex('/35002 - TestC - Two' .
-                                 '.*Moodle question version: 2' .
-                                 '.*Version on last import to Moodle: 6' .
-                                 '.*Version on last export from Moodle: 7' .
-                                 '.*Export questions from Moodle before proceeding/s');
+            '.*Moodle question version: 2' .
+            '.*Version on last import to Moodle: 6' .
+            '.*Version on last export from Moodle: 7' .
+            '.*Export questions from Moodle before proceeding/s');
     }
 
     /**
      * Test version check passes if exported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_export_version_success(): void {
+    public function test_check_question_export_version_success(): void
+    {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1237,7 +1349,7 @@ final class import_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "7"},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]}'
-            );
+        );
         $this->importrepo->check_question_versions();
     }
 
@@ -1245,7 +1357,8 @@ final class import_repo_test extends advanced_testcase {
      * Test version check passes if imported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_import_version_success(): void {
+    public function test_check_question_import_version_success(): void
+    {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1253,7 +1366,7 @@ final class import_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "6"},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]}'
-            );
+        );
         $this->importrepo->check_question_versions();
     }
 
@@ -1261,7 +1374,8 @@ final class import_repo_test extends advanced_testcase {
      * Check abort if question version in Moodle doesn't match a version in manifest.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_versions_moved_question(): void {
+    public function test_check_question_versions_moved_question(): void
+    {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1271,51 +1385,54 @@ final class import_repo_test extends advanced_testcase {
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
             "questions": [{"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "2"}]}'
-            );
+        );
         $this->importrepo->check_question_versions();
 
         $this->expectOutputRegex('/35002 - TestC - Two' .
-                                 '.*Moodle question version: 2' .
-                                 '.*Version on last import to Moodle: 6' .
-                                 '.*Version on last export from Moodle: 7' .
-                                 '.*Export questions from Moodle before proceeding/s');
+            '.*Moodle question version: 2' .
+            '.*Version on last import to Moodle: 6' .
+            '.*Version on last export from Moodle: 7' .
+            '.*Export questions from Moodle before proceeding/s');
     }
 
     /**
      * Test version check passes if imported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_import_version_success_moved_question(): void {
+    public function test_check_question_import_version_success_moved_question(): void
+    {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
               "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": "", "version": "1"},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": "", "version": "1"},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": "", "version": "1"}]}',
-              '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
               "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
               "questions": [{"questionbankentryid": "35002", "name": "Two", "questioncategory": "TestC", "version": "6"}]}'
-            );
+        );
         $this->importrepo->check_question_versions();
     }
     /**
      * Test version check broken JSON.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_versions_broken_json(): void {
+    public function test_check_versions_broken_json(): void
+    {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
         $this->importrepo->check_question_versions();
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
-                                 '.*{broken/s');
+            '.*{broken/s');
     }
 
     /**
      * Test version check exception.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_version_exception(): void {
+    public function test_check_version_exception(): void
+    {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -1327,7 +1444,8 @@ final class import_repo_test extends advanced_testcase {
      * Test version check broken JSON.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_versions_broken_json_request_2(): void {
+    public function test_check_versions_broken_json_request_2(): void
+    {
         $this->listcurl->expects($this->any())->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1336,14 +1454,15 @@ final class import_repo_test extends advanced_testcase {
         );
         $this->importrepo->check_question_versions();
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
-                                 '.*{broken/s');
+            '.*{broken/s');
     }
 
     /**
      * Test version check exception.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_version_exception_request_2(): void {
+    public function test_check_version_exception_request_2(): void
+    {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1358,7 +1477,8 @@ final class import_repo_test extends advanced_testcase {
      * Test checking context
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content(): void {
+    public function test_check_content(): void
+    {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
@@ -1374,7 +1494,8 @@ final class import_repo_test extends advanced_testcase {
      * Test checking context exception
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content_exception(): void {
+    public function test_check_content_exception(): void
+    {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
@@ -1387,21 +1508,23 @@ final class import_repo_test extends advanced_testcase {
      * Test checking context broken JSON
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content_broekn_json(): void {
+    public function test_check_content_broekn_json(): void
+    {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{broken'
         );
         $clihelper->check_context($this->importrepo);
         $this->expectOutputRegex('/Broken JSON returned from Moodle:' .
-                                 '.*{broken/s');
+            '.*{broken/s');
     }
 
     /**
      * Test checking context silent
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content_silent(): void {
+    public function test_check_content_silent(): void
+    {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
@@ -1416,7 +1539,8 @@ final class import_repo_test extends advanced_testcase {
      * Test checking context default warning
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content_default_warning(): void {
+    public function test_check_content_default_warning(): void
+    {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
@@ -1430,7 +1554,8 @@ final class import_repo_test extends advanced_testcase {
     /**
      * Test the full course process. Quiz structure imported into new instance.
      */
-    public function test_full_course(): void {
+    public function test_full_course(): void
+    {
         global $CFG;
         $root = vfsStream::setup();
         vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
@@ -1438,7 +1563,8 @@ final class import_repo_test extends advanced_testcase {
         $this->options['rootdirectory'] = $this->rootpath;
         $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context',
+            'get_arguments',
+            'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->any())->method('check_context')->willReturnOnConsecutiveCalls(
@@ -1456,7 +1582,10 @@ final class import_repo_test extends advanced_testcase {
                                 ]}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
+            'get_curl_request',
+            'call_exit',
+            'call_import_repo',
+            'call_import_quiz_data',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
 
         $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
@@ -1473,7 +1602,8 @@ final class import_repo_test extends advanced_testcase {
     /**
      * Test the full course process. Quiz not created.
      */
-    public function test_full_course_quiz_create_fail(): void {
+    public function test_full_course_quiz_create_fail(): void
+    {
         global $CFG;
         $root = vfsStream::setup();
         vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
@@ -1481,7 +1611,8 @@ final class import_repo_test extends advanced_testcase {
         $this->options['rootdirectory'] = $this->rootpath;
         $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context',
+            'get_arguments',
+            'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->any())->method('check_context')->willReturn(
@@ -1490,7 +1621,10 @@ final class import_repo_test extends advanced_testcase {
                             "questions": [], "quizzes": [{"instanceid":"1", "name":"Quiz Wrong"}]}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
+            'get_curl_request',
+            'call_exit',
+            'call_import_repo',
+            'call_import_quiz_data',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
 
         $this->importrepo->update_quizzes($this->clihelper, $this->rootpath . '/testrepoparent');
@@ -1504,7 +1638,8 @@ final class import_repo_test extends advanced_testcase {
     /**
      * Test the full course process. Quiz already imported.
      */
-    public function test_full_course_quiz_already_imported(): void {
+    public function test_full_course_quiz_already_imported(): void
+    {
         global $CFG;
         $root = vfsStream::setup();
         vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
@@ -1513,7 +1648,8 @@ final class import_repo_test extends advanced_testcase {
         $this->options['rootdirectory'] = $this->rootpath;
         $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context',
+            'get_arguments',
+            'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->exactly(2))->method('check_context')->willReturn(
@@ -1522,10 +1658,15 @@ final class import_repo_test extends advanced_testcase {
                             "questions": [], "quizzes": [{"instanceid":"1", "name":"Quiz 1"}]}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
+            'get_curl_request',
+            'call_exit',
+            'call_import_repo',
+            'call_import_quiz_data',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
-        copy($this->rootpath . '/testrepo_quiz_quiz-1/fakeexportquiz_module_course-1_quiz-1_question_manifest.json',
-        $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json');
+        copy(
+            $this->rootpath . '/testrepo_quiz_quiz-1/fakeexportquiz_module_course-1_quiz-1_question_manifest.json',
+            $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json'
+        );
         $holder1 = new \StdClass();
         $holder1->moduleid = '1';
         $holder1->directory = 'testrepo_quiz_quiz-1';
@@ -1540,7 +1681,8 @@ final class import_repo_test extends advanced_testcase {
     /**
      * Test the full course process. Extra quiz in Moodle.
      */
-    public function test_full_course_quiz_in_moodle(): void {
+    public function test_full_course_quiz_in_moodle(): void
+    {
         global $CFG;
         $root = vfsStream::setup();
         vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
@@ -1549,7 +1691,8 @@ final class import_repo_test extends advanced_testcase {
         $this->options['rootdirectory'] = $this->rootpath;
         $this->options['manifestpath'] = '/testrepo/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE;
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
-            'get_arguments', 'check_context',
+            'get_arguments',
+            'check_context',
         ])->setConstructorArgs([[]])->getMock();
         $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
         $this->clihelper->expects($this->exactly(2))->method('check_context')->willReturn(
@@ -1559,10 +1702,15 @@ final class import_repo_test extends advanced_testcase {
                                 {"instanceid":"2", "name":"Quiz 2"}]}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'get_curl_request', 'call_exit', 'call_import_repo', 'call_import_quiz_data',
+            'get_curl_request',
+            'call_exit',
+            'call_import_repo',
+            'call_import_quiz_data',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
-        copy($this->rootpath . '/testrepo_quiz_quiz-1/fakeexportquiz_module_course-1_quiz-1_question_manifest.json',
-        $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json');
+        copy(
+            $this->rootpath . '/testrepo_quiz_quiz-1/fakeexportquiz_module_course-1_quiz-1_question_manifest.json',
+            $this->rootpath . '/testrepo_quiz_quiz-1/fakeimport_module_course-1_quiz-1_question_manifest.json'
+        );
         $holder1 = new \StdClass();
         $holder1->moduleid = '1';
         $holder1->directory = 'testrepo_quiz_quiz-1';
@@ -1572,5 +1720,193 @@ final class import_repo_test extends advanced_testcase {
         // Check quiz added to manifest file.
         $this->assertEquals(1, count($this->importrepo->manifestcontents->quizzes));
         $this->expectOutputRegex('/^\nImporting quiz context: Quiz 1\n\nQuiz Quiz 2 is in Moodle but not in the manifest./');
+    }
+
+    /**
+     * Test the full targeted process.
+     */
+    public function test_targeted_process(): void
+    {
+        $this->options["subdirectory"] = 'top/cat-2';
+        $this->options["targetcategory"] = 25;
+        $this->replace_mock_default(25, 'top/bob/clive');
+        $this->results = [];
+
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 1 category call to the webservice and 3 question calls as using cat 2
+        // from subdirectory parameter.
+        $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35005", "version": "2"}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+        );
+        $this->curl->expects($this->exactly(4))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = $this->importrepo->postsettings['qcategoryname'];
+                }
+            )
+        );
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/bob/clive"},
+              "questions": []}',
+        );
+
+        $this->importrepo->process();
+
+        // Check manifest file created.
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/\nAdded 3 questions.*Updated 0 questions.*\n/s');
+        // Use subdirectory parameter.
+        $this->assertEquals("top/cat-2", $this->importrepo->subdirectory);
+        $this->assertContains(
+            $this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml',
+            $this->results['files']
+        );
+        $this->assertContains(
+            $this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml',
+            $this->results['files']
+        );
+        $this->assertContains(
+            $this->rootpath . '/top/cat-2/Second-Question.xml',
+            $this->results['files']
+        );
+        $this->assertContains(
+            $this->rootpath . '/tempcatfile.tmp',
+            $this->results['files']
+        );
+
+        $tempcontents = simplexml_load_string(
+            file_get_contents($this->rootpath . '/tempcatfile.tmp')
+        );
+
+        $this->assertEquals('top/bob/clive/subcat 2_1', $tempcontents->question->category->text);
+
+        $manifestcontents = json_decode(
+            file_get_contents($this->rootpath . "/fakeimport_system_top_cat-2_top-bob-clive_25_question_manifest.json")
+        );
+        $this->assertEquals(true, $manifestcontents->context->istargeted);
+        $this->assertEquals('top/cat-2', $manifestcontents->context->defaultsubdirectory);
+        $this->assertEquals(25, $manifestcontents->context->defaultsubcategoryid);
+    }
+
+    /**
+     * Test the full targeted process with manifest path.
+     */
+    public function test_targeted_process_manifest_path(): void
+    {
+        $this->options["manifestpath"] = 'fakeexporttarget_system_question_manifest.json';
+        $this->replace_mock_default(5, 'top/bob/clive');
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 1 category call to the webservice and 3 question calls as using cat 2
+        // from subdirectory parameter.
+        $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35005", "version": "2"}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+        );
+        $this->curl->expects($this->exactly(4))->method('execute')->will(
+            $this->returnCallback(
+                function () {
+                    $this->results[] = $this->importrepo->postsettings['qcategoryname'];
+                }
+            )
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/bob/clive"},
+              "questions": []}',
+        );
+
+        $this->importrepo->process();
+
+        // Check manifest file created.
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/\nAdded 1 question.*Updated 2 questions.*\n/s');
+        // Use subdirectory parameter.
+        $this->assertEquals("top/cat-2", $this->importrepo->subdirectory);
+        $this->assertContains(
+            $this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml',
+            $this->results['files']
+        );
+        $this->assertContains(
+            $this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml',
+            $this->results['files']
+        );
+        $this->assertContains(
+            $this->rootpath . '/top/cat-2/Second-Question.xml',
+            $this->results['files']
+        );
+        $this->assertContains(
+            $this->rootpath . '/tempcatfile.tmp',
+            $this->results['files']
+        );
+
+        $tempcontents = simplexml_load_string(
+            file_get_contents($this->rootpath . '/tempcatfile.tmp')
+        );
+
+        $this->assertEquals('top/bob/clive/subcat 2_1', $tempcontents->question->category->text);
+
+        $manifestcontents = json_decode(
+            file_get_contents($this->rootpath . "/fakeexporttarget_system_question_manifest.json")
+        );
+        $this->assertEquals(true, $manifestcontents->context->istargeted);
+        $this->assertEquals('top/cat-2', $manifestcontents->context->defaultsubdirectory);
+        $this->assertEquals(5, $manifestcontents->context->defaultsubcategoryid);
+    }
+
+    /**
+     * Test category file creation for the full process.
+     */
+    public function test_process_category_creation(): void
+    {
+        $this->options["targetcategory"] = 25;
+        $this->replace_mock_default(5, 'top/bob/clive');
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 3 category calls to the webservice and 4 question calls.
+        $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35001", "version": "2"}',
+            '{"questionbankentryid": "35002", "version": "2"}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/bob/clive"},
+              "questions": []}',
+        );
+
+        unlink($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml');
+        unlink($this->rootpath . '/top/cat-2' . '/' . cli_helper::CATEGORY_FILE . '.xml');
+        unlink($this->rootpath . '/top/cat-2/subcat-2_1' . '/' . cli_helper::CATEGORY_FILE . '.xml');
+        $this->assertEquals(file_exists($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml'), false);
+
+        $this->importrepo->process();
+
+        // Check manifest file created.
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/\nAdded 4 questions.*Updated 0 questions.*\n/s');
+        $this->assertEquals("top", $this->importrepo->subdirectory);
+        $cat1contents = simplexml_load_string(
+            file_get_contents($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml')
+        );
+        $this->assertEquals('top/cat-1', $cat1contents->question->category->text);
+        $cat2contents = simplexml_load_string(
+            file_get_contents($this->rootpath . '/top/cat-2' . '/' . cli_helper::CATEGORY_FILE . '.xml')
+        );
+        $this->assertEquals('top/cat-2', $cat2contents->question->category->text);
+        $subcontents = simplexml_load_string(
+            file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1' . '/' . cli_helper::CATEGORY_FILE . '.xml')
+        );
+        $this->assertEquals('top/cat-2/subcat-2_1', $subcontents->question->category->text);
     }
 }

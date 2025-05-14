@@ -340,4 +340,86 @@ final class export_trait_test extends advanced_testcase {
         $this->assertEquals($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml', $firstline->filepath);
         $this->assertEquals($firstline->version, '10');
     }
+
+
+    /**
+     * Test the export of questions which aren't in the manifest.
+     * Should do the same as not targeted but strip out higher levels of Moodle category hierarchy.
+     * Directory structure will be as is but with additions for new questions.
+     * @covers \gitsync\export_trait\export_to_repo()
+     */
+    public function test_export_to_repo_targeted(): void {
+        $this->options['manifestpath'] = '/' . self::MOODLE . 'target_system' . cli_helper::MANIFEST_FILE;
+        $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
+            'get_arguments', 'check_context',
+        ])->setConstructorArgs([[]])->getMock();
+        $this->clihelper->expects($this->any())->method('get_arguments')->will($this->returnValue($this->options));
+        $this->clihelper->expects($this->any())->method('check_context')->willReturn(
+            json_decode('{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/bob/colin"},
+              "questions": []}')
+        );
+        // Mock call to webservice.
+        $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute',
+        ])->setConstructorArgs(['xxxx'])->getMock();
+        $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute',
+        ])->setConstructorArgs(['xxxx'])->getMock();
+        $this->exportrepo = $this->getMockBuilder(\qbank_gitsync\export_repo::class)->onlyMethods([
+            'get_curl_request', 'call_exit',
+        ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
+        $this->exportrepo->curlrequest = $this->curl;
+        $this->exportrepo->listcurlrequest = $this->listcurl;
+
+        $this->exportrepo->postsettings = ['questionbankentryid' => null];
+                $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"question": "<quiz><question type=\"category\"><category>' .
+                          '<text>top/bob/colin/Source 2/cat 2/subcat 2_1</text></category></question>' .
+                          '<question><name><text>Five</text></name></question></quiz>", "version": "10"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/bob/colin/' .
+                          'Source 2/cat 3</text></category></question>' .
+                          '<question><name><text>Six</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2</text></category></question>' .
+                          '<question type=\"category\"><category><text>top/bob/colin/Source 2/cat 3</text></category></question>' .
+                          '<question><name><text>Seven</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+            '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2/cat 2</text></category></question>' .
+                          '<question type=\"category\"><category><text>top/bob/colin/' .
+                          'Source 2/cat 2/subcat 2_1</text></category></question>' .
+                          '<question><name><text>Eight</text></name></question></quiz>"' .
+                          ', "version": "1"}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
+              "questions": [{"questionbankentryid": "5", "name": "Five", "questioncategory": "subcat 2_1"},
+              {"questionbankentryid": "6", "name": "Six", "questioncategory": "cat 3"},
+              {"questionbankentryid": "7", "name": "Seven", "questioncategory": "cat 3"},
+              {"questionbankentryid": "8", "name": "Eight", "questioncategory": "subcat 2_1"}]}'
+        );
+
+        $this->exportrepo->export_to_repo();
+
+        // Check question files created.
+        // New question in existing folder.
+        $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml'));
+        // New question in new folder.
+        $this->assertStringContainsString('Six', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Six.xml'));
+        $this->assertStringContainsString('<text>top/Source 2/cat 3</text>',
+            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml'));
+        // New question in existing folder - 2 category questions.
+        $this->assertStringContainsString('Seven', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Seven.xml'));
+        // New question in new folder - 2 category questions.
+        $this->assertStringContainsString('Eight', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Eight.xml'));
+
+        // Check temp file.
+        $tempfile = fopen($this->exportrepo->tempfilepath, 'r');
+        $firstline = json_decode(fgets($tempfile));
+        $this->assertEquals('5', $firstline->questionbankentryid);
+        $this->assertEquals($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml', $firstline->filepath);
+        $this->assertEquals($firstline->version, '10');
+    }
 }

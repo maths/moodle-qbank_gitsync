@@ -360,7 +360,7 @@ class import_repo {
             if ($arguments['subdirectory'] && empty($this->manifestcontents->context->istargeted)) {
                 $this->subdirectory = $arguments['subdirectory'];
                 $instanceinfo = $this->clihelper->check_context($this, false, false);
-            } else if ($arguments['subdirectory'] && !empty($this->manifestcontents->context->istargeted)) {
+            } else if (!empty($this->manifestcontents->context->istargeted)) {
                 $this->subdirectory = $this->manifestcontents->context->defaultsubdirectory;
                 $this->targetcategory = $this->manifestcontents->context->defaultsubcategoryid;
                 $this->listpostsettings['qcategoryid'] = $this->targetcategory;
@@ -446,7 +446,7 @@ class import_repo {
             $subdirectory = $this->directory . '/top';
         }
         $this->repoiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            new \RecursiveDirectoryIterator($subdirectory),
             \RecursiveIteratorIterator::SELF_FIRST
         );
         if (!$this->subdirectory or $this->subdirectory === 'top') {
@@ -456,13 +456,20 @@ class import_repo {
         }
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isDir()) {
-                if (strpos(pathinfo($repoitem, PATHINFO_DIRNAME), $this->directory . '/top') === false) {
+                if (strpos(pathinfo($repoitem, PATHINFO_DIRNAME), $this->directory . '/top') === false
+                    || pathinfo($repoitem, PATHINFO_BASENAME) === '..') {
                     // Make sure we're actually in the category structure and below top.
                     continue;
                 }
+                $basepath;
+                if (pathinfo($repoitem, PATHINFO_BASENAME) === '.') {
+                    $basepath = pathinfo($repoitem, PATHINFO_DIRNAME);
+                } else {
+                    $basepath = $repoitem->__toString();
+                }
 
-                $catfilepath = $repoitem->__toString() . '/' . cli_helper::CATEGORY_FILE . '.xml';
-                $cattext = substr($repoitem->__toString(), strlen($this->directory) + 1);
+                $catfilepath = $basepath . '/' . cli_helper::CATEGORY_FILE . '.xml';
+                $cattext = substr($basepath, strlen($this->directory) + 1);
                 if (!is_file($catfilepath)) {
                     $catfile = fopen($catfilepath, 'w+');
                     if ($catfile === false) {
@@ -642,11 +649,7 @@ class import_repo {
                         $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
                         if ($this->targetcategory) {
                             if (!$basecategoryname) {
-                                // The first category file we encounter will be for the target category.
-                                // This must already exist. (We've checked!).
-                                // Set base category name and skip upload.
                                 $basecategoryname = $qcategoryname;
-                                continue;
                             }
                             // Strip base name from category name and replace with target category.
                            $qcategoryname = $this->targetcategoryname . substr($qcategoryname, strlen($basecategoryname));
