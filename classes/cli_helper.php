@@ -204,10 +204,19 @@ class cli_helper {
             $cliargs['manifestpath'] = $this->trim_slashes($cliargs['manifestpath']);
             if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
                         || isset($cliargs['coursecategory']) || isset($cliargs['instanceid'])
-                        || isset($cliargs['contextlevel'])) {
+                        || isset($cliargs['contextlevel']) || isset($cliargs['targetcategory'])
+                        || isset($cliargs['targetcategoryname'])) {
                 echo "\nYou have specified a manifest file (possibly as a default in your config file). " .
-                        "Contextlevel, instance id, course name, module name and/or course category are not needed. " .
-                        "Context data can be extracted from the file.\n";
+                        "Contextlevel, instance id, target category, course name, module name " .
+                        "and/or course category are not needed. " .
+                        "Context and target data can be extracted from the file.\n";
+                static::call_exit();
+            }
+        }
+        if (isset($cliargs['targetcategory'])) {
+            if (strlen($cliargs['targetcategoryname']) > 0) {
+                echo "\nYou have supplied a target category name to identify the required question category " .
+                     "and a target category id. Please use only one.\n";
                 static::call_exit();
             }
         }
