@@ -28,7 +28,7 @@ The manifest file should have been created by createrepo.php if the repo was ini
 
 The context of the questions to export will be extracted from the manifest file.
 
-If you only want to export a certain question category (and its subcategories) within the context you will need to supply the category's name relative to the 'top' category e.g. 'category 1/subcategory 2'. Alternatively you can supply the questioncategoryid which is available in the URL ('&category=XXX') when browsing the category in the question bank.
+If you only want to export a certain question category (and its subcategories) within the context you will need to supply the category's name relative to the 'top' category e.g. 'category 1/subcategory 2'. Alternatively you can supply the questioncategoryid which is available in the URL ('&category=XXX') when browsing the category in the question bank. (This is harder to find on more recent versions of Moodle - go to the categories page from the question bank and then click on the category you want to return to the question bank and check for '&cat' in the URL.)
 
 Export will only be possible if there are no uncommitted changes in the repo. After the export, the manifest will be tidied to remove any entries where the question is no longer in the Moodle. (The manifest is the link between your repo and Moodle and you can't link to something which isn't there.)
 

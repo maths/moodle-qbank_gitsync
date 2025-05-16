@@ -1886,7 +1886,6 @@ final class import_repo_test extends advanced_testcase
         );
 
         unlink($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml');
-        unlink($this->rootpath . '/top/cat-2' . '/' . cli_helper::CATEGORY_FILE . '.xml');
         unlink($this->rootpath . '/top/cat-2/subcat-2_1' . '/' . cli_helper::CATEGORY_FILE . '.xml');
         $this->assertEquals(file_exists($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml'), false);
 
@@ -1903,10 +1902,11 @@ final class import_repo_test extends advanced_testcase
         $cat2contents = simplexml_load_string(
             file_get_contents($this->rootpath . '/top/cat-2' . '/' . cli_helper::CATEGORY_FILE . '.xml')
         );
-        $this->assertEquals('top/cat-2', $cat2contents->question->category->text);
+        $this->assertEquals('top/cat 2', $cat2contents->question->category->text);
         $subcontents = simplexml_load_string(
             file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1' . '/' . cli_helper::CATEGORY_FILE . '.xml')
         );
-        $this->assertEquals('top/cat-2/subcat-2_1', $subcontents->question->category->text);
+        $this->assertEquals('top/cat 2/subcat-2_1', $subcontents->question->category->text);
+        $this->assertEquals(file_exists($this->rootpath . '/top' . '/' . cli_helper::CATEGORY_FILE . '.xml'), false);
     }
 }

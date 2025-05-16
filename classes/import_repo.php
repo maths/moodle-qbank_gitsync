@@ -457,20 +457,31 @@ class import_repo {
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isDir()) {
                 if (strpos(pathinfo($repoitem, PATHINFO_DIRNAME), $this->directory . '/top') === false
-                    || pathinfo($repoitem, PATHINFO_BASENAME) === '..') {
+                    || pathinfo($repoitem, PATHINFO_BASENAME) === '..'
+                    || pathinfo($repoitem, PATHINFO_DIRNAME) === $this->directory . '/top') {
                     // Make sure we're actually in the category structure and below top.
                     continue;
                 }
                 $basepath;
+                $newcategory;
                 if (pathinfo($repoitem, PATHINFO_BASENAME) === '.') {
                     $basepath = pathinfo($repoitem, PATHINFO_DIRNAME);
+                    $newcategory = pathinfo($basepath, PATHINFO_BASENAME);
                 } else {
                     $basepath = $repoitem->__toString();
+                    $newcategory = pathinfo($repoitem, PATHINFO_BASENAME);
                 }
 
                 $catfilepath = $basepath . '/' . cli_helper::CATEGORY_FILE . '.xml';
-                $cattext = substr($basepath, strlen($this->directory) + 1);
                 if (!is_file($catfilepath)) {
+                    $parentcategory = 'top';
+                    $parentpath = pathinfo($basepath, PATHINFO_DIRNAME);
+                    $parentfilepath = $parentpath . '/' . cli_helper::CATEGORY_FILE . '.xml';
+                    if (is_file($parentfilepath)) {
+                        $parentcontents = simplexml_load_string(file_get_contents($parentfilepath));
+                        $parentcategory = $parentcontents->question->category->text;
+                    }
+                    $cattext = $parentcategory . '/' . $newcategory;
                     $catfile = fopen($catfilepath, 'w+');
                     if ($catfile === false) {
                         echo "\nUnable to create category file: {$catfilepath}\nAborting.\n";
