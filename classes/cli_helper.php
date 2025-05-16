@@ -844,16 +844,42 @@ class cli_helper {
             if (isset($activity->ignorecat)) {
                 echo "Ignoring categories (and their descendants) in form: {$activity->ignorecat}\n";
             }
-            if (isset($activity->subdirectory)) {
-                echo "Question subdirectory: {$activity->subdirectory}\n";
-                if ($defaultwarning) {
-                    echo "\nUsing default subdirectory from manifest file.\n";
-                    echo "Set --subdirectory to override.\n";
+            if (isset($activity->subdirectory) || isset($activity->targetdirectory)) {
+                if (isset($activity->targetdirectory)) {
+                    echo "Question subdirectory: {$activity->targetdirectory}\n";
+                } else if (isset($activity->targetcategory)) {
+                    echo "Question subdirectory: {$activity->subdirectory}\n";
+                } else {
+                    echo "Question subdirectory: {$activity->subdirectory}\n";
+                    if ($defaultwarning) {
+                        echo "\nUsing default subdirectory from manifest file.\n";
+                        echo "Set --subdirectory to override.\n";
+                    }
                 }
-            } else {
+            }
+            if (!isset($activity->subdirectory) || isset($activity->targetcategory)) {
                 echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
             }
-            if ($defaultwarning && !isset($activity->subdirectory)) {
+            if (isset($activity->targetcategory) || isset($activity->targetdirectory)) {
+                echo "This is a targeted action and will not use the full category structure of the Moodle context.";
+                switch ($activityname) {
+                    case 'qbank_gitsync\export_repo':
+                        echo " Subcategory questions will be exported to the subdirectory.\n";
+                        break;
+                    case 'qbank_gitsync\import_repo':
+                        echo " Subdirectory questions will be imported to the subcategory.\n";
+                        break;
+                    case 'qbank_gitsync\create_repo':
+                        echo " The subcategory will be treated as category 'top' in the file system.\n";
+                        break;
+                    default:
+                        echo "\n";
+                        break;
+                }
+            }
+
+            if ($defaultwarning && !isset($activity->subdirectory)
+                    && !isset($activity->targetcategory) && !isset($activity->targetdirectory)) {
                 echo "\nUsing default question category from manifest file.\n";
                 echo "Set --subcategory or --questioncategoryid to override.\n";
             }

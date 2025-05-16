@@ -196,7 +196,7 @@ trait export_trait {
                     }
                     // We're liable to get lots of repeats of categories between questions
                     // so only create and add file if it doesn't exist already.
-                    if (!is_file($catfilepath)) {
+                    if (!is_file($catfilepath) && $categorysofar !== '/top') {
                         try {
                             if ($this->targetdirectory) {
                                 $categoryxml->question->category->text =

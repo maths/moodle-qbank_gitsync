@@ -144,7 +144,6 @@ final class create_repo_test extends advanced_testcase {
         $this->assertStringContainsString('Four', file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-2/Four.xml'));
 
         // Check category files exist.
-        $this->assertStringContainsString('top', file_get_contents($this->rootpath . '/top/'. cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 1',
                     file_get_contents($this->rootpath . '/top/Default-for-Test-1/sub-1/' . cli_helper::CATEGORY_FILE . '.xml'));
         $this->assertStringContainsString('top/Default for Test 1/sub 2',
@@ -384,8 +383,6 @@ final class create_repo_test extends advanced_testcase {
         // Check category files exist.
         $this->assertStringContainsString('<text>top/subsub</text>',
                     file_get_contents($this->rootpath . '/top/subsub/' . cli_helper::CATEGORY_FILE . '.xml'));
-        $this->assertStringContainsString('<text>top</text>',
-                    file_get_contents($this->rootpath . '/top/' . cli_helper::CATEGORY_FILE . '.xml'));
 
         $this->expectOutputRegex('/^\nAdded 2 questions.\n$/s');
         $manifest = $this->createrepo->manifestcontents;
@@ -439,8 +436,6 @@ final class create_repo_test extends advanced_testcase {
         // Check category files exist.
         $this->assertStringContainsString('<text>top/subsub</text>',
                     file_get_contents($this->rootpath . '/top/subsub/' . cli_helper::CATEGORY_FILE . '.xml'));
-        $this->assertStringContainsString('<text>top</text>',
-                    file_get_contents($this->rootpath . '/top/' . cli_helper::CATEGORY_FILE . '.xml'));
 
         $this->expectOutputRegex('/^\nAdded 2 questions.\n$/s');
         $manifest = $this->createrepo->manifestcontents;

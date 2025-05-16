@@ -101,7 +101,7 @@ into existing categories you have not previously exported.)
 - let Gitsync create the files automatically. (It's worth checking the results both in the repo and in Moodle.)
 
 If you really just want a given subcategory, set the `istargeted` flag `-k`. This will export the supplied subcategory as if it were
-one level below top. When performing future tasks involving the manifest file, you will not be able to override the selected subcategory.
+the top level category. When performing future tasks involving the manifest file, you will not be able to override the selected subcategory.
 
 If Git is being used, the destination directory must be an empty Git repo and the exported questions will be committed to the current branch.
 

@@ -159,6 +159,10 @@ class export_repo {
         }
         if (!empty($this->manifestcontents->context->istargeted)) {
             $this->targetdirectory = $this->manifestcontents->context->defaultsubdirectory;
+            if ($arguments['subcategory'] || $arguments['qcategoryid']) {
+                echo "\nThe manifest file was created using targeting. The question category cannot be overridden.\nAborting.\n";
+                $this->call_exit();
+            }
         }
 
         if ($arguments['subcategory']) {
@@ -261,6 +265,9 @@ class export_repo {
             $currentdirectory = dirname($topdirectory . $questioninfo->filepath);
             if (isset($categorynames[$currentdirectory])) {
                 $qcategoryname = $categorynames[$currentdirectory];
+            } else if ($topdirectory . '/top' === $currentdirectory) {
+                $qcategoryname = 'top';
+                $categorynames[$currentdirectory] = $qcategoryname;
             } else {
                 $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
                 $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);

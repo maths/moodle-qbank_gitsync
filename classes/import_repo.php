@@ -357,6 +357,10 @@ class import_repo {
                     $arguments['ignorecat'] : $this->manifestcontents->context->defaultignorecat ?? null;
             $this->listpostsettings['ignorecat'] = $this->ignorecat;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
+            if ($arguments['subdirectory'] && !empty($this->manifestcontents->context->istargeted)) {
+                echo "\nThe manifest file was created using targeting. The subdirectory cannot be overridden.\nAborting.\n";
+                $this->call_exit();
+            }
             if ($arguments['subdirectory'] && empty($this->manifestcontents->context->istargeted)) {
                 $this->subdirectory = $arguments['subdirectory'];
                 $instanceinfo = $this->clihelper->check_context($this, false, false);
@@ -449,11 +453,7 @@ class import_repo {
             new \RecursiveDirectoryIterator($subdirectory),
             \RecursiveIteratorIterator::SELF_FIRST
         );
-        if (!$this->subdirectory or $this->subdirectory === 'top') {
-            $basecategoryname = 'top';
-        } else {
-            $basecategoryname = null;
-        }
+        // Create missing category files.
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isDir()) {
                 if (strpos(pathinfo($repoitem, PATHINFO_DIRNAME), $this->directory . '/top') === false
@@ -516,6 +516,12 @@ class import_repo {
         // Find all the category files first and create categories where needed.
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
+
+        if (!$this->subdirectory or $this->subdirectory === 'top') {
+            $basecategoryname = 'top';
+        } else {
+            $basecategoryname = null;
+        }
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
@@ -655,6 +661,13 @@ class import_repo {
                     $qcategoryname = null;
                     if (isset($categorynames[$currentdirectory])) {
                         $qcategoryname = $categorynames[$currentdirectory];
+                    } else if (dirname($this->manifestpath) . '/top' === $currentdirectory) {
+                        if ($this->targetcategory) {
+                            $qcategoryname = $this->targetcategoryname;
+                        } else {
+                            $qcategoryname = 'top';
+                        }
+                        $categorynames[$currentdirectory] = $qcategoryname;
                     } else {
                         $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
                         $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
