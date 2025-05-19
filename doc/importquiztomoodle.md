@@ -29,6 +29,7 @@ Commit this update.
 |n|instanceid|Numerical id of the course, module of course category.
 |t|token|Security token for webservice.
 |h|help|
+|u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
 Examples:

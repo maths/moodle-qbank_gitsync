@@ -151,6 +151,12 @@ class import_repo {
      */
     public ?string $targetcategoryname;
     /**
+     * Category path of targeted subdirectory.
+     *
+     * @var string|null
+     */
+    public ?string $basecategoryname;
+    /**
      * Regex of categories to ignore.
      *
      * @var string|null
@@ -518,9 +524,9 @@ class import_repo {
         // order is uncertain.
 
         if (!$this->subdirectory or $this->subdirectory === 'top') {
-            $basecategoryname = 'top';
+            $this->basecategoryname = 'top';
         } else {
-            $basecategoryname = null;
+            $this->basecategoryname = null;
         }
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
@@ -544,15 +550,16 @@ class import_repo {
                             }
                         }
                         if ($this->targetcategory) {
-                            if (!$basecategoryname) {
-                                // The first category file we encounter will be for the target category.
+                            if (!$this->basecategoryname) {
+                                // If target category is not top,
+                                // the first category file we encounter will be for the target category.
                                 // This must already exist. (We've checked!).
                                 // Set base category name and skip upload.
-                                $basecategoryname = $qcategoryname;
+                                $this->basecategoryname = $qcategoryname;
                                 continue;
                             }
                             // Strip base name from category name and replace with target category.
-                            $qcategoryname = substr($qcategoryname, strlen($basecategoryname));
+                            $qcategoryname = substr($qcategoryname, strlen($this->basecategoryname));
                             $newcategory = $this->targetcategoryname . $qcategoryname;
                         }
                     }
@@ -640,11 +647,6 @@ class import_repo {
             new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
-        if (!$this->subdirectory or $this->subdirectory === 'top') {
-            $basecategoryname = 'top';
-        } else {
-            $basecategoryname = null;
-        }
         $tempfile = fopen($this->tempfilepath, 'w+');
         if ($tempfile === false) {
             echo "\nUnable to access temp file: {$this->tempfilepath}\nAborting.\n";
@@ -672,11 +674,8 @@ class import_repo {
                         $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
                         $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
                         if ($this->targetcategory) {
-                            if (!$basecategoryname) {
-                                $basecategoryname = $qcategoryname;
-                            }
                             // Strip base name from category name and replace with target category.
-                           $qcategoryname = $this->targetcategoryname . substr($qcategoryname, strlen($basecategoryname));
+                            $qcategoryname = $this->targetcategoryname . substr($qcategoryname, strlen($this->basecategoryname));
                         }
                         $categorynames[$currentdirectory] = $qcategoryname;
                     }

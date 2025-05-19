@@ -15,6 +15,7 @@
 |r|rootdirectory|Directory on user's computer containing repos.|
 |d|directory|Directory of repo on user's computer containing "top" folder, relative to root directory.|
 |s|subcategory|Relative subcategory of repo to actually export.|
+|k|istargeted|Are we targeting the subcategory only and not the wider category structure of the Moodle context?
 |l|contextlevel|Context from which to extract questions. Set to system, coursecategory, course or module
 |c|coursename|Unique course name for course or module context.
 |m|modulename|Unique (within course) module name for module context.
@@ -24,6 +25,7 @@
 |p|nonquizmanifestpath|Quiz export: Filepath of non-quiz manifest file relative to root directory.|
 |t|token|Security token for webservice.
 |h|help|
+|u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
 For Moodle 5+, there are no longer course, course category or system context question banks. Questions are contained
@@ -33,50 +35,7 @@ and the value of `cmid` from the URL of the question bank.
 
 e.g. `php createrepo.php -l module -n 2 -d "master"`
 
-### Example 1:
-
-Assume you have correct information in config.php, i.e. the Moodle URL in `$moodleinstances`,
-and the webservice token stored in `$token`, the default moodle instance in `$instance` and
-the local root directory for your question files in `$rootdirectory`.
-
-Assume you have a course called "Scratch" in Moodle.  You would like all questions from the "top"
-level, and all sub-categories, to become files in a sub-directory "gitsync-loc"
-of your local `$rootdirectory` directory.  Assume you have (1) created the
-local directory and (2) run `git init` to initialise an empty git repository.
-
-`php createrepo.php -l course -c "Scratch" -d "gitsync-loc" `
-
-### Example 2:
-
-Assume Moodle is exactly as in Example 1.
-
-You would like all questions from the sub-category "gitsync-test", to become files in a sub-directory
-"gitsync-sub" of your local `$rootdirectory` directory.  Assume you have (1) created the local directory
-and (2) run `git init` to initialise an empty git repository.
-
-Navigate to the question bank, and select the sub-category you are interested in 
-Imagine the URL of your Moodle site is `http://localhost/m402/question/edit.php?courseid=2&cat=273%2C17`.
-From this we extract the Moodle `courseid=2` and category `cat=273`.
-
-`php createrepo.php -l course -n=2 -q=273 -d "gitsync-sub"`
-
-TODO: note explaining directory structure.
-
-### Example 3:
-
-Assume Moodle is exactly as in Example 1.
-
-You have a quiz within your course, and you have populated the _quiz_ question bank, rather than the course question bank. 
-You would like all questions from the quiz question bank, and all sub-categories, to become files in a sub-directory
-"gitsync-loc" of your local `$rootdirectory` directory.
-
-Navigate to the view quiz, to get the id of the quiz itself from the URL, e.g. `mod/quiz/view.php?id=547`.  
-
-`php createrepo.php -l module -n=547 -d "gitsync-sub"`
-
-### Example 4:
-
-`php createrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" -l system`
+## Usage
 
 You will need to specify the context of the questions you want to export from Moodle.
 - Context level - system, coursecategory, course or module - must be supplied.
@@ -104,6 +63,57 @@ If you really just want a given subcategory, set the `istargeted` flag `-k`. Thi
 the top level category. When performing future tasks involving the manifest file, you will not be able to override the selected subcategory.
 
 If Git is being used, the destination directory must be an empty Git repo and the exported questions will be committed to the current branch.
+
+### Example 1:
+
+Assume you have correct information in config.php, i.e. the Moodle URL in `$moodleinstances`,
+and the webservice token stored in `$token`, the default moodle instance in `$instance` and
+the local root directory for your question files in `$rootdirectory`.
+
+Assume you have a course called "Scratch" in Moodle.  You would like all questions from the "top"
+level, and all subcategories, to become files in a directory "gitsync-loc"
+of your local `$rootdirectory` directory.  Assume you have (1) created the
+local directory and (2) run `git init` to initialise an empty git repository.
+
+`php createrepo.php -l course -c "Scratch" -d "gitsync-loc" `
+
+### Example 2:
+
+Assume Moodle is exactly as in Example 1.
+
+You would like all questions from the subcategory "gitsync-test", to become files in a directory
+"gitsync-sub" of your local `$rootdirectory` directory.  Assume you have (1) created the local directory
+and (2) run `git init` to initialise an empty git repository.
+
+Navigate to the question bank, and select the subcategory you are interested in 
+Imagine the URL of your Moodle site is `http://localhost/m402/question/edit.php?courseid=2&cat=273%2C17`.
+From this we extract the Moodle `courseid=2` and category `cat=273`.
+
+`php createrepo.php -l course -n=2 -q=273 -d "gitsync-sub"`
+
+This will create a repo with the full category hierarchy of the Moodle question category. If you only want
+the target category and the structure below specify that the creation `istargeted` with `-k`.
+
+`php createrepo.php -l course -n=2 -q=273 -d "gitsync-sub" -k`
+
+See the [README file](../README.md#Using-subsets-of-materials) for the pros and cons of targeting.
+
+### Example 3:
+
+Assume Moodle is exactly as in Example 1.
+
+You have a quiz within your course, and you have populated the _quiz_ question bank, rather than the course question bank. 
+You would like all questions from the quiz question bank, and all subcategories, to become files in a directory
+"gitsync-loc" of your local `$rootdirectory` directory.
+
+Navigate to the view quiz, to get the id of the quiz itself from the URL, e.g. `mod/quiz/view.php?id=547`.  
+
+`php createrepo.php -l module -n=547 -d "gitsync-sub"`
+
+### Example 4:
+
+Overriding defaults in the config file:
+`php createrepo.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" -l system`
 
 ### On failure
 - If the script fails, clean out the question folders and manifest files from the directory and run it again once the issue is sorted.

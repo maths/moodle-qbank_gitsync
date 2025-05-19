@@ -54,7 +54,7 @@ class cli_helper {
      * GITSYNC_VERSION - Current version of Gitsync.
      * Should match version in version.php .
      */
-    public const GITSYNC_VERSION = '2025012200';
+    public const GITSYNC_VERSION = '2025051900';
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */

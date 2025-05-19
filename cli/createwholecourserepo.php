@@ -80,6 +80,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'istargeted',
+        'shortopt' => 'k',
+        'description' => 'Are we targeting the subcategory only and not the wider category structure of the Moodle context?',
+        'default' => false,
+        'variable' => 'istargeted',
+        'valuerequired' => false,
+    ],
+    [
         'longopt' => 'coursename',
         'shortopt' => 'c',
         'description' => 'Unique course name for course or module context.',

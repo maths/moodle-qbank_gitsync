@@ -23,10 +23,13 @@ Commit this update.
 |f|manifestpath|Filepath of manifest file relative to root directory.|
 |d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
 |s|subdirectory|Relative subdirectory of repo to actually import.|
+|k|targetcategory|Category to import a subdirectory into.
+|a|targetcategoryname|Category to import a subdirectory into.
 |c|coursename|Unique course name.
 |n|instanceid|Numerical id of the course.
 |t|token|Security token for webservice.
 |h|help|
+|u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
 Examples:
@@ -59,6 +62,8 @@ Importing will create a manifest file specific to the Moodle instance and contex
 You will need to specify the course you want to import the questions and quizzes into. You will need to supply the course name. Alternatively, the instanceid of the course can be supplied. This is available from the URL while browsing the course in Moodle ('?id=XXX').
 
 If you only want to import a certain question category (and its subcategories) within the course you will need to supply the path of the corresponding folder within your repo relative to the 'top' category e.g. 'category-1/subcategory-2'.
+
+If the manifest file was created using targeting, import will always use the same subcategory and subdirectory. If the manifest was created using a subdirectory or subcategory but not targeted, then import will use these by default but they can be overridden by specifying `subdirectory` when running the script. See the [README file](../README.md#Using-subsets-of-materials) for details on targeting and subselections.
 
 For Moodle 5+, there is no longer a course context question bank. Questions are contained in module level question banks. Gitsync can be made to treat a course with a single question bank like an old course, however. Add `-l "module"` to the command line parameters and `cmid` from the URL of the question bank as `--instanceid` or `-n`.
 

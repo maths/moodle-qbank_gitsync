@@ -70,7 +70,7 @@ $options = [
     [
         'longopt' => 'istargeted',
         'shortopt' => 'k',
-        'description' => 'Are we only targeting the subcategory only and not the wider category structure of the Moodle context?',
+        'description' => 'Are we targeting the subcategory only and not the wider category structure of the Moodle context?',
         'default' => false,
         'variable' => 'istargeted',
         'valuerequired' => false,

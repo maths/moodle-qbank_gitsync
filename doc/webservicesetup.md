@@ -36,6 +36,22 @@ This plugin requires the [import as new version](https://github.com/maths/moodle
     - includecategory: 0
 Fill in the URL and parameters above in the fields as shown in the screenshot and click 'Send'. You should get the requested question back as a response.
 ![Screenshot of Postman.](../images/Postman.png)
+If you don't have a questionbankentryid, you could try a different endpoint (but you'll have more parameters to find):
+  - Params:
+    - wstoken: _Your token created above_
+    - wsfunction: qbank_gitsync_get_question_list
+    - moodlewsrestformat: json
+    - qcategoryname:
+    - contextlevel: 70
+    - localversion: _Gitsync version from version.php_
+    - coursename:
+    - modulename:
+    - coursecategory:
+    - qcategoryid: _Question category id from a module context_
+    - instanceid: _cmid of the module_
+    - contextonly: 0
+    - qbankentryids[]:
+    - ignorecat:
 
 ## Additional security
 The token essentially allows question export, import and delete for all contexts for which the webservice user has question edit permissions. It's like a manager password but less obscured - be careful! Restrict the contexts the user has access to for added security and to reduce the chance of user error. **Also create severely limited lifespan tokens and/or restrict the valid IP address.** You can have multiple tokens, each for a different IP address to allow access for different colleagues/computers. 
