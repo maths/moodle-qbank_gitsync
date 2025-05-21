@@ -461,10 +461,12 @@ class import_repo {
         );
         // Create missing category files.
         foreach ($this->repoiterator as $repoitem) {
+            $itemdirname = pathinfo($repoitem, PATHINFO_DIRNAME);
+            $topdir = $this->directory . '/top';
             if ($repoitem->isDir()) {
-                if (strpos(pathinfo($repoitem, PATHINFO_DIRNAME), $this->directory . '/top') === false
+                if (strpos($itemdirname, $topdir) === false
                     || pathinfo($repoitem, PATHINFO_BASENAME) === '..'
-                    || pathinfo($repoitem, PATHINFO_DIRNAME) === $this->directory . '/top') {
+                    || $itemdirname === $topdir) {
                     // Make sure we're actually in the category structure and below top.
                     continue;
                 }
@@ -472,22 +474,46 @@ class import_repo {
                 $newcategory;
                 if (pathinfo($repoitem, PATHINFO_BASENAME) === '.') {
                     $basepath = pathinfo($repoitem, PATHINFO_DIRNAME);
-                    $newcategory = pathinfo($basepath, PATHINFO_BASENAME);
+                    $newcategory = str_replace( '\\', '/', pathinfo($basepath, PATHINFO_BASENAME));
                 } else {
                     $basepath = $repoitem->__toString();
-                    $newcategory = pathinfo($repoitem, PATHINFO_BASENAME);
+                    $newcategory = str_replace( '\\', '/', pathinfo($repoitem, PATHINFO_BASENAME));
                 }
 
                 $catfilepath = $basepath . '/' . cli_helper::CATEGORY_FILE . '.xml';
                 if (!is_file($catfilepath)) {
-                    $parentcategory = 'top';
-                    $parentpath = pathinfo($basepath, PATHINFO_DIRNAME);
+                    $cattext = 'top';
+                    $parentpath = str_replace( '\\', '/', pathinfo($basepath, PATHINFO_DIRNAME));
                     $parentfilepath = $parentpath . '/' . cli_helper::CATEGORY_FILE . '.xml';
-                    if (is_file($parentfilepath)) {
+                    // If there is a category file in a subdirectory it will have the info
+                    // we need. (If we can find it...)
+                    $childcatfile = null;
+                    $catsearch = new \RecursiveIteratorIterator(
+                        new \RecursiveDirectoryIterator($basepath),
+                        \RecursiveIteratorIterator::SELF_FIRST
+                    );
+                    foreach ($catsearch as $catcandidate) {
+                        if (pathinfo($catcandidate, PATHINFO_BASENAME) === cli_helper::CATEGORY_FILE . '.xml') {
+                            $childcatfile = $catcandidate;
+                            break;
+                        }
+                    }
+                    if ($childcatfile) {
+                        $cattext = '';
+                        $childcontents = simplexml_load_string(file_get_contents($childcatfile));
+                        $childcategory = $childcontents->question->category->text;
+                        $childparts = $this->split_category_path($childcategory);
+                        $dirparts = explode('/', str_replace( '\\', '/', substr($basepath, strlen($this->directory) + 1)));
+                        foreach ($dirparts as $key => $dirpart) {
+                            $cattext .= ($cattext) ? '/' . $childparts[$key] : $childparts[$key];
+                        }
+                    } else if (is_file($parentfilepath)) {
+                        // If there is a parent file, it will have most of the info we need.
+                        // We just need to add the current directory.
                         $parentcontents = simplexml_load_string(file_get_contents($parentfilepath));
                         $parentcategory = $parentcontents->question->category->text;
+                        $cattext = $parentcategory . '/' . $newcategory;
                     }
-                    $cattext = $parentcategory . '/' . $newcategory;
                     $catfile = fopen($catfilepath, 'w+');
                     if ($catfile === false) {
                         echo "\nUnable to create category file: {$catfilepath}\nAborting.\n";
@@ -542,7 +568,7 @@ class import_repo {
                             $this->call_exit();
                         }
                         if ($this->ignorecat) {
-                            $catparts = split_category_path($qcategoryname);
+                            $catparts = $this->split_category_path($qcategoryname);
                             foreach ($catparts as $catpart) {
                                 if (preg_match($this->ignorecat, $catpart)) {
                                     continue 2;
@@ -683,7 +709,7 @@ class import_repo {
                     // Path of file (without filename) relative to base $directory.
                     if ($qcategoryname) {
                         if ($this->ignorecat) {
-                            $catparts = split_category_path($qcategoryname);
+                            $catparts = $this->split_category_path($qcategoryname);
                             foreach ($catparts as $catpart) {
                                 if (preg_match($this->ignorecat, $catpart)) {
                                     continue 2;
@@ -1219,5 +1245,20 @@ class import_repo {
      */
     public function call_exit(): void {
         exit;
+    }
+
+    /**
+     * Convert a string into an array of category names.
+     *     *
+     * @param string|null $path
+     * @return array of category names.
+     */
+    function split_category_path(?string $path): array {
+        $rawnames = preg_split('~(?<!/)/(?!/)~', $path);
+        $names = [];
+        foreach ($rawnames as $rawname) {
+            $names[] = trim(str_replace('//', '/', $rawname));
+        }
+        return $names;
     }
 }
