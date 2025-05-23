@@ -16,10 +16,14 @@
 |f|quizmanifestpath|Filepath of quiz manifest file relative to root directory.|
 |t|token|Security token for webservice.|
 |h|help|
+|u|usegit|Is the repo controlled using Git?
+
+Generally you should not need to run this script yourself. It is run automatically when exporting a quiz module using `createrepo.php`,
+`exportrepofrommoodle.php` or `createwholecourserepo.php`.
 
 Examples:
 
-`php exportquizstructurefrommoodle.php -r "C:\question_repos" -f "quiz_1\instance2_module_stack1_quiz-1_question_manifest.json"`
+`php exportquizstructurefrommoodle.php -f "quiz_1\instance2_module_stack1_quiz-1_question_manifest.json"`
 
 The manifest file should have been created by createrepo.php if the repo was initially created by exporting questions from Moodle or importrepotomoodle.php if questions were initially imported into Moodle from an existing repo.
 

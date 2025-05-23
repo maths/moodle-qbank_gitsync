@@ -14,11 +14,13 @@
 |d|directory|Directory of repo on user's computer containing "top" folder, relative to root directory.|
 |l|contextlevel|Context from which to extract questions. Should always be module for Moodle 5+. Should always be course for Moodle < 5.|
 |s|subcategory|Relative subcategory of repo to actually export.|
+|k|istargeted|Are we targeting the subcategory only and not the wider category structure of the Moodle context?
 |c|coursename|Unique course name for course or module context.
 |q|questioncategoryid|Numerical id of subcategory to actually export.
 |n|instanceid|Numerical id of the course.
 |t|token|Security token for webservice.
 |h|help|
+|u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
 This is very similar to [`createrepo.php`](createrepo.md) but normally Gitsync retrieves questions within a Moodle context, returning all or a subselection of question categories with the repo directory structure matching the category structure in Moodle. Courses and quizzes are in separate contexts, however. Use `createwholecourserepo.php` to keep quizzes with their parent course in a single repo.
@@ -29,7 +31,7 @@ Example:
 
 Assume you have correct information in config.php, i.e. the Moodle URL in `$moodleinstances`, and the webservice token stored in `$token`, the default moodle instance in `$instance` and the local root directory for your question files in `$rootdirectory`.
 
-Assume you have a course called "Scratch" in Moodle. You would like all questions from the "top" level, and all sub-categories, to become files in a sub-directory "scratch-wholecourse/scratch-course" of your local `$rootdirectory` directory. You would also like to export the questions belonging to all the course's quiz contexts and the structures of those quizzes into "scratch-wholecourse".  
+Assume you have a course called "Scratch" in Moodle. You would like all questions from the "top" level, and all subcategories, to become files in a directory "scratch-wholecourse/scratch-course" of your local `$rootdirectory` directory. You would also like to export the questions belonging to all the course's quiz contexts and the structures of those quizzes into "scratch-wholecourse".  
 
 Create and initialise the "scratch-wholecourse" directory using `git init scratch-wholecourse` then run `php createwholecourserepo.php`.
 

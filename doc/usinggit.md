@@ -55,6 +55,8 @@ You can also ignore certain categories (and their descendants) using `-x` and a 
 
 You'll get a confirmation of the context and category with the option to abort before performing the actual export. A manifest file will be created in the specified directory. The subdirectory/subcategory and any regex for ignoring categories you use will be stored in the manifest and used on import and export unless you override them using `-s` and/or `-x` (e.g. `-s "top" -x "/^\b$/"`).
 
+If using a subcategory, you may want to 'target' (`-k`) this and future import/exports. This allows you to map a directory in your repo directly to a category in Moodle and ignore the wider directory/category structure. Please see the [README file](../README.md#Using-subsets-of-materials) for the details of targeting and subselections.
+
 To import/export changes:
  
 `php exportrepofrommoodle.php -f "master/instancename_contextlevel_contextname_question_manifest.json" -s "Source 1/subcat 2_1"`  
@@ -80,6 +82,8 @@ If you have a repo of questions and want to import them to Moodle, use importrep
 `php importrepotomoodle.php -l course -n 2 -d "master" -s "Source-1/cat-2"`
 
 After that, import, export and deletion are the same as above.
+
+If using a subdirectory, you may want to 'target' this and future import/exports by setting a `targetcategory`. This allows you to map a directory in your repo directly to a category in Moodle and ignore the wider directory/category structure. Please see the [README file](../README.md#Using-subsets-of-materials) for the details of targeting and subselections.
 
 ## Maintaining a Git repo of questions on two moodle sites
 

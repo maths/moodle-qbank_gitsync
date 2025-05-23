@@ -139,6 +139,24 @@ class import_repo {
      */
     public string $subdirectory;
     /**
+     * Id of subcategory to import into.
+     *
+     * @var int|null
+     */
+    public ?int $targetcategory;
+    /**
+     * Category path of subcategory to import into.
+     *
+     * @var string|null
+     */
+    public ?string $targetcategoryname;
+    /**
+     * Category path of targeted subdirectory.
+     *
+     * @var string|null
+     */
+    public ?string $basecategoryname;
+    /**
      * Regex of categories to ignore.
      *
      * @var string|null
@@ -190,6 +208,8 @@ class import_repo {
         $coursename = $arguments['coursename'];
         $modulename = $arguments['modulename'];
         $coursecategory = $arguments['coursecategory'];
+        $this->targetcategory = $arguments['targetcategory'];
+        $this->targetcategoryname = $arguments['targetcategoryname'];
         $instanceid = $arguments['instanceid'];
         $this->ignorecat = $arguments['ignorecat'];
         $this->usegit = $arguments['usegit'];
@@ -240,8 +260,8 @@ class import_repo {
             'coursename' => $coursename,
             'modulename' => $modulename,
             'coursecategory' => $coursecategory,
-            'qcategoryname' => 'top',
-            'qcategoryid' => null,
+            'qcategoryname' => ($this->targetcategoryname) ? $this->targetcategoryname : 'top',
+            'qcategoryid' => $this->targetcategory,
             'instanceid' => $instanceid,
             'contextonly' => 0,
             'qbankentryids[]' => null,
@@ -257,10 +277,23 @@ class import_repo {
         } else {
             $this->subdirectory = ($arguments['subdirectory']) ? $arguments['subdirectory'] : 'top';
             $instanceinfo = $this->clihelper->check_context($this, false, false);
-            $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
+            if ($this->targetcategory) {
+                $this->manifestpath = cli_helper::get_manifest_path_targeted($moodleinstance, $contextlevel,
+                                                $instanceinfo->contextinfo->categoryname,
+                                                $instanceinfo->contextinfo->coursename,
+                                                $instanceinfo->contextinfo->modulename,
+                                                $instanceinfo->contextinfo->qcategoryname,
+                                                $instanceinfo->contextinfo->qcategoryid,
+                                                $this->subdirectory,
+                                                $this->directory);
+                $this->targetcategoryname = $instanceinfo->contextinfo->qcategoryname;
+                $this->targetcategory = $instanceinfo->contextinfo->qcategoryid;
+            } else {
+                $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
                                                 $instanceinfo->contextinfo->modulename, $this->directory);
+            }
             $this->postsettings['instanceid'] = $instanceinfo->contextinfo->instanceid;
             $this->postsettings['coursename'] = $instanceinfo->contextinfo->coursename;
             $this->postsettings['modulename'] = $instanceinfo->contextinfo->modulename;
@@ -300,6 +333,7 @@ class import_repo {
             $this->manifestcontents->context->modulename = $instanceinfo->contextinfo->modulename;
             $this->manifestcontents->context->coursecategory = $instanceinfo->contextinfo->categoryname;
             $this->manifestcontents->context->instanceid = $instanceinfo->contextinfo->instanceid;
+            $this->manifestcontents->context->istargeted = ($this->targetcategory) ? true : false;
             $this->manifestcontents->context->defaultsubcategoryid = $instanceinfo->contextinfo->qcategoryid;
             $this->manifestcontents->context->defaultsubdirectory = $this->subdirectory;
             $this->manifestcontents->context->defaultignorecat = $this->ignorecat;
@@ -329,30 +363,46 @@ class import_repo {
                     $arguments['ignorecat'] : $this->manifestcontents->context->defaultignorecat ?? null;
             $this->listpostsettings['ignorecat'] = $this->ignorecat;
             $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-            if ($arguments['subdirectory']) {
+            if ($arguments['subdirectory'] && !empty($this->manifestcontents->context->istargeted)) {
+                echo "\nThe manifest file was created using targeting. The subdirectory cannot be overridden.\nAborting.\n";
+                $this->call_exit();
+            }
+            if ($arguments['subdirectory'] && empty($this->manifestcontents->context->istargeted)) {
                 $this->subdirectory = $arguments['subdirectory'];
                 $instanceinfo = $this->clihelper->check_context($this, false, false);
+            } else if (!empty($this->manifestcontents->context->istargeted)) {
+                $this->subdirectory = $this->manifestcontents->context->defaultsubdirectory;
+                $this->targetcategory = $this->manifestcontents->context->defaultsubcategoryid;
+                $this->listpostsettings['qcategoryid'] = $this->targetcategory;
+                $instanceinfo = $this->clihelper->check_context($this, true, false);
             } else {
                 $this->subdirectory = $this->manifestcontents->context->defaultsubdirectory;
                 $instanceinfo = $this->clihelper->check_context($this, true, false);
             }
+
+            if ($this->targetcategory) {
+                $this->targetcategoryname = $instanceinfo->contextinfo->qcategoryname;
+            }
         }
-        $qcategoryname = null;
-        if ($this->subdirectory === 'top') {
-            $qcategoryname = 'top';
-        } else {
-            $listqcategoryfile = ($this->directory ) ?
-                $this->directory . '/' . $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml' :
-                $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
-            $qcategoryname = cli_helper::get_question_category_from_file($listqcategoryfile);
+        if (!$this->targetcategory) {
+            $qcategoryname = null;
+            if ($this->subdirectory === 'top') {
+                $qcategoryname = 'top';
+            } else {
+                $listqcategoryfile = ($this->directory ) ?
+                    $this->directory . '/' . $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml' :
+                    $this->subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
+                $qcategoryname = cli_helper::get_question_category_from_file($listqcategoryfile);
+            }
+            if (!$qcategoryname) {
+                echo '\nThere is a problem with question category file : ' . $listqcategoryfile . '\n';
+                $this->call_exit();
+            }
+            // Set question category info after call to check_context.
+            // We can't rely on the subcategories existing in Moodle until after import
+            // if we're using category name.
+            $this->listpostsettings['qcategoryname'] = $qcategoryname;
         }
-        if (!$qcategoryname) {
-            $this->call_exit();
-        }
-        // Set question category info after call to check_context.
-        // We can't rely on the subcategories existing in Moodle until after import
-        // if we're using category name.
-        $this->listpostsettings['qcategoryname'] = $qcategoryname;
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
 
         if (count($this->manifestcontents->questions) === 0 && empty($arguments['subcall'])) {
@@ -398,35 +448,160 @@ class import_repo {
      * @return void
      */
     public function import_categories(): void {
+        if ($this->subdirectory && $this->targetcategory) {
+            // We only import a subselection of categories if we have a target category and a subdirectory.
+            // Normal subdirectory behaviour is to import all categories but only a subselection of questions.
+            $subdirectory = ($this->directory) ? $this->directory . '/' . $this->subdirectory : $this->subdirectory;
+        } else {
+            $subdirectory = $this->directory . '/top';
+        }
         $this->repoiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->directory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            new \RecursiveDirectoryIterator($subdirectory),
             \RecursiveIteratorIterator::SELF_FIRST
         );
+        // Create missing category files.
+        foreach ($this->repoiterator as $repoitem) {
+            $itemdirname = pathinfo($repoitem, PATHINFO_DIRNAME);
+            $topdir = $this->directory . '/top';
+            if ($repoitem->isDir()) {
+                if (strpos($itemdirname, $topdir) === false
+                    || pathinfo($repoitem, PATHINFO_BASENAME) === '..'
+                    || $itemdirname === $topdir) {
+                    // Make sure we're actually in the category structure and below top.
+                    continue;
+                }
+                $basepath;
+                $newcategory;
+                if (pathinfo($repoitem, PATHINFO_BASENAME) === '.') {
+                    $basepath = pathinfo($repoitem, PATHINFO_DIRNAME);
+                    $newcategory = str_replace( '-', ' ', pathinfo($basepath, PATHINFO_BASENAME));
+                } else {
+                    $basepath = $repoitem->__toString();
+                    $newcategory = str_replace( '-', ' ', pathinfo($repoitem, PATHINFO_BASENAME));
+                }
+
+                $catfilepath = $basepath . '/' . cli_helper::CATEGORY_FILE . '.xml';
+                if (!is_file($catfilepath)) {
+                    $parentpath = str_replace( '\\', '/', pathinfo($basepath, PATHINFO_DIRNAME));
+                    $parentfilepath = $parentpath . '/' . cli_helper::CATEGORY_FILE . '.xml';
+                    // If there is a category file in a subdirectory it will have the info
+                    // we need.
+                    $childcatfile = null;
+                    $catsearch = new \RecursiveIteratorIterator(
+                        new \RecursiveDirectoryIterator($basepath),
+                        \RecursiveIteratorIterator::SELF_FIRST
+                    );
+                    foreach ($catsearch as $catcandidate) {
+                        if (pathinfo($catcandidate, PATHINFO_BASENAME) === cli_helper::CATEGORY_FILE . '.xml') {
+                            $childcatfile = $catcandidate;
+                            break;
+                        }
+                    }
+                    if ($childcatfile) {
+                        $cattext = '';
+                        $childcontents = simplexml_load_string(file_get_contents($childcatfile));
+                        $childcategory = $childcontents->question->category->text;
+                        $childparts = $this->split_category_path($childcategory);
+                        $dirparts = explode('/', str_replace( '\\', '/', substr($basepath, strlen($this->directory) + 1)));
+                        foreach ($dirparts as $key => $dirpart) {
+                            $cattext .= ($cattext) ? '/' . $childparts[$key] : $childparts[$key];
+                        }
+                    } else if (is_file($parentfilepath)) {
+                        // If there is a parent file, it will have most of the info we need.
+                        // We just need to add the current directory.
+                        $parentcontents = simplexml_load_string(file_get_contents($parentfilepath));
+                        $parentcategory = $parentcontents->question->category->text;
+                        $cattext = $parentcategory . '/' . $newcategory;
+                    } else {
+                        // If there is no parent file, we must be one below top.
+                        $cattext = 'top' . '/' . $newcategory;;
+                    }
+                    $catfile = fopen($catfilepath, 'w+');
+                    if ($catfile === false) {
+                        echo "\nUnable to create category file: {$catfilepath}\nAborting.\n";
+                        $this->call_exit();
+                        return; // Required for PHPUnit.
+                    }
+                    $catcontents = '<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+  <question type="category">
+    <category>
+      <text></text>
+    </category>
+    <info format="moodle_auto_format">
+      <text></text>
+    </info>
+    <idnumber></idnumber>
+  </question>
+</quiz>';
+                    $categoryxml = simplexml_load_string($catcontents);
+                    $categoryxml->question->category->text = $cattext;
+                    $success = file_put_contents($catfilepath, $categoryxml->asXML());
+                    if ($success === false) {
+                        echo "\nUnable to update category file: {$catfilepath}\n Aborting.\n";
+                        $this->call_exit();
+                        return; // Required for PHPUnit.
+                    }
+                    fclose($catfile);
+                }
+            }
+        }
+        $this->repoiterator->rewind();
         // Find all the category files first and create categories where needed.
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
+
+        if (!$this->subdirectory || $this->subdirectory === 'top') {
+            $this->basecategoryname = 'top';
+        } else {
+            $this->basecategoryname = null;
+        }
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
                         && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE) {
                     $this->postsettings['qcategoryname'] = '';
-                    if ($this->ignorecat) {
+                    $newcategory = null;
+                    if ($this->ignorecat || $this->targetcategory) {
                         $qcategoryname = cli_helper::get_question_category_from_file($repoitem);
-                        if ($qcategoryname) {
-                            $catparts = explode('/', $qcategoryname);
+                        if (!$qcategoryname) {
+                            echo "\n{$repoitem->getPathname()} not imported?\n";
+                            echo "Stopping before trying to import questions.\n";
+                            $this->call_exit();
+                        }
+                        if ($this->ignorecat) {
+                            $catparts = $this->split_category_path($qcategoryname);
                             foreach ($catparts as $catpart) {
                                 if (preg_match($this->ignorecat, $catpart)) {
                                     continue 2;
                                 }
                             }
-                        } else {
-                            echo "\n{$repoitem->getPathname()} not imported?\n";
+                        }
+                        if ($this->targetcategory) {
+                            if (!$this->basecategoryname) {
+                                // If target category is not top,
+                                // the first category file we encounter will be for the target category.
+                                // This must already exist. (We've checked!).
+                                // Set base category name and skip upload.
+                                $this->basecategoryname = $qcategoryname;
+                                continue;
+                            }
+                            // Strip base name from category name and replace with target category.
+                            $qcategoryname = substr($qcategoryname, strlen($this->basecategoryname));
+                            $newcategory = $this->targetcategoryname . $qcategoryname;
+                        }
+                    }
+                    if ($newcategory) {
+                        $tempcatfile = cli_helper::create_temp_category_file($repoitem, $this->tempfilepath, $newcategory);
+                        if (!$tempcatfile) {
+                            echo "Category {$repoitem} not imported.\n";
                             echo "Stopping before trying to import questions.\n";
                             $this->call_exit();
                         }
+                        $this->upload_file($tempcatfile);
+                    } else {
+                        $this->upload_file($repoitem);
                     }
-
-                    $this->upload_file($repoitem);
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                     $response = $this->curlrequest->execute();
                     $responsejson = json_decode($response);
@@ -455,7 +630,7 @@ class import_repo {
      *
      * Fileinfo parameter is set ready for import call to the webservice.
      *
-     * @param resource $repoitem
+     * @param object $repoitem
      * @return bool success or failure
      */
     public function upload_file($repoitem): bool {
@@ -494,7 +669,7 @@ class import_repo {
         if ($this->subdirectory) {
             $subdirectory = ($this->directory) ? $this->directory . '/' . $this->subdirectory : $this->subdirectory;
         } else {
-            $subdirectory = $this->directory;
+            $subdirectory = $this->directory . '/top';
         }
         $this->subdirectoryiterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
@@ -516,16 +691,27 @@ class import_repo {
                     $qcategoryname = null;
                     if (isset($categorynames[$currentdirectory])) {
                         $qcategoryname = $categorynames[$currentdirectory];
+                    } else if (dirname($this->manifestpath) . '/top' === $currentdirectory) {
+                        if ($this->targetcategory) {
+                            $qcategoryname = $this->targetcategoryname;
+                        } else {
+                            $qcategoryname = 'top';
+                        }
+                        $categorynames[$currentdirectory] = $qcategoryname;
                     } else {
                         $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
                         $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
+                        if ($this->targetcategory) {
+                            // Strip base name from category name and replace with target category.
+                            $qcategoryname = $this->targetcategoryname . substr($qcategoryname, strlen($this->basecategoryname));
+                        }
                         $categorynames[$currentdirectory] = $qcategoryname;
                     }
                     $this->postsettings['qcategoryname'] = $qcategoryname;
                     // Path of file (without filename) relative to base $directory.
                     if ($qcategoryname) {
                         if ($this->ignorecat) {
-                            $catparts = explode('/', $qcategoryname);
+                            $catparts = $this->split_category_path($qcategoryname);
                             foreach ($catparts as $catpart) {
                                 if (preg_match($this->ignorecat, $catpart)) {
                                     continue 2;
@@ -1061,5 +1247,20 @@ class import_repo {
      */
     public function call_exit(): void {
         exit;
+    }
+
+    /**
+     * Convert a string into an array of category names.
+     *     *
+     * @param string|null $path
+     * @return array of category names.
+     */
+    public function split_category_path(?string $path): array {
+        $rawnames = preg_split('~(?<!/)/(?!/)~', $path);
+        $names = [];
+        foreach ($rawnames as $rawname) {
+            $names[] = trim(str_replace('//', '/', $rawname));
+        }
+        return $names;
     }
 }

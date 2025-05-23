@@ -99,6 +99,12 @@ class export_repo {
      */
     public string $subcategory;
     /**
+     * Directory to export into.
+     *
+     * @var string|null
+     */
+    public ?string $targetdirectory = null;
+    /**
      * Regex of categories to ignore.
      *
      * @var string|null
@@ -150,6 +156,13 @@ class export_repo {
         if ($this->manifestcontents->context->moodleurl !== $this->moodleurl) {
             echo "\nManifest file is for the wrong Moodle instance: {$this->manifestcontents}\nAborting.\n";
             $this->call_exit();
+        }
+        if (!empty($this->manifestcontents->context->istargeted)) {
+            $this->targetdirectory = $this->manifestcontents->context->defaultsubdirectory;
+            if ($arguments['subcategory'] || $arguments['qcategoryid']) {
+                echo "\nThe manifest file was created using targeting. The question category cannot be overridden.\nAborting.\n";
+                $this->call_exit();
+            }
         }
 
         if ($arguments['subcategory']) {
@@ -249,9 +262,12 @@ class export_repo {
         $topdirectory = dirname($this->manifestpath);
         $count = 0;
         foreach ($this->manifestcontents->questions as $questioninfo) {
-            $currentdirectory = dirname($topdirectory . '/' . $questioninfo->filepath);
+            $currentdirectory = dirname($topdirectory . $questioninfo->filepath);
             if (isset($categorynames[$currentdirectory])) {
                 $qcategoryname = $categorynames[$currentdirectory];
+            } else if ($topdirectory . '/top' === $currentdirectory) {
+                $qcategoryname = 'top';
+                $categorynames[$currentdirectory] = $qcategoryname;
             } else {
                 $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
                 $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
@@ -262,16 +278,20 @@ class export_repo {
                      "{$questioninfo->filepath} not exported.\n";
                 continue;
             }
-            if (substr($qcategoryname, 0, strlen($this->subcategory)) !== $this->subcategory) {
-                // Start of category path of question must match start of subcategory to export.
-                continue;
-            }
-            if (strlen($qcategoryname) > strlen($this->subcategory)
-                    && !preg_match('/^\/{1}(?!\/)/' , substr($qcategoryname, strlen($this->subcategory)))) {
-                // Category path and subcategory must either match or path must be longer and continue with
-                // one (and only) one slash i.e. for subcategory parameter of top/cat, a question
-                // in top/cat/subcat is fine but one in top/cat2 is not and nor is top/cat//one.
-                continue;
+            if (!$this->targetdirectory) {
+                // If this is a targeted link, export is all or nothing. We're using the subcategory
+                // for targeting. Essentially, the user can't select a sub subcategory.
+                if (substr($qcategoryname, 0, strlen($this->subcategory)) !== $this->subcategory) {
+                    // Start of category path of question must match start of subcategory to export.
+                    continue;
+                }
+                if (strlen($qcategoryname) > strlen($this->subcategory)
+                        && !preg_match('/^\/{1}(?!\/)/' , substr($qcategoryname, strlen($this->subcategory)))) {
+                    // Category path and subcategory must either match or path must be longer and continue with
+                    // one (and only) one slash i.e. for subcategory parameter of top/cat, a question
+                    // in top/cat/subcat is fine but one in top/cat2 is not and nor is top/cat//one.
+                    continue;
+                }
             }
             $this->postsettings['questionbankentryid'] = $questioninfo->questionbankentryid;
             $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);

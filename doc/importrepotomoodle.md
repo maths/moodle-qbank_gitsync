@@ -6,7 +6,11 @@
 
 ## Importing
 - Create a repository of questions with a folder hierarchy akin to question categories i.e. top/category/subcategory or use `createrepo.php` to create a repo from existing questions on Moodle.
-- Each category below top should have a `gitsync_category.xml` file containing a 'category question' with the details of he category. See the `testrepo` folder in this repository for an example.
+- Each category below top should have a `gitsync_category.xml` file containing a 'category question' with the details of the category.
+See the `testrepo` folder in this repository for an example. If you don't have these files, in most cases Gitsync will create categories
+based on the directory names. (If you are importing a subdirectory you will need your own category file.)
+Due to a bug with Moodle (MDL-80256), nested categories without questions may not all have category files after export.
+On import, these files will be created but should be checked before committing. 
 - If you have created a repository (or copied one) make sure you have a `.gitignore` file and it ignores gitsync's manifest and temporary files.  
 `touch .gitignore`  
 `printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' >> .gitignore`  
@@ -21,6 +25,8 @@ Commit this update.
 |f|manifestpath|Filepath of manifest file relative to root directory.|
 |d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
 |s|subdirectory|Relative subdirectory of repo to actually import.|
+|k|targetcategory|Category to import a subdirectory into.
+|a|targetcategoryname|Category to import a subdirectory into.
 |l|contextlevel|Context in which to place questions. Set to system, coursecategory, course or module
 |c|coursename|Unique course name for course or module context.
 |m|modulename|Unique (within course) module name for module context.
@@ -28,7 +34,25 @@ Commit this update.
 |n|instanceid|Numerical id of the course, module of course category.
 |t|token|Security token for webservice.
 |h|help|
+|u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
+
+## Scenario 1: Importing questions into Moodle from an existing repo
+
+e.g. You have exported questions from one Moodle instance to create the repo and you want to import them into a different instance
+
+Importing will create a manifest file specific to the Moodle instance and context in the root of the repo.
+This links files in the repo to specific questionbankentries in the Moodle instance.
+
+You will need to specify the context you want to import the questions into. You will need to supply:
+- Context level - system, coursecategory, course or module - must be supplied.
+- (i) coursecategory (ii) coursename or (iii) coursename and modulename can then be supplied to identify the context instance.
+- Alternatively, the instanceid of the context can be supplied. This is available from the URL while browsing the context in Moodle ('?id=XXX').
+
+If you only want to import a certain question category (and its subcategories) within the context you will need to supply the path
+of the corresponding folder within your repo relative to the 'top' category e.g. 'category-1/subcategory-2'.
+
+On the first run when using Git the process will ask you to commit changes in the repo and try again as a .gitignore file will be created.
 
 Examples:
 
@@ -42,34 +66,31 @@ This will use the default token, instance and location values in `importrepotomo
 
 `php importrepotomoodle.php -i edmundlocal -r "C:\question_repos" -d "source_1" -s "top/My-course/My-category" --contextlevel system`
 
-This will only import the questions in the 'My-category' folder and below.
-
-## Scenario 1: Importing questions into Moodle from an existing repo
-
-e.g. You have exported questions from one Moodle instance to create the repo and you want to import them into a different instance
-
-Importing will create a manifest file specific to the Moodle instance and context in the root of the repo. This links files in the repo to specific questionbankentries in the Moodle instance.
-
-You will need to specify the context you want to import the questions into. You will need to supply:
-- Context level - system, coursecategory, course or module - must be supplied.
-- (i) coursecategory (ii) coursename or (iii) coursename and modulename can then be supplied to identify the context instance.
-- Alternatively, the instanceid of the context can be supplied. This is available from the URL while browsing the context in Moodle ('?id=XXX').
-
-If you only want to import a certain question category (and its subcategories) within the context you will need to supply the path of the corresponding folder within your repo relative to the 'top' category e.g. 'category-1/subcategory-2'.
-
-On the first run when using Git the process will ask you to commit changes in the repo and try again as a .gitignore file will be created.
+This will only import the questions in the 'My-category' folder and below but will do so with full category hierarchy
+(i.e. 'top/My course/My category). If you want to import a subdirectory of questions (or the full repo) into a specific question category
+you will also need to specify `--targetcategory` or `--targetcategoryname`. See the [README file](../README.md#Using-subsets-of-materials)
+for more information on subselections and targeting.
 
 ## Scenario 2: Re-importing questions into Moodle when the manifest file already exists
 
-You should specify the manifest file path and context will be extracted from that. You can still enter a subdirectory to only re-import some of the questions.
+You should specify the manifest file path and context will be extracted from that.
+You can still enter a subdirectory to only re-import some of the questions.
+
+`php importrepotomoodle.php -f 'course1/instance1_course_course-1_question_manifest.json'`
 
 Import will only be possible if there are not updates to the questions in Moodle which haven't been exported.
 
-Only questions that have changed in the repo since the last import will be imported to Moodle (to avoid creating a new version in Moodle when nothing has changed).
+Only questions that have changed in the repo since the last import will be imported to Moodle
+(to avoid creating a new version in Moodle when nothing has changed).
+
+If the manifest file was created using targeting, import will always use the same subcategory and subdirectory.
+If the manifest was created using a subdirectory but not targeted, then import will use this by default
+but it can be overridden by specifying `subdirectory` when running the script.
 
 ## Deletion
 
-A check will be run to see if there are questions in the context/category in the manifest that do not have a file in the repo. These will be listed.
+A check will be run to see if there are questions in the context/category in the manifest that do not have a file in the repo.
+These will be listed.
 
 A check will be run to see if there are questions in the context in Moodle that are not in the manifest. These will be listed.
 

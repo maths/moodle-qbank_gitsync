@@ -121,6 +121,18 @@ class create_repo {
      * @var bool
      */
     public bool $usegit;
+    /**
+     * Directory to export into. Will always be null or top.
+     *
+     * @var string|null
+     */
+    public ?string $targetdirectory = null;
+    /**
+     * Id of subcategory to export into.
+     *
+     * @var int|null
+     */
+    public ?int $targetcategory;
 
     /**
      * Constructor.
@@ -151,6 +163,10 @@ class create_repo {
             $token = $arguments['token'][$moodleinstance];
         } else {
             $token = $arguments['token'];
+        }
+
+        if (!empty($arguments['istargeted'])) {
+            $this->targetdirectory = 'top';
         }
         $contextlevel = $arguments['contextlevel'];
         $coursename = $arguments['coursename'];
@@ -198,6 +214,7 @@ class create_repo {
         $this->subcategory = $instanceinfo->contextinfo->qcategoryname;
 
         $this->qcategoryid = $instanceinfo->contextinfo->qcategoryid;
+
         $this->listpostsettings['contextlevel'] =
                 cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
         $this->listpostsettings['coursecategory'] = $instanceinfo->contextinfo->categoryname;
@@ -205,11 +222,24 @@ class create_repo {
         $this->listpostsettings['modulename'] = $instanceinfo->contextinfo->modulename;
         $this->listpostsettings['instanceid'] = $instanceinfo->contextinfo->instanceid;
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
-
-        $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
+        if (!empty($arguments['istargeted'])) {
+            $this->targetcategory = $this->qcategoryid;
+            $this->manifestpath = cli_helper::get_manifest_path_targeted($moodleinstance, $contextlevel,
                                                 $instanceinfo->contextinfo->categoryname,
                                                 $instanceinfo->contextinfo->coursename,
-                                                $instanceinfo->contextinfo->modulename, $this->directory);
+                                                $instanceinfo->contextinfo->modulename,
+                                                $instanceinfo->contextinfo->qcategoryname,
+                                                $instanceinfo->contextinfo->qcategoryid,
+                                                'top',
+                                                $this->directory);
+        } else {
+            $this->targetcategory = null;
+            $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
+                                                $instanceinfo->contextinfo->categoryname,
+                                                $instanceinfo->contextinfo->coursename,
+                                                $instanceinfo->contextinfo->modulename,
+                                                $this->directory);
+        }
         if (file_exists($this->directory . '/top')) {
             echo 'The specified directory already contains files. Please delete them if you really want to continue.';
             echo "\n{$this->directory}\n";
@@ -225,6 +255,7 @@ class create_repo {
         $this->manifestcontents->context->modulename = $instanceinfo->contextinfo->modulename;
         $this->manifestcontents->context->coursecategory = $instanceinfo->contextinfo->categoryname;
         $this->manifestcontents->context->instanceid = $instanceinfo->contextinfo->instanceid;
+        $this->manifestcontents->context->istargeted = ($this->targetcategory) ? true : false;
         $this->manifestcontents->context->defaultsubcategoryid = $this->qcategoryid;
         $this->manifestcontents->context->defaultsubdirectory = null;
         $this->manifestcontents->context->defaultignorecat = $this->ignorecat;

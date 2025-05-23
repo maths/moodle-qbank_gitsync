@@ -17,6 +17,10 @@
 |a|quizdatapath|Filepath of quiz data file relative to root directory.
 |t|token|Security token for webservice.|
 |h|help|
+|u|usegit|Is the repo controlled using Git?
+
+Generally you should not need to run this script yourself. It is run automatically when importing a quiz module using `importquiztomoodle.php`,
+or `importwholecoursetomoodle.php`.
 
 Examples:
 

@@ -54,7 +54,7 @@ class cli_helper {
      * GITSYNC_VERSION - Current version of Gitsync.
      * Should match version in version.php .
      */
-    public const GITSYNC_VERSION = '2025012200';
+    public const GITSYNC_VERSION = '2025051900';
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -204,10 +204,19 @@ class cli_helper {
             $cliargs['manifestpath'] = $this->trim_slashes($cliargs['manifestpath']);
             if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
                         || isset($cliargs['coursecategory']) || isset($cliargs['instanceid'])
-                        || isset($cliargs['contextlevel'])) {
+                        || isset($cliargs['contextlevel']) || isset($cliargs['targetcategory'])
+                        || isset($cliargs['targetcategoryname'])) {
                 echo "\nYou have specified a manifest file (possibly as a default in your config file). " .
-                        "Contextlevel, instance id, course name, module name and/or course category are not needed. " .
-                        "Context data can be extracted from the file.\n";
+                        "Contextlevel, instance id, target category, course name, module name " .
+                        "and/or course category are not needed. " .
+                        "Context and target data can be extracted from the file.\n";
+                static::call_exit();
+            }
+        }
+        if (isset($cliargs['targetcategory'])) {
+            if (strlen($cliargs['targetcategoryname']) > 0) {
+                echo "\nYou have supplied a target category name to identify the required question category " .
+                     "and a target category id. Please use only one.\n";
                 static::call_exit();
             }
         }
@@ -227,6 +236,7 @@ class cli_helper {
             if (@preg_match($cliargs['ignorecat'], 'zzzzzzzz') === false) {
                 echo "\nThere is a problem with your regular expression for ignoring categories:\n";
                 echo error_get_last()["message"] . "\n";
+                echo "\n(If you're using Windows, remember to add an extra leading forward slash '/'.)\n";
                 static::call_exit();
             }
         }
@@ -421,6 +431,50 @@ class cli_helper {
 
         $filename = $directory . '/' .
                     preg_replace(self::BAD_CHARACTERS, '-', strtolower(substr($moodleinstance, 0, 50) . $filenamemod)) .
+                    self::MANIFEST_FILE;
+        return $filename;
+    }
+
+    /**
+     * Create manifest path for targeted import/export of repos.
+     *
+     * This is where the full category tree is not replicated on import/export.
+     * A target folder and question category must both be supplied.
+     *
+     * @param string $moodleinstance
+     * @param string $contextlevel
+     * @param string|null $coursecategory
+     * @param string|null $coursename
+     * @param string|null $modulename
+     * @param string $categoryname
+     * @param string $categoryid
+     * @param string $subdirectory
+     * @param string $directory
+     * @return string
+     */
+    public static function get_manifest_path_targeted(string $moodleinstance, string $contextlevel, ?string $coursecategory,
+                            ?string $coursename, ?string $modulename, string $categoryname,
+                            string $categoryid, string $subdirectory, string $directory): string {
+        $filenamemod = '_' . $contextlevel;
+        switch ($contextlevel) {
+            case 'coursecategory':
+                $filenamemod = $filenamemod . '_' . substr($coursecategory, 0, 50);
+                break;
+            case 'course':
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 50);
+                break;
+            case 'module':
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 30) . '_' . substr($modulename, 0, 30);
+                break;
+        }
+        $folders = explode('/', $subdirectory);
+        $folder = array_pop($folders);
+        $parent = ($folders) ? array_pop($folders) : null;
+        $filenamemod .= '_' . (($parent) ? substr($parent, 0, 25) . '_' : '') . substr($folder, 0, 25) .
+                        '_' . substr($categoryname, 0, 50) . '_' . $categoryid;
+
+        $filename = $directory . '/' .
+                    preg_replace(self::BAD_CHARACTERS, '-', strtolower(substr($moodleinstance, 0, 30) . $filenamemod)) .
                     self::MANIFEST_FILE;
         return $filename;
     }
@@ -633,8 +687,7 @@ class cli_helper {
         if (!is_file($manifestdirname . '/.gitignore')) {
             $ignore = fopen($manifestdirname . '/.gitignore', 'a');
 
-            $contents = "**/*" . self::MANIFEST_FILE . "\n**/*" .
-                self::TEMP_MANIFEST_FILE . "\n";
+            $contents = "**/*" . self::MANIFEST_FILE . "\n**/*.tmp\n";
             fwrite($ignore, $contents);
             fclose($ignore);
         }
@@ -792,16 +845,42 @@ class cli_helper {
             if (isset($activity->ignorecat)) {
                 echo "Ignoring categories (and their descendants) in form: {$activity->ignorecat}\n";
             }
-            if (isset($activity->subdirectory)) {
-                echo "Question subdirectory: {$activity->subdirectory}\n";
-                if ($defaultwarning) {
-                    echo "\nUsing default subdirectory from manifest file.\n";
-                    echo "Set --subdirectory to override.\n";
+            if (isset($activity->subdirectory) || isset($activity->targetdirectory)) {
+                if (isset($activity->targetdirectory)) {
+                    echo "Question subdirectory: {$activity->targetdirectory}\n";
+                } else if (isset($activity->targetcategory)) {
+                    echo "Question subdirectory: {$activity->subdirectory}\n";
+                } else {
+                    echo "Question subdirectory: {$activity->subdirectory}\n";
+                    if ($defaultwarning) {
+                        echo "\nUsing default subdirectory from manifest file.\n";
+                        echo "Set --subdirectory to override.\n";
+                    }
                 }
-            } else {
+            }
+            if (!isset($activity->subdirectory) || isset($activity->targetcategory)) {
                 echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
             }
-            if ($defaultwarning && !isset($activity->subdirectory)) {
+            if (isset($activity->targetcategory) || isset($activity->targetdirectory)) {
+                echo "This is a targeted action and will not use the full category structure of the Moodle context.";
+                switch ($activityname) {
+                    case 'qbank_gitsync\export_repo':
+                        echo " Subcategory questions will be exported to the subdirectory.\n";
+                        break;
+                    case 'qbank_gitsync\import_repo':
+                        echo " Subdirectory questions will be imported to the subcategory.\n";
+                        break;
+                    case 'qbank_gitsync\create_repo':
+                        echo " The subcategory will be treated as category 'top' in the file system.\n";
+                        break;
+                    default:
+                        echo "\n";
+                        break;
+                }
+            }
+
+            if ($defaultwarning && !isset($activity->subdirectory)
+                    && !isset($activity->targetcategory) && !isset($activity->targetdirectory)) {
                 echo "\nUsing default question category from manifest file.\n";
                 echo "Set --subcategory or --questioncategoryid to override.\n";
             }
@@ -832,26 +911,70 @@ class cli_helper {
      * category path from the file. (This will vary from the filepath
      * as the filepath will have potentially had characters sanitised.)
      *
-     * @param [type] $filename
+     * @param string $filepath
+     * @param string $replacement New category
      * @return string|null $qcategoryname Question category name in format top/cat1/subcat1
      */
-    public static function get_question_category_from_file($filename): ?string {
-        if (!is_file($filename)) {
-            echo "\nRequired category file does not exist: {$filename}\n";
+    public static function get_question_category_from_file($filepath, $replacement = null): ?string {
+        if (!is_file($filepath)) {
+            echo "\nRequired category file does not exist: {$filepath}\n";
             return null;
         }
-        $contents = file_get_contents($filename);
+        $contents = file_get_contents($filepath);
         if ($contents === false) {
-            echo "\nUnable to access file: {$filename}\n";
+            echo "\nUnable to access file: {$filepath}\n";
             return null;
         }
         $categoryxml = simplexml_load_string($contents);
         if ($categoryxml === false) {
             echo "\nBroken category XML.\n";
-            echo "{$filename}.\n";
+            echo "{$filepath}.\n";
             return null;
+        }
+        if ($replacement) {
+            $categoryxml->question->category->text = $replacement;
+            $success = file_put_contents($filepath, json_encode($contents));
+            if ($success === false) {
+                echo "\nUnable to update category file: {$contents}. Check your repo carefully before committing.\n";
+            }
+            return $replacement;
         }
         $qcategoryname = $categoryxml->question->category->text->__toString();
         return $qcategoryname;
+    }
+
+    /**
+     * Given a filepath for a category question file, create a temporary
+     * copy with a different category path.
+     *
+     * @param string $filepath
+     * @param string $tempfilepath Path of main temp file
+     * @param string $replacement New category
+     * @return object|null $tempcatfilepath
+     */
+    public static function create_temp_category_file($filepath, $tempfilepath, $replacement) {
+        if (!is_file($filepath)) {
+            echo "\nRequired category file does not exist: {$filepath}\n";
+            return null;
+        }
+        $contents = file_get_contents($filepath);
+        if ($contents === false) {
+            echo "\nUnable to access file: {$filepath}\n";
+            return null;
+        }
+        $categoryxml = simplexml_load_string($contents);
+        if ($categoryxml === false) {
+            echo "\nBroken category XML.\n";
+            echo "{$filepath}.\n";
+            return null;
+        }
+        $categoryxml->question->category->text = $replacement;
+        $tempcatfilepath = dirname($tempfilepath) . '/tempcatfile.tmp';
+        $success = file_put_contents($tempcatfilepath, $categoryxml->asXML());
+        if ($success === false) {
+            echo "\nUnable to update category file: {$contents}. Check your repo carefully before committing.\n";
+            return null;
+        }
+        return new \SplFileInfo($tempcatfilepath);
     }
 }

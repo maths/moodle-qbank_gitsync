@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Should match GITSYNC_VERSION in cli_helper.
-$plugin->version   = 2025012200;
+$plugin->version   = 2025051900;
 // Question versions functionality of Moodle 4 required.
 // Question delete fix for Moodle 4.1.5 required.
 // NB 4.2.0 and 4.2.1 do not have the fix.
