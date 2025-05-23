@@ -33,8 +33,7 @@ use org\bovigo\vfs\vfsStream;
 /**
  * Allows testing of errors that lead to an exit.
  */
-class fake_helper extends cli_helper
-{
+class fake_helper extends cli_helper {
     /**
      * Override so ignored during testing
      *
