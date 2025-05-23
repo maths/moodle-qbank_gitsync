@@ -12,14 +12,16 @@
 |-|-|-|
 |i|moodleinstance|Key of Moodle instance in $moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
+|p|nonquizmanifestpath|Quiz export: Filepath of non-quiz manifest file relative to root directory.|
 |f|manifestpath|Filepath of manifest file relative to root directory.|
 |s|subcategory|Relative subcategory of Moodle context to actually export.|
 |q|questioncategoryid|Numerical id of subcategory to actually export.
 |t|token|Security token for webservice.|
 |h|help|
+|u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
-Examples:
+Example:
 
 `php exportrepofrommoodle.php -r "C:\question_repos" -f "source_1\edmundlocal_system_question_manifest.json"`
 
@@ -27,7 +29,9 @@ The manifest file should have been created by createrepo.php if the repo was ini
 
 The context of the questions to export will be extracted from the manifest file.
 
-If you only want to export a certain question category (and its subcategories) within the context you will need to supply the category's name relative to the 'top' category e.g. 'category 1/subcategory 2'. Alternatively you can supply the questioncategoryid which is available in the URL ('&category=XXX') when browsing the category in the question bank.
+If you only want to export a certain question category (and its subcategories) within the context you will need to supply the category's name relative to the 'top' category e.g. 'category 1/subcategory 2'. Alternatively you can supply the questioncategoryid which is available in the URL ('&category=XXX') when browsing the category in the question bank. (This is harder to find on more recent versions of Moodle - go to the categories page from the question bank and then click on the category you want to return to the question bank and check for '&cat' in the URL.)
+
+If the manifest file was created using targeting, export will always use the same subcategory and subdirectory. If the manifest was created using a subdirectory or subcategory but not targeted, then export will use these by default but they can be overridden by specifying `subcategory` when running the script. See the [README file](../README.md#Using-subsets-of-materials) for details on targeting and subselections.
 
 Export will only be possible if there are no uncommitted changes in the repo. After the export, the manifest will be tidied to remove any entries where the question is no longer in Moodle. (The manifest is the link between your repo and Moodle and you can't link to something which isn't there.)
 

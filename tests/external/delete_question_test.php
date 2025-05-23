@@ -44,7 +44,7 @@ use moodle_exception;
  * @group qbank_gitsync
  *
  */
-class delete_question_test extends externallib_advanced_testcase {
+final class delete_question_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */
     protected \core_question_generator  $generator;
     /** @var \stdClass generated course object */
@@ -61,6 +61,7 @@ class delete_question_test extends externallib_advanced_testcase {
     const QNAME = 'Example short answer question';
 
     public function setUp(): void {
+        parent::setUp();
         global $DB;
         $this->resetAfterTest();
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');

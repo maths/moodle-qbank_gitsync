@@ -74,6 +74,22 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'targetcategory',
+        'shortopt' => 'k',
+        'description' => 'Category to import a subdirectory into.',
+        'default' => null,
+        'variable' => 'targetcategory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'targetcategoryname',
+        'shortopt' => 'a',
+        'description' => 'Category to import a subdirectory into.',
+        'default' => null,
+        'variable' => 'targetcategoryname',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
         'description' => 'Context in which to place questions. Set to system, coursecategory, course or module',
@@ -135,7 +151,7 @@ $options = [
         'description' => 'Is the repo controlled using Git?',
         'default' => $usegit,
         'variable' => 'usegit',
-        'valuerequired' => false,
+        'valuerequired' => true,
     ],
     [
         'longopt' => 'ignorecat',
@@ -144,6 +160,15 @@ $options = [
         'default' => $ignorecat,
         'variable' => 'ignorecat',
         'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'subcall',
+        'shortopt' => 'w',
+        'description' => 'Is this a subcall of the script?',
+        'default' => false,
+        'variable' => 'subcall',
+        'valuerequired' => false,
+        'hidden' => true,
     ],
 ];
 

@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for GitSync question bank plugin.
+ * Version information for Gitsync question bank plugin.
  *
  * @package   qbank_gitsync
  * @copyright 2023 The Open University
@@ -24,15 +24,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2024052400;
+// Should match GITSYNC_VERSION in cli_helper.
+$plugin->version   = 2025051900;
 // Question versions functionality of Moodle 4 required.
 // Question delete fix for Moodle 4.1.5 required.
 // NB 4.2.0 and 4.2.1 do not have the fix.
 $plugin->requires  = 2022112805;
 $plugin->component = 'qbank_gitsync';
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.9.0 for Moodle 4.1+';
+$plugin->release   = '0.10.0 for Moodle 4.1+';
 
 $plugin->dependencies = [
-    'qbank_importasversion'     => 2024041600,
+    'qbank_importasversion'     => 2025041400,
 ];

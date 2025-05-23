@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import a git repo containing questions from Moodle.
+ * Create a git repo containing questions from Moodle.
  *
  * @package    qbank_gitsync
  * @copyright  2023 University of Edinburgh
@@ -68,6 +68,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'istargeted',
+        'shortopt' => 'k',
+        'description' => 'Are we targeting the subcategory only and not the wider category structure of the Moodle context?',
+        'default' => false,
+        'variable' => 'istargeted',
+        'valuerequired' => false,
+    ],
+    [
         'longopt' => 'contextlevel',
         'shortopt' => 'l',
         'description' => 'Context from which to extract questions. Set to system, coursecategory, course or module',
@@ -116,6 +124,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'nonquizmanifestpath',
+        'shortopt' => 'p',
+        'description' => 'Quiz export: Filepath of non-quiz manifest file relative to root directory.',
+        'default' => null,
+        'variable' => 'nonquizmanifestpath',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'token',
         'shortopt' => 't',
         'description' => 'Security token for webservice.',
@@ -137,7 +153,7 @@ $options = [
         'description' => 'Is the repo controlled using Git?',
         'default' => $usegit,
         'variable' => 'usegit',
-        'valuerequired' => false,
+        'valuerequired' => true,
     ],
     [
         'longopt' => 'ignorecat',
@@ -146,6 +162,15 @@ $options = [
         'default' => $ignorecat,
         'variable' => 'ignorecat',
         'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'subcall',
+        'shortopt' => 'w',
+        'description' => 'Is this a subcall of the script?',
+        'default' => false,
+        'variable' => 'subcall',
+        'valuerequired' => false,
+        'hidden' => true,
     ],
 ];
 
@@ -159,3 +184,15 @@ $createrepo = new create_repo($clihelper, $moodleinstances);
 $clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
+// If we're exporting a quiz then we try getting the structure as well.
+// Skip if we're creating a whole course repo or we'll do it twice!
+if ($createrepo->manifestcontents->context->contextlevel === 70 && !$clihelper->get_arguments()['subcall']) {
+    $scriptdirectory = dirname(__FILE__);
+    $createrepo->export_quiz_structure($clihelper, $scriptdirectory);
+    if ($clihelper->get_arguments()['usegit']) {
+        chdir(dirname($createrepo->manifestpath));
+        exec("git add --all");
+        exec('git commit -m "Initial Commit - Quiz structure"');
+    }
+}
+

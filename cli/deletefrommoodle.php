@@ -122,6 +122,24 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'targetcategory',
+        'shortopt' => 'k',
+        'description' => 'Category to import into a subdirectory into.',
+        'default' => null,
+        'variable' => 'targetcategory',
+        'valuerequired' => true,
+        'hidden' => true,
+    ],
+    [
+        'longopt' => 'targetcategoryname',
+        'shortopt' => 'a',
+        'description' => 'Category to import into a subdirectory into.',
+        'default' => null,
+        'variable' => 'targetcategoryname',
+        'valuerequired' => true,
+        'hidden' => true,
+    ],
+    [
         'longopt' => 'help',
         'shortopt' => 'h',
         'description' => '',
@@ -135,7 +153,7 @@ $options = [
         'description' => 'Is the repo controlled using Git?',
         'default' => $usegit,
         'variable' => 'usegit',
-        'valuerequired' => false,
+        'valuerequired' => true,
     ],
     [
         'longopt' => 'ignorecat',

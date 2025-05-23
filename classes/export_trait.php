@@ -74,7 +74,11 @@ trait export_trait {
      * @param object $moodlequestionlist
      * @return void
      */
-    public function export_to_repo_main_process(object $moodlequestionlist):void {
+    public function export_to_repo_main_process(object $moodlequestionlist): void {
+        // Make top folder in case we don't have any questions.
+        if (!is_dir(dirname($this->manifestpath) . '/top')) {
+            mkdir(dirname($this->manifestpath) . '/top');
+        }
         $this->subdirectory = 'top';
         $questionsinmoodle = $moodlequestionlist->questions;
         $this->postsettings['includecategory'] = 1;
@@ -150,18 +154,40 @@ trait export_trait {
                     $directorylist = preg_split('~(?<!/)/(?!/)~', $categorypath);
                     $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
                     $categorysofar = '';
+                    // Sanitise individual parts of subcategory.
+                    $sanitizedsubcat = '/' . implode('/',
+                                                array_map(
+                                                    fn($x) => preg_replace(cli_helper::BAD_CHARACTERS, '-', $x),
+                                                    explode('/', $this->subcategory)
+                                                )
+                                            );
                     // Create directory structure for category if it doesn't.
+                    $targettopfound = false;
+                    $currentdirectory = null;
                     foreach ($directorylist as $categorydirectory) {
                         $categorydirectory = preg_replace(cli_helper::BAD_CHARACTERS, '-', $categorydirectory);
                         $categorysofar .= "/{$categorydirectory}";
+                        if ($this->targetdirectory && !$targettopfound) {
+                            if (strpos($categorysofar, $sanitizedsubcat) === 0) {
+                                $categorysofar = '/top';
+                                $targettopfound = true;
+                            } else {
+                                continue;
+                            }
+                        }
                         $currentdirectory = dirname($this->manifestpath) . $categorysofar;
+
                         if (!is_dir($currentdirectory)) {
                             mkdir($currentdirectory);
                         }
-                        if ($categorypath === $this->subcategory) {
+                        if ($categorypath === $this->subcategory && !$this->targetdirectory) {
                             $this->subdirectory = substr($categorysofar, 1);
                         }
                     }
+                    if (!$currentdirectory) {
+                        continue;
+                    }
+
                     $catfilepath = $currentdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
                     // Question will always be placed at the bottom category level so save
                     // that location for later.
@@ -170,8 +196,12 @@ trait export_trait {
                     }
                     // We're liable to get lots of repeats of categories between questions
                     // so only create and add file if it doesn't exist already.
-                    if (!is_file($catfilepath)) {
+                    if (!is_file($catfilepath) && $categorysofar !== '/top') {
                         try {
+                            if ($this->targetdirectory) {
+                                $categoryxml->question->category->text =
+                                    'top' . substr($categoryxml->question->category->text, strlen($this->subcategory));
+                            }
                             $category = cli_helper::reformat_question($categoryxml->asXML());
                         } catch (\Exception $e) {
                             echo "\n{$e->getmessage()}\n";
@@ -202,14 +232,8 @@ trait export_trait {
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
-                    'contextlevel' => $this->listpostsettings['contextlevel'],
                     'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.xml",
-                    'coursename' => $this->listpostsettings['coursename'],
-                    'modulename' => $this->listpostsettings['modulename'],
-                    'coursecategory' => $this->listpostsettings['coursecategory'],
-                    'instanceid' => $this->listpostsettings['instanceid'],
                     'format' => 'xml',
-                    'ignorecat' => $this->ignorecat,
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");
             }
@@ -217,18 +241,45 @@ trait export_trait {
     }
 
     /**
-     * Prompt user whether they want to continue.
-     *
+     * Export quiz structure
+     * @param mixed $clihelper
+     * @param mixed $scriptdirectory
      * @return void
      */
-    public function handle_abort():void {
-        echo "Abort? y/n\n";
-        $handle = fopen ("php://stdin", "r");
-        $line = fgets($handle);
-        if (trim($line) === 'y') {
-            $this->call_exit();
+    public function export_quiz_structure($clihelper, $scriptdirectory) {
+        $arguments = $clihelper->get_arguments();
+        $moodleinstance = $arguments['moodleinstance'];
+        if (is_array($arguments['token'])) {
+            $token = $arguments['token'][$moodleinstance];
+        } else {
+            $token = $arguments['token'];
         }
-        fclose($handle);
+        $quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
+                    $this->manifestcontents->context->coursename,
+                    $this->manifestcontents->context->modulename, dirname($this->manifestpath));
+        $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath,
+                                            $this->nonquizmanifestpath, $scriptdirectory);
+        echo $output;
+    }
+
+    /**
+     * Separate out exec call for mocking.
+     *
+     * @param string $moodleinstance
+     * @param string $token
+     * @param string $quizmanifestpath
+     * @param string|null $nonquizmanifestpath
+     * @param string $scriptdirectory
+     * @return string|null
+     */
+    public function call_export_quiz(string $moodleinstance, string $token, string $quizmanifestpath,
+                                    ?string $nonquizmanifestpath, string $scriptdirectory): ?string {
+        chdir($scriptdirectory);
+        $nonquiz = ($nonquizmanifestpath) ? ' -p "' . $nonquizmanifestpath . '"' : '';
+        $usegit = ($this->usegit) ? 'true' : 'false';
+        return shell_exec('php exportquizstructurefrommoodle.php -u ' . $usegit .
+                ' -w -r "" -i "' . $moodleinstance . '" -t "'
+                . $token. '" -f "' . $quizmanifestpath . '"' . $nonquiz);
     }
 
     /**
@@ -238,7 +289,7 @@ trait export_trait {
      *
      * @return void
      */
-    public function call_exit():void {
+    public function call_exit(): void {
         exit;
     }
 }

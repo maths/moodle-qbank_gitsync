@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 use advanced_testcase;
+use org\bovigo\vfs\vfsStream;
 
 /**
  * Allows testing of errors that lead to an exit.
@@ -38,7 +39,7 @@ class fake_cli_helper extends cli_helper {
      *
      * @return void
      */
-    public static function call_exit():void {
+    public static function call_exit(): void {
         return;
     }
 }
@@ -52,7 +53,7 @@ class fake_cli_helper extends cli_helper {
  *
  * @covers \gitsync\cli_helper::class
  */
-class cli_helper_test extends advanced_testcase {
+final class cli_helper_test extends advanced_testcase {
     /** @var array defining options for a CLI script */
     protected array $options = [
         [
@@ -104,6 +105,23 @@ class cli_helper_test extends advanced_testcase {
             'variable' => 'fake',
             'valuerequired' => false,
         ],
+        [
+            'longopt' => 'usegit',
+            'shortopt' => 'u',
+            'description' => 'Is the repo controlled using Git?',
+            'default' => true,
+            'variable' => 'usegit',
+            'valuerequired' => true,
+        ],
+        [
+            'longopt' => 'hidey',
+            'shortopt' => 'q',
+            'description' => 'Not settable',
+            'default' => 'Sneaky',
+            'variable' => 'hidey',
+            'valuerequired' => true,
+            'hidden' => true,
+        ],
     ];
 
     /**
@@ -113,9 +131,11 @@ class cli_helper_test extends advanced_testcase {
     public function test_parse_options(): void {
         $helper = new cli_helper($this->options);
         $options = $helper->parse_options();
-        $this->assertEquals($options['shortopts'], 'i:l:c:m:hf');
+        $this->assertEquals($options['shortopts'], 'i:l:c:m:hfu:q:');
         $this->assertEquals($options['longopts'],
-                            ['moodleinstance:', 'contextlevel:', 'coursename:', 'modulename:', 'help', 'fake']);
+                            ['moodleinstance:', 'contextlevel:', 'coursename:',
+                            'modulename:', 'help', 'fake',
+                            'usegit:', 'hidey:']);
     }
 
     /**
@@ -130,6 +150,7 @@ class cli_helper_test extends advanced_testcase {
                             'contextlevel' => 'module',
                             'coursename' => 'Course long',
                             'c' => 'Course short',
+                            'usegit' => 'false',
                         ];
 
         $options = $helper->prioritise_options($commandlineargs);
@@ -145,6 +166,10 @@ class cli_helper_test extends advanced_testcase {
         $this->assertEquals($options['coursename'], 'Course long');
         // Test option default returned when not set.
         $this->assertEquals($options['modulename'], 'Default module');
+        // Test usegit is false when command line set to 'false.
+        $this->assertEquals($options['usegit'], false);
+        // Test hidden option set to default.
+        $this->assertEquals($options['hidey'], 'Sneaky');
     }
 
     /**
@@ -209,6 +234,100 @@ class cli_helper_test extends advanced_testcase {
     }
 
     /**
+     * Manifest path name creation
+     * @covers \gitsync\cli_helper\get_manifest_path_targeted()
+     */
+    public function test_manifest_path_targeted(): void {
+        $helper = new cli_helper($this->options);
+        // Module level, including replacements.
+        $manifestpath = $helper->get_manifest_path_targeted('mood$l!einstanc<name', 'module', 'cat<goryname',
+                                                   'cours<nam>', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                                   '/Dir 1/Dir 2/Dir 3', 'directoryname');
+        $this->assertEquals('directoryname/mood-l-einstanc-name_module_cours-nam-_modul-name_dir-2_dir-3_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+        // Category level, including replacements.
+        $manifestpath = $helper->get_manifest_path_targeted('moodleinstanc<name', 'coursecategory', 'cat<goryname',
+                                                   'cours<nam<', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                                   '/Dir 1/Dir 2/Dir 3', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_coursecategory_cat-goryname_dir-2_dir-3_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+        // Course level, including replacements.
+        $manifestpath = $helper->get_manifest_path_targeted('moodleinstanc<name', 'course', 'cat<goryname',
+                                                   'cours<nam>', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                                   '/Dir 1/Dir 2/Dir 3', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_course_cours-nam-_dir-2_dir-3_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+        // System level.
+        $manifestpath = $helper->get_manifest_path_targeted('moodleinstanc<name', 'system', 'cat<goryname',
+                                            'cours<nam<', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                            '/Dir 1/Dir 2/Dir 3', 'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_system_dir-2_dir-3_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+        // Shortening.
+        // Module level, including replacements.
+        $manifestpath = $helper->get_manifest_path_targeted('moodleinstanc<name', 'module', 'cat<goryname',
+            'cours<nam<thatisverylongandsoneedstobeshortened and has a space in it just to make sure',
+            'Modulename that is also very long and we want to chop up a bit as well hopefully',
+            'top/Level 1/Level 2 with a very long category name that needs to be cut', '88',
+            '/Dir 1/Dir 2 honestly who makes their directories this long/Dir 3 and this one too its bound to cause problems',
+            'directoryname');
+        $this->assertEquals('directoryname/moodleinstanc-name_module_cours-nam-thatisverylongandson' .
+                            '_modulename-that-is-also-very-l_dir-2-honestly-who-makes-_dir-3-and-this-one-too-it_' .
+                            'top-level-1-level-2-with-a-very-long-category-name_88' . cli_helper::MANIFEST_FILE,
+                            $manifestpath);
+
+        // Module level, top subdirectory only.
+        $manifestpath = $helper->get_manifest_path_targeted('mood$l!einstanc<name', 'module', 'cat<goryname',
+                                                   'cours<nam>', 'Modul<name', 'top/Level 1/Level 2', '88',
+                                                   'top', 'directoryname');
+        $this->assertEquals('directoryname/mood-l-einstanc-name_module_cours-nam-_modul-name_top_top-level-1-level-2_88'
+                             . cli_helper::MANIFEST_FILE, $manifestpath);
+    }
+
+    /**
+     * Quiz structure path name creation
+     * @covers \gitsync\cli_helper\get_quiz_structure_path()
+     */
+    public function test_quiz_structure_path(): void {
+        $helper = new cli_helper($this->options);
+        // Module level, including replacements.
+        $datapath = $helper->get_quiz_structure_path('Modul<name', 'directoryname');
+        $this->assertEquals('directoryname/modul-name' . cli_helper::QUIZ_FILE, $datapath);
+    }
+
+    /**
+     * Quiz directory name creation
+     * @covers \gitsync\cli_helper\get_quiz_directory()
+     */
+    public function test_get_quiz_directory(): void {
+        $helper = new cli_helper($this->options);
+        // Module level, including replacements.
+        $quizdir = $helper->get_quiz_directory('directoryname', 'Modul<name');
+        $this->assertEquals('directoryname_quiz_modul-name', $quizdir);
+    }
+
+    /**
+     * Create directory
+     * @covers \gitsync\cli_helper\get_quiz_directory()
+     */
+    public function test_create_directory(): void {
+        global $CFG;
+        $root = vfsStream::setup();
+        vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
+        $rootpath = vfsStream::url('root');
+        $helper = new cli_helper($this->options);
+        // Module level, including replacements.
+        $quizdir = $helper->get_quiz_directory($rootpath . '/below', 'Modul<name');
+        $helper->create_directory($quizdir);
+        $helper->create_directory($quizdir);
+        $helper->create_directory($quizdir);
+        $this->assertEquals(true, is_dir($quizdir));
+        $this->assertEquals(true, is_dir($quizdir . '_1'));
+        $this->assertEquals(true, is_dir($quizdir . '_2'));
+        $this->assertEquals(false, is_dir($quizdir . '_3'));
+    }
+
+    /**
      * Validation
      * @covers \gitsync\cli_helper\validate_and_clean_args()
      */
@@ -225,7 +344,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_subdirectory(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system',
                                      'subdirectory' => 'cat1', 'questioncategoryid' => 3,
                                     ];
         $helper->validate_and_clean_args();
@@ -238,32 +357,32 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_subdirectory_format(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => 'cat1/subcat'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subdirectory' => 'cat1/subcat'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1/subcat', $helper->processedoptions['subdirectory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => '/top/cat1'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subdirectory' => '/top/cat1'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1', $helper->processedoptions['subdirectory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => '/top/cat1/'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subdirectory' => '/top/cat1/'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1', $helper->processedoptions['subdirectory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => 'top/cat1/'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subdirectory' => 'top/cat1/'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1', $helper->processedoptions['subdirectory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => '/cat1/'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subdirectory' => '/cat1/'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1', $helper->processedoptions['subdirectory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subdirectory' => ''];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subdirectory' => ''];
         $helper->validate_and_clean_args();
         $this->assertEquals(null, $helper->processedoptions['subdirectory']);
     }
@@ -274,32 +393,32 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_subcategory_format(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => 'cat1/subcat'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subcategory' => 'cat1/subcat'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1/subcat', $helper->processedoptions['subcategory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => '/top/cat1'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subcategory' => '/top/cat1'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1', $helper->processedoptions['subcategory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => '/top/cat1/'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subcategory' => '/top/cat1/'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1', $helper->processedoptions['subcategory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => 'top/cat1/'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subcategory' => 'top/cat1/'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1', $helper->processedoptions['subcategory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => '/cat1/'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subcategory' => '/cat1/'];
         $helper->validate_and_clean_args();
         $this->assertEquals('top/cat1', $helper->processedoptions['subcategory']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'subcategory' => ''];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system', 'subcategory' => ''];
         $helper->validate_and_clean_args();
         $this->assertEquals('top', $helper->processedoptions['subcategory']);
     }
@@ -310,12 +429,14 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_manifestpath(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'manifestpath' => '/path/subpath/'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system',
+                                     'manifestpath' => '/path/subpath/'];
         $helper->validate_and_clean_args();
         $this->assertEquals('path/subpath', $helper->processedoptions['manifestpath']);
 
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system', 'manifestpath' => '/path/subpath/',
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system',
+                                     'manifestpath' => '/path/subpath/',
                                      'coursename' => 'course1', 'instanceid' => '2',
                                     ];
         $helper->validate_and_clean_args();
@@ -329,7 +450,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_instanceid(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system',
                                      'coursename' => 'course1', 'instanceid' => '2',
                                     ];
         $helper->validate_and_clean_args();
@@ -343,7 +464,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_system(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'system',
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'system',
                                      'coursename' => 'course1', 'instanceid' => '2',
                                     ];
         $helper->validate_and_clean_args();
@@ -357,7 +478,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_coursecategory(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'coursecategory',
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'coursecategory',
                                      'coursecategory' => 'cat1',
                                      'coursename' => 'course1', 'modulename' => '2',
                                     ];
@@ -372,7 +493,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_course(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'course',
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'course',
                                      'coursecategory' => 'cat1',
                                      'coursename' => 'course1', 'modulename' => '2',
                                     ];
@@ -387,7 +508,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_module(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'module',
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'module',
                                      'coursecategory' => 'cat1',
                                      'coursename' => 'course1', 'modulename' => '2',
                                     ];
@@ -402,7 +523,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_coursecategory_missing(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'coursecategory'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'coursecategory'];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/^\nYou have specified course category level.*instanceid\).\n$/s');
     }
@@ -413,7 +534,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_course_missing(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'course'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'course'];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/^\nYou have specified course level.*instanceid\).\n$/s');
     }
@@ -424,7 +545,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_module_missing(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'module', 'modulename' => 'mod1'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'module', 'modulename' => 'mod1'];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/^\nYou have specified module level.*instanceid\).\n$/s');
     }
@@ -435,7 +556,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_coursecategory_instanceid(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'coursecategory', 'instanceid' => 3];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'coursecategory', 'instanceid' => 3];
         $helper->validate_and_clean_args();
         $this->expectOutputString('');
     }
@@ -446,7 +567,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_course_instanceid(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'course', 'instanceid' => 3];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'course', 'instanceid' => 3];
         $helper->validate_and_clean_args();
         $this->expectOutputString('');
     }
@@ -457,7 +578,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_module_instanceid(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'module', 'instanceid' => 3];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'module', 'instanceid' => 3];
         $helper->validate_and_clean_args();
         $this->expectOutputString('');
     }
@@ -479,7 +600,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_manifestpath(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'manifestpath' => 'path/subpath'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'manifestpath' => 'path/subpath'];
         $helper->validate_and_clean_args();
         $this->expectOutputString('');
     }
@@ -490,7 +611,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_contextlevel_wrong(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'contextlevel' => 'lama'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'contextlevel' => 'lama'];
         $helper->validate_and_clean_args();
         $this->expectOutputRegex('/Contextlevel should be/');
     }
@@ -501,7 +622,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_ignorecat(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'manifestpath' => 'path/subpath', 'ignorecat' => '/hello/'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'manifestpath' => 'path/subpath', 'ignorecat' => '/hello/'];
         $helper->validate_and_clean_args();
         $this->expectOutputString('');
         $this->assertEquals('/hello/', $helper->processedoptions['ignorecat']);
@@ -513,7 +634,7 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_ignorecat_error(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'manifestpath' => 'path/subpath', 'ignorecat' => '/hello'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'manifestpath' => 'path/subpath', 'ignorecat' => '/hello'];
         @$helper->validate_and_clean_args();
         $this->expectOutputRegex('/problem with your regular expression/');
     }
@@ -524,9 +645,21 @@ class cli_helper_test extends advanced_testcase {
      */
     public function test_validation_ignorecat_replace(): void {
         $helper = new fake_cli_helper([]);
-        $helper->processedoptions = ['token' => 'X', 'manifestpath' => 'path/subpath', 'ignorecat' => '//hello\//'];
+        $helper->processedoptions = ['token' => 'X', 'usegit' => true, 'manifestpath' => 'path/subpath',
+                                     'ignorecat' => '//hello\//', ];
         $helper->validate_and_clean_args();
         $this->expectOutputString('');
         $this->assertEquals('/hello\//', $helper->processedoptions['ignorecat']);
+    }
+
+    /**
+     * Validation
+     * @covers \gitsync\cli_helper\validate_and_clean_args()
+     */
+    public function test_usegit(): void {
+        $helper = new fake_cli_helper([]);
+        $helper->processedoptions = ['token' => 'X', 'manifestpath' => 'path/subpath'];
+        $helper->validate_and_clean_args();
+        $this->expectOutputRegex('/^\nAre you using Git?/s');
     }
 }

@@ -25,11 +25,12 @@
 |n|instanceid|Numerical id of the course, module of course category.
 |t|token|Security token for webservice.
 |h|help|
+|u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 
 Examples:
 
-`php deletefrommoodle.php -t 4ec7cd3f62e08f595df5e9c90ea7cfcd -i edmundlocal -r "C:\question_repos" -d "source_1" --contextlevel system`
+`php deletefrommoodle.php -f 'course1/instance1_course_course-1_question_manifest.json'`
 
 The arguments are the same as for importrepotomoodle and the questions are identified in the same way as explained there. This task is just to separate out the deletion process from the import process as a safeguard. 
 
@@ -37,4 +38,4 @@ The arguments are the same as for importrepotomoodle and the questions are ident
 - If the script fails, it can be safely run again once the issue has been dealt with. Questions that have already been deleted will be removed from the manifest file and you will not need to approve deletion again.
 
 ### Possibility of data loss
-Version checks when importing and commit checks when exporting should mitigate most issues with import/export. User would have to export questions, discard the changes and then import to cause problems but even then the previous versions of the questions would still be in Moodle. The old version of a question can be selected for edit and then saved without changes to make it the latest version - a pain if many questions are involved but recoverable. Delete does introduce the possibility of data loss if the user has never exported the question (which could happen if they begin by using subcategories/subdirectories and then start dealing with the whole context). Users have to run the delete script specially, however, and confirm the deletion of each question individually after already having seen a list of all the questions that are in Moodle but not in the repo. Also, any questions that are used in quizzes will be hidden rather than completely deleted in Moodle. Given all this, the risks are probably only minimally worse than the option to delete within Moodle itself.
+Version checks when importing and commit checks when exporting should mitigate most issues with import/export. A user would have to export questions, discard the changes and then import to cause problems but even then the previous versions of the questions would still be in Moodle. The old version of a question can be selected for edit and then saved without changes to make it the latest version - a pain if many questions are involved but recoverable. Delete does introduce the possibility of data loss if the user has never exported the question (which could happen if they begin by using subcategories/subdirectories and then start dealing with the whole context). Users have to run the delete script specially, however, and confirm the deletion of each question individually after already having seen a list of all the questions that are in Moodle but not in the repo. Also, any questions that are used in quizzes will be hidden rather than completely deleted in Moodle. Given all this, the risks are probably only minimally worse than the option to delete within Moodle itself.

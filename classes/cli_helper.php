@@ -49,6 +49,12 @@ class cli_helper {
      * @var array|null Full set of options combining command line and defaults
      */
     public ?array $processedoptions = null;
+
+    /**
+     * GITSYNC_VERSION - Current version of Gitsync.
+     * Should match version in version.php .
+     */
+    public const GITSYNC_VERSION = '2025051900';
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -59,6 +65,10 @@ class cli_helper {
      */
     public const MANIFEST_FILE = '_question_manifest.json';
     /**
+     * QUIZ_FILE - File name ending for quiz structure file.
+     */
+    public const QUIZ_FILE = '_quiz.json';
+    /**
      * TEMP_MANIFEST_FILE - File name ending for temporary manifest file.
      * Appended to name of moodle instance.
      */
@@ -66,7 +76,7 @@ class cli_helper {
     /**
      * BAD_CHARACTERS - Characters to remove for filename sanitisation
      */
-    public const BAD_CHARACTERS = '/[\/\\\?\%*:|"<> .$!]+/';
+    public const BAD_CHARACTERS = '/[\/\\\?\%\'*:|"<> .$!]+/';
     /**
      * Constructor
      *
@@ -91,10 +101,12 @@ class cli_helper {
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
         $argcount = count($commandlineargs);
-        echo "\nProcessed {$argcount} valid command line argument" .
-                (($argcount !== 1) ? 's' : '') . ".\n";
+        if (!isset($commandlineargs['w'])) {
+            echo "\nProcessed {$argcount} valid command line argument" .
+                    (($argcount !== 1) ? 's' : '') . ".\n";
+        }
         $this->processedoptions = $this->prioritise_options($commandlineargs);
-        if ($this->processedoptions['help']) {
+        if (!empty($this->processedoptions['help'])) {
             $this->show_help();
             exit;
         }
@@ -132,6 +144,10 @@ class cli_helper {
      */
     public function validate_and_clean_args(): void {
         $cliargs = $this->processedoptions;
+        if (!isset($cliargs['usegit'])) {
+            echo "\nAre you using Git? You will need to specify true or false for --usegit.\n";
+            static::call_exit();
+        }
         if (!isset($cliargs['token'])) {
             echo "\nYou will need a security token (--token).\n";
             static::call_exit();
@@ -187,11 +203,20 @@ class cli_helper {
         if (isset($cliargs['manifestpath'])) {
             $cliargs['manifestpath'] = $this->trim_slashes($cliargs['manifestpath']);
             if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
-                        || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid'])
-                        || isset($cliargs['contextlevel']) )) {
+                        || isset($cliargs['coursecategory']) || isset($cliargs['instanceid'])
+                        || isset($cliargs['contextlevel']) || isset($cliargs['targetcategory'])
+                        || isset($cliargs['targetcategoryname'])) {
                 echo "\nYou have specified a manifest file (possibly as a default in your config file). " .
-                        "Contextlevel, instance id, course name, module name and/or course category are not needed. " .
-                        "Context data can be extracted from the file.\n";
+                        "Contextlevel, instance id, target category, course name, module name " .
+                        "and/or course category are not needed. " .
+                        "Context and target data can be extracted from the file.\n";
+                static::call_exit();
+            }
+        }
+        if (isset($cliargs['targetcategory'])) {
+            if (strlen($cliargs['targetcategoryname']) > 0) {
+                echo "\nYou have supplied a target category name to identify the required question category " .
+                     "and a target category id. Please use only one.\n";
                 static::call_exit();
             }
         }
@@ -211,6 +236,7 @@ class cli_helper {
             if (@preg_match($cliargs['ignorecat'], 'zzzzzzzz') === false) {
                 echo "\nThere is a problem with your regular expression for ignoring categories:\n";
                 echo error_get_last()["message"] . "\n";
+                echo "\n(If you're using Windows, remember to add an extra leading forward slash '/'.)\n";
                 static::call_exit();
             }
         }
@@ -270,12 +296,14 @@ class cli_helper {
                     break;
             }
         }
-        if (!isset($cliargs['manifestpath']) && !isset($cliargs['contextlevel'])) {
+        if (!isset($cliargs['manifestpath']) && !isset($cliargs['quizmanifestpath'])
+                    && !isset($cliargs['contextlevel']) && !isset($cliargs['quizdatapath'])) {
             echo "\nYou have not specified context. " .
                  "You must specify context level (--contextlevel) unless " .
                  "using a function where this information can be read from a manifest file, in which case " .
                  "you could set a manifest path (--manifestpath) instead. If using exportrepofrommoodle, you " .
-                 "must set manifest path only. If you still see this message, you may be using invalid arguments.\n";
+                 "must set manifest path only. If dealing with export of quizzes, you must specify --quizmanifestpath. " .
+                 "If you still see this message, you may be using invalid arguments.\n";
             static::call_exit();
         }
 
@@ -289,7 +317,7 @@ class cli_helper {
      * @param string $path
      * @return string
      */
-    public function trim_slashes(string $path):string {
+    public function trim_slashes(string $path): string {
         $path = str_replace( '\\', '/', $path);
         if (substr($path, 0, 1) === '/') {
             $path = substr($path, 1);
@@ -312,12 +340,18 @@ class cli_helper {
         foreach ($this->options as $option) {
             $variablename = $option['variable'];
             if ($option['valuerequired']) {
-                if (isset($commandlineargs[$option['longopt']])) {
+                if (isset($option['hidden'])) {
+                    $variables[$variablename] = $option['default'];
+                } else if (isset($commandlineargs[$option['longopt']])) {
                     $variables[$variablename] = $commandlineargs[$option['longopt']];
                 } else if (isset($commandlineargs[$option['shortopt']])) {
                     $variables[$variablename] = $commandlineargs[$option['shortopt']];
                 } else {
                     $variables[$variablename] = $option['default'];
+                }
+                if (in_array($variablename, ['usegit'])) {
+                    $variables[$variablename] = ($variables[$variablename] === 'true') ? true : $variables[$variablename];
+                    $variables[$variablename] = ($variables[$variablename] === 'false') ? false : $variables[$variablename];
                 }
             } else {
                 if (isset($commandlineargs[$option['longopt']]) || isset($commandlineargs[$option['shortopt']])) {
@@ -337,9 +371,11 @@ class cli_helper {
      *
      * @return void
      */
-    public function show_help() {
+    public function show_help(): void {
         foreach ($this->options as $option) {
-            echo "-{$option['shortopt']} --{$option['longopt']}  \t{$option['description']}\n";
+            if (!isset($option['hidden'])) {
+                echo "-{$option['shortopt']} --{$option['longopt']}  \t{$option['description']}\n";
+            }
         }
         exit;
     }
@@ -379,7 +415,7 @@ class cli_helper {
      * @return string
      */
     public static function get_manifest_path(string $moodleinstance, string $contextlevel, ?string $coursecategory,
-                            ?string $coursename, ?string $modulename, string $directory):string {
+                            ?string $coursename, ?string $modulename, string $directory): string {
         $filenamemod = '_' . $contextlevel;
         switch ($contextlevel) {
             case 'coursecategory':
@@ -400,22 +436,91 @@ class cli_helper {
     }
 
     /**
+     * Create manifest path for targeted import/export of repos.
+     *
+     * This is where the full category tree is not replicated on import/export.
+     * A target folder and question category must both be supplied.
+     *
+     * @param string $moodleinstance
+     * @param string $contextlevel
+     * @param string|null $coursecategory
+     * @param string|null $coursename
+     * @param string|null $modulename
+     * @param string $categoryname
+     * @param string $categoryid
+     * @param string $subdirectory
+     * @param string $directory
+     * @return string
+     */
+    public static function get_manifest_path_targeted(string $moodleinstance, string $contextlevel, ?string $coursecategory,
+                            ?string $coursename, ?string $modulename, string $categoryname,
+                            string $categoryid, string $subdirectory, string $directory): string {
+        $filenamemod = '_' . $contextlevel;
+        switch ($contextlevel) {
+            case 'coursecategory':
+                $filenamemod = $filenamemod . '_' . substr($coursecategory, 0, 50);
+                break;
+            case 'course':
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 50);
+                break;
+            case 'module':
+                $filenamemod = $filenamemod . '_' . substr($coursename, 0, 30) . '_' . substr($modulename, 0, 30);
+                break;
+        }
+        $folders = explode('/', $subdirectory);
+        $folder = array_pop($folders);
+        $parent = ($folders) ? array_pop($folders) : null;
+        $filenamemod .= '_' . (($parent) ? substr($parent, 0, 25) . '_' : '') . substr($folder, 0, 25) .
+                        '_' . substr($categoryname, 0, 50) . '_' . $categoryid;
+
+        $filename = $directory . '/' .
+                    preg_replace(self::BAD_CHARACTERS, '-', strtolower(substr($moodleinstance, 0, 30) . $filenamemod)) .
+                    self::MANIFEST_FILE;
+        return $filename;
+    }
+
+    /**
+     * Create quiz structure path.
+     *
+     * @param string|null $modulename
+     * @param string $directory
+     * @return string
+     */
+    public static function get_quiz_structure_path(string $modulename, string $directory): string {
+        $filename = substr($modulename, 0, 100);
+        $filename = $directory . '/' .
+                    preg_replace(self::BAD_CHARACTERS, '-', strtolower($filename)) .
+                    self::QUIZ_FILE;
+        return $filename;
+    }
+
+    /**
+     * Create quiz directory name.
+     *
+     * @param string $basedirectory
+     * @param string $directory
+     * @return string
+     */
+    public static function get_quiz_directory(string $basedirectory, string $quizname): string {
+        $quizname = substr($quizname, 0, 100);
+        $directoryname = $basedirectory . '_quiz_' .
+                    preg_replace(self::BAD_CHARACTERS, '-', strtolower($quizname));
+        return $directoryname;
+    }
+
+    /**
      * Create manifest file from temporary file.
      *
      * @param object $manifestcontents \stdClass Current contents of manifest file
      * @param string $tempfilepath
      * @param string $manifestpath
-     * @param string $moodleurl
-     * @param int|null $subcategoryid
-     * @param string|null $subdirectory
      * @param bool $showupdated
      * @return object
      */
-    public static function create_manifest_file(object $manifestcontents, string $tempfilepath,
-                                                string $manifestpath, string $moodleurl,
-                                                ?int $subcategoryid=null,
-                                                ?string $subdirectory=null,
-                                                bool $showupdated=true):object {
+    public static function create_manifest_file(object $manifestcontents,
+                                                string $tempfilepath,
+                                                string $manifestpath,
+                                                bool $showupdated=true): object {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
@@ -456,18 +561,6 @@ class cli_helper {
                         $existingentries["{$questioninfo->questionbankentryid}"]->moodlecommit = $questioninfo->moodlecommit;
                     }
                 }
-                if ($manifestcontents->context === null) {
-                    $manifestcontents->context = new \stdClass();
-                    $manifestcontents->context->contextlevel = $questioninfo->contextlevel;
-                    $manifestcontents->context->coursename = $questioninfo->coursename;
-                    $manifestcontents->context->modulename = $questioninfo->modulename;
-                    $manifestcontents->context->coursecategory = $questioninfo->coursecategory;
-                    $manifestcontents->context->instanceid = $questioninfo->instanceid;
-                    $manifestcontents->context->defaultsubcategoryid = $subcategoryid;
-                    $manifestcontents->context->defaultsubdirectory = $subdirectory;
-                    $manifestcontents->context->defaultignorecat = $questioninfo->ignorecat;
-                    $manifestcontents->context->moodleurl = $moodleurl;
-                }
             }
         }
         echo "\nAdded {$addedcount} question" . (($addedcount !== 1) ? 's' : '') . ".\n";
@@ -489,7 +582,7 @@ class cli_helper {
      * @param string $question original question XML
      * @return string tidied question XML
      */
-    public static function reformat_question(string $question):string {
+    public static function reformat_question(string $question): string {
         $quiz = simplexml_load_string($question);
         if ($quiz === false) {
             throw new \Exception('Broken XML');
@@ -507,10 +600,11 @@ class cli_helper {
      * @param object $activity e.g. import_repo
      * @return void
      */
-    public function commit_hash_update(object $activity):void {
+    public function commit_hash_update(object $activity): void {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
+        chdir(dirname($activity->manifestpath));
         foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             if ($commithash) {
@@ -531,15 +625,15 @@ class cli_helper {
      * @param object $activity e.g. create_repo
      * @return void
      */
-    public function commit_hash_setup(object $activity):void {
+    public function commit_hash_setup(object $activity): void {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
         $this->create_gitignore($activity->manifestpath);
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
-        exec("git add .");
-        exec('git commit -m "Initial Commit"');
+        exec("git add --all");
+        exec('git commit -m "Initial Commit - ' . basename($activity->manifestpath)  . '"');
         foreach ($activity->manifestcontents->questions as $question) {
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
             if ($commithash) {
@@ -559,7 +653,7 @@ class cli_helper {
      * @param object $activity e.g. create_repo
      * @return void
      */
-    public function tidy_repo_xml(object $activity):void {
+    public function tidy_repo_xml(object $activity): void {
         if ($activity->subdirectory) {
             $subdirectory = $activity->directory . '/' . $activity->subdirectory;
         } else {
@@ -585,14 +679,15 @@ class cli_helper {
      * @param string $manifestpath
      * @return void
      */
-    public function create_gitignore(string $manifestpath):void {
+    public function create_gitignore(string $manifestpath): void {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
         $manifestdirname = dirname($manifestpath);
         if (!is_file($manifestdirname . '/.gitignore')) {
             $ignore = fopen($manifestdirname . '/.gitignore', 'a');
-            $contents = "**/*_question_manifest.json\n**/*_manifest_update.tmp\n";
+
+            $contents = "**/*" . self::MANIFEST_FILE . "\n**/*.tmp\n";
             fwrite($ignore, $contents);
             fclose($ignore);
         }
@@ -604,17 +699,15 @@ class cli_helper {
      * @param string $fullmanifestpath
      * @return void
      */
-    public function check_repo_initialised(string $fullmanifestpath):void {
+    public function check_repo_initialised(string $fullmanifestpath): void {
         if (!$this->get_arguments()['usegit']) {
             return;
         }
         $manifestdirname = dirname($fullmanifestpath);
         if (chdir($manifestdirname)) {
             // Will give path of .git if in repo or error.
-            // Working on the assumption we have to be at the top of the repo.
-            if (exec('git rev-parse --git-dir') !== '.git') {
-                echo "The Git repository has not been initialised or " .
-                     "the manifest directory is not at the top level.\n";
+            if (substr(exec('git rev-parse --git-dir'), -4) !== '.git') {
+                echo "The Git repository has not been initialised.\n";
                 exit;
             }
         } else {
@@ -624,14 +717,31 @@ class cli_helper {
     }
 
     /**
+     * Create directory.
+     *
+     * @param string $directory
+     * @return string updated directory name
+     */
+    public function create_directory(string $directory): string {
+        $basename = $directory;
+        $i = 0;
+        while (is_dir($directory)) {
+            $i++;
+            $directory = $basename . '_' . $i;
+        }
+        mkdir($directory);
+        return $directory;
+    }
+
+    /**
      * Check the git repo containing the manifest file to see if there
      * are any uncommited changes and stop if there are.
      *
      * @param string $fullmanifestpath
      * @return void
      */
-    public function check_for_changes($fullmanifestpath) {
-        if (!$this->get_arguments()['usegit']) {
+    public function check_for_changes(string $fullmanifestpath): void {
+        if (!$this->get_arguments()['usegit'] || !empty($this->get_arguments()['subcall'])) {
             return;
         }
         $this->check_repo_initialised($fullmanifestpath);
@@ -657,7 +767,7 @@ class cli_helper {
      * @param string $fullmanifestpath
      * @return void
      */
-    public function backup_manifest($fullmanifestpath) {
+    public function backup_manifest(string $fullmanifestpath): void {
         $manifestdirname = dirname($fullmanifestpath);
         $manifestfilename = basename($fullmanifestpath);
         $backupdir = $manifestdirname . '/manifest_backups';
@@ -674,7 +784,7 @@ class cli_helper {
      *
      * @return void
      */
-    public static function call_exit():void {
+    public static function call_exit(): void {
         exit;
     }
 
@@ -687,7 +797,7 @@ class cli_helper {
      * @param bool $silent If true, don't display returned info
      * @return object
      */
-    public function check_context(object $activity, bool $defaultwarning=false, bool $silent=false):object {
+    public function check_context(object $activity, bool $defaultwarning=false, bool $silent=false): object {
         $activity->listpostsettings['contextonly'] = 1;
         $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
         $response = $activity->listcurlrequest->execute();
@@ -705,7 +815,7 @@ class cli_helper {
             echo "Failed to get list of questions from Moodle.\n";
             static::call_exit();
             return new \stdClass(); // Required for PHPUnit.
-        } else if (!$silent) {
+        } else if (!$silent && empty($this->get_arguments()['subcall'])) {
             $activityname = get_class($activity);
             switch ($activityname) {
                 case 'qbank_gitsync\export_repo':
@@ -730,21 +840,47 @@ class cli_helper {
                 echo "Course: {$moodlequestionlist->contextinfo->coursename}\n";
             }
             if ($moodlequestionlist->contextinfo->modulename) {
-                echo "Quiz: {$moodlequestionlist->contextinfo->modulename}\n";
+                echo "Module: {$moodlequestionlist->contextinfo->modulename}\n";
             }
             if (isset($activity->ignorecat)) {
                 echo "Ignoring categories (and their descendants) in form: {$activity->ignorecat}\n";
             }
-            if (isset($activity->subdirectory)) {
-                echo "Question subdirectory: {$activity->subdirectory}\n";
-                if ($defaultwarning) {
-                    echo "\nUsing default subdirectory from manifest file.\n";
-                    echo "Set --subdirectory to override.\n";
+            if (isset($activity->subdirectory) || isset($activity->targetdirectory)) {
+                if (isset($activity->targetdirectory)) {
+                    echo "Question subdirectory: {$activity->targetdirectory}\n";
+                } else if (isset($activity->targetcategory)) {
+                    echo "Question subdirectory: {$activity->subdirectory}\n";
+                } else {
+                    echo "Question subdirectory: {$activity->subdirectory}\n";
+                    if ($defaultwarning) {
+                        echo "\nUsing default subdirectory from manifest file.\n";
+                        echo "Set --subdirectory to override.\n";
+                    }
                 }
-            } else {
+            }
+            if (!isset($activity->subdirectory) || isset($activity->targetcategory)) {
                 echo "Question category: {$moodlequestionlist->contextinfo->qcategoryname}\n";
             }
-            if ($defaultwarning && !isset($activity->subdirectory)) {
+            if (isset($activity->targetcategory) || isset($activity->targetdirectory)) {
+                echo "This is a targeted action and will not use the full category structure of the Moodle context.";
+                switch ($activityname) {
+                    case 'qbank_gitsync\export_repo':
+                        echo " Subcategory questions will be exported to the subdirectory.\n";
+                        break;
+                    case 'qbank_gitsync\import_repo':
+                        echo " Subdirectory questions will be imported to the subcategory.\n";
+                        break;
+                    case 'qbank_gitsync\create_repo':
+                        echo " The subcategory will be treated as category 'top' in the file system.\n";
+                        break;
+                    default:
+                        echo "\n";
+                        break;
+                }
+            }
+
+            if ($defaultwarning && !isset($activity->subdirectory)
+                    && !isset($activity->targetcategory) && !isset($activity->targetdirectory)) {
                 echo "\nUsing default question category from manifest file.\n";
                 echo "Set --subcategory or --questioncategoryid to override.\n";
             }
@@ -760,7 +896,7 @@ class cli_helper {
      *
      * @return void
      */
-    public static function handle_abort():void {
+    public static function handle_abort(): void {
         echo "Abort? y/n\n";
         $handle = fopen ("php://stdin", "r");
         $line = fgets($handle);
@@ -775,26 +911,70 @@ class cli_helper {
      * category path from the file. (This will vary from the filepath
      * as the filepath will have potentially had characters sanitised.)
      *
-     * @param [type] $filename
+     * @param string $filepath
+     * @param string $replacement New category
      * @return string|null $qcategoryname Question category name in format top/cat1/subcat1
      */
-    public static function get_question_category_from_file($filename):?string {
-        if (!is_file($filename)) {
-            echo "\nRequired category file does not exist: {$filename}\n";
+    public static function get_question_category_from_file($filepath, $replacement = null): ?string {
+        if (!is_file($filepath)) {
+            echo "\nRequired category file does not exist: {$filepath}\n";
             return null;
         }
-        $contents = file_get_contents($filename);
+        $contents = file_get_contents($filepath);
         if ($contents === false) {
-            echo "\nUnable to access file: {$filename}\n";
+            echo "\nUnable to access file: {$filepath}\n";
             return null;
         }
         $categoryxml = simplexml_load_string($contents);
         if ($categoryxml === false) {
             echo "\nBroken category XML.\n";
-            echo "{$filename}.\n";
+            echo "{$filepath}.\n";
             return null;
+        }
+        if ($replacement) {
+            $categoryxml->question->category->text = $replacement;
+            $success = file_put_contents($filepath, json_encode($contents));
+            if ($success === false) {
+                echo "\nUnable to update category file: {$contents}. Check your repo carefully before committing.\n";
+            }
+            return $replacement;
         }
         $qcategoryname = $categoryxml->question->category->text->__toString();
         return $qcategoryname;
+    }
+
+    /**
+     * Given a filepath for a category question file, create a temporary
+     * copy with a different category path.
+     *
+     * @param string $filepath
+     * @param string $tempfilepath Path of main temp file
+     * @param string $replacement New category
+     * @return object|null $tempcatfilepath
+     */
+    public static function create_temp_category_file($filepath, $tempfilepath, $replacement) {
+        if (!is_file($filepath)) {
+            echo "\nRequired category file does not exist: {$filepath}\n";
+            return null;
+        }
+        $contents = file_get_contents($filepath);
+        if ($contents === false) {
+            echo "\nUnable to access file: {$filepath}\n";
+            return null;
+        }
+        $categoryxml = simplexml_load_string($contents);
+        if ($categoryxml === false) {
+            echo "\nBroken category XML.\n";
+            echo "{$filepath}.\n";
+            return null;
+        }
+        $categoryxml->question->category->text = $replacement;
+        $tempcatfilepath = dirname($tempfilepath) . '/tempcatfile.tmp';
+        $success = file_put_contents($tempcatfilepath, $categoryxml->asXML());
+        if ($success === false) {
+            echo "\nUnable to update category file: {$contents}. Check your repo carefully before committing.\n";
+            return null;
+        }
+        return new \SplFileInfo($tempcatfilepath);
     }
 }
