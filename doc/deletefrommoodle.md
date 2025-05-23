@@ -1,4 +1,4 @@
-# Deleting orphaned questions fromo Moodle
+# Deleting orphaned questions from Moodle
 
 ## Prerequisites
 - Set up the [webserver](webservicesetup.md) on the Moodle instance.
