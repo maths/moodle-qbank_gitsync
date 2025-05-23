@@ -485,7 +485,7 @@ class import_repo {
                     $parentpath = str_replace( '\\', '/', pathinfo($basepath, PATHINFO_DIRNAME));
                     $parentfilepath = $parentpath . '/' . cli_helper::CATEGORY_FILE . '.xml';
                     // If there is a category file in a subdirectory it will have the info
-                    // we need. (If we can find it...)
+                    // we need.
                     $childcatfile = null;
                     $catsearch = new \RecursiveIteratorIterator(
                         new \RecursiveDirectoryIterator($basepath),
@@ -551,7 +551,7 @@ class import_repo {
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
 
-        if (!$this->subdirectory or $this->subdirectory === 'top') {
+        if (!$this->subdirectory || $this->subdirectory === 'top') {
             $this->basecategoryname = 'top';
         } else {
             $this->basecategoryname = null;
@@ -1255,7 +1255,7 @@ class import_repo {
      * @param string|null $path
      * @return array of category names.
      */
-    function split_category_path(?string $path): array {
+    public function split_category_path(?string $path): array {
         $rawnames = preg_split('~(?<!/)/(?!/)~', $path);
         $names = [];
         foreach ($rawnames as $rawname) {

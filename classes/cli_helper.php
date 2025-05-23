@@ -453,8 +453,8 @@ class cli_helper {
      * @return string
      */
     public static function get_manifest_path_targeted(string $moodleinstance, string $contextlevel, ?string $coursecategory,
-                            ?string $coursename, ?string $modulename, string $categoryname, string $categoryid, string $subdirectory,
-                            string $directory): string {
+                            ?string $coursename, ?string $modulename, string $categoryname,
+                            string $categoryid, string $subdirectory, string $directory): string {
         $filenamemod = '_' . $contextlevel;
         switch ($contextlevel) {
             case 'coursecategory':

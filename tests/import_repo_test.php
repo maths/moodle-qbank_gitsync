@@ -40,8 +40,7 @@ class fake_helper extends cli_helper
      *
      * @return void
      */
-    public static function call_exit(): void
-    {
+    public static function call_exit(): void {
         return;
     }
 
@@ -50,8 +49,7 @@ class fake_helper extends cli_helper
      *
      * @return void
      */
-    public static function handle_abort(): void
-    {
+    public static function handle_abort(): void {
         return;
     }
 }
@@ -62,8 +60,7 @@ class fake_helper extends cli_helper
  *
  * @covers \gitsync\import_repo::class
  */
-final class import_repo_test extends advanced_testcase
-{
+final class import_repo_test extends advanced_testcase {
     /** @var array mocked output of cli_helper->get_arguments */
     public array $options;
     /** @var array of instance names and URLs */
@@ -87,8 +84,7 @@ final class import_repo_test extends advanced_testcase
     /** name of moodle instance for purpose of tests */
     const MOODLE = 'fakeimport';
 
-    public function setUp(): void
-    {
+    public function setUp(): void {
         parent::setUp();
         global $CFG;
         $this->moodleinstances = [self::MOODLE => 'fakeurl.com'];
@@ -160,8 +156,7 @@ final class import_repo_test extends advanced_testcase
      *
      * @return void
      */
-    public function replace_mock_default($qcatid = 123, $qcatname = 'top'): void
-    {
+    public function replace_mock_default($qcatid = 123, $qcatname = 'top'): void {
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments',
             'check_context',
@@ -197,8 +192,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full process.
      */
-    public function test_process(): void
-    {
+    public function test_process(): void {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
@@ -229,8 +223,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full process with manifest path.
      */
-    public function test_process_manifest_path(): void
-    {
+    public function test_process_manifest_path(): void {
         $this->options["manifestpath"] = 'fakeimport_system_question_manifest.json';
         $this->replace_mock_default();
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
@@ -263,8 +256,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full process with manifest path and subdirectory.
      */
-    public function test_process_manifest_path_and_subdirectory(): void
-    {
+    public function test_process_manifest_path_and_subdirectory(): void {
         $this->options["manifestpath"] = 'fakeimport_system_question_manifest.json';
         $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
         $this->replace_mock_default();
@@ -297,8 +289,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full process with manifest path and defaultignorecat.
      */
-    public function test_process_manifest_path_and_defaultignore(): void
-    {
+    public function test_process_manifest_path_and_defaultignore(): void {
         $this->options["manifestpath"] = 'fakeignore_system_question_manifest.json';
         $this->replace_mock_default();
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
@@ -328,8 +319,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full process with manifest path and defaultignorecat and ignorecat param.
      */
-    public function test_process_manifest_path_and_defaultignore_and_param(): void
-    {
+    public function test_process_manifest_path_and_defaultignore_and_param(): void {
         $this->options["manifestpath"] = 'fakeignore_system_question_manifest.json';
         $this->options["ignorecat"] = '/cat 1/';
         $this->options["subdirectory"] = null;
@@ -363,8 +353,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing categories.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories(): void
-    {
+    public function test_import_categories(): void {
         $this->results = [];
         $this->curl->expects($this->exactly(3))->method('execute')->will(
             $this->returnCallback(
@@ -384,8 +373,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing categories with ignore.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories_with_ignore(): void
-    {
+    public function test_import_categories_with_ignore(): void {
         $this->options["ignorecat"] = '/^cat 2$/';
         $this->replace_mock_default();
         $this->results = [];
@@ -407,8 +395,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing categories with ignore subcat.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories_with_ignore_subcat(): void
-    {
+    public function test_import_categories_with_ignore_subcat(): void {
         $this->options["ignorecat"] = '/subcat 2_1/';
         $this->replace_mock_default();
         $this->results = [];
@@ -430,8 +417,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing categories broken JSON.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories_broken_json(): void
-    {
+    public function test_import_categories_broken_json(): void {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
@@ -444,8 +430,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing categories exception.
      * @covers \gitsync\import_repo\import_categories()
      */
-    public function test_import_categories_exception(): void
-    {
+    public function test_import_categories_exception(): void {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -457,8 +442,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing questions.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions(): void
-    {
+    public function test_import_questions(): void {
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
             '{"questionbankentryid": "35001", "version": "2"}',
@@ -509,8 +493,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing questions with ignore.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_with_ignore(): void
-    {
+    public function test_import_questions_with_ignore(): void {
         $this->options["ignorecat"] = '/^subcat 2.*/';
         $this->replace_mock_default();
         $this->results = [];
@@ -552,8 +535,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing questions with subcat and ignore.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_with_subcat_and_ignore(): void
-    {
+    public function test_import_questions_with_subcat_and_ignore(): void {
         $this->options["subdirectory"] = 'top/cat-2';
         $this->options["ignorecat"] = '/^subcat 2.*/';
         $this->replace_mock_default();
@@ -595,8 +577,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing questions broken JSON.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_broken_json(): void
-    {
+    public function test_import_questions_broken_json(): void {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
@@ -609,8 +590,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing questions exception.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_exception(): void
-    {
+    public function test_import_questions_exception(): void {
         $this->curl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -622,8 +602,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing questions from only a subdirectory of questions
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_subdirectory_questions(): void
-    {
+    public function test_import_subdirectory_questions(): void {
         $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
         $this->replace_mock_default();
         $this->results = [];
@@ -675,8 +654,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing existing questions.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_existing_questions(): void
-    {
+    public function test_import_existing_questions(): void {
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                              "questions":[{
                                 "questionbankentryid":"1",
@@ -735,8 +713,7 @@ final class import_repo_test extends advanced_testcase
      * Test importing existing questions only occurs if commit hashes don't match.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_with_commit_hashes(): void
-    {
+    public function test_import_with_commit_hashes(): void {
         $manifestcontents = '{"context":{"contextlevel":70,"coursename":"Course 1","modulename":"Test 1","coursecategory":null},
                               "questions":[{
                                  "questionbankentryid":"1",
@@ -806,8 +783,7 @@ final class import_repo_test extends advanced_testcase
      * Test message displayed when an invalid directory is used.
      * @covers \gitsync\import_repo\import_questions()
      */
-    public function test_import_questions_wrong_directory(): void
-    {
+    public function test_import_questions_wrong_directory(): void {
         $this->importrepo->directory = $this->rootpath;
         $this->importrepo->subdirectory = 'top/cat-1';
         $this->curl->expects($this->any())->method('execute')->will(
@@ -825,8 +801,7 @@ final class import_repo_test extends advanced_testcase
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
-    public function test_manifest_file(): void
-    {
+    public function test_manifest_file(): void {
         unlink($this->importrepo->manifestpath);
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
             'upload_file',
@@ -888,8 +863,7 @@ final class import_repo_test extends advanced_testcase
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
-    public function test_manifest_file_with_subdirectory(): void
-    {
+    public function test_manifest_file_with_subdirectory(): void {
         unlink($this->importrepo->manifestpath);
         $this->options["subdirectory"] = 'top/cat-2/subcat-2_1';
         $this->replace_mock_default();
@@ -937,8 +911,7 @@ final class import_repo_test extends advanced_testcase
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
-    public function test_manifest_file_with_subdirectory_and_ignore(): void
-    {
+    public function test_manifest_file_with_subdirectory_and_ignore(): void {
         unlink($this->importrepo->manifestpath);
         $this->options["subdirectory"] = 'top/cat-2';
         $this->options["ignorecat"] = '/subcat 2_1/';
@@ -984,8 +957,7 @@ final class import_repo_test extends advanced_testcase
      *
      * (Run the entire process and check the output to avoid lots of additonal setup of tempfile etc.)
      */
-    public function test_manifest_file_with_ignore(): void
-    {
+    public function test_manifest_file_with_ignore(): void {
         unlink($this->importrepo->manifestpath);
         $this->options["ignorecat"] = '/subcat 2_1/';
         $this->replace_mock_default();
@@ -1031,8 +1003,7 @@ final class import_repo_test extends advanced_testcase
      * Test update of manifest file.
      * @covers \gitsync\cli_helper\create_manifest_file()
      */
-    public function test_manifest_file_update(): void
-    {
+    public function test_manifest_file_update(): void {
         $manifestcontents = '{"context":{"contextlevel":70,
                                 "coursename":"Course 1",
                                 "modulename":"Test 1",
@@ -1110,8 +1081,7 @@ final class import_repo_test extends advanced_testcase
      * Test update of manifest file temp file error.
      * @covers \gitsync\cli_helper\create_manifest_file()
      */
-    public function test_manifest_temp_file_error(): void
-    {
+    public function test_manifest_temp_file_error(): void {
         $manifestcontents = '{"context":{"contextlevel":70,
                                 "coursename":"Course 1",
                                 "modulename":"Test 1",
@@ -1145,8 +1115,7 @@ final class import_repo_test extends advanced_testcase
      * Test update of manifest file manifest file error.
      * @covers \gitsync\cli_helper\create_manifest_file()
      */
-    public function test_manifest_manifest_file_error(): void
-    {
+    public function test_manifest_manifest_file_error(): void {
         $manifestcontents = '{"context":{"contextlevel":70,
                                 "coursename":"Course 1",
                                 "modulename":"Test 1",
@@ -1180,8 +1149,7 @@ final class import_repo_test extends advanced_testcase
      * Test delete of questions with no file in repo.
      * @covers \gitsync\import_repo\delete_no_file_questions()
      */
-    public function test_delete_no_file_questions(): void
-    {
+    public function test_delete_no_file_questions(): void {
         $this->importrepo->manifestpath = $this->rootpath . '/' . self::MOODLE . cli_helper::MANIFEST_FILE;
         // 4 files in the manifest.
         $manifestcontents = '{"context":{
@@ -1245,8 +1213,7 @@ final class import_repo_test extends advanced_testcase
      * Test delete of questions with no file in repo.
      * @covers \gitsync\import_repo\delete_no_file_questions()
      */
-    public function test_delete_no_record_questions(): void
-    {
+    public function test_delete_no_record_questions(): void {
         // 2 records in the manifest.
         $manifestcontents = '{"context":{
                                 "contextlevel":70,
@@ -1290,8 +1257,7 @@ final class import_repo_test extends advanced_testcase
      * Test deleting questions broken JSON.
      * @covers \gitsync\import_repo\delete_no_record_questions()
      */
-    public function test_delete_questions_broken_json(): void
-    {
+    public function test_delete_questions_broken_json(): void {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
@@ -1304,8 +1270,7 @@ final class import_repo_test extends advanced_testcase
      * Test deleting questions exception.
      * @covers \gitsync\import_repo\delete_no_record_questions()
      */
-    public function test_delete_questions_exception(): void
-    {
+    public function test_delete_questions_exception(): void {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -1317,8 +1282,7 @@ final class import_repo_test extends advanced_testcase
      * Check abort if question version in Moodle doesn't match a version in manifest.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_versions(): void
-    {
+    public function test_check_question_versions(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1340,8 +1304,7 @@ final class import_repo_test extends advanced_testcase
      * Test version check passes if exported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_export_version_success(): void
-    {
+    public function test_check_question_export_version_success(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1357,8 +1320,7 @@ final class import_repo_test extends advanced_testcase
      * Test version check passes if imported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_import_version_success(): void
-    {
+    public function test_check_question_import_version_success(): void {
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1374,8 +1336,7 @@ final class import_repo_test extends advanced_testcase
      * Check abort if question version in Moodle doesn't match a version in manifest.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_versions_moved_question(): void
-    {
+    public function test_check_question_versions_moved_question(): void {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1399,8 +1360,7 @@ final class import_repo_test extends advanced_testcase
      * Test version check passes if imported version matches.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_question_import_version_success_moved_question(): void
-    {
+    public function test_check_question_import_version_success_moved_question(): void {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1417,8 +1377,7 @@ final class import_repo_test extends advanced_testcase
      * Test version check broken JSON.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_versions_broken_json(): void
-    {
+    public function test_check_versions_broken_json(): void {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{broken'
         );
@@ -1431,8 +1390,7 @@ final class import_repo_test extends advanced_testcase
      * Test version check exception.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_version_exception(): void
-    {
+    public function test_check_version_exception(): void {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
         );
@@ -1444,8 +1402,7 @@ final class import_repo_test extends advanced_testcase
      * Test version check broken JSON.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_versions_broken_json_request_2(): void
-    {
+    public function test_check_versions_broken_json_request_2(): void {
         $this->listcurl->expects($this->any())->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1461,8 +1418,7 @@ final class import_repo_test extends advanced_testcase
      * Test version check exception.
      * @covers \gitsync\import_repo\check_question_versions()
      */
-    public function test_check_version_exception_request_2(): void
-    {
+    public function test_check_version_exception_request_2(): void {
         $this->listcurl->expects($this->any())->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
@@ -1477,8 +1433,7 @@ final class import_repo_test extends advanced_testcase
      * Test checking context
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content(): void
-    {
+    public function test_check_content(): void {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
@@ -1494,8 +1449,7 @@ final class import_repo_test extends advanced_testcase
      * Test checking context exception
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content_exception(): void
-    {
+    public function test_check_content_exception(): void {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"exception":"moodle_exception","message":"No token"}'
@@ -1508,8 +1462,7 @@ final class import_repo_test extends advanced_testcase
      * Test checking context broken JSON
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content_broekn_json(): void
-    {
+    public function test_check_content_broekn_json(): void {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{broken'
@@ -1523,8 +1476,7 @@ final class import_repo_test extends advanced_testcase
      * Test checking context silent
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content_silent(): void
-    {
+    public function test_check_content_silent(): void {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
@@ -1539,8 +1491,7 @@ final class import_repo_test extends advanced_testcase
      * Test checking context default warning
      * @covers \gitsync\cli_helper\check_context()
      */
-    public function test_check_content_default_warning(): void
-    {
+    public function test_check_content_default_warning(): void {
         $clihelper = new fake_helper([]);
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
@@ -1554,8 +1505,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full course process. Quiz structure imported into new instance.
      */
-    public function test_full_course(): void
-    {
+    public function test_full_course(): void {
         global $CFG;
         $root = vfsStream::setup();
         vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
@@ -1602,8 +1552,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full course process. Quiz not created.
      */
-    public function test_full_course_quiz_create_fail(): void
-    {
+    public function test_full_course_quiz_create_fail(): void {
         global $CFG;
         $root = vfsStream::setup();
         vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
@@ -1638,8 +1587,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full course process. Quiz already imported.
      */
-    public function test_full_course_quiz_already_imported(): void
-    {
+    public function test_full_course_quiz_already_imported(): void {
         global $CFG;
         $root = vfsStream::setup();
         vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
@@ -1681,8 +1629,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full course process. Extra quiz in Moodle.
      */
-    public function test_full_course_quiz_in_moodle(): void
-    {
+    public function test_full_course_quiz_in_moodle(): void {
         global $CFG;
         $root = vfsStream::setup();
         vfsStream::copyFromFileSystem($CFG->dirroot . '/question/bank/gitsync/testrepoparent/', $root);
@@ -1725,8 +1672,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full targeted process.
      */
-    public function test_targeted_process(): void
-    {
+    public function test_targeted_process(): void {
         $this->options["subdirectory"] = 'top/cat-2';
         $this->options["targetcategory"] = 25;
         $this->replace_mock_default(25, 'top/bob/clive');
@@ -1795,8 +1741,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test the full targeted process with manifest path.
      */
-    public function test_targeted_process_manifest_path(): void
-    {
+    public function test_targeted_process_manifest_path(): void {
         $this->options["manifestpath"] = 'fakeexporttarget_system_question_manifest.json';
         $this->replace_mock_default(5, 'top/bob/clive');
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
@@ -1863,8 +1808,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test category file creation for the full process.
      */
-    public function test_process_category_creation(): void
-    {
+    public function test_process_category_creation(): void {
         $this->options["targetcategory"] = 25;
         $this->replace_mock_default(5, 'top/bob/clive');
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
@@ -1913,8 +1857,7 @@ final class import_repo_test extends advanced_testcase
     /**
      * Test category file creation for the full process.
      */
-    public function test_process_category_creation_2(): void
-    {
+    public function test_process_category_creation_2(): void {
         $this->options["targetcategory"] = 25;
         $this->replace_mock_default(5, 'top/bob/clive');
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.

@@ -96,7 +96,6 @@ final class export_repo_test extends advanced_testcase {
             'token' => 'XXXXXX',
             'qcategoryid' => null,
             'manifestpath' => '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE,
-            'token' => 'XXXXXX',
             'help' => false,
             'ignorecat' => null,
             'usegit' => true,
