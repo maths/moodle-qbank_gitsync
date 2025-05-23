@@ -474,15 +474,14 @@ class import_repo {
                 $newcategory;
                 if (pathinfo($repoitem, PATHINFO_BASENAME) === '.') {
                     $basepath = pathinfo($repoitem, PATHINFO_DIRNAME);
-                    $newcategory = str_replace( '\\', '/', pathinfo($basepath, PATHINFO_BASENAME));
+                    $newcategory = str_replace( '-', ' ', pathinfo($basepath, PATHINFO_BASENAME));
                 } else {
                     $basepath = $repoitem->__toString();
-                    $newcategory = str_replace( '\\', '/', pathinfo($repoitem, PATHINFO_BASENAME));
+                    $newcategory = str_replace( '-', ' ', pathinfo($repoitem, PATHINFO_BASENAME));
                 }
 
                 $catfilepath = $basepath . '/' . cli_helper::CATEGORY_FILE . '.xml';
                 if (!is_file($catfilepath)) {
-                    $cattext = 'top';
                     $parentpath = str_replace( '\\', '/', pathinfo($basepath, PATHINFO_DIRNAME));
                     $parentfilepath = $parentpath . '/' . cli_helper::CATEGORY_FILE . '.xml';
                     // If there is a category file in a subdirectory it will have the info
@@ -513,6 +512,9 @@ class import_repo {
                         $parentcontents = simplexml_load_string(file_get_contents($parentfilepath));
                         $parentcategory = $parentcontents->question->category->text;
                         $cattext = $parentcategory . '/' . $newcategory;
+                    } else {
+                        // If there is no parent file, we must be one below top.
+                        $cattext = 'top' . '/' . $newcategory;;
                     }
                     $catfile = fopen($catfilepath, 'w+');
                     if ($catfile === false) {

@@ -1898,7 +1898,7 @@ final class import_repo_test extends advanced_testcase
         $cat1contents = simplexml_load_string(
             file_get_contents($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml')
         );
-        $this->assertEquals('top/cat-1', $cat1contents->question->category->text);
+        $this->assertEquals('top/cat 1', $cat1contents->question->category->text);
         $cat2contents = simplexml_load_string(
             file_get_contents($this->rootpath . '/top/cat-2' . '/' . cli_helper::CATEGORY_FILE . '.xml')
         );
@@ -1906,7 +1906,57 @@ final class import_repo_test extends advanced_testcase
         $subcontents = simplexml_load_string(
             file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1' . '/' . cli_helper::CATEGORY_FILE . '.xml')
         );
-        $this->assertEquals('top/cat 2/subcat-2_1', $subcontents->question->category->text);
+        $this->assertEquals('top/cat 2/subcat 2_1', $subcontents->question->category->text);
+        $this->assertEquals(file_exists($this->rootpath . '/top' . '/' . cli_helper::CATEGORY_FILE . '.xml'), false);
+    }
+
+    /**
+     * Test category file creation for the full process.
+     */
+    public function test_process_category_creation_2(): void
+    {
+        $this->options["targetcategory"] = 25;
+        $this->replace_mock_default(5, 'top/bob/clive');
+        // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
+        // We expect 3 category calls to the webservice and 4 question calls.
+        $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": null}',
+            '{"questionbankentryid": "35001", "version": "2"}',
+            '{"questionbankentryid": "35002", "version": "2"}',
+            '{"questionbankentryid": "35004", "version": "2"}',
+            '{"questionbankentryid": "35003", "version": "2"}',
+        );
+
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+                             "modulename":"Module 1", "instanceid":"", "qcategoryname":"top/bob/clive"},
+              "questions": []}',
+        );
+
+        unlink($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml');
+        unlink($this->rootpath . '/top/cat-2' . '/' . cli_helper::CATEGORY_FILE . '.xml');
+        $this->assertEquals(file_exists($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml'), false);
+
+        $this->importrepo->process();
+
+        // Check manifest file created.
+        $this->assertEquals(file_exists($this->rootpath . '/' . self::MOODLE . '_system' . cli_helper::MANIFEST_FILE), true);
+        $this->expectOutputRegex('/\nAdded 4 questions.*Updated 0 questions.*\n/s');
+        $this->assertEquals("top", $this->importrepo->subdirectory);
+        $cat1contents = simplexml_load_string(
+            file_get_contents($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml')
+        );
+        $this->assertEquals('top/cat 1', $cat1contents->question->category->text);
+        $cat2contents = simplexml_load_string(
+            file_get_contents($this->rootpath . '/top/cat-2' . '/' . cli_helper::CATEGORY_FILE . '.xml')
+        );
+        $this->assertEquals('top/cat 2', $cat2contents->question->category->text);
+        $subcontents = simplexml_load_string(
+            file_get_contents($this->rootpath . '/top/cat-2/subcat-2_1' . '/' . cli_helper::CATEGORY_FILE . '.xml')
+        );
+        $this->assertEquals('top/cat 2/subcat 2_1', $subcontents->question->category->text);
         $this->assertEquals(file_exists($this->rootpath . '/top' . '/' . cli_helper::CATEGORY_FILE . '.xml'), false);
     }
 }
