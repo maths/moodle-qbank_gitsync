@@ -236,6 +236,7 @@ class cli_helper {
             if (@preg_match($cliargs['ignorecat'], 'zzzzzzzz') === false) {
                 echo "\nThere is a problem with your regular expression for ignoring categories:\n";
                 echo error_get_last()["message"] . "\n";
+                echo "\n(If you're using Windows, remember to add an extra leading forward slash '/'.)\n";
                 static::call_exit();
             }
         }

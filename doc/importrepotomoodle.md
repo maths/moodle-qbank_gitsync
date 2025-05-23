@@ -6,9 +6,11 @@
 
 ## Importing
 - Create a repository of questions with a folder hierarchy akin to question categories i.e. top/category/subcategory or use `createrepo.php` to create a repo from existing questions on Moodle.
-- Each category below top should have a `gitsync_category.xml` file containing a 'category question' with the details of the category. See the `testrepo` folder in this repository for an example. If you don't have these files, Gitsync will create categories based on the directory names.
-Due to a bug with Moodle (MDL-80256), nested categories without questions may not all have category files after export. On import, these
-files will be created but should be checked before committing.
+- Each category below top should have a `gitsync_category.xml` file containing a 'category question' with the details of the category.
+See the `testrepo` folder in this repository for an example. If you don't have these files, in most cases Gitsync will create categories
+based on the directory names. (If you are importing a subdirectory you will need your own category file.)
+Due to a bug with Moodle (MDL-80256), nested categories without questions may not all have category files after export.
+On import, these files will be created but should be checked before committing. 
 - If you have created a repository (or copied one) make sure you have a `.gitignore` file and it ignores gitsync's manifest and temporary files.  
 `touch .gitignore`  
 `printf '%s\n' '**/*_question_manifest.json' '**/*_manifest_update.tmp' >> .gitignore`  
