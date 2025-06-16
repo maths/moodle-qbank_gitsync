@@ -25,6 +25,7 @@
 namespace qbank_gitsync;
 use SimpleXMLElement;
 use Symfony\Component\Yaml\Yaml;
+require_once __DIR__.'/../vendor/autoload.php';
 
 class yaml_converter {
     public static $defaults = null;

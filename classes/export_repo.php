@@ -315,6 +315,10 @@ class export_repo {
                     echo "{$questioninfo->filepath} not updated.\n";
                     continue;
                 }
+
+                if (1===1) {
+                    $question = yaml_converter::detect_differences($question);
+                }
                 $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
                 if ($success === false) {
                     echo "\nAccess issue.\n";

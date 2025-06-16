@@ -29,6 +29,7 @@ require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/export_trait.php');
 require_once('../classes/create_repo.php');
+require_once('../classes/yaml_converter.php');
 
 $options = [
     [

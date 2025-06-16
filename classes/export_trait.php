@@ -223,6 +223,9 @@ trait export_trait {
                     $sanitisedqname = "{$holdername}_{$i}";
                     $i++;
                 }
+                if (1===1) {
+                    $question = yaml_converter::detect_differences($question);
+                }
                 $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question);
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";
