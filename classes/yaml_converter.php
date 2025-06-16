@@ -26,7 +26,7 @@ namespace qbank_gitsync;
 use SimpleXMLElement;
 use Symfony\Component\Yaml\Yaml;
 
-class YamlConverter {
+class yaml_converter {
     public static $defaults = null;
     public const TEXTFIELDS = [
         'name', 'questiontext', 'generalfeedback', 'stackversion', 'questionvariables',
@@ -39,10 +39,10 @@ class YamlConverter {
     ];
 
     // phpcs:ignore moodle.Commenting.MissingDocblock.Function
-    public static function loadxml($xml, $defaultsfile) {
-        YamlConverter::$defaults = yaml_parse_file($defaultsfile);
+    public static function loadyaml($yaml, $defaultsfile) {
+        self::$defaults = yaml_parse_file($defaultsfile);
         try {
-            $xmldata = YamlConverter::yaml_to_xml($xml);
+            $xmldata = self::yaml_to_xml($yaml);
         } catch (\Exception $e) {
             throw new \Exception("The provided file does not contain valid YAML");
         }
@@ -51,337 +51,264 @@ class YamlConverter {
         // Based on Moodle's base question type.
         $question->name->text = (string) $question->name->text ?
             $question->name->text :
-            YamlConverter::set_field($question, 'name->text', YamlConverter::get_default('question', 'name'));
+            self::set_field($question, 'name->text', self::get_default('question', 'name'));
         $question->questiontext->text = (string) $question->questiontext->text ?
             $question->questiontext->text :
-            YamlConverter::set_field($question, 'questiontext->text', YamlConverter::get_default(
+            self::set_field($question, 'questiontext->text', self::get_default(
                 'question', 'questiontext'
             ));
-        $question->questiontext->format = (string) $question->questiontext->format ?
-            $question->questiontext->format :
-            YamlConverter::set_field($question, 'questiontext->format', YamlConverter::get_default('question', 'questiontextformat'));
+        $question->questiontext['format'] = (string) $question->questiontext['format'] ?
+            $question->questiontext['format'] :
+            self::get_default('question', 'questiontextformat');
         $question->generalfeedback->text = (string) $question->generalfeedback->text ?
             $question->generalfeedback->text :
-            YamlConverter::set_field($question, 'generalfeedback->text', YamlConverter::get_default('question', 'generalfeedback'));
-        $question->generalfeedback->format = (string) $question->generalfeedback['format'] ?
+            self::set_field($question, 'generalfeedback->text', self::get_default('question', 'generalfeedback'));
+        $question->generalfeedback['format'] = (string) $question->generalfeedback['format'] ?
             $question->generalfeedback['format'] :
-            YamlConverter::set_field($question, 'generalfeedback->format', YamlConverter::get_default('question', 'generalfeedbackformat'));
+            self::get_default('question', 'generalfeedbackformat');
         $question->defaultgrade = (array) $question->defaultgrade ?
             $question->defaultgrade :
-            YamlConverter::set_field($question, 'defaultgrade', YamlConverter::get_default('question', 'defaultgrade'));
+            self::set_field($question, 'defaultgrade', self::get_default('question', 'defaultgrade'));
         $question->penalty = (array) $question->penalty ?
             $question->penalty :
-            YamlConverter::set_field($question, 'penalty', YamlConverter::get_default('question', 'penalty'));
+            self::set_field($question, 'penalty', self::get_default('question', 'penalty'));
 
         // Based on initialise_question_instance from questiontype.php.
         $question->stackversion = (string) $question->stackversion->text ?
             $question->stackversion->text :
-            YamlConverter::set_field($question, 'stackversion', YamlConverter::get_default('question', 'stackversion'));
+            self::set_field($question, 'stackversion', self::get_default('question', 'stackversion'));
         $question->questionvariables = (string) $question->questionvariables->text ?
             $question->questionvariables->text :
-            YamlConverter::set_field($question, 'questionvariables', YamlConverter::get_default('question', 'questionvariables'));
-        $question->questionnote = (string) $question->questionnote->text ?
+            self::set_field($question, 'questionvariables', self::get_default('question', 'questionvariables'));
+        $question->questionnote->text = (string) $question->questionnote->text ?
             $question->questionnote->text :
-            YamlConverter::set_field($question, 'questionnote', YamlConverter::get_default('question', 'questionnote'));
-        $question->questionnoteformat = (string) $question->questionnote['format'] ?
+            self::set_field($question, 'questionnote', self::get_default('question', 'questionnote'));
+        $question->questionnote['format'] = (string) $question->questionnote['format'] ?
             $question->questionnote['format'] :
-            YamlConverter::set_field($question, 'questionnoteformat', YamlConverter::get_default('question', 'questionnoteformat'));
-        $question->specificfeedback = (string) $question->specificfeedback->text ?
+            self::get_default('question', 'questionnoteformat');
+        $question->specificfeedback->text = (string) $question->specificfeedback->text ?
             $question->specificfeedback->text :
-            YamlConverter::set_field($question, 'specificfeedback', YamlConverter::get_default('question', 'specificfeedback'));
-        $question->specificfeedbackformat = (string) $question->specificfeedback['format'] ?
+            self::set_field($question, 'specificfeedback', self::get_default('question', 'specificfeedback'));
+        $question->specificfeedback['format'] = (string) $question->specificfeedback['format'] ?
             $question->specificfeedback['format'] :
-            YamlConverter::set_field($question, 'specificfeedbackformat', YamlConverter::get_default('question', 'specificfeedbackformat'));
-        $question->questiondescription = (string) $question->questiondescription->text ?
+            self::get_default('question', 'specificfeedbackformat');
+        $question->questiondescription->text = (string) $question->questiondescription->text ?
             $question->questiondescription->text :
-            YamlConverter::set_field($question, 'questiondescription', YamlConverter::get_default('question', 'questiondescription'));
-        $question->questiondescriptionformat = (string) $question->questiondescription['format'] ?
+            self::set_field($question, 'questiondescription', self::get_default('question', 'questiondescription'));
+        $question->questiondescription['format'] = (string) $question->questiondescription['format'] ?
             $question->questiondescription['format'] :
-            YamlConverter::set_field($question, 'questiondescriptionformat', YamlConverter::get_default('question', 'questiondescriptionformat'));
+            self::get_default('question', 'questiondescriptionformat');
         $question->prtcorrect = (string) $question->prtcorrect->text ?
             $question->prtcorrect->text :
-            YamlConverter::set_field($question, 'prtcorrect', YamlConverter::get_default('question', 'prtcorrect'));
-        $question->prtcorrectformat = (string) $question->prtcorrect['format'] ?
+            self::set_field($question, 'prtcorrect', self::get_default('question', 'prtcorrect'));
+        $question->prtcorrect['format'] = (string) $question->prtcorrect['format'] ?
             $question->prtcorrect['format'] :
-            YamlConverter::set_field($question, 'prtcorrectformat', YamlConverter::get_default('question', 'prtcorrectformat'));
+            self::get_default('question', 'prtcorrectformat');
         $question->prtpartiallycorrect = (string) $question->prtpartiallycorrect->text ?
             $question->prtpartiallycorrect->text :
-            YamlConverter::set_field($question, 'prtpartiallycorrect', YamlConverter::get_default('question', 'prtpartiallycorrect'));
-        $question->prtpartiallycorrectformat = (string) $question->prtpartiallycorrect['format'] ?
+            self::set_field($question, 'prtpartiallycorrect', self::get_default('question', 'prtpartiallycorrect'));
+        $question->prtpartiallycorrect['format'] = (string) $question->prtpartiallycorrect['format'] ?
             $question->prtpartiallycorrect['format'] :
-            YamlConverter::set_field($question, 'prtpartiallycorrectformat', YamlConverter::get_default('question', 'prtpartiallycorrectformat'));
+            self::get_default('question', 'prtpartiallycorrectformat');
         $question->prtincorrect = (string) $question->prtincorrect->text ?
             $question->prtincorrect->text :
-            YamlConverter::set_field($question, 'prtincorrect', YamlConverter::get_default('question', 'prtincorrect'));
-        $question->prtincorrectformat = (string) $question->prtincorrect['format'] ?
+            self::set_field($question, 'prtincorrect', self::get_default('question', 'prtincorrect'));
+        $question->prtincorrect['format'] = (string) $question->prtincorrect['format'] ?
             $question->prtincorrect['format'] :
-            YamlConverter::set_field($question, 'prtincorrectformat', YamlConverter::get_default('question', 'prtincorrectformat'));
+            self::get_default('question', 'prtincorrectformat');
         $question->variantsselectionseed = (string) $question->variantsselectionseed ?
             $question->variantsselectionseed :
-            YamlConverter::set_field($question, 'variantsselectionseed', YamlConverter::get_default('question', 'variantsselectionseed'));
+            self::set_field($question, 'variantsselectionseed', self::get_default('question', 'variantsselectionseed'));
         $question->isbroken = (array) $question->isbroken ?
-            self::parseboolean($question->isbroken) :
-            YamlConverter::set_field($question, 'isbroken', YamlConverter::get_default('question', 'isbroken'));
+            $question->isbroken :
+            self::set_field($question, 'isbroken', self::get_default('question', 'isbroken'));
         $question->multiplicationsign =
             (string) $question->multiplicationsign ?
             $question->multiplicationsign :
-            YamlConverter::set_field($question, 'multiplicationsign', YamlConverter::get_default('question', 'multiplicationsign'));
+            self::set_field($question, 'multiplicationsign', self::get_default('question', 'multiplicationsign'));
         $question->complexno =
             (string) $question->complexno ?
             $question->complexno :
-            YamlConverter::set_field($question, 'complexno', YamlConverter::get_default('question', 'complexno'));
+            self::set_field($question, 'complexno', self::get_default('question', 'complexno'));
         $question->inversetrig =
             (string) $question->inversetrig ?
             $question->inversetrig :
-            YamlConverter::set_field($question, 'inversetrig', YamlConverter::get_default('question', 'inversetrig'));
+            self::set_field($question, 'inversetrig', self::get_default('question', 'inversetrig'));
         $question->logicsymbol =
             (string) $question->logicsymbol ?
             $question->logicsymbol :
-            YamlConverter::set_field($question, 'logicsymbol', YamlConverter::get_default('question', 'logicsymbol'));
+            self::set_field($question, 'logicsymbol', self::get_default('question', 'logicsymbol'));
         $question->matrixparens =
             (string) $question->matrixparens ?
             $question->matrixparens :
-            YamlConverter::set_field($question, 'matrixparens', YamlConverter::get_default('question', 'matrixparens'));
+            self::set_field($question, 'matrixparens', self::get_default('question', 'matrixparens'));
         $question->sqrtsign =
             (string) $question->sqrtsign ?
-            self::parseboolean($question->sqrtsign) :
-            YamlConverter::set_field($question, 'sqrtsign', (bool) YamlConverter::get_default('question', 'sqrtsign'));
+            $question->sqrtsign :
+            self::set_field($question, 'sqrtsign', self::get_default('question', 'sqrtsign'));
         $question->simplify =
             (string) $question->questionsimplify ?
-            self::parseboolean($question->questionsimplify) :
-            YamlConverter::set_field($question, 'simplify', (bool) YamlConverter::get_default('question', 'questionsimplify'));
+            $question->questionsimplify :
+            self::set_field($question, 'simplify', self::get_default('question', 'questionsimplify'));
         $question->assumepos =
             (string) $question->assumepositive ?
-            self::parseboolean($question->assumepositive) :
-            YamlConverter::set_field($question, 'assumepos', (bool) YamlConverter::get_default('question', 'assumepositive'));
+            $question->assumepositive :
+            self::set_field($question, 'assumepos', self::get_default('question', 'assumepositive'));
         $question->assumereal =
             (string) $question->assumereal ?
-            self::parseboolean($question->assumereal) :
-            YamlConverter::set_field($question, 'assumereal', (bool) YamlConverter::get_default('question', 'assumereal'));
+            $question->assumereal :
+            self::set_field($question, 'assumereal', self::get_default('question', 'assumereal'));
         $question->decimals =
             (string) $question->decimals ?
             $question->decimals :
-            YamlConverter::set_field($question, 'decimals', YamlConverter::get_default('question', 'decimals'));
+            self::set_field($question, 'decimals', self::get_default('question', 'decimals'));
         $question->scientificnotation =
             (string) $question->scientificnotation ?
             $question->scientificnotation :
-            YamlConverter::set_field($question, 'scientificnotation', YamlConverter::get_default('question', 'scientificnotation'));
+            self::set_field($question, 'scientificnotation', self::get_default('question', 'scientificnotation'));
 
-        $inputmap = [];
-        foreach ($question->input as $input) {
-            $inputmap[(string) $input->name] = $input;
-        }
-
-        if (empty($inputmap) && $question->defaultgrade) {
-            $defaultinput = new \SimpleXMLElement('<input></input>');
-            $defaultinput->addChild('name', YamlConverter::get_default('input', 'name'));
-            $defaultinput->addChild('tans', YamlConverter::get_default('input', 'tans'));
-            $inputmap[YamlConverter::get_default('input', 'name')] = $defaultinput;
-        }
-
-        foreach ($inputmap as $inputdata) {
+        foreach ($question->input as $inputdata) {
             $inputdata->boxsize = (array) $inputdata->boxsize ?
                 $inputdata->boxsize :
-                YamlConverter::get_default('input', 'boxsize');
+                self::set_field($inputdata, 'boxsize', self::get_default('input', 'boxsize'));
             $inputdata->insertstars = (array) $inputdata->insertstars ?
                 $inputdata->insertstars :
-                YamlConverter::get_default('input', 'insertstars', get_config('input', 'insertstars'));
+                self::set_field($inputdata, 'insertstars', self::get_default('input', 'insertstars'));
             $inputdata->syntaxhint = isset($inputdata->syntaxhint) ?
                 $inputdata->syntaxhint :
-                YamlConverter::get_default('input', 'syntaxhint');
+                self::set_field($inputdata, 'syntaxhint', self::get_default('input', 'syntaxhint'));
             $inputdata->syntaxattribute = (array) $inputdata->syntaxattribute ?
-                $inputdata->syntaxattribute : YamlConverter::get_default('input', 'syntaxattribute');
+                $inputdata->syntaxattribute :
+                self::set_field($inputdata, 'syntaxattribute', self::get_default('input', 'syntaxattribute'));
             $inputdata->forbidwords = isset($inputdata->forbidwords) ?
                 $inputdata->forbidwords :
-                YamlConverter::get_default('input', 'forbidwords');
+                self::set_field($inputdata, 'forbidwords', self::get_default('input', 'forbidwords'));
             $inputdata->allowwords = isset($inputdata->allowwords) ?
-                $inputdata->allowwords : YamlConverter::get_default('input', 'allowwords');
+                $inputdata->allowwords :
+                self::set_field($inputdata, 'allowwords', self::get_default('input', 'allowwords'));
             $inputdata->forbidfloat = (array) $inputdata->forbidfloat ?
                 $inputdata->forbidfloat :
-                YamlConverter::get_default('input', 'forbidfloat');
+                self::set_field($inputdata, 'forbidfloat', self::get_default('input', 'forbidfloat'));
             $inputdata->requirelowestterms = (array) $inputdata->requirelowestterms ?
                 $inputdata->requirelowestterms :
-                YamlConverter::get_default(
-                    'input', 'requirelowestterms', get_config('input', 'requirelowestterms')
-                );
+                self::set_field($inputdata, 'requirelowestterms', self::get_default('input', 'requirelowestterms'));
             $inputdata->checkanswertype = (array) $inputdata->checkanswertype ?
                 $inputdata->checkanswertype :
-                YamlConverter::get_default(
-                    'input', 'checkanswertype', get_config('input', 'checkanswertype')
-                );
+                self::set_field($inputdata, 'checkanswertype', self::get_default('input', 'checkanswertype'));
             $inputdata->mustverify = (array) $inputdata->mustverify ?
                 $inputdata->mustverify :
-                YamlConverter::get_default('input', 'mustverify');
+                self::set_field($inputdata, 'mustverify', self::get_default('input', 'mustverify'));
             $inputdata->showvalidation = (array) $inputdata->showvalidation ?
                 $inputdata->showvalidation :
-                YamlConverter::get_default('input', 'showvalidation', get_config('qtype_stack', 'inputshowvalidation'));
-            $inputdata->options = isset($inputdata->options) ? $inputdata->options :
-                YamlConverter::get_default('input', 'options');
+                self::set_field($inputdata, 'showvalidation', self::get_default('input', 'showvalidation'));
+            $inputdata->options = isset($inputdata->options) ?
+                $inputdata->options :
+                self::set_field($inputdata, 'options', self::get_default('input', 'options'));
         }
 
-        $totalvalue = 0;
-        $allformative = true;
-        $prtmap = [];
-        foreach ($question->prt as $prt) {
-            $prtmap[(string) $prt->name] = $prt;
-        }
+        foreach ($question->prt as $prtdata) {
+            $prtdata->autosimplify = (array) $prtdata->autosimplify ?
+                $prtdata->autosimplify :
+                self::set_field($prtdata, 'autosimplify', self::get_default('prt', 'autosimplify'));
+            $prtdata->feedbackstyle = (array) $prtdata->feedbackstyle ?
+                $prtdata->feedbackstyle :
+                self::set_field($prtdata, 'feedbackstyle', self::get_default('prt', 'feedbackstyle'));
+            $prtdata->value = (array) $prtdata->value ?
+                $prtdata->value :
+                self::set_field($prtdata, 'value', self::get_default('prt', 'value'));
 
-        if (empty($prtmap) && $question->defaultmark) {
-            $defaultprt = new \SimpleXMLElement('<prt></prt>');
-            $defaultprt->addChild('name', YamlConverter::get_default('prt', 'name'));
-            $defaultnode = $defaultprt->addChild('node');
-            $defaultnode->addChild('name', YamlConverter::get_default('node', 'name'));
-            $defaultnode->addChild('sans', YamlConverter::get_default('node', 'sans'));
-            $defaultnode->addChild('tans', YamlConverter::get_default('node', 'tans'));
-            $defaultnode->addChild('trueanswernote', YamlConverter::get_default('node', 'trueanswernote'));
-            $defaultnode->addChild('falseanswernote', YamlConverter::get_default('node', 'falseanswernote'));
-            $prtmap[YamlConverter::get_default('prt', 'name')] = $defaultprt;
-        }
+            $prtdata->feedbackvariables = (string) $prtdata->feedbackvariables->text ?
+                $prtdata->feedbackvariables->text :
+                self::set_field($prtdata, 'feedbackvariables', self::get_default('prt', 'feedbackvariables'));
 
-        foreach ($prtmap as $prtdata) {
-            // At this point we do not have the PRT method is_formative() available to us.
-            if (!isset($prtdata->feedbackstyle) || ((int) $prtdata->feedbackstyle) > 0) {
-                $totalvalue += isset($prtdata->value) ? (float) $prtdata->value : YamlConverter::get_default('prt', 'value');
-                $allformative = false;
-            }
-        }
-        if (count($prtmap) > 0 && !$allformative && $totalvalue < 0.0000001) {
-            throw new \stack_exception('There is an error authoring your question. ' .
-                'The $totalvalue, the marks available for the question, must be positive in question ' .
-                $question->name);
-        }
-
-        foreach ($prtmap as $prtdata) {
-            $prtvalue = 0;
-            if (!$allformative) {
-                $value = $prtdata->value ? (float) $prtdata->value : YamlConverter::get_default('prt', 'value');
-                $prtvalue = $value / $totalvalue;
-            }
-
-            $data = new \stdClass();
-            $data->name = (string) $prtdata->name;
-            $data->autosimplify = (array) $prtdata->autosimplify ? self::parseboolean($prtdata->autosimplify) :
-                YamlConverter::get_default('prt', 'autosimplify', true);
-            $data->feedbackstyle = (array) $prtdata->feedbackstyle ? (int) $prtdata->feedbackstyle :
-                YamlConverter::get_default('prt', 'feedbackstyle', 1);
-            $data->value = (array) $prtdata->value ? (float) $prtdata->value :
-                YamlConverter::get_default('prt', 'value', 1.0);
-            $data->firstnodename = null;
-
-            $data->feedbackvariables = (string) $prtdata->feedbackvariables->text ? (string) $prtdata->feedbackvariables->text :
-                YamlConverter::get_default('prt', 'feedbackvariables', '');
-
-            $data->nodes = [];
             foreach ($prtdata->node as $node) {
-                $newnode = new \stdClass();
-
-                $newnode->nodename = (string) $node->name;
-                $newnode->description = isset($node->description) ? (string) $node->description : '';
-                $newnode->answertest = isset($node->answertest) ? (string) $node->answertest :
-                    YamlConverter::get_default('node', 'answertest');
-                $newnode->sans = (string) $node->sans;
-                $newnode->tans = (string) $node->tans;
-                $newnode->testoptions = (string) $node->testoptions ? (string) $node->testoptions :
-                    YamlConverter::get_default('node', 'testoptions');
-                $newnode->quiet = isset($node->quiet) ? self::parseboolean($node->quiet) :
-                    YamlConverter::get_default('node', 'quiet');
-
-                $newnode->truescoremode = (array) $node->truescoremode ?
-                    (string) $node->truescoremode : YamlConverter::get_default('node', 'truescoremode');
-                $newnode->truescore = (array) $node->truescore ?
-                (string) $node->truescore : YamlConverter::get_default('node', 'truescore');
-                $newnode->truepenalty = (array) $node->truepenalty ?
-                    (string) $node->truepenalty : YamlConverter::get_default('node', 'truepenalty');
-                $newnode->truenextnode = (array) $node->truenextnode ?
-                    (string) $node->truenextnode : YamlConverter::get_default('node', 'truenextnode');
-                $newnode->trueanswernote = (string) $node->trueanswernote ?
-                    (string) $node->trueanswernote : YamlConverter::get_default('node', 'trueanswernote');
-                $newnode->truefeedback = (string) $node->truefeedback->text ?
-                    (string) $node->truefeedback->text : YamlConverter::get_default('node', 'truefeedback');
-                $newnode->truefeedbackformat =
-                    (string) $node->truefeedback['format'] ?
-                    (string) $node->truefeedback['format'] : YamlConverter::get_default('node', 'truefeedbackformat', 'html');
-
-                $newnode->falsescoremode = (array) $node->falsescoremode ?
-                    (string) $node->falsescoremode : YamlConverter::get_default('node', 'falsescoremode');
-                $newnode->falsescore = (array) $node->falsescore ? (string) $node->falsescore :
-                    YamlConverter::get_default('node', 'falsescore', '0.0');
-                $newnode->falsepenalty = (array) $node->falsepenalty ?
-                    (string) $node->falsepenalty : YamlConverter::get_default('node', 'falsepenalty');
-                $newnode->falsenextnode = (array) $node->falsenextnode ?
-                    (string) $node->falsenextnode : YamlConverter::get_default('node', 'falsenextnode');
-                $newnode->falseanswernote = (string) $node->falseanswernote ?
-                    (string) $node->falseanswernote : YamlConverter::get_default('node', 'falseanswernote');
-                $newnode->falsefeedback = (string) $node->falsefeedback->text ?
-                    (string) $node->falsefeedback->text : YamlConverter::get_default('node', 'falsefeedback');
-                $newnode->falsefeedbackformat =
-                    (string) $node->falsefeedback['format'] ?
-                    (string) $node->falsefeedback['format'] :
-                    YamlConverter::get_default('node', 'falsefeedbackformat', 'html');
-
-                $data->nodes[(int) $node->name] = $newnode;
-            }
-
-            $question->prts[(string) $prtdata->name] = new \stack_potentialresponse_tree_lite($data,
-                $prtvalue, $question);
-        }
-
-        $deployedseeds = [];
-        foreach ($question->deployedseed as $seed) {
-            $deployedseeds[] = (int) $seed;
-        }
-
-        $question->deployedseeds = $deployedseeds;
-        $testcases = [];
-
-        if ($includetests) {
-            foreach ($question->qtest as $test) {
-                $testinputs = [];
-                foreach ($test->testinput as $testinput) {
-                    $testiname = (string) $testinput->name ? (string) $testinput->name :
-                        YamlConverter::get_default('testinput', 'name');
-                    $testivalue = (array) $testinput->value ? (string) $testinput->value :
-                        YamlConverter::get_default('testinput', 'value');
-                    $testinputs[$testiname] = $testivalue;
-                }
-                $testdescription = (array) $test->description ? (string) $test->description :
-                    YamlConverter::get_default('qtest', 'description');
-                $testtestcase = (array) $test->testcase ? (string) $test->testcase :
-                    YamlConverter::get_default('qtest', 'testcase');
-                $testcase = new \stack_question_test($testdescription, $testinputs, $testtestcase);
-                foreach ($test->expected as $expected) {
-                    $testename = (string) $expected->name ? (string) $expected->name :
-                        YamlConverter::get_default('expected', 'name');
-                    $testcase->add_expected_result($testename,
-                            new \stack_potentialresponse_tree_state(1, true,
-                                (array) $expected->expectedscore ?
-                                    (string) $expected->expectedscore :
-                                    YamlConverter::get_default('expected', 'expectedscore'),
-                                (array) $expected->expectedpenalty ?
-                                    (string) $expected->expectedpenalty :
-                                    YamlConverter::get_default('expected', 'expectedpenalty'),
-                                '', [
-                                    (array) $expected->expectedanswernote ?
-                                    (string) $expected->expectedanswernote :
-                                    YamlConverter::get_default('expected', 'expectedanswernote')
-                                ]));
-                }
-                $testcases[] = $testcase;
+                $node->description = isset($node->description) ?
+                    $node->description :
+                    self::set_field($node, 'description', self::get_default('node', 'description'));
+                $node->answertest = isset($node->answertest) ?
+                    $node->answertest :
+                    self::set_field($node, 'answertest', self::get_default('node', 'answertest'));
+                $node->testoptions = isset($node->testoptions) ?
+                    $node->testoptions :
+                    self::set_field($node, 'testoptions', self::get_default('node', 'testoptions'));
+                $node->quiet = isset($node->quiet) ?
+                    $node->quiet :
+                    self::set_field($node, 'quiet', self::get_default('node', 'quiet'));
+                $node->truescoremode = isset($node->truescoremode) ?
+                    $node->truescoremode :
+                    self::set_field($node, 'truescoremode', self::get_default('node', 'truescoremode'));
+                $node->truescore = isset($node->truescore) ?
+                    $node->truescore :
+                    self::set_field($node, 'truescore', self::get_default('node', 'truescore'));
+                $node->truepenalty = isset($node->truepenalty) ?
+                    $node->truepenalty :
+                    self::set_field($node, 'truepenalty', self::get_default('node', 'truepenalty'));
+                $node->truenextnode = isset($node->truenextnode) ?
+                    $node->truenextnode :
+                    self::set_field($node, 'truenextnode', self::get_default('node', 'truenextnode'));
+                $node->trueanswernote = isset($node->trueanswernote) ?
+                    $node->trueanswernote :
+                    self::set_field($node, 'trueanswernote', self::get_default('node', 'trueanswernote'));
+                $node->truefeedback = isset($node->truefeedback->text) ?
+                    $node->truefeedback->text :
+                    self::set_field($node, 'truefeedback', self::get_default('node', 'truefeedback'));
+                $node->truefeedback['format'] = isset($node->truefeedback['format']) ?
+                    $node->truefeedback['format'] :
+                    self::get_default('node', 'truefeedbackformat');
+                $node->falsescoremode = isset($node->falsescoremode) ?
+                    $node->falsescoremode :
+                    self::set_field($node, 'falsescoremode', self::get_default('node', 'falsescoremode'));
+                $node->falsescore = isset($node->falsescore) ?
+                    $node->falsescore :
+                    self::set_field($node, 'falsescore', self::get_default('node', 'falsescore'));
+                $node->falsepenalty = isset($node->falsepenalty) ?
+                    $node->falsepenalty :
+                    self::set_field($node, 'falsepenalty', self::get_default('node', 'falsepenalty'));
+                $node->falsenextnode = isset($node->falsenextnode) ?
+                    $node->falsenextnode :
+                    self::set_field($node, 'falsenextnode', self::get_default('node', 'falsenextnode'));
+                $node->falseanswernote = isset($node->falseanswernote) ?
+                    $node->falseanswernote :
+                    self::set_field($node, 'falseanswernote', self::get_default('node', 'falseanswernote'));
+                $node->falsefeedback = isset($node->falsefeedback->text) ?
+                    $node->falsefeedback->text :
+                    self::set_field($node, 'falsefeedback', self::get_default('node', 'falsefeedback'));
+                $node->falsefeedback['format'] = isset($node->falsefeedback['format']) ?
+                    $node->falsefeedback['format'] :
+                    self::get_default('node', 'falsefeedbackformat');
             }
         }
 
-        return ['question' => $question, 'testcases' => $testcases];
-    }
-
-    // phpcs:ignore moodle.Commenting.MissingDocblock.Function
-    private static function handlefiles(\SimpleXMLElement $files) {
-        $data = [];
-
-        foreach ($files as $file) {
-            $data[(string) $file['name']] = (string) $file;
+        foreach ($question->qtest as $test) {
+            foreach ($test->testinput as $testinput) {
+                $testinput->name = (string) $testinput->name ? $testinput->name :
+                    self::set_field($testinput, 'name', self::get_default('testinput', 'name'));
+                $testinput->value = (array) $testinput->value ? $testinput->value :
+                    self::set_field($testinput, 'value', self::get_default('testinput', 'value'));
+            }
+            $test->description = (array) $test->description ? $test->description :
+                self::set_field($test, 'description', self::get_default('qtest', 'description'));
+            $test->testcase = (array) $test->testcase ? $test->testcase :
+                self::set_field($test, 'testcase', self::get_default('qtest', 'testcase'));
+            foreach ($test->expected as $expected) {
+                $expected->name = (string) $expected->name ? $expected->name :
+                    self::set_field($expected, 'name', self::get_default('expected', 'name'));
+                $expected->expectedscore =
+                    (array) $expected->expectedscore ?
+                    $expected->expectedscore :
+                    self::set_field($expected, 'expectedscore', self::get_default('expected', 'expectedscore'));
+                $expected->expectedpenalty =
+                    (array) $expected->expectedpenalty ?
+                    $expected->expectedpenalty :
+                    self::set_field($expected, 'expectedpenalty', self::get_default('expected', 'expectedpenalty'));
+                $expected->expectedanswernote =
+                    (array) $expected->expectedanswernote ?
+                    $expected->expectedanswernote :
+                    self::set_field($expected, 'expectedanswernote', self::get_default('expected', 'expectedanswernote'));
+            }
         }
 
-        return $data;
+        return $xmldata;
     }
 
     public static function set_field($question, $field, $default) {
@@ -399,26 +326,13 @@ class YamlConverter {
         $current[0] = $default;
     }
 
-    // phpcs:ignore moodle.Commenting.MissingDocblock.Function
-    private static function parseboolean(\SimpleXMLElement $element) {
-        $v = (string) $element;
-        if ($v === "0") {
-            return false;
-        }
-        if ($v === "1") {
-            return true;
-        }
-
-        throw new \stack_exception('invalid bool value');
-    }
-
     public static function get_default($defaultcategory, $defaultname) {
-        if (!YamlConverter::$defaults) {
-            YamlConverter::$defaults = yaml_parse_file(__DIR__ . '/../../questiondefaults.yml');
+        if (!self::$defaults) {
+            self::$defaults = yaml_parse_file(__DIR__ . '/../../questiondefaults.yml');
         }
 
-        if (isset(YamlConverter::$defaults[$defaultcategory][$defaultname])) {
-            return YamlConverter::$defaults[$defaultcategory][$defaultname];
+        if (isset(self::$defaults[$defaultcategory][$defaultname])) {
+            return self::$defaults[$defaultcategory][$defaultname];
         }
         // We could return $default here but we'd rather the default file was fixed.
         return null;
@@ -440,9 +354,9 @@ class YamlConverter {
         $question = $xml->addChild('question');
         $question->addAttribute('type', 'stack');
 
-        YamlConverter::array_to_xml($yaml, $question);
+        self::array_to_xml($yaml, $question);
         // Name is a special case. Has text tag but no format.
-        $name = (string) $xml->question->name ? (string) $xml->question->name : YamlConverter::get_default('question', 'name');
+        $name = (string) $xml->question->name ? (string) $xml->question->name : self::get_default('question', 'name');
         $xml->question->name = new SimpleXMLElement('<root></root>');
         $xml->question->name->addChild('text', $name);
         return $xml;
@@ -452,11 +366,11 @@ class YamlConverter {
      * Recursively converts an associative array to XML.
      */
     public static function array_to_xml($data, &$xml) {
-        foreach($data as $key => $value) {
-            if (strpos($key, 'format') !== false && in_array(str_replace('format', '', $key), YamlConverter::TEXTFIELDS)) {
+        foreach ($data as $key => $value) {
+            if (strpos($key, 'format') !== false && in_array(str_replace('format', '', $key), self::TEXTFIELDS)) {
                 // Skip format attributes for text fields - they are handled with the text field below.
                 continue;
-            } else if (in_array($key, YamlConverter::TEXTFIELDS)) {
+            } else if (in_array($key, self::TEXTFIELDS)) {
                 // Convert basic YAML field to node with text and format fields.
                 if ($key !== 'name') {
                     // Name is used in multiple places and sometimes has text property and sometimes not.
@@ -464,26 +378,26 @@ class YamlConverter {
                     $subnode = $xml->addChild($key);
                     $subvalue = ['text' => $value];
                     if (isset($data[$key . 'format'])) {
-                        $subvalue['format'] = $data[$key . 'format'];
+                        $subnode['format'] = $data[$key . 'format'];
                     }
-                    YamlConverter::array_to_xml($subvalue, $subnode);
+                    self::array_to_xml($subvalue, $subnode);
                 } else {
                     $xml->addChild($key, $value);
                 }
-            } else if (in_array($key, YamlConverter::ARRAYFIELDS)) {
+            } else if (in_array($key, self::ARRAYFIELDS)) {
                 // Certain fields need special handling to strip out
                 // numeric keys.
-                foreach($value as $element) {
+                foreach ($value as $element) {
                     if (is_array($element)) {
                         $subnode = $xml->addChild($key);
-                        YamlConverter::array_to_xml($element, $subnode);
+                        self::array_to_xml($element, $subnode);
                     } else {
                         $xml->addChild($key, $element);
                     }
                 }
             } else if (is_array($value)) {
                 $subnode = $xml->addChild($key);
-                YamlConverter::array_to_xml($value, $subnode);
+                self::array_to_xml($value, $subnode);
             } else {
                 $xml->addChild($key, $value);
             }
@@ -497,29 +411,29 @@ class YamlConverter {
      * @return array The resulting array.
      */
     public static function xml_to_array($xmldata, &$output = []) {
-        foreach($xmldata as $key => $value) {
+        foreach ($xmldata as $key => $value) {
             if ($key === 'deployedseed') {
                 // Convert deployedseed to an array of integers.
                 $x= (int) $value;
             }
-            if (in_array($key, YamlConverter::TEXTFIELDS)) {
+            if (in_array($key, self::TEXTFIELDS)) {
                 if (isset($value->text)) {
                     $output[$key] = (string) $value->text;
                 } else {
                     $output[$key] = (string) $value;
                 }
-                if (isset($value->format)) {
-                    $output[$key . 'format'] = (string) $value->format;
+                if (isset($xmldata->$key['format'])) {
+                    $output[$key . 'format'] = (string) $xmldata->$key['format'];
                 }
             } else if ($value instanceof SimpleXMLElement && $value->count()) {
-                if (in_array($key, YamlConverter::ARRAYFIELDS)) {
-                    $output[$key][] = YamlConverter::xml_to_array($value);
+                if (in_array($key, self::ARRAYFIELDS)) {
+                    $output[$key][] = self::xml_to_array($value);
                 } else {
                     $output[$key] = [];
-                    YamlConverter::xml_to_array($value, $output[$key]);
+                    self::xml_to_array($value, $output[$key]);
                 }
             } else {
-                if (in_array($key, YamlConverter::ARRAYFIELDS)) {
+                if (in_array($key, self::ARRAYFIELDS)) {
                     $output[$key][] = (string) $value;
                 } else {
                     $output[$key] = (string) $value;
@@ -530,29 +444,29 @@ class YamlConverter {
     }
 
     public static function detect_differences($xml) {
-        if (!YamlConverter::$defaults) {
-                YamlConverter::$defaults = yaml_parse_file(__DIR__ . '/../questiondefaults.yml');
+        if (!self::$defaults) {
+                self::$defaults = yaml_parse_file(__DIR__ . '/../questiondefaults.yml');
         }
         if (strpos($xml, '<question type="stack">') !== false) {
             $xmldata = new SimpleXMLElement($xml);
         } else {
-            $xmldata = YamlConverter::yaml_to_xml($xml);
+            $xmldata = self::yaml_to_xml($xml);
         }
-        $plaindata = YamlConverter::xml_to_array($xmldata);
-        $diff = YamlConverter::obj_diff(YamlConverter::$defaults['question'], $plaindata['question']);
+        $plaindata = self::xml_to_array($xmldata);
+        $diff = self::obj_diff(self::$defaults['question'], $plaindata['question']);
         if (!empty($plaindata['question']['input'])) {
             $diffinputs = [];
             foreach ($plaindata['question']['input'] as $input) {
                 $diffinput = [];
                 $diffinput['name'] = $input['name'];
                 $diffinput['tans'] = $input['tans'];
-                $diffinput = array_merge($diffinput, YamlConverter::obj_diff(YamlConverter::$defaults['input'], $input));
+                $diffinput = array_merge($diffinput, self::obj_diff(self::$defaults['input'], $input));
                 $diffinputs[] = $diffinput;
             }
             $diff['input'] = $diffinputs;
         } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
-            $diff['input'] = [['name' => YamlConverter::get_default('input', 'name'),
-                'tans' => YamlConverter::get_default('input', 'tans')]];
+            $diff['input'] = [['name' => self::get_default('input', 'name'),
+                'tans' => self::get_default('input', 'tans')]];
         } else {
             $diff['input'] = [];
         }
@@ -561,33 +475,33 @@ class YamlConverter {
             foreach ($plaindata['question']['prt'] as $prt) {
                 $diffprt = [];
                 $diffprt['name'] = $prt['name'];
-                $diffprt = array_merge($diffprt, YamlConverter::obj_diff(YamlConverter::$defaults['prt'], $prt));
+                $diffprt = array_merge($diffprt, self::obj_diff(self::$defaults['prt'], $prt));
                 foreach ($prt['node'] as $node) {
                     $diffnode = [];
                     $diffnode['name'] = $node['name'];
                     $diffnode['sans'] = $node['sans'];
                     $diffnode['tans'] = $node['tans'];
-                    $diffnode = array_merge($diffnode, YamlConverter::obj_diff(YamlConverter::$defaults['node'], $node));
+                    $diffnode = array_merge($diffnode, self::obj_diff(self::$defaults['node'], $node));
                     $diffprt['node'][] = $diffnode;
                 }
                 $diffprts[] = $diffprt;
             }
             $diff['prt'] = $diffprts;
         } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
-            $diff['prt'] = [['name' => YamlConverter::get_default('prt', 'name'),
-                'node' => [['name' => YamlConverter::get_default('node', 'name'),
-                    'sans' => YamlConverter::get_default('node', 'sans'),
-                    'tans' => YamlConverter::get_default('node', 'tans')]]]];
+            $diff['prt'] = [['name' => self::get_default('prt', 'name'),
+                'node' => [['name' => self::get_default('node', 'name'),
+                    'sans' => self::get_default('node', 'sans'),
+                    'tans' => self::get_default('node', 'tans')]]]];
         } else {
             $diff['prt'] = [];
         }
         if (!empty($plaindata['question']['deployedseed'])) {
-            $deployedseeds = [];
+            $deployedseed = [];
             foreach ($plaindata['question']['deployedseed'] as $seed) {
-                $deployedseeds[] = (string) $seed;
+                $deployedseed[] = (string) $seed;
             }
-            if (count($deployedseeds)) {
-                $diff['deployedseed'] = $deployedseeds;
+            if (count($deployedseed)) {
+                $diff['deployedseed'] = $deployedseed;
             }
         }
         if (!empty($plaindata['question']['qtest'])) {
@@ -595,17 +509,17 @@ class YamlConverter {
             foreach ($plaindata['question']['qtest'] as $test) {
                 $difftest = [];
                 $difftest['testcase'] = $test['testcase'];
-                $difftest = array_merge($difftest, YamlConverter::obj_diff(YamlConverter::$defaults['qtest'], $test));
+                $difftest = array_merge($difftest, self::obj_diff(self::$defaults['qtest'], $test));
                 foreach ($test['testinput'] as $tinput) {
                     $difftinput = [];
                     $difftinput['name'] = $tinput['name'];
-                    $difftinput = array_merge($difftinput, YamlConverter::obj_diff(YamlConverter::$defaults['testinput'], $tinput));
+                    $difftinput = array_merge($difftinput, self::obj_diff(self::$defaults['testinput'], $tinput));
                     $difftest['testinput'][] = $difftinput;
                 }
                 foreach ($test['expected'] as $texpected) {
                     $difftexpected = [];
                     $difftexpected['name'] = $texpected['name'];
-                    $difftexpected = array_merge($difftexpected, YamlConverter::obj_diff(YamlConverter::$defaults['expected'], $texpected));
+                    $difftexpected = array_merge($difftexpected, self::obj_diff(self::$defaults['expected'], $texpected));
                     $difftest['expected'][] = $difftexpected;
                 }
                 $difftests[] = $difftest;
@@ -619,7 +533,7 @@ class YamlConverter {
     public static function obj_diff($obj1, $obj2):array {
         $a1 = (array) $obj1;
         $a2 = (array) $obj2;
-        return YamlConverter::arr_diff($a1, $a2);
+        return self::arr_diff($a1, $a2);
     }
 
     public static function arr_diff($a1, $a2):array {
@@ -627,7 +541,7 @@ class YamlConverter {
         foreach ($a1 as $k => $v) {
             if (array_key_exists($k, $a2)) {
                 if (is_array($v)){
-                    $rad = YamlConverter::arr_diff($v, (array) $a2[$k]);
+                    $rad = self::arr_diff($v, (array) $a2[$k]);
                     if (count($rad)) { $r[$k] = $rad; }
                 // required to avoid rounding errors due to the
                 // conversion from string representation to double
