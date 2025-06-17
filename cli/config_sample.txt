@@ -65,3 +65,6 @@ $usegit = true;
 // If this setting is null and -x is not used, the setting
 // saved in the manifest file during repo creation will be used on import/export.
 $ignorecat = null;
+
+// Should questions be exported as YAML difference files?
+$useyaml = false;

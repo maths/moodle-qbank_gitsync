@@ -357,8 +357,11 @@ class import_quiz {
                                     ?string $quizcmid, string $ignorecat, string $scriptdirectory): string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
+        $useyaml = ($this->useyaml) ? 'true' : 'false';
+        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
-                        '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat);
+                        '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token .
+                        $ignorecat . $useyaml . $defaults);
     }
 
     /**

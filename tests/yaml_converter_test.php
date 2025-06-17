@@ -33,7 +33,11 @@ defined('MOODLE_INTERNAL') || die();
 final class yaml_converter_test extends \advanced_testcase {
 
     public function test_loadxml(): void {
-        $defaults = __DIR__ . '/../questiondefaults.yml';
+        if (!function_exists('yaml_parse')) {
+            $this->markTestSkipped('YAML extension is not available.');
+            return;
+        }
+        $defaults = yaml_parse_file(__DIR__ . '/../questiondefaults.yml');
         $questionyaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
         $xml = \qbank_gitsync\yaml_converter::loadyaml($questionyaml , $defaults);
         $this->assertEquals('Test question', (string) $xml->question->name->text);
@@ -146,7 +150,7 @@ final class yaml_converter_test extends \advanced_testcase {
             return;
         }
         $xml = '<quiz><question type="stack"><name><text>Test</text></name></question></quiz>';
-        $yaml = yaml_converter::detect_differences($xml);
+        $yaml = yaml_converter::detect_differences($xml, null);
         $this->assertStringContainsString('name: Test', $yaml);
     }
 
@@ -158,7 +162,7 @@ final class yaml_converter_test extends \advanced_testcase {
         }
         // Test the difference detection with a full question.
         $yaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
-        $diff = yaml_converter::detect_differences($yaml);
+        $diff = yaml_converter::detect_differences($yaml, null);
         $diffarray = yaml_parse($diff);
         $this->assertEquals(9, count($diffarray));
         $expected = [
@@ -273,7 +277,7 @@ final class yaml_converter_test extends \advanced_testcase {
                 ]
             ]
         ];
-        $diff = yaml_converter::detect_differences($blankxml);
+        $diff = yaml_converter::detect_differences($blankxml, null);
         $diffarray = yaml_parse($diff);
         $this->assertEquals(2, count($diffarray));
         $this->assertEqualsCanonicalizing($expected, $diffarray);
@@ -285,7 +289,7 @@ final class yaml_converter_test extends \advanced_testcase {
             'input' => [],
             'prt' => []
         ];
-        $diff = yaml_converter::detect_differences($infoxml);
+        $diff = yaml_converter::detect_differences($infoxml, null);
         $diffarray = yaml_parse($diff);
         $this->assertEquals(3, count($diffarray));
 

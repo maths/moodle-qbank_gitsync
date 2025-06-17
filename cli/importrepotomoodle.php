@@ -66,6 +66,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'defaultfile',
+        'shortopt' => 'o',
+        'description' => 'Name of file containing custom question defaults.',
+        'default' => '',
+        'variable' => 'defaultfile',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'subdirectory',
         'shortopt' => 's',
         'description' => 'Relative subdirectory of repo to actually import.',

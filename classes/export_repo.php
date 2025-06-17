@@ -81,11 +81,23 @@ class export_repo {
      */
     public string $tempfilepath;
     /**
+     * Path to defaults file.
+     *
+     * @var string
+     */
+    public string $defaultsfilepath;
+    /**
      * Parsed content of JSON manifest file
      *
      * @var \stdClass|null
      */
     public ?\stdClass $manifestcontents;
+    /**
+     * Parsed content of YAML defaults file.
+     *
+     * @var array|null
+     */
+    public ?array $defaults;
     /**
      * URL of Moodle instance
      *
@@ -116,6 +128,12 @@ class export_repo {
      * @var bool
      */
     public bool $usegit;
+    /**
+     * Are we using YAML?.
+     * Set in config. Saves questions as difference file and adds default file to repo.
+     * @var bool
+     */
+    public bool $useyaml;
 
     /**
      * Constructor
@@ -130,6 +148,7 @@ class export_repo {
         $moodleinstance = $arguments['moodleinstance'];
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $this->usegit = $arguments['usegit'];
+        $this->useyaml = $arguments['useyaml'];
         $defaultwarning = false;
         if ($arguments['manifestpath']) {
             $this->manifestpath = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['manifestpath'] :
@@ -163,6 +182,20 @@ class export_repo {
                 echo "\nThe manifest file was created using targeting. The question category cannot be overridden.\nAborting.\n";
                 $this->call_exit();
             }
+        }
+
+        if ($this->useyaml) {
+            if ($arguments['defaultfile']) {
+                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $arguments['defaultfile'];
+            } else if (!empty($this->manifestcontents->context->defaultdefaults)) {
+                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $this->manifestcontents->context->defaultdefaults;
+            } else if (is_file(dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
+                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE;
+            } else {
+                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE;
+                copy(dirname($this->manifestpath). '/../questiondefaults.yml', $this->defaultsfilepath);
+            }
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
         }
 
         if ($arguments['subcategory']) {
@@ -316,8 +349,8 @@ class export_repo {
                     continue;
                 }
 
-                if (1===1) {
-                    $question = yaml_converter::detect_differences($question);
+                if ($this->useyaml) {
+                    $question = yaml_converter::detect_differences($question, $this->defaults);
                 }
                 $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
                 if ($success === false) {
@@ -419,8 +452,10 @@ class export_repo {
                                       ): ?string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
+        $useyaml = ($this->useyaml) ? 'true' : 'false';
+        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
-                '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat);
+                '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat . ' -y ' . $useyaml . $defaults);
     }
 
     /**
@@ -438,7 +473,10 @@ class export_repo {
                 string $quizmanifestname, string $ignorecat, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
+        $useyaml = ($this->useyaml) ? 'true' : 'false';
+        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php exportrepofrommoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory . '" -i "' .
-                            $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat);
+                            $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat .
+                            ' -y ' . $useyaml . $defaults);
     }
 }

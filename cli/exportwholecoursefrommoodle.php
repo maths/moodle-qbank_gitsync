@@ -105,6 +105,14 @@ $options = [
         'variable' => 'ignorecat',
         'valuerequired' => true,
     ],
+    [
+        'longopt' => 'useyaml',
+        'shortopt' => 'y',
+        'description' => 'Export questions as YAML difference file?',
+        'default' => $useyaml,
+        'variable' => 'useyaml',
+        'valuerequired' => true,
+    ],
 ];
 
 if (!function_exists('simplexml_load_file')) {

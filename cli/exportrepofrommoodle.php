@@ -114,6 +114,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'useyaml',
+        'shortopt' => 'y',
+        'description' => 'Export questions as YAML difference file?',
+        'default' => $useyaml,
+        'variable' => 'useyaml',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'subcall',
         'shortopt' => 'w',
         'description' => 'Is this a subcall of the script?',

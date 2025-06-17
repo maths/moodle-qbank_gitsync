@@ -61,6 +61,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'defaultfile',
+        'shortopt' => 'o',
+        'description' => 'Name of file containing custom question defaults.',
+        'default' => '',
+        'variable' => 'defaultfile',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'subcategory',
         'shortopt' => 's',
         'description' => 'Relative subcategory of question to actually export.',
@@ -162,6 +170,14 @@ $options = [
         'description' => 'Regex of categories to ignore - add an extra leading / for Windows.',
         'default' => $ignorecat,
         'variable' => 'ignorecat',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'useyaml',
+        'shortopt' => 'y',
+        'description' => 'Export questions as YAML difference file?',
+        'default' => $useyaml,
+        'variable' => 'useyaml',
         'valuerequired' => true,
     ],
     [

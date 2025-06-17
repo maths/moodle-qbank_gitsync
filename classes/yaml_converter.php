@@ -40,8 +40,12 @@ class yaml_converter {
     ];
 
     // phpcs:ignore moodle.Commenting.MissingDocblock.Function
-    public static function loadyaml($yaml, $defaultsfile) {
-        self::$defaults = yaml_parse_file($defaultsfile);
+    public static function loadyaml($yaml, $defaults) {
+        if ($defaults) {
+            self::$defaults = $defaults;
+        } else {
+            self::$defaults = self::load_defaults(__DIR__ . '/../../questiondefaults.yml');
+        }
         try {
             $xmldata = self::yaml_to_xml($yaml);
         } catch (\Exception $e) {
@@ -444,9 +448,32 @@ class yaml_converter {
         return $output;
     }
 
-    public static function detect_differences($xml) {
-        if (!self::$defaults) {
-                self::$defaults = yaml_parse_file(__DIR__ . '/../questiondefaults.yml');
+
+    public static function load_defaults($defaultfile) {
+        $defaults = yaml_parse_file($defaultfile);
+        if (!$defaults) {
+            echo "\nUnable to access or parse default file: {$defaultfile}\nAborting.\n";
+            self::call_exit();
+        }
+        return $defaults;
+    }
+
+    /**
+     * Mockable function that just exits code.
+     *
+     * Required to stop PHPUnit displaying output after exit.
+     *
+     * @return void
+     */
+    public static function call_exit(): void {
+        exit;
+    }
+
+    public static function detect_differences($xml, $defaults) {
+        if ($defaults) {
+            self::$defaults = $defaults;
+        } else {
+            self::$defaults = self::load_defaults(__DIR__ . '/../../questiondefaults.yml');
         }
         if (strpos($xml, '<question type="stack">') !== false) {
             $xmldata = new SimpleXMLElement($xml);

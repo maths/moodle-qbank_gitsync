@@ -216,26 +216,32 @@ trait export_trait {
                         }
                     }
                 }
+                $filetype = 'xml';
+                if ($this->useyaml) {
+                    $question = yaml_converter::detect_differences($question, $this->defaults);
+                    $filetype = 'yml';
+                }
+
                 $sanitisedqname = preg_replace(cli_helper::BAD_CHARACTERS, '-', substr($qname, 0, 230));
                 $holdername = $sanitisedqname;
                 $i = 2;
-                while (file_exists("{$bottomdirectory}/{$sanitisedqname}.xml")) {
+                while (file_exists("{$bottomdirectory}/{$sanitisedqname}.{$filetype}")) {
                     $sanitisedqname = "{$holdername}_{$i}";
                     $i++;
                 }
-                if (1===1) {
-                    $question = yaml_converter::detect_differences($question);
+                if ($this->useyaml) {
+                    $question = yaml_converter::detect_differences($question, $this->defaults);
                 }
-                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question);
+                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.{$filetype}", $question);
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";
-                    echo "{$bottomdirectory}/{$sanitisedqname}.xml";
+                    echo "{$bottomdirectory}/{$sanitisedqname}.{$filetype}";
                     continue;
                 }
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
-                    'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.xml",
+                    'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.{$filetype}",
                     'format' => 'xml',
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");

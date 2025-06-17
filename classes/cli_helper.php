@@ -69,6 +69,10 @@ class cli_helper {
      */
     public const QUIZ_FILE = '_quiz.json';
     /**
+     * DEFAULTS_FILE - Default filename for question defaults.
+     */
+    public const DEFAULTS_FILE = 'questiondefaults.yml';
+    /**
      * TEMP_MANIFEST_FILE - File name ending for temporary manifest file.
      * Appended to name of moodle instance.
      */
@@ -976,5 +980,39 @@ class cli_helper {
             return null;
         }
         return new \SplFileInfo($tempcatfilepath);
+    }
+
+    /**
+     * Given a filepath for a yml question file, create a temporary
+     * copy containing xml.
+     *
+     * @param string $filepath
+     * @param string $tempfilepath Path of main temp file
+     * @param string $defaults yml defaults
+     * @return object|null $tempqfilepath
+     */
+    public static function create_temp_question_file($filepath, $tempfilepath, $defaults) {
+        if (!is_file($filepath)) {
+            echo "\nRequired question file does not exist: {$filepath}\n";
+            return null;
+        }
+        $contents = file_get_contents($filepath);
+        if ($contents === false) {
+            echo "\nUnable to access file: {$filepath}\n";
+            return null;
+        }
+        $questionyml = yaml_parse_file($contents);
+        if ($questionyml === false) {
+            echo "\nBroken question YAML.\n";
+            echo "{$filepath}.\n";
+            return null;
+        }
+        $questionxml = yaml_converter::loadyaml($questionyml, $defaults);
+        $tempqfilepath = dirname($tempfilepath) . '/tempqfile.tmp';
+        $success = file_put_contents($tempqfilepath, $questionxml->asXML());
+        if ($success === false) {
+            return null;
+        }
+        return new \SplFileInfo($tempqfilepath);
     }
 }
