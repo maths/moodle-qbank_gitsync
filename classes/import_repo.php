@@ -231,6 +231,7 @@ class import_repo {
         $instanceid = $arguments['instanceid'];
         $this->ignorecat = $arguments['ignorecat'];
         $this->usegit = $arguments['usegit'];
+        $this->useyaml = $arguments['useyaml'];
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';

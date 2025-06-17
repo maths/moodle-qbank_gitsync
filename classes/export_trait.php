@@ -229,9 +229,6 @@ trait export_trait {
                     $sanitisedqname = "{$holdername}_{$i}";
                     $i++;
                 }
-                if ($this->useyaml) {
-                    $question = yaml_converter::detect_differences($question, $this->defaults);
-                }
                 $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.{$filetype}", $question);
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";
