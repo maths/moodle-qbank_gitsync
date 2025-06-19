@@ -339,6 +339,20 @@ class import_repo {
             echo "\nUnable to parse manifest file: {$this->manifestpath}\nAborting.\n";
             $this->call_exit();
         }
+
+        if ($this->useyaml) {
+            if ($arguments['defaultfile']) {
+                $this->defaultsfilepath = $this->directory . '/' . $arguments['defaultfile'];
+            } else if (!empty($this->manifestcontents->context->defaultdefaults)) {
+                $this->defaultsfilepath = $this->directory . '/' . $this->manifestcontents->context->defaultdefaults;
+            } else if (is_file(dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
+                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
+            } else {
+                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
+                copy($this->directory . '/../questiondefaults.yml', $this->defaultsfilepath);
+            }
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+        }
         if (!$manifestcontents && $manifestpath) {
             echo "\nManifest file is empty: {$this->manifestpath}\n";
             echo "You will need to supply context details. Aborting.\n";
@@ -431,20 +445,6 @@ class import_repo {
             echo "\nManifest file is empty. This should only be the case if you are importing ";
             echo "questions for the first time into a Moodle context where they don't already exist.\n";
             $this->handle_abort();
-        }
-
-        if ($this->useyaml) {
-            if ($arguments['defaultfile']) {
-                $this->defaultsfilepath = $this->directory . '/' . $arguments['defaultfile'];
-            } else if (!empty($this->manifestcontents->context->defaultdefaults)) {
-                $this->defaultsfilepath = $this->directory . '/' . $this->manifestcontents->context->defaultdefaults;
-            } else if (is_file(dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
-                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
-            } else {
-                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
-                copy($this->directory . '/../questiondefaults.yml', $this->defaultsfilepath);
-            }
-            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
         }
     }
 
