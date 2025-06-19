@@ -29,6 +29,7 @@ require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/tidy_trait.php');
 require_once('../classes/import_repo.php');
+require_once('../classes/yaml_converter.php');
 
 $options = [
     [
@@ -63,6 +64,14 @@ $options = [
                          'relative to root directory.',
         'default' => '',
         'variable' => 'directory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'defaultfile',
+        'shortopt' => 'o',
+        'description' => 'Name of file containing custom question defaults.',
+        'default' => '',
+        'variable' => 'defaultfile',
         'valuerequired' => true,
     ],
     [
@@ -154,6 +163,14 @@ $options = [
         'description' => 'Is the repo controlled using Git?',
         'default' => $usegit,
         'variable' => 'usegit',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'useyaml',
+        'shortopt' => 'y',
+        'description' => 'Export questions as YAML difference file?',
+        'default' => $useyaml,
+        'variable' => 'useyaml',
         'valuerequired' => true,
     ],
     [

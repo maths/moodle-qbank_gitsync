@@ -1251,11 +1251,11 @@ class import_repo {
         if ($quizmanifestname) {
             return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                             '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat .
-                            $useyaml . $defaults);
+                            ' -y ' . $useyaml . $defaults);
         } else {
             return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                             '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat .
-                            $useyaml . $defaults);
+                            ' -y ' . $useyaml . $defaults);
         }
     }
 

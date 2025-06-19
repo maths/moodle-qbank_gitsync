@@ -361,7 +361,7 @@ class import_quiz {
         $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                         '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token .
-                        $ignorecat . $useyaml . $defaults);
+                        $ignorecat . ' -y ' . $useyaml . $defaults);
     }
 
     /**

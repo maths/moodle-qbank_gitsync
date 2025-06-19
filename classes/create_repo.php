@@ -175,11 +175,10 @@ class create_repo {
         if ($this->useyaml) {
             if ($arguments['defaultfile']) {
                 $this->defaultsfilepath = $this->directory . '/' . $arguments['defaultfile'];
+                $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
             } else {
                 $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
-                copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);
             }
-            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
         }
         if (!empty($arguments['nonquizmanifestpath'])) {
             $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
@@ -300,6 +299,12 @@ class create_repo {
      * @return void
      */
     public function process(): void {
+        if (!isset($this->defaults)) {
+            // This occurs when creating whole course repo. We have had
+            // to wait until the course directory has been created.
+            copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+        }
         $this->export_to_repo();
         $this->manifestcontents->context->defaultsubdirectory = $this->subdirectory;
         cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,

@@ -30,6 +30,7 @@ require_once('../classes/cli_helper.php');
 require_once('../classes/export_trait.php');
 require_once('../classes/tidy_trait.php');
 require_once('../classes/export_repo.php');
+require_once('../classes/yaml_converter.php');
 
 $options = [
     [
@@ -47,6 +48,14 @@ $options = [
         'description' => "Directory on user's computer containing repos.",
         'default' => $rootdirectory,
         'variable' => 'rootdirectory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'defaultfile',
+        'shortopt' => 'o',
+        'description' => 'Name of file containing custom question defaults.',
+        'default' => '',
+        'variable' => 'defaultfile',
         'valuerequired' => true,
     ],
     [

@@ -28,6 +28,7 @@ require_once('./config.php');
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/import_quiz.php');
+require_once('../classes/yaml_converter.php');
 
 $options = [
     [
