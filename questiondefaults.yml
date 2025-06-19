@@ -68,14 +68,14 @@ node:
   testoptions: ''
   quiet: '0'
   truescoremode: =
-  truescore: '1'
+  truescore: '1.0000000'
   truepenalty: ''
   truenextnode: '-1'
   trueanswernote: prt1-1-T
   truefeedback: ''
   truefeedbackformat: html
   falsescoremode: =
-  falsescore: '0'
+  falsescore: '0.0000000'
   falsepenalty: ''
   falsenextnode: '-1'
   falseanswernote: prt1-1-F

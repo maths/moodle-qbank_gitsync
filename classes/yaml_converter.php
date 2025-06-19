@@ -54,281 +54,273 @@ class yaml_converter {
         $question = $xmldata->question;
 
         // Based on Moodle's base question type.
-        $question->name->text = (string) $question->name->text ?
-            $question->name->text :
+        if (!$question->name->text) {
             self::set_field($question, 'name->text', self::get_default('question', 'name'));
-        $question->questiontext->text = (string) $question->questiontext->text ?
-            $question->questiontext->text :
-            self::set_field($question, 'questiontext->text', self::get_default(
-                'question', 'questiontext'
-            ));
-        $question->questiontext['format'] = (string) $question->questiontext['format'] ?
-            $question->questiontext['format'] :
+        }
+        if (!isset($question->questiontext->text)) {
+            self::set_field($question, 'questiontext->text', self::get_default('question', 'questiontext'));
+        }
+        if (!isset($question->questiontext['format'])) {
             self::get_default('question', 'questiontextformat');
-        $question->generalfeedback->text = (string) $question->generalfeedback->text ?
-            $question->generalfeedback->text :
+        }
+        if (!isset($question->generalfeedback->text)) {
             self::set_field($question, 'generalfeedback->text', self::get_default('question', 'generalfeedback'));
-        $question->generalfeedback['format'] = (string) $question->generalfeedback['format'] ?
-            $question->generalfeedback['format'] :
-            self::get_default('question', 'generalfeedbackformat');
-        $question->defaultgrade = (array) $question->defaultgrade ?
-            $question->defaultgrade :
+        }
+        if (!isset($question->generalfeedback['format'])) {
+            $question->generalfeedback['format'] = self::get_default('question', 'generalfeedbackformat');
+        }
+        if (!(array) $question->defaultgrade) {
             self::set_field($question, 'defaultgrade', self::get_default('question', 'defaultgrade'));
-        $question->penalty = (array) $question->penalty ?
-            $question->penalty :
+        }
+        if (!(array) $question->penalty) {
             self::set_field($question, 'penalty', self::get_default('question', 'penalty'));
+        }
 
         // Based on initialise_question_instance from questiontype.php.
-        $question->stackversion = (string) $question->stackversion->text ?
-            $question->stackversion->text :
-            self::set_field($question, 'stackversion', self::get_default('question', 'stackversion'));
-        $question->questionvariables = (string) $question->questionvariables->text ?
-            $question->questionvariables->text :
-            self::set_field($question, 'questionvariables', self::get_default('question', 'questionvariables'));
-        $question->questionnote->text = (string) $question->questionnote->text ?
-            $question->questionnote->text :
-            self::set_field($question, 'questionnote', self::get_default('question', 'questionnote'));
-        $question->questionnote['format'] = (string) $question->questionnote['format'] ?
-            $question->questionnote['format'] :
-            self::get_default('question', 'questionnoteformat');
-        $question->specificfeedback->text = (string) $question->specificfeedback->text ?
-            $question->specificfeedback->text :
-            self::set_field($question, 'specificfeedback', self::get_default('question', 'specificfeedback'));
-        $question->specificfeedback['format'] = (string) $question->specificfeedback['format'] ?
-            $question->specificfeedback['format'] :
-            self::get_default('question', 'specificfeedbackformat');
-        $question->questiondescription->text = (string) $question->questiondescription->text ?
-            $question->questiondescription->text :
-            self::set_field($question, 'questiondescription', self::get_default('question', 'questiondescription'));
-        $question->questiondescription['format'] = (string) $question->questiondescription['format'] ?
-            $question->questiondescription['format'] :
-            self::get_default('question', 'questiondescriptionformat');
-        $question->prtcorrect = (string) $question->prtcorrect->text ?
-            $question->prtcorrect->text :
-            self::set_field($question, 'prtcorrect', self::get_default('question', 'prtcorrect'));
-        $question->prtcorrect['format'] = (string) $question->prtcorrect['format'] ?
-            $question->prtcorrect['format'] :
-            self::get_default('question', 'prtcorrectformat');
-        $question->prtpartiallycorrect = (string) $question->prtpartiallycorrect->text ?
-            $question->prtpartiallycorrect->text :
-            self::set_field($question, 'prtpartiallycorrect', self::get_default('question', 'prtpartiallycorrect'));
-        $question->prtpartiallycorrect['format'] = (string) $question->prtpartiallycorrect['format'] ?
-            $question->prtpartiallycorrect['format'] :
-            self::get_default('question', 'prtpartiallycorrectformat');
-        $question->prtincorrect = (string) $question->prtincorrect->text ?
-            $question->prtincorrect->text :
-            self::set_field($question, 'prtincorrect', self::get_default('question', 'prtincorrect'));
-        $question->prtincorrect['format'] = (string) $question->prtincorrect['format'] ?
-            $question->prtincorrect['format'] :
-            self::get_default('question', 'prtincorrectformat');
-        $question->variantsselectionseed = (string) $question->variantsselectionseed ?
-            $question->variantsselectionseed :
+        if (!isset($question->stackversion->text)) {
+            self::set_field($question, 'stackversion->text', self::get_default('question', 'stackversion'));
+        }
+        if (!isset($question->questionvariables->text)) {
+            self::set_field($question, 'questionvariables->text', self::get_default('question', 'questionvariables'));
+        }
+        if (!isset($question->questionnote->text)) {
+            self::set_field($question, 'questionnote->text', self::get_default('question', 'questionnote'));
+        }
+        if (!isset($question->questionnote['format'])) {
+            $question->questionnote['format'] = self::get_default('question', 'questionnoteformat');
+        }
+        if (!isset($question->specificfeedback->text)) {
+            self::set_field($question, 'specificfeedback->text', self::get_default('question', 'specificfeedback'));
+        }
+        if (!isset($question->specificfeedback['format'])) {
+            $question->specificfeedback['format'] = self::get_default('question', 'specificfeedbackformat');
+        }
+        if (!isset($question->questiondescription->text)) {
+            self::set_field($question, 'questiondescription->text', self::get_default('question', 'questiondescription'));
+        }
+        if (!isset($question->questiondescription['format'])) {
+            $question->questiondescription['format'] = self::get_default('question', 'questiondescriptionformat');
+        }
+        if (!isset($question->prtcorrect->text)) {
+            self::set_field($question, 'prtcorrect->text', self::get_default('question', 'prtcorrect'));
+        }
+        if (!isset($question->prtcorrect['format'])) {
+            $question->prtcorrect['format'] = self::get_default('question', 'prtcorrectformat');
+        }
+        if (!isset($question->prtpartiallycorrect->text)) {
+            self::set_field($question, 'prtpartiallycorrect->text', self::get_default('question', 'prtpartiallycorrect'));
+        }
+        if (!isset($question->prtpartiallycorrect['format'])) {
+            $question->prtpartiallycorrect['format'] = self::get_default('question', 'prtpartiallycorrectformat');
+        }
+        if (!isset($question->prtincorrect->text)) {
+            self::set_field($question, 'prtincorrect->text', self::get_default('question', 'prtincorrect'));
+        }
+        if (!isset($question->prtincorrect['format'])) {
+            $question->prtincorrect['format'] = self::get_default('question', 'prtincorrectformat');
+        }
+        if (!isset($question->variantsselectionseed)) {
             self::set_field($question, 'variantsselectionseed', self::get_default('question', 'variantsselectionseed'));
-        $question->isbroken = (array) $question->isbroken ?
-            $question->isbroken :
+        }
+        if (!(array) $question->isbroken) {
             self::set_field($question, 'isbroken', self::get_default('question', 'isbroken'));
-        $question->multiplicationsign =
-            (string) $question->multiplicationsign ?
-            $question->multiplicationsign :
+        }
+        if (!(array) $question->multiplicationsign) {
             self::set_field($question, 'multiplicationsign', self::get_default('question', 'multiplicationsign'));
-        $question->complexno =
-            (string) $question->complexno ?
-            $question->complexno :
+        }
+        if (!(array) $question->complexno) {
             self::set_field($question, 'complexno', self::get_default('question', 'complexno'));
-        $question->inversetrig =
-            (string) $question->inversetrig ?
-            $question->inversetrig :
+        }
+        if (!(array) $question->inversetrig) {
             self::set_field($question, 'inversetrig', self::get_default('question', 'inversetrig'));
-        $question->logicsymbol =
-            (string) $question->logicsymbol ?
-            $question->logicsymbol :
+        }
+        if (!(array) $question->logicsymbol) {
             self::set_field($question, 'logicsymbol', self::get_default('question', 'logicsymbol'));
-        $question->matrixparens =
-            (string) $question->matrixparens ?
-            $question->matrixparens :
+        }
+        if (!(array) $question->matrixparens) {
             self::set_field($question, 'matrixparens', self::get_default('question', 'matrixparens'));
-        $question->sqrtsign =
-            (string) $question->sqrtsign ?
-            $question->sqrtsign :
+        }
+        if (!(array) $question->sqrtsign) {
             self::set_field($question, 'sqrtsign', self::get_default('question', 'sqrtsign'));
-        $question->simplify =
-            (string) $question->questionsimplify ?
-            $question->questionsimplify :
+        }
+        if (!(array) $question->questionsimplify) {
             self::set_field($question, 'simplify', self::get_default('question', 'questionsimplify'));
-        $question->assumepos =
-            (string) $question->assumepositive ?
-            $question->assumepositive :
+        }
+        if (!(array) $question->assumepositive) {
             self::set_field($question, 'assumepos', self::get_default('question', 'assumepositive'));
-        $question->assumereal =
-            (string) $question->assumereal ?
-            $question->assumereal :
+        }
+        if (!(array) $question->assumereal) {
             self::set_field($question, 'assumereal', self::get_default('question', 'assumereal'));
-        $question->decimals =
-            (string) $question->decimals ?
-            $question->decimals :
+        }
+        if (!(array) $question->decimals) {
             self::set_field($question, 'decimals', self::get_default('question', 'decimals'));
-        $question->scientificnotation =
-            (string) $question->scientificnotation ?
-            $question->scientificnotation :
+        }
+        if (!(array) $question->scientificnotation) {
             self::set_field($question, 'scientificnotation', self::get_default('question', 'scientificnotation'));
+        }
 
         foreach ($question->input as $inputdata) {
-            $inputdata->boxsize = (array) $inputdata->boxsize ?
-                $inputdata->boxsize :
+            if (!(array) $inputdata->type) {
+                self::set_field($inputdata, 'type', self::get_default('input', 'type'));
+            }
+            if (!(array) $inputdata->boxsize) {
                 self::set_field($inputdata, 'boxsize', self::get_default('input', 'boxsize'));
-            $inputdata->insertstars = (array) $inputdata->insertstars ?
-                $inputdata->insertstars :
+            }
+            if (!(array) $inputdata->insertstars) {
                 self::set_field($inputdata, 'insertstars', self::get_default('input', 'insertstars'));
-            $inputdata->syntaxhint = isset($inputdata->syntaxhint) ?
-                $inputdata->syntaxhint :
+            }
+            if (!isset($inputdata->syntaxhint)) {
                 self::set_field($inputdata, 'syntaxhint', self::get_default('input', 'syntaxhint'));
-            $inputdata->syntaxattribute = (array) $inputdata->syntaxattribute ?
-                $inputdata->syntaxattribute :
+            }
+            if (!(array) $inputdata->syntaxattribute) {
                 self::set_field($inputdata, 'syntaxattribute', self::get_default('input', 'syntaxattribute'));
-            $inputdata->forbidwords = isset($inputdata->forbidwords) ?
-                $inputdata->forbidwords :
+            }
+            if (!isset($inputdata->forbidwords)) {
                 self::set_field($inputdata, 'forbidwords', self::get_default('input', 'forbidwords'));
-            $inputdata->allowwords = isset($inputdata->allowwords) ?
-                $inputdata->allowwords :
+            }
+            if (!isset($inputdata->allowwords)) {
                 self::set_field($inputdata, 'allowwords', self::get_default('input', 'allowwords'));
-            $inputdata->forbidfloat = (array) $inputdata->forbidfloat ?
-                $inputdata->forbidfloat :
+            }
+            if (!(array) $inputdata->forbidfloat) {
                 self::set_field($inputdata, 'forbidfloat', self::get_default('input', 'forbidfloat'));
-            $inputdata->requirelowestterms = (array) $inputdata->requirelowestterms ?
-                $inputdata->requirelowestterms :
+            }
+            if (!(array) $inputdata->requirelowestterms) {
                 self::set_field($inputdata, 'requirelowestterms', self::get_default('input', 'requirelowestterms'));
-            $inputdata->checkanswertype = (array) $inputdata->checkanswertype ?
-                $inputdata->checkanswertype :
+            }
+            if (!(array) $inputdata->checkanswertype) {
                 self::set_field($inputdata, 'checkanswertype', self::get_default('input', 'checkanswertype'));
-            $inputdata->mustverify = (array) $inputdata->mustverify ?
-                $inputdata->mustverify :
+            }
+            if (!(array) $inputdata->mustverify) {
                 self::set_field($inputdata, 'mustverify', self::get_default('input', 'mustverify'));
-            $inputdata->showvalidation = (array) $inputdata->showvalidation ?
-                $inputdata->showvalidation :
+            }
+            if (!(array) $inputdata->showvalidation) {
                 self::set_field($inputdata, 'showvalidation', self::get_default('input', 'showvalidation'));
-            $inputdata->options = isset($inputdata->options) ?
-                $inputdata->options :
+            }
+            if (!isset($inputdata->options)) {
                 self::set_field($inputdata, 'options', self::get_default('input', 'options'));
+            }
         }
 
         foreach ($question->prt as $prtdata) {
-            $prtdata->autosimplify = (array) $prtdata->autosimplify ?
-                $prtdata->autosimplify :
+            if (!(array) $prtdata->autosimplify) {
                 self::set_field($prtdata, 'autosimplify', self::get_default('prt', 'autosimplify'));
-            $prtdata->feedbackstyle = (array) $prtdata->feedbackstyle ?
-                $prtdata->feedbackstyle :
+            }
+            if (!(array) $prtdata->feedbackstyle) {
                 self::set_field($prtdata, 'feedbackstyle', self::get_default('prt', 'feedbackstyle'));
-            $prtdata->value = (array) $prtdata->value ?
-                $prtdata->value :
+            }
+            if (!(array) $prtdata->value) {
                 self::set_field($prtdata, 'value', self::get_default('prt', 'value'));
-
-            $prtdata->feedbackvariables = (string) $prtdata->feedbackvariables->text ?
-                $prtdata->feedbackvariables->text :
-                self::set_field($prtdata, 'feedbackvariables', self::get_default('prt', 'feedbackvariables'));
+            }
+            if (!isset($prtdata->feedbackvariables->text)) {
+                self::set_field($prtdata, 'feedbackvariables->text', self::get_default('prt', 'feedbackvariables'));
+            }
 
             foreach ($prtdata->node as $node) {
-                $node->description = isset($node->description) ?
-                    $node->description :
+                if (!isset($node->description)) {
                     self::set_field($node, 'description', self::get_default('node', 'description'));
-                $node->answertest = isset($node->answertest) ?
-                    $node->answertest :
+                }
+                if (!isset($node->answertest)) {
                     self::set_field($node, 'answertest', self::get_default('node', 'answertest'));
-                $node->testoptions = isset($node->testoptions) ?
-                    $node->testoptions :
+                }
+                if (!isset($node->testoptions)) {
                     self::set_field($node, 'testoptions', self::get_default('node', 'testoptions'));
-                $node->quiet = isset($node->quiet) ?
-                    $node->quiet :
+                }
+                if (!(array) $node->quiet) {
                     self::set_field($node, 'quiet', self::get_default('node', 'quiet'));
-                $node->truescoremode = isset($node->truescoremode) ?
-                    $node->truescoremode :
+                }
+                if (!(array) $node->truescoremode) {
                     self::set_field($node, 'truescoremode', self::get_default('node', 'truescoremode'));
-                $node->truescore = isset($node->truescore) ?
-                    $node->truescore :
+                }
+                if (!(array) $node->truescore) {
                     self::set_field($node, 'truescore', self::get_default('node', 'truescore'));
-                $node->truepenalty = isset($node->truepenalty) ?
-                    $node->truepenalty :
+                }
+                if (!(array) $node->truepenalty) {
                     self::set_field($node, 'truepenalty', self::get_default('node', 'truepenalty'));
-                $node->truenextnode = isset($node->truenextnode) ?
-                    $node->truenextnode :
+                }
+                if (!(array) $node->truenextnode) {
                     self::set_field($node, 'truenextnode', self::get_default('node', 'truenextnode'));
-                $node->trueanswernote = isset($node->trueanswernote) ?
-                    $node->trueanswernote :
+                }
+                if (!isset($node->trueanswernote)) {
                     self::set_field($node, 'trueanswernote', self::get_default('node', 'trueanswernote'));
-                $node->truefeedback = isset($node->truefeedback->text) ?
-                    $node->truefeedback->text :
-                    self::set_field($node, 'truefeedback', self::get_default('node', 'truefeedback'));
-                $node->truefeedback['format'] = isset($node->truefeedback['format']) ?
-                    $node->truefeedback['format'] :
-                    self::get_default('node', 'truefeedbackformat');
-                $node->falsescoremode = isset($node->falsescoremode) ?
-                    $node->falsescoremode :
+                }
+                if (!isset($node->truefeedback->text)) {
+                    self::set_field($node, 'truefeedback->text', self::get_default('node', 'truefeedback->text'));
+                }
+                if (!isset($node->truefeedback['format'])) {
+                    $node->truefeedback['format'] = self::get_default('node', 'truefeedbackformat');
+                }
+                if (!(array) $node->falsescoremode) {
                     self::set_field($node, 'falsescoremode', self::get_default('node', 'falsescoremode'));
-                $node->falsescore = isset($node->falsescore) ?
-                    $node->falsescore :
+                }
+                if (!(array) $node->falsescore) {
                     self::set_field($node, 'falsescore', self::get_default('node', 'falsescore'));
-                $node->falsepenalty = isset($node->falsepenalty) ?
-                    $node->falsepenalty :
+                }
+                if (!(array) $node->falsepenalty) {
                     self::set_field($node, 'falsepenalty', self::get_default('node', 'falsepenalty'));
-                $node->falsenextnode = isset($node->falsenextnode) ?
-                    $node->falsenextnode :
+                }
+                if (!(array) $node->falsenextnode) {
                     self::set_field($node, 'falsenextnode', self::get_default('node', 'falsenextnode'));
-                $node->falseanswernote = isset($node->falseanswernote) ?
-                    $node->falseanswernote :
+                }
+                if (!isset($node->falseanswernote)) {
                     self::set_field($node, 'falseanswernote', self::get_default('node', 'falseanswernote'));
-                $node->falsefeedback = isset($node->falsefeedback->text) ?
-                    $node->falsefeedback->text :
-                    self::set_field($node, 'falsefeedback', self::get_default('node', 'falsefeedback'));
-                $node->falsefeedback['format'] = isset($node->falsefeedback['format']) ?
-                    $node->falsefeedback['format'] :
-                    self::get_default('node', 'falsefeedbackformat');
+                }
+                if (!isset($node->falsefeedback->text)) {
+                    self::set_field($node, 'falsefeedback->text', self::get_default('node', 'falsefeedback->text'));
+                }
+                if (!isset($node->falsefeedback['format'])) {
+                    $node->falsefeedback['format'] = self::get_default('node', 'falsefeedbackformat');
+                }
             }
         }
 
         foreach ($question->qtest as $test) {
             foreach ($test->testinput as $testinput) {
-                $testinput->name = (string) $testinput->name ? $testinput->name :
+                if (!isset($testinput->name)) {
                     self::set_field($testinput, 'name', self::get_default('testinput', 'name'));
-                $testinput->value = (array) $testinput->value ? $testinput->value :
+                }
+                if (!(array) $testinput->value) {
                     self::set_field($testinput, 'value', self::get_default('testinput', 'value'));
+                }
             }
-            $test->description = (array) $test->description ? $test->description :
+            if (!(array) $test->description) {
                 self::set_field($test, 'description', self::get_default('qtest', 'description'));
-            $test->testcase = (array) $test->testcase ? $test->testcase :
+            }
+            if (!(array) $test->testcase) {
                 self::set_field($test, 'testcase', self::get_default('qtest', 'testcase'));
+            }
             foreach ($test->expected as $expected) {
-                $expected->name = (string) $expected->name ? $expected->name :
+                if (!isset($expected->name)) {
                     self::set_field($expected, 'name', self::get_default('expected', 'name'));
-                $expected->expectedscore =
-                    (array) $expected->expectedscore ?
-                    $expected->expectedscore :
+                }
+                if (!(array) $expected->expectedscore) {
                     self::set_field($expected, 'expectedscore', self::get_default('expected', 'expectedscore'));
-                $expected->expectedpenalty =
-                    (array) $expected->expectedpenalty ?
-                    $expected->expectedpenalty :
+                }
+                if (!(array) $expected->expectedpenalty) {
                     self::set_field($expected, 'expectedpenalty', self::get_default('expected', 'expectedpenalty'));
-                $expected->expectedanswernote =
-                    (array) $expected->expectedanswernote ?
-                    $expected->expectedanswernote :
+                }
+                if (!(array) $expected->expectedanswernote) {
                     self::set_field($expected, 'expectedanswernote', self::get_default('expected', 'expectedanswernote'));
+                }
             }
         }
 
         return $xmldata;
     }
 
-    public static function set_field($question, $field, $default) {
+    public static function set_field(&$element, $field, $default) {
         if (!isset($question->$field)) {
             $parts = explode('->', $field);
-            $current = $question;
+            $current = $element;
             foreach ($parts as $part) {
-                if (!isset($current->$part)) {
-                    $current = $current->addChild($part);
-                } else {
-                    $current = $current->$part;
-                }
+                $current->addChild($part);
+                $current = $current->$part;
+            }
+            if ($part === 'text') {
+                self::add_cdata($current, $default);
+            } else {
+                $current[0] = $default;
             }
         }
-        $current[0] = $default;
     }
 
     public static function get_default($defaultcategory, $defaultname) {
@@ -355,13 +347,13 @@ class yaml_converter {
         if (!$yaml) {
             throw new \stack_exception("The provided file does not contain valid YAML or XML.");
         }
-        $xml = new SimpleXMLElement("<quiz></quiz>");
+        $xml = new SimpleXMLElement("<?xml version='1.0' encoding='UTF-8'?><quiz></quiz>");
         $question = $xml->addChild('question');
         $question->addAttribute('type', 'stack');
 
         self::array_to_xml($yaml, $question);
         // Name is a special case. Has text tag but no format.
-        $name = (string) $xml->question->name ? (string) $xml->question->name : self::get_default('question', 'name');
+        $name = isset($xml->question->name) ? (string) $xml->question->name : self::get_default('question', 'name');
         $xml->question->name = new SimpleXMLElement('<root></root>');
         $xml->question->name->addChild('text', $name);
         return $xml;
@@ -373,8 +365,13 @@ class yaml_converter {
     public static function array_to_xml($data, &$xml) {
         foreach ($data as $key => $value) {
             if (strpos($key, 'format') !== false && in_array(str_replace('format', '', $key), self::TEXTFIELDS)) {
-                // Skip format attributes for text fields - they are handled with the text field below.
-                continue;
+                $nodekey = str_replace('format', '', $key);
+                if (!isset($xml->$nodekey)) {
+                    $xml->addChild($nodekey);
+                    $xml->$nodekey['format'] = $value;
+                } else {
+                    continue;
+                }
             } else if (in_array($key, self::TEXTFIELDS)) {
                 // Convert basic YAML field to node with text and format fields.
                 if ($key !== 'name') {
@@ -387,7 +384,7 @@ class yaml_converter {
                     }
                     self::array_to_xml($subvalue, $subnode);
                 } else {
-                    $xml->addChild($key, $value);
+                    $xml->$key = $value;
                 }
             } else if (in_array($key, self::ARRAYFIELDS)) {
                 // Certain fields need special handling to strip out
@@ -404,7 +401,12 @@ class yaml_converter {
                 $subnode = $xml->addChild($key);
                 self::array_to_xml($value, $subnode);
             } else {
-                $xml->addChild($key, $value);
+                if ($key === 'text') {
+                    $textnode = $xml->addChild('text');
+                    self::add_cdata($textnode, $value);
+                } else {
+                    $xml->$key = $value;
+                }
             }
         }
     }
@@ -417,10 +419,6 @@ class yaml_converter {
      */
     public static function xml_to_array($xmldata, &$output = []) {
         foreach ($xmldata as $key => $value) {
-            if ($key === 'deployedseed') {
-                // Convert deployedseed to an array of integers.
-                $x= (int) $value;
-            }
             if (in_array($key, self::TEXTFIELDS)) {
                 if (isset($value->text)) {
                     $output[$key] = (string) $value->text;
@@ -585,5 +583,15 @@ class yaml_converter {
             }
         }
         return $r;
+    }
+
+    public static function add_cdata(&$xml, $value) {
+        if (!empty($value) && htmlspecialchars($value, ENT_COMPAT) != $value) {
+            $node = dom_import_simplexml($xml);
+            $no = $node->ownerDocument;
+            $node->appendChild($no->createCDATASection($value));
+        } else {
+            $xml[0] = $value;
+        }
     }
 }
