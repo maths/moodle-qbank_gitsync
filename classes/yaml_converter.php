@@ -39,6 +39,12 @@ class yaml_converter {
         'input', 'prt', 'node', 'deployedseed', 'qtest', 'testinput', 'expected'
     ];
 
+    public const ALWAYS_SHOWN = [
+        'questionsimplify', 'type', 'tans', 'forbidfloat', 'requirelowestterms', 'checkanswertype',
+        'mustverify', 'showvalidation', 'autosimplify', 'feedbackstyle', 'answertest', 'sans',
+        'quiet', 'name'
+    ];
+
     // phpcs:ignore moodle.Commenting.MissingDocblock.Function
     public static function loadyaml($yaml, $defaults) {
         if ($defaults) {
@@ -483,10 +489,7 @@ class yaml_converter {
         if (!empty($plaindata['question']['input'])) {
             $diffinputs = [];
             foreach ($plaindata['question']['input'] as $input) {
-                $diffinput = [];
-                $diffinput['name'] = $input['name'];
-                $diffinput['tans'] = $input['tans'];
-                $diffinput = array_merge($diffinput, self::obj_diff(self::$defaults['input'], $input));
+                $diffinput = self::obj_diff(self::$defaults['input'], $input);
                 $diffinputs[] = $diffinput;
             }
             $diff['input'] = $diffinputs;
@@ -499,15 +502,9 @@ class yaml_converter {
         if (!empty($plaindata['question']['prt'])) {
             $diffprts = [];
             foreach ($plaindata['question']['prt'] as $prt) {
-                $diffprt = [];
-                $diffprt['name'] = $prt['name'];
-                $diffprt = array_merge($diffprt, self::obj_diff(self::$defaults['prt'], $prt));
+                $diffprt = self::obj_diff(self::$defaults['prt'], $prt);
                 foreach ($prt['node'] as $node) {
-                    $diffnode = [];
-                    $diffnode['name'] = $node['name'];
-                    $diffnode['sans'] = $node['sans'];
-                    $diffnode['tans'] = $node['tans'];
-                    $diffnode = array_merge($diffnode, self::obj_diff(self::$defaults['node'], $node));
+                    $diffnode = self::obj_diff(self::$defaults['node'], $node);
                     $diffprt['node'][] = $diffnode;
                 }
                 $diffprts[] = $diffprt;
@@ -565,6 +562,14 @@ class yaml_converter {
     public static function arr_diff($a1, $a2):array {
         $r = [];
         foreach ($a1 as $k => $v) {
+            if (in_array($k, self::ALWAYS_SHOWN)) {
+                if (array_key_exists($k, $a2)) {
+                    $r[$k] = $a2[$k];
+                } else {
+                    $r[$k] = $v;
+                }
+                continue;
+            }
             if (array_key_exists($k, $a2)) {
                 if (is_array($v)){
                     $rad = self::arr_diff($v, (array) $a2[$k]);
