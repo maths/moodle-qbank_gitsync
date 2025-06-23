@@ -353,7 +353,7 @@ class cli_helper {
                 } else {
                     $variables[$variablename] = $option['default'];
                 }
-                if (in_array($variablename, ['usegit'])) {
+                if (in_array($variablename, ['usegit', 'useyaml'])) {
                     $variables[$variablename] = ($variables[$variablename] === 'true') ? true : $variables[$variablename];
                     $variables[$variablename] = ($variables[$variablename] === 'false') ? false : $variables[$variablename];
                 }

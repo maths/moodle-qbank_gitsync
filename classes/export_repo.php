@@ -193,7 +193,7 @@ class export_repo {
                 $this->defaultsfilepath = dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE;
             } else {
                 $this->defaultsfilepath = dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE;
-                copy(dirname($this->manifestpath). '/../questiondefaults.yml', $this->defaultsfilepath);
+                copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);
             }
             $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
         }
