@@ -287,7 +287,7 @@ class create_repo {
         $this->manifestcontents->context->defaultsubcategoryid = $this->qcategoryid;
         $this->manifestcontents->context->defaultsubdirectory = null;
         $this->manifestcontents->context->defaultignorecat = $this->ignorecat;
-        $this->manifestcontents->context->defaultdefaults = ($this->defaultsfilepath) ? basename($this->defaultsfilepath) : null;
+        $this->manifestcontents->context->defaultdefaults = isset($this->defaultsfilepath) ? basename($this->defaultsfilepath) : null;
         $this->manifestcontents->context->moodleurl = $this->moodleurl;
         $this->manifestcontents->questions = [];
     }
@@ -299,7 +299,7 @@ class create_repo {
      * @return void
      */
     public function process(): void {
-        if (!isset($this->defaults)) {
+        if (!isset($this->defaults) && $this->useyaml) {
             // This occurs when creating whole course repo. We have had
             // to wait until the course directory has been created.
             copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);

@@ -370,7 +370,7 @@ class import_repo {
             $this->manifestcontents->context->defaultsubcategoryid = $instanceinfo->contextinfo->qcategoryid;
             $this->manifestcontents->context->defaultsubdirectory = $this->subdirectory;
             $this->manifestcontents->context->defaultignorecat = $this->ignorecat;
-            $this->manifestcontents->context->defaultdefaults = ($this->defaultsfilepath) ? basename($this->defaultsfilepath) : null;
+            $this->manifestcontents->context->defaultdefaults = isset($this->defaultsfilepath) ? basename($this->defaultsfilepath) : null;
             $this->manifestcontents->context->moodleurl = $this->moodleurl;
             $this->manifestcontents->questions = [];
         } else {
