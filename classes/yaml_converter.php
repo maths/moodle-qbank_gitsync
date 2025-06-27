@@ -497,7 +497,13 @@ class yaml_converter {
             $diff['input'] = $diffinputs;
         } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
             $diff['input'] = [['name' => self::get_default('input', 'name'),
-                'tans' => self::get_default('input', 'tans')]];
+                'type' => self::get_default('input', 'type'),
+                'tans' => self::get_default('input', 'tans'),
+                'forbidfloat' => self::get_default('input', 'forbidfloat'),
+                'requirelowestterms' => self::get_default('input', 'requirelowestterms'),
+                'checkanswertype' => self::get_default('input', 'checkanswertype'),
+                'mustverify' => self::get_default('input', 'mustverify'),
+                'showvalidation' => self::get_default('input', 'showvalidation')]];
         } else {
             $diff['input'] = [];
         }
@@ -513,10 +519,14 @@ class yaml_converter {
             }
             $diff['prt'] = $diffprts;
         } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
-            $diff['prt'] = [['name' => self::get_default('prt', 'name'),
+            $diff['prt'] = ['name' => self::get_default('prt', 'name'),
+                'autosimplify' => self::get_default('prt', 'autosimplify'),
+                'feedbackstyle' => self::get_default('prt', 'feedbackstyle'),
                 'node' => [['name' => self::get_default('node', 'name'),
+                    'answertest' => self::get_default('node', 'answertest'),
                     'sans' => self::get_default('node', 'sans'),
-                    'tans' => self::get_default('node', 'tans')]]]];
+                    'tans' => self::get_default('node', 'tans'),
+                    'quiet' => self::get_default('node', 'quiet'),]]];
         } else {
             $diff['prt'] = [];
         }
