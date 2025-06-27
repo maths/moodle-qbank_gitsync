@@ -73,7 +73,7 @@ jobs:
 
       - name: Validate composer.json and composer.lock
         run: |
-          echo $(pwd)
+          cd plugin
           composer validate
 
       - name: Cache Composer packages
