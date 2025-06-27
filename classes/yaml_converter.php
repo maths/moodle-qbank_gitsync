@@ -333,7 +333,7 @@ class yaml_converter {
 
     public static function get_default($defaultcategory, $defaultname) {
         if (!self::$defaults) {
-            self::$defaults = yaml_parse_file(__DIR__ . '/../../questiondefaults.yml');
+            self::$defaults = Yaml::parseFile(__DIR__ . '/../../questiondefaults.yml');
         }
 
         if (isset(self::$defaults[$defaultcategory][$defaultname])) {
@@ -351,7 +351,7 @@ class yaml_converter {
      * @throws \stack_exception If the YAML string is invalid.
      */
     public static function yaml_to_xml($yamlstring) {
-        $yaml = yaml_parse($yamlstring);
+        $yaml = Yaml::parse($yamlstring);
         if (!$yaml) {
             throw new \stack_exception("The provided file does not contain valid YAML or XML.");
         }
@@ -456,7 +456,7 @@ class yaml_converter {
 
 
     public static function load_defaults($defaultfile) {
-        $defaults = yaml_parse_file($defaultfile);
+        $defaults = Yaml::parseFile($defaultfile);
         if (!$defaults) {
             echo "\nUnable to access or parse default file: {$defaultfile}\nAborting.\n";
             self::call_exit();
