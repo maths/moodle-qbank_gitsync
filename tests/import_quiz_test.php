@@ -141,6 +141,7 @@ final class import_quiz_test extends advanced_testcase {
             'help' => false,
             'subcall' => false,
             'usegit' => true,
+            'useyaml' => false,
         ];
 
     }

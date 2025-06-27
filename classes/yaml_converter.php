@@ -52,7 +52,7 @@ class yaml_converter {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
-            self::$defaults = self::load_defaults(__DIR__ . '/../../questiondefaults.yml');
+            self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml');
         }
         try {
             $xmldata = self::yaml_to_xml($yaml);
@@ -333,7 +333,7 @@ class yaml_converter {
 
     public static function get_default($defaultcategory, $defaultname) {
         if (!self::$defaults) {
-            self::$defaults = Yaml::parseFile(__DIR__ . '/../../questiondefaults.yml');
+            self::$defaults = Yaml::parseFile(__DIR__ . '/../questiondefaults.yml');
         }
 
         if (isset(self::$defaults[$defaultcategory][$defaultname])) {
@@ -479,7 +479,7 @@ class yaml_converter {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
-            self::$defaults = self::load_defaults(__DIR__ . '/../../questiondefaults.yml');
+            self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml');
         }
         if (strpos($xml, '<question type="stack">') !== false) {
             $xmldata = new SimpleXMLElement($xml);
