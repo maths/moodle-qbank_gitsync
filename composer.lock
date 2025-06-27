@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fe669030f90f15e422446c4366937571",
+    "content-hash": "7ddaf8c4a8e84c0c413362fd2d328c1c",
     "packages": [
         {
             "name": "symfony/deprecation-contracts",

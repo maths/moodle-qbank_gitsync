@@ -1,4 +1,6 @@
 {
+    "name": "maths/moodle-qbank_gitsync",
+    "description": "Communicate between Moodle and a Git repositiory.",
     "require": {
         "symfony/yaml": "^7.3"
     }
