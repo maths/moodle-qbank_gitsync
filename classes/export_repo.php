@@ -349,7 +349,7 @@ class export_repo {
                     continue;
                 }
 
-                if ($this->useyaml) {
+                if ($this->useyaml && strpos($question, '<question type="stack">') !== false) {
                     $question = yaml_converter::detect_differences($question, $this->defaults);
                 }
                 $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);

@@ -217,7 +217,7 @@ trait export_trait {
                     }
                 }
                 $filetype = 'xml';
-                if ($this->useyaml) {
+                if ($this->useyaml && strpos($question, '<question type="stack">') !== false) {
                     $question = yaml_converter::detect_differences($question, $this->defaults);
                     $filetype = 'yml';
                 }
