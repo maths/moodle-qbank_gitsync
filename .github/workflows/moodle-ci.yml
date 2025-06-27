@@ -72,9 +72,9 @@ jobs:
           coverage: none
 
       - name: Validate composer.json and composer.lock
-        run: composer validate
-        with:
-          path: plugin
+        run: |
+          echo $(pwd)
+          composer validate
 
       - name: Cache Composer packages
         id: composer-cache
