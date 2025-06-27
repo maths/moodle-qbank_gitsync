@@ -25,6 +25,10 @@
 namespace qbank_gitsync;
 
 defined('MOODLE_INTERNAL') || die();
+use Symfony\Component\Yaml\Yaml;
+if (is_file(__DIR__.'/../vendor/autoload.php')) {
+    require_once __DIR__.'/../vendor/autoload.php';
+}
 
 /**
  * Tests for YAML converter in yaml_converter.php
@@ -34,7 +38,7 @@ final class yaml_converter_test extends \advanced_testcase {
 
     public function test_loadxml(): void {
         if (!function_exists('Yaml::parse')) {
-            $this->markTestSkipped('YAML extension is not available.');
+            $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
         }
         $defaults = Yaml::parseFile(__DIR__ . '/../questiondefaults.yml');
@@ -52,7 +56,7 @@ final class yaml_converter_test extends \advanced_testcase {
         public function test_yaml_to_xml()
     {
         if (!function_exists('Yaml::parse')) {
-            $this->markTestSkipped('YAML extension is not available.');
+            $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
         }
         $yaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
