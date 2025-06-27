@@ -33,11 +33,11 @@ defined('MOODLE_INTERNAL') || die();
 final class yaml_converter_test extends \advanced_testcase {
 
     public function test_loadxml(): void {
-        if (!function_exists('yaml_parse')) {
+        if (!function_exists('Yaml::parse')) {
             $this->markTestSkipped('YAML extension is not available.');
             return;
         }
-        $defaults = yaml_parse_file(__DIR__ . '/../questiondefaults.yml');
+        $defaults = Yaml::parseFile(__DIR__ . '/../questiondefaults.yml');
         $questionyaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
         $xml = \qbank_gitsync\yaml_converter::loadyaml($questionyaml , $defaults);
         $this->assertEquals('Test question', (string) $xml->question->name->text);
@@ -51,7 +51,7 @@ final class yaml_converter_test extends \advanced_testcase {
 
         public function test_yaml_to_xml()
     {
-        if (!function_exists('yaml_parse')) {
+        if (!function_exists('Yaml::parse')) {
             $this->markTestSkipped('YAML extension is not available.');
             return;
         }
@@ -163,7 +163,7 @@ final class yaml_converter_test extends \advanced_testcase {
         // Test the difference detection with a full question.
         $yaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
         $diff = yaml_converter::detect_differences($yaml, null);
-        $diffarray = yaml_parse($diff);
+        $diffarray = Yaml::parse($diff);
         $this->assertEquals(9, count($diffarray));
         $expected = [
             'name' => 'Test question',
@@ -278,7 +278,7 @@ final class yaml_converter_test extends \advanced_testcase {
             ]
         ];
         $diff = yaml_converter::detect_differences($blankxml, null);
-        $diffarray = yaml_parse($diff);
+        $diffarray = Yaml::parse($diff);
         $this->assertEquals(2, count($diffarray));
         $this->assertEqualsCanonicalizing($expected, $diffarray);
 
@@ -290,7 +290,7 @@ final class yaml_converter_test extends \advanced_testcase {
             'prt' => []
         ];
         $diff = yaml_converter::detect_differences($infoxml, null);
-        $diffarray = yaml_parse($diff);
+        $diffarray = Yaml::parse($diff);
         $this->assertEquals(3, count($diffarray));
 
         $this->assertEqualsCanonicalizing($expected, $diffarray);
