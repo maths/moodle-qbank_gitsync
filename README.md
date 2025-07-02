@@ -170,3 +170,4 @@ and [export](doc/exportwholecoursefrommoodle.md) a course's questions along with
 
 - [More information on goals and use cases for Gitsync.](doc/index.md)
 - [Detailed list of steps that take place during the running of the four main scripts](doc/processdetails.md)
+- [Storing your questions as YAML rather than XML.](doc/useyaml.md)

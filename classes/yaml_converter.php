@@ -23,30 +23,48 @@
  */
 
 namespace qbank_gitsync;
+define('CLI_SCRIPT', true);
+require_once('../cli/config.php');
 use SimpleXMLElement;
 use Symfony\Component\Yaml\Yaml;
 if (is_file(__DIR__.'/../vendor/autoload.php')) {
-    require_once __DIR__.'/../vendor/autoload.php';
+    require_once(__DIR__.'/../vendor/autoload.php');
 }
 
+/**
+ * Handles conversion between YAML and XML for Stack questions.
+ * It provides methods to load YAML, convert it to XML, and vice versa.
+ * It also sets default values for various fields based on a defaults file.
+ */
 class yaml_converter {
+    /**
+     * @var array|null Default values for the question.
+     */
     public static $defaults = null;
+    /**
+     * @var array Question properties that have <text> elements in the xml.
+     */
     public const TEXTFIELDS = [
         'name', 'questiontext', 'generalfeedback', 'stackversion', 'questionvariables',
         'specificfeedback', 'questionnote',
         'questiondescription', 'prtcorrect', 'prtpartiallycorrect', 'prtincorrect',
-        'feedbackvariables', 'truefeedback', 'falsefeedback'
+        'feedbackvariables', 'truefeedback', 'falsefeedback',
     ];
+    /**
+     * @var array Question properties that can have multiple elements in the xml.
+     */
     public const ARRAYFIELDS = [
-        'input', 'prt', 'node', 'deployedseed', 'qtest', 'testinput', 'expected'
+        'input', 'prt', 'node', 'deployedseed', 'qtest', 'testinput', 'expected',
     ];
 
+    /**
+     * @var array Question properties are always shown in difference file even if they match the default.
+     */
     public const ALWAYS_SHOWN = [
         'questionsimplify', 'type', 'tans', 'forbidfloat', 'requirelowestterms', 'checkanswertype',
         'mustverify', 'showvalidation', 'autosimplify', 'feedbackstyle', 'answertest', 'sans',
-        'quiet', 'name'
+        'quiet', 'name',
     ];
-
     // phpcs:ignore moodle.Commenting.MissingDocblock.Function
     public static function loadyaml($yaml, $defaults) {
         if ($defaults) {
@@ -315,7 +333,14 @@ class yaml_converter {
         return $xmldata;
     }
 
-    public static function set_field(&$element, $field, $default) {
+    /**
+     * Set a field (including parents) in the XML element if it does not already exist.
+     * @param mixed $element element to add the field to
+     * @param mixed $field in format parent->child if multiple levels
+     * @param mixed $default value to set the field to
+     * @return void
+     */
+    public static function set_field(&$element, $field, $default): void {
         if (!isset($question->$field)) {
             $parts = explode('->', $field);
             $current = $element;
@@ -331,6 +356,13 @@ class yaml_converter {
         }
     }
 
+    /**
+     * Returns the default value for a question property.
+     *
+     * @param string $defaultcategory The category of the property required - question, input, prt, node, qtest.
+     * @param string $defaultname The name of the property.
+     * @return mixed The default value.
+     */
     public static function get_default($defaultcategory, $defaultname) {
         if (!self::$defaults) {
             self::$defaults = Yaml::parseFile(__DIR__ . '/../questiondefaults.yml');
@@ -376,7 +408,7 @@ class yaml_converter {
                 $nodekey = str_replace('format', '', $key);
                 if (!isset($xml->$nodekey)) {
                     $xml->addChild($nodekey);
-                    $xml->$nodekey['format'] = $value;
+                    $xml->{$nodekey}['format'] = $value;
                 } else {
                     continue;
                 }
@@ -433,8 +465,8 @@ class yaml_converter {
                 } else {
                     $output[$key] = (string) $value;
                 }
-                if (isset($xmldata->$key['format'])) {
-                    $output[$key . 'format'] = (string) $xmldata->$key['format'];
+                if (isset($xmldata->{$key}['format'])) {
+                    $output[$key . 'format'] = (string) $xmldata->{$key}['format'];
                 }
             } else if ($value instanceof SimpleXMLElement && $value->count()) {
                 if (in_array($key, self::ARRAYFIELDS)) {
@@ -454,7 +486,11 @@ class yaml_converter {
         return $output;
     }
 
-
+    /**
+     * Load a parse file with default values for questions.
+     * @param string filepath
+     * @return array YAML
+     */
     public static function load_defaults($defaultfile) {
         $defaults = Yaml::parseFile($defaultfile);
         if (!$defaults) {
@@ -475,6 +511,12 @@ class yaml_converter {
         exit;
     }
 
+    /**
+     * Detects differences between the provided XML or YAML and the default question structure.
+     *
+     * @param string $xml The XML or YAML string to compare.
+     * @return string The differences in YAML format.
+     */
     public static function detect_differences($xml, $defaults) {
         if ($defaults) {
             self::$defaults = $defaults;
@@ -519,14 +561,14 @@ class yaml_converter {
             }
             $diff['prt'] = $diffprts;
         } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
-            $diff['prt'] = ['name' => self::get_default('prt', 'name'),
+            $diff['prt'] = [['name' => self::get_default('prt', 'name'),
                 'autosimplify' => self::get_default('prt', 'autosimplify'),
                 'feedbackstyle' => self::get_default('prt', 'feedbackstyle'),
                 'node' => [['name' => self::get_default('node', 'name'),
                     'answertest' => self::get_default('node', 'answertest'),
                     'sans' => self::get_default('node', 'sans'),
                     'tans' => self::get_default('node', 'tans'),
-                    'quiet' => self::get_default('node', 'quiet'),]]];
+                    'quiet' => self::get_default('node', 'quiet'), ]]]];
         } else {
             $diff['prt'] = [];
         }
@@ -565,13 +607,27 @@ class yaml_converter {
         return $yaml;
     }
 
-    public static function obj_diff($obj1, $obj2):array {
+    /**
+     * Compares two objects and returns the differences as an array.
+     *
+     * @param object $obj1 The first object to compare.
+     * @param object $obj2 The second object to compare.
+     * @return array An associative array of differences.
+     */
+    public static function obj_diff($obj1, $obj2): array {
         $a1 = (array) $obj1;
         $a2 = (array) $obj2;
         return self::arr_diff($a1, $a2);
     }
 
-    public static function arr_diff($a1, $a2):array {
+    /**
+     * Compares two arrays and returns the differences as an associative array.
+     *
+     * @param array $a1 The first array to compare.
+     * @param array $a2 The second array to compare.
+     * @return array An associative array of differences.
+     */
+    public static function arr_diff($a1, $a2): array {
         $r = [];
         foreach ($a1 as $k => $v) {
             if (in_array($k, self::ALWAYS_SHOWN)) {
@@ -583,12 +639,14 @@ class yaml_converter {
                 continue;
             }
             if (array_key_exists($k, $a2)) {
-                if (is_array($v)){
+                if (is_array($v)) {
                     $rad = self::arr_diff($v, (array) $a2[$k]);
-                    if (count($rad)) { $r[$k] = $rad; }
-                // required to avoid rounding errors due to the
-                // conversion from string representation to double
-                } else if (is_double($v)){
+                    if (count($rad)) {
+                        $r[$k] = $rad;
+                    }
+                    // Required to avoid rounding errors due to the
+                    // conversion from string representation to double.
+                } else if (is_double($v)) {
                     if (abs($v - $a2[$k]) > 0.000000000001) {
                         $r[$k] = $a2[$k];
                     }
@@ -602,6 +660,12 @@ class yaml_converter {
         return $r;
     }
 
+    /**
+     * Adds a CDATA section to an XML node if the value contains special characters.
+     *
+     * @param SimpleXMLElement $xml The XML node to add the CDATA to.
+     * @param string $value The value to add as CDATA.
+     */
     public static function add_cdata(&$xml, $value) {
         if (!empty($value) && htmlspecialchars($value, ENT_COMPAT) != $value) {
             $node = dom_import_simplexml($xml);

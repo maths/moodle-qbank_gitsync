@@ -351,8 +351,9 @@ class import_quiz {
         if ($this->useyaml) {
             if ($arguments['defaultfile']) {
                 $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . $arguments['defaultfile'];
-            } else if (!empty($this->manifestcontents->context->defaultdefaults)) {
-                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . $this->manifestcontents->context->defaultdefaults;
+            } else if (!empty($this->quizmanifestcontents->context->defaultdefaults)) {
+                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' .
+                $this->quizmanifestcontents->context->defaultdefaults;
             } else if (is_file(dirname($this->quizmanifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
                 $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . cli_helper::DEFAULTS_FILE;
             } else {

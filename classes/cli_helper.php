@@ -80,7 +80,7 @@ class cli_helper {
     /**
      * BAD_CHARACTERS - Characters to remove for filename sanitisation
      */
-    public const BAD_CHARACTERS = '/[\/\\\?\%\'*:|"<> .$!`&]+/';
+    public const BAD_CHARACTERS = '/[\/\\\?\%\'*:|"<> .$!\`&]+/'; // phpcs:ignore moodle.Strings.ForbiddenStrings.Found
     /**
      * Constructor
      *

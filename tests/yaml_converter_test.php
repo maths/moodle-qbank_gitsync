@@ -27,12 +27,13 @@ namespace qbank_gitsync;
 defined('MOODLE_INTERNAL') || die();
 use Symfony\Component\Yaml\Yaml;
 if (is_file(__DIR__.'/../vendor/autoload.php')) {
-    require_once __DIR__.'/../vendor/autoload.php';
+    require_once(__DIR__.'/../vendor/autoload.php');
 }
 
 /**
  * Tests for YAML converter in yaml_converter.php
  * @group qbank_gitsync
+ * @covers \qbank_gitsync
  */
 final class yaml_converter_test extends \advanced_testcase {
 
@@ -48,13 +49,12 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals(1,
             preg_match('/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
                 '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s', (string) $xml->question->questiontext->text));
-       $this->assertEquals('html', (string) $xml->question->questiontext['format']);
-       $this->assertEquals(false, isset($xml->question->questiontext->format));
-       // TODO check the rest of the XML structure.
+        $this->assertEquals('html', (string) $xml->question->questiontext['format']);
+        $this->assertEquals(false, isset($xml->question->questiontext->format));
+        // TODO check the rest of the XML structure.
     }
 
-        public function test_yaml_to_xml()
-    {
+    public function test_yaml_to_xml(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
@@ -65,12 +65,11 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals(1,
             preg_match('/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
                 '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s', (string) $xml->question->questiontext->text));
-       $this->assertEquals('html', (string)$xml->question->questiontext['format']);
-       $this->assertEquals(false, isset($xml->question->questiontext->format));
+        $this->assertEquals('html', (string)$xml->question->questiontext['format']);
+        $this->assertEquals(false, isset($xml->question->questiontext->format));
     }
 
-    public function test_array_to_xml_inverse()
-    {
+    public function test_array_to_xml_inverse(): void {
         $data = [
             'name' => 'Test',
             'questiontext' => 'What is 2+2?',
@@ -78,12 +77,12 @@ final class yaml_converter_test extends \advanced_testcase {
             'input' => [
                 [
                     'name' => 'ans1',
-                    'tans' => '1'
+                    'tans' => '1',
                 ],
                 [
                     'name' => 'ans1',
-                    'tans' => '2'
-                ]
+                    'tans' => '2',
+                ],
             ],
             'prt' => [
                 [
@@ -93,16 +92,16 @@ final class yaml_converter_test extends \advanced_testcase {
                         [
                             'name' => '0',
                             'sans' => '011',
-                            'tans' => '022'
+                            'tans' => '022',
                         ],
                         [
                             'name' => '1',
                             'sans' => '033',
-                            'tans' => '044'
-                        ]
-                    ]
-                ]
-            ]
+                            'tans' => '044',
+                        ],
+                    ],
+                ],
+            ],
         ];
         $xml = new \SimpleXMLElement('<question></question>');
         yaml_converter::array_to_xml($data, $xml);
@@ -120,8 +119,7 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEqualsCanonicalizing($data, $array);
     }
 
-    public function test_obj_diff()
-    {
+    public function test_obj_diff(): void {
         $a = (object) ['a' => 1, 'b' => 2];
         $b = (object) ['a' => 1, 'b' => 3];
         $diff = yaml_converter::obj_diff($a, $b);
@@ -129,9 +127,8 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals(3, $diff['b']);
     }
 
-    public function test_arr_diff()
-    {
-        $a = ['x' => 5, 'y' => 6, 'z' => (0.1+0.7)*10, 'a' => [1 => 'x', 2 => 'y']];
+    public function test_arr_diff(): void {
+        $a = ['x' => 5, 'y' => 6, 'z' => (0.1 + 0.7) * 10, 'a' => [1 => 'x', 2 => 'y']];
         $b = ['x' => 5, 'y' => 7, 'z' => 8, 'a' => [1 => 'x', 2 => 'z']];
         $diff = yaml_converter::arr_diff($a, $b);
         $this->assertEquals(2, count($diff));
@@ -141,14 +138,12 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('z', $diff['a'][2]);
     }
 
-    public function test_get_default()
-    {
+    public function test_get_default(): void {
         $default = yaml_converter::get_default('question', 'name');
         $this->assertEquals('Default', $default);
     }
 
-    public function test_detect_difference()
-    {
+    public function test_detect_difference(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
@@ -158,8 +153,7 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertStringContainsString('name: Test', $yaml);
     }
 
-    public function test_detect_difference_yml()
-    {
+    public function test_detect_difference_yml(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
@@ -171,7 +165,8 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals(10, count($diffarray));
         $expected = [
             'name' => 'Test question',
-            'questiontext' => "<p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>\n    <p>[[input:ans2]] [[validation:ans2]]</p>\n",
+            'questiontext' => "<p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>\n    <p>[[input:ans2]] " .
+                "[[validation:ans2]]</p>\n",
             'questionvariables' => 'ta1:1;ta2:2;',
             'questionsimplify' => '1',
             'prtcorrect' => '<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
@@ -186,7 +181,7 @@ final class yaml_converter_test extends \advanced_testcase {
                     'requirelowestterms' => '0',
                     'checkanswertype' => '0',
                     'mustverify' => '1',
-                    'showvalidation' => '1'
+                    'showvalidation' => '1',
                 ],
                 [
                     'name' => 'ans2',
@@ -196,8 +191,8 @@ final class yaml_converter_test extends \advanced_testcase {
                     'requirelowestterms' => '0',
                     'checkanswertype' => '0',
                     'mustverify' => '1',
-                    'showvalidation' => '1'
-                ]
+                    'showvalidation' => '1',
+                ],
             ],
             'prt' => [
                 [
@@ -211,9 +206,9 @@ final class yaml_converter_test extends \advanced_testcase {
                             'answertest' => 'AlgEquiv',
                             'sans' => 'ans1',
                             'tans' => 'ta1',
-                            'quiet' => '1'
-                        ]
-                    ]
+                            'quiet' => '1',
+                        ],
+                    ],
                 ],
                 [
                     'name' => 'prt2',
@@ -227,15 +222,15 @@ final class yaml_converter_test extends \advanced_testcase {
                             'sans' => 'ans2',
                             'tans' => 'ta2',
                             'quiet' => '0',
-                            'falsescore' => '1'
-                        ]
-                    ]
-                ]
+                            'falsescore' => '1',
+                        ],
+                    ],
+                ],
             ],
             'deployedseed' => [
                 1,
                 2,
-                3
+                3,
             ],
             'qtest' => [
                 [
@@ -243,38 +238,42 @@ final class yaml_converter_test extends \advanced_testcase {
                     'description' => 'A test',
                     'testinput' => [
                         [
-                            'name' => 'ans1'
+                            'name' => 'ans1',
                         ],
                         [
                             'name' => 'ans2',
-                            'value' => 'ta2'
-                        ]
+                            'value' => 'ta2',
+                        ],
                     ],
                     'expected' => [
                         [
                             'name' => 'prt1',
                             'expectedscore' => '1.0000000',
-                            'expectedpenalty' => '0.0000000'
+                            'expectedpenalty' => '0.0000000',
                         ],
                         [
                             'name' => 'prt2',
                             'expectedscore' => '1.0000000',
                             'expectedpenalty' => '0.0000000',
-                            'expectedanswernote' => '2-0-T'
-                        ]
-                    ]
-                ]
-            ]
+                            'expectedanswernote' => '2-0-T',
+                        ],
+                    ],
+                ],
+            ],
         ];
         $expectedstring = "name: 'Test question'\nquestiontext: |\n  <p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>" .
-            "\n      <p>[[input:ans2]] [[validation:ans2]]</p>\nquestionvariables: 'ta1:1;ta2:2;'\nquestionsimplify: '1'\nprtcorrect: '<p>" .
+            "\n      <p>[[input:ans2]] [[validation:ans2]]</p>\nquestionvariables: 'ta1:1;ta2:2;" .
+            "'\nquestionsimplify: '1'\nprtcorrect: '<p>" .
             "<i class=\"fa fa-check\"></i> Correct answer*, well done.</p>'\nmultiplicationsign: cross\ninput:\n  - " .
             "name: ans1\n    type: algebraic\n    tans: ta1\n    boxsize: '25'\n    forbidfloat: '1'\n    " .
             "requirelowestterms: '0'\n    checkanswertype: '0'\n    mustverify: '1'\n    showvalidation: '1'\n  - name: " .
             "ans2\n    type: algebraic\n    tans: ta2\n    forbidfloat: '1'\n    requirelowestterms: '0'\n    " .
-            "checkanswertype: '0'\n    mustverify: '1'\n    showvalidation: '1'\nprt:\n  - name: prt1\n    value: '2'\n    autosimplify: '1'\n    feedbackstyle: '1'\n    " .
-            "node:\n      - name: '0'\n        answertest: AlgEquiv\n        sans: ans1\n        tans: ta1\n        quiet: '1'\n  - name: prt2\n    " .
-            "value: '1.0000001'\n    autosimplify: '1'\n    feedbackstyle: '1'\n    node:\n      - name: '0'\n        answertest: AlgEquiv\n        sans: ans2\n        tans: ta2\n        quiet: '0'\n        falsescore: '1'\n" .
+            "checkanswertype: '0'\n    mustverify: '1'\n    showvalidation: '1'\nprt:\n" .
+            "  - name: prt1\n    value: '2'\n    autosimplify: '1'\n    feedbackstyle: '1'\n    " .
+            "node:\n      - name: '0'\n        answertest: AlgEquiv\n        sans: ans1\n        tans: ta1\n" .
+            "        quiet: '1'\n  - name: prt2\n    " .
+            "value: '1.0000001'\n    autosimplify: '1'\n    feedbackstyle: '1'\n    node:\n      - name: '0'\n" .
+            "        answertest: AlgEquiv\n        sans: ans2\n        tans: ta2\n        quiet: '0'\n        falsescore: '1'\n" .
             "deployedseed:\n  - '1'\n  - '2'\n  - '3'\nqtest:\n  - testcase: '1'\n    description: 'A test'\n    " .
             "testinput:\n      - name: ans1\n      - name: ans2\n        value: ta2\n    expected:\n      - name: prt1" .
             "\n        expectedscore: '1.0000000'\n        expectedpenalty: '0.0000000'\n      " .
@@ -296,10 +295,11 @@ final class yaml_converter_test extends \advanced_testcase {
                     'requirelowestterms' => '0',
                     'checkanswertype' => '0',
                     'mustverify' => '1',
-                    'showvalidation' => '1'
-                ]
+                    'showvalidation' => '1',
+                ],
             ],
-            'prt' => [
+            'prt' =>
+                [
                     'name' => 'prt1',
                     'autosimplify' => '1',
                     'feedbackstyle' => '1',
@@ -309,9 +309,9 @@ final class yaml_converter_test extends \advanced_testcase {
                             'answertest' => 'AlgEquiv',
                             'sans' => 'ans1',
                             'tans' => 'ta1',
-                            'quiet' => '0'
-                        ]
-                    ]
+                            'quiet' => '0',
+                        ],
+                    ],
                 ],
         ];
         $diff = yaml_converter::detect_differences($blankxml, null);
@@ -326,7 +326,7 @@ final class yaml_converter_test extends \advanced_testcase {
             'questionsimplify' => '1',
             'defaultgrade' => '0',
             'input' => [],
-            'prt' => []
+            'prt' => [],
         ];
         $diff = yaml_converter::detect_differences($infoxml, null);
         $diffarray = Yaml::parse($diff);

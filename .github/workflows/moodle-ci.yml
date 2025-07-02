@@ -44,11 +44,17 @@ jobs:
           - php: '8.2'
             moodle-branch: 'MOODLE_404_STABLE'
             database: 'pgsql'
-          - php: '8.2'
+          - php: '8.1'
             moodle-branch: 'MOODLE_403_STABLE'
             database: 'pgsql'
-          - php: '8.2'
+          - php: '8.1'
             moodle-branch: 'MOODLE_402_STABLE'
+            database: 'pgsql'
+          - php: '8.0'
+            moodle-branch: 'MOODLE_402_STABLE'
+            database: 'pgsql'
+          - php: '7.4'
+            moodle-branch: 'MOODLE_401_STABLE'
             database: 'pgsql'
 
     steps:
@@ -66,12 +72,14 @@ jobs:
           coverage: none
 
       - name: Validate composer.json and composer.lock
+        if: ${{ fromJSON(matrix.php) >= 8.2 }}
         run: |
           cd plugin
           composer validate
 
       - name: Cache Composer packages
         id: composer-cache
+        if: ${{ fromJSON(matrix.php) >= 8.2 }}
         uses: actions/cache@v3
         with:
           path: vendor
@@ -80,6 +88,7 @@ jobs:
             ${{ runner.os }}-php-
 
       - name: Install Dependencies
+        if: ${{ fromJSON(matrix.php) >= 8.2 }}
         run: |
           cd plugin
           composer install

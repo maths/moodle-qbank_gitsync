@@ -287,7 +287,8 @@ class create_repo {
         $this->manifestcontents->context->defaultsubcategoryid = $this->qcategoryid;
         $this->manifestcontents->context->defaultsubdirectory = null;
         $this->manifestcontents->context->defaultignorecat = $this->ignorecat;
-        $this->manifestcontents->context->defaultdefaults = isset($this->defaultsfilepath) ? basename($this->defaultsfilepath) : null;
+        $this->manifestcontents->context->defaultdefaults =
+            isset($this->defaultsfilepath) ? basename($this->defaultsfilepath) : null;
         $this->manifestcontents->context->moodleurl = $this->moodleurl;
         $this->manifestcontents->questions = [];
     }
