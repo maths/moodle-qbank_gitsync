@@ -57,7 +57,7 @@ $options = [
     [
         'longopt' => 'directory',
         'shortopt' => 'd',
-        'description' => 'Directory of repo on users computer, containing "top" folder, ' .
+        'description' => 'Directory of repo on users computer, containing "top" folder of course, ' .
                          'relative to root directory.',
         'default' => '',
         'variable' => 'directory',

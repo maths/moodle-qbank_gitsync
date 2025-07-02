@@ -23,6 +23,7 @@ Commit this update.
 |p|nonquizmanifestpath|Filepath of non-quiz manifest file relative to root directory.|
 |a|quizdatapath|Filepath of quiz data file relative to root directory.
 |d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
+|o|defaultfile|Name of file containing custom question defaults.|
 |s|subdirectory|Relative subdirectory of repo to actually import.|
 |l|contextlevel|Context in which to place questions. Set to system, coursecategory, course or module
 |c|coursename|Unique course name for course or module context.
@@ -31,6 +32,7 @@ Commit this update.
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
+|y|useyaml|Export questions as YAML difference file?|
 
 Examples:
 
@@ -41,6 +43,8 @@ This will import the quiz in the `quizexport` directory to the course with `id` 
 `php importquiztomoodle.php -d 'quizexport' -f 'course1/instance2_course_course-1_question_manifest.json'`
 
 Import the quiz into the course specified in the manifest file. The quiz structure can contain questions from the manifest file and the quiz context.
+
+If your questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`). If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file.
 
 ## Deletion
 

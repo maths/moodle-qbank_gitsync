@@ -120,6 +120,7 @@ A manifest file will have the name `instancename_contextlevel_contextname_questi
         "defaultsubcategoryid": 3, // Set by the subcategory/directory used at manifest creation
         "defaultsubdirectory": "top", // Set by the subcategory/directory used at manifest creation
         "defaultignorecat": null, // Ignore categories containing the given regular expression
+        "defaultdefault": null, // The filename of the YAML defaults file used on manifest creation if using YAML.
         "moodleurl": "http:\/\/stack.stack.virtualbox.org\/edmundlocal"
     },
     "questions": [

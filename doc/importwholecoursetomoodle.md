@@ -22,6 +22,7 @@ Commit this update.
 |r|rootdirectory|Directory on user's computer containing repos.|
 |f|manifestpath|Filepath of manifest file relative to root directory.|
 |d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
+|o|defaultfile|Name of file containing custom question defaults.|
 |s|subdirectory|Relative subdirectory of repo to actually import.|
 |k|targetcategory|Category to import a subdirectory into.
 |a|targetcategoryname|Category to import a subdirectory into.
@@ -31,6 +32,7 @@ Commit this update.
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
+|y|useyaml|Export questions as YAML difference file?|
 
 Examples:
 
@@ -52,6 +54,8 @@ Import will only be possible if there are not updates to the questions in Moodle
 Only questions that have changed in the repo since the last import will be imported to Moodle (to avoid creating a new version in Moodle when nothing has changed).
 
 Quiz structure will not be updated.
+
+If your questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`) but there will need to be a matching file in the repos for the course and all the quizzes. If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file.
 
 ## Scenario 2: Importing questions into Moodle from an existing repo
 

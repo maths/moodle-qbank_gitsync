@@ -275,6 +275,10 @@ final class yaml_converter_test extends \advanced_testcase {
     }
 
     public function test_get_default(): void {
+        if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
+            $this->markTestSkipped('Symfony YAML extension is not available.');
+            return;
+        }
         $default = yaml_converter::get_default('question', 'name');
         $this->assertEquals('Default', $default);
     }

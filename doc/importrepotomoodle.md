@@ -24,6 +24,7 @@ Commit this update.
 |r|rootdirectory|Directory on user's computer containing repos.|
 |f|manifestpath|Filepath of manifest file relative to root directory.|
 |d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
+|o|defaultfile|Name of file containing custom question defaults.|
 |s|subdirectory|Relative subdirectory of repo to actually import.|
 |k|targetcategory|Category to import a subdirectory into.
 |a|targetcategoryname|Category to import a subdirectory into.
@@ -36,6 +37,7 @@ Commit this update.
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
+|y|useyaml|Export questions as YAML difference file?|
 
 ## Scenario 1: Importing questions into Moodle from an existing repo
 
@@ -70,6 +72,8 @@ This will only import the questions in the 'My-category' folder and below but wi
 (i.e. 'top/My course/My category). If you want to import a subdirectory of questions (or the full repo) into a specific question category
 you will also need to specify `--targetcategory` or `--targetcategoryname`. See the [README file](../README.md#Using-subsets-of-materials)
 for more information on subselections and targeting.
+
+If your questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`). If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file.
 
 ## Scenario 2: Re-importing questions into Moodle when the manifest file already exists
 
