@@ -5,7 +5,7 @@ MoodleXML is a great way to store questions but is not very readable by humans a
 By setting `useyaml` to true (either in your config file or for individual script runs), you can store questions in your repo as YAML difference representations. When exporting to the repo, Gitsync downloads questions as normal, converts them to YAML and then compares them with a defaults file. Fields that match the default (and are not part of the minimum represenations) are removed and then what's left is stored in the repo.
 
 Gitsync will select a defaults file on the following basis:
-    - If you supply a filename as a script argument, Gitsync will look for it in the repo directory.
+    - If you supply a filename as a script argument (`--defaultfile` or `-o`), Gitsync will look for it in the repo directory.
     - Otherwise, if there is a default file recorded in the manifest file from manifest creation, Gitsync will look for it in the repo directory.
     - Failing that, Gitsync will look for a `questiondefault.yml` in the repo directory.
     - As a last resort, Gitsync will use [it's own defaults file](../questiondefaults.yml).
