@@ -12,6 +12,7 @@
 |-|-|-|
 |i|moodleinstance|Key of Moodle instance in $moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
+|o|defaultfile|Name of file containing custom question defaults.|
 |f|manifestpath|Filepath of manifest file relative to root directory.|
 |s|subcategory|Relative subcategory of repo to actually export.|
 |q|questioncategoryid|Numerical id of subcategory to actually export.
@@ -19,6 +20,7 @@
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
+|y|useyaml|Export questions as YAML difference file?|
 
 Examples:
 
@@ -33,6 +35,8 @@ If you only want to export a certain question category (and its subcategories) w
 If the manifest file was created using targeting, export will always use the same subcategory and subdirectory. If the manifest was created using a subdirectory or subcategory but not targeted, then export will use these by default but they can be overridden by specifying `subcategory` when running the script. See the [README file](../README.md#Using-subsets-of-materials) for details on targeting and subselections.
 
 Export will only be possible if there are no uncommitted changes in the repo. After the export, the manifest will be tidied to remove any entries where the question is no longer in the Moodle. (The manifest is the link between your repo and Moodle and you can't link to something which isn't there.)
+
+To export your questions as [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`). If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used.
 
 ### On failure
 

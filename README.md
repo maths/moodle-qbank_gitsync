@@ -120,6 +120,7 @@ A manifest file will have the name `instancename_contextlevel_contextname_questi
         "defaultsubcategoryid": 3, // Set by the subcategory/directory used at manifest creation
         "defaultsubdirectory": "top", // Set by the subcategory/directory used at manifest creation
         "defaultignorecat": null, // Ignore categories containing the given regular expression
+        "defaultdefault": null, // The filename of the YAML defaults file used on manifest creation if using YAML.
         "moodleurl": "http:\/\/stack.stack.virtualbox.org\/edmundlocal"
     },
     "questions": [
@@ -170,3 +171,4 @@ and [export](doc/exportwholecoursefrommoodle.md) a course's questions along with
 
 - [More information on goals and use cases for Gitsync.](doc/index.md)
 - [Detailed list of steps that take place during the running of the four main scripts](doc/processdetails.md)
+- [Storing your questions as YAML rather than XML.](doc/useyaml.md)

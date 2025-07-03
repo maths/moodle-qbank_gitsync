@@ -54,7 +54,7 @@ class cli_helper {
      * GITSYNC_VERSION - Current version of Gitsync.
      * Should match version in version.php .
      */
-    public const GITSYNC_VERSION = '2025051900';
+    public const GITSYNC_VERSION = '2025070300';
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -69,6 +69,10 @@ class cli_helper {
      */
     public const QUIZ_FILE = '_quiz.json';
     /**
+     * DEFAULTS_FILE - Default filename for question defaults.
+     */
+    public const DEFAULTS_FILE = 'questiondefaults.yml';
+    /**
      * TEMP_MANIFEST_FILE - File name ending for temporary manifest file.
      * Appended to name of moodle instance.
      */
@@ -76,7 +80,7 @@ class cli_helper {
     /**
      * BAD_CHARACTERS - Characters to remove for filename sanitisation
      */
-    public const BAD_CHARACTERS = '/[\/\\\?\%\'*:|"<> .$!`&]+/';
+    public const BAD_CHARACTERS = '/[\/\\\?\%\'*:|"<> .$!\`&]+/'; // phpcs:ignore moodle.Strings.ForbiddenStrings.Found
     /**
      * Constructor
      *
@@ -349,7 +353,7 @@ class cli_helper {
                 } else {
                     $variables[$variablename] = $option['default'];
                 }
-                if (in_array($variablename, ['usegit'])) {
+                if (in_array($variablename, ['usegit', 'useyaml'])) {
                     $variables[$variablename] = ($variables[$variablename] === 'true') ? true : $variables[$variablename];
                     $variables[$variablename] = ($variables[$variablename] === 'false') ? false : $variables[$variablename];
                 }
@@ -884,6 +888,13 @@ class cli_helper {
                 echo "\nUsing default question category from manifest file.\n";
                 echo "Set --subcategory or --questioncategoryid to override.\n";
             }
+
+            if (!empty($activity->forceimport)) {
+                echo "\nForce import: Importing all questions.\n";
+            }
+            if (!empty($activity->useyaml) && !empty($activity->defaultsfilepath)) {
+                echo "\nUsing YAML with defaults file: " . basename($activity->defaultsfilepath) . "\n";
+            }
             static::handle_abort();
         }
         $activity->listpostsettings['contextonly'] = 0;
@@ -976,5 +987,33 @@ class cli_helper {
             return null;
         }
         return new \SplFileInfo($tempcatfilepath);
+    }
+
+    /**
+     * Given a filepath for a yml question file, create a temporary
+     * copy containing xml.
+     *
+     * @param string $filepath
+     * @param string $tempfilepath Path of main temp file
+     * @param string $defaults yml defaults
+     * @return object|null $tempqfilepath
+     */
+    public static function create_temp_question_file($filepath, $tempfilepath, $defaults) {
+        if (!is_file($filepath)) {
+            echo "\nRequired question file does not exist: {$filepath}\n";
+            return null;
+        }
+        $contents = file_get_contents($filepath);
+        if ($contents === false) {
+            echo "\nUnable to access file: {$filepath}\n";
+            return null;
+        }
+        $questionxml = yaml_converter::loadyaml($contents, $defaults);
+        $tempqfilepath = dirname($tempfilepath) . '/tempqfile.tmp';
+        $success = file_put_contents($tempqfilepath, $questionxml->asXML());
+        if ($success === false) {
+            return null;
+        }
+        return new \SplFileInfo($tempqfilepath);
     }
 }

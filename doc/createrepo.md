@@ -14,6 +14,7 @@
 |i|moodleinstance|Key of Moodle instance in $moodleinstances to use (see config.php). Should match end of instance URL. Defaults to $instance in config.php.|
 |r|rootdirectory|Directory on user's computer containing repos.|
 |d|directory|Directory of repo on user's computer containing "top" folder, relative to root directory.|
+|o|defaultfile|Name of file containing custom question defaults.|
 |s|subcategory|Relative subcategory of repo to actually export.|
 |k|istargeted|Are we targeting the subcategory only and not the wider category structure of the Moodle context?
 |l|contextlevel|Context from which to extract questions. Set to system, coursecategory, course or module
@@ -27,6 +28,7 @@
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
+|y|useyaml|Export questions as YAML difference file?|
 
 For Moodle 5+, there are no longer course, course category or system context question banks. Questions are contained
 in module level question banks. This makes things simpler. Where command line parameters for
@@ -63,6 +65,8 @@ If you really just want a given subcategory, set the `istargeted` flag `-k`. Thi
 the top level category. When performing future tasks involving the manifest file, you will not be able to override the selected subcategory.
 
 If Git is being used, the destination directory must be an empty Git repo and the exported questions will be committed to the current branch.
+
+To export your questions as [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can add a `questiondefaults.yml` to your repo directory or add a file with a different name and supply the name as an argument (`--defaultfile` or `-o`). If you do not supply a defaults file, the [default file](../questiondefaults.yml) will be copied to your repo.
 
 ### Example 1:
 

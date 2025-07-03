@@ -8,6 +8,8 @@ It is recommended you at least skim the whole of this document before attempting
 
 For detailed information on what happens at each stage of the process, see [Process Details](processdetails.md).
 
+To store your questions as YAML rather than XML, see [Using YAML](useyaml.md).
+
 If you want to track a course and all its quizzes in a single repo, you will need to use different scripts that function in a similar way to the single context scripts:
 - Creating a repo - [createwholecourserepo.php](createwholecourserepo.md)
 - Importing questions to Moodle - [importwholecoursetomoodle.php](importwholecoursetomoodle.md)

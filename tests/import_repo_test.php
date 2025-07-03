@@ -110,6 +110,8 @@ final class import_repo_test extends advanced_testcase {
             'help' => false,
             'usegit' => false,
             'ignorecat' => null,
+            'forceimport' => false,
+            'useyaml' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments',
