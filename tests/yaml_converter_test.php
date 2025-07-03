@@ -89,7 +89,7 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('0', (string) $xml->question->isbroken);
         $this->assertEquals('', (string) $xml->question->variantsselectionseed);
 
-        // Check input fields
+        // Check input fields.
         $this->assertCount(2, $xml->question->input);
         $input1 = $xml->question->input[0];
         $input2 = $xml->question->input[1];
@@ -119,7 +119,7 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('1', (string) $input2->mustverify);
         $this->assertEquals('1', (string) $input2->showvalidation);
 
-        // Check prt fields
+        // Check prt fields.
         $this->assertCount(2, $xml->question->prt);
         $prt1 = $xml->question->prt[0];
         $prt2 = $xml->question->prt[1];
@@ -163,13 +163,13 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('0', (string) $prt2->node[0]->quiet);
         $this->assertEquals('1', (string) $prt2->node[0]->falsescore);
 
-        // Check deployedseed
+        // Check deployedseed.
         $this->assertCount(3, $xml->question->deployedseed);
         $this->assertEquals('1', (string) $xml->question->deployedseed[0]);
         $this->assertEquals('2', (string) $xml->question->deployedseed[1]);
         $this->assertEquals('3', (string) $xml->question->deployedseed[2]);
 
-        // Check qtest
+        // Check qtest.
         $this->assertCount(1, $xml->question->qtest);
         $qtest = $xml->question->qtest[0];
         $this->assertEquals('1', (string) $qtest->testcase);
@@ -453,7 +453,7 @@ final class yaml_converter_test extends \advanced_testcase {
                         ],
                     ],
                 ],
-            ]
+            ],
         ];
         $diff = yaml_converter::detect_differences($blankxml, null);
         $diffarray = Yaml::parse($diff);
