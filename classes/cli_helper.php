@@ -888,6 +888,13 @@ class cli_helper {
                 echo "\nUsing default question category from manifest file.\n";
                 echo "Set --subcategory or --questioncategoryid to override.\n";
             }
+
+            if (!empty($activity->forceimport)) {
+                echo "\nForce import: Importing all questions.\n";
+            }
+            if (!empty($activity->useyaml) && !empty($activity->defaultsfilepath)) {
+                echo "\nUsing YAML with defaults file: " . basename($activity->defaultsfilepath) . "\n";
+            }
             static::handle_abort();
         }
         $activity->listpostsettings['contextonly'] = 0;

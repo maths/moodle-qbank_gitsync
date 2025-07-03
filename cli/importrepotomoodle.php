@@ -179,6 +179,14 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'forceimport',
+        'shortopt' => 'z',
+        'description' => 'Force import of all questions, even if current commit previously imported.',
+        'default' => false,
+        'variable' => 'forceimport',
+        'valuerequired' => false,
+    ],
+    [
         'longopt' => 'subcall',
         'shortopt' => 'w',
         'description' => 'Is this a subcall of the script?',

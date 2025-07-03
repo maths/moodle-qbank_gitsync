@@ -192,6 +192,11 @@ class import_repo {
      * @var bool
      */
     public bool $useyaml;
+    /**
+     * Commit all questions?
+     * @var bool
+     */
+    public bool $forceimport;
 
     /**
      * Constructor
@@ -206,6 +211,7 @@ class import_repo {
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
         $manifestpath = $arguments['manifestpath'];
+        $this->forceimport = $arguments['forceimport'];
         if ($arguments['directory']) {
             $this->directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
                                             $arguments['directory'];
@@ -762,7 +768,8 @@ class import_repo {
                             $this->postsettings['exportedversion'] = $existingentry->exportedversion;
                             if (isset($existingentry->currentcommit)
                                     && isset($existingentry->moodlecommit)
-                                    && $existingentry->currentcommit === $existingentry->moodlecommit) {
+                                    && $existingentry->currentcommit === $existingentry->moodlecommit
+                                    && !$this->forceimport) {
                                 continue;
                             }
                         } else {
@@ -1248,15 +1255,16 @@ class import_repo {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
+        $forceimport = ($this->forceimport) ? ' -z' : '';
         $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
         if ($quizmanifestname) {
             return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                             '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat .
-                            ' -y ' . $useyaml . $defaults);
+                            ' -y ' . $useyaml . $defaults . $forceimport);
         } else {
             return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                             '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat .
-                            ' -y ' . $useyaml . $defaults);
+                            ' -y ' . $useyaml . $defaults . $forceimport);
         }
     }
 

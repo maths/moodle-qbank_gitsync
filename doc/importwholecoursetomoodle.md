@@ -32,6 +32,7 @@ Commit this update.
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
+|z|forceimport|Force import of all questions, even if current commit previously imported.
 |y|useyaml|Export questions as YAML difference file?|
 
 Examples:
@@ -45,6 +46,10 @@ To import course context questions, quiz context questions and quiz structures i
 
 `php importwholecoursetomoodle.php -r "C:\question_repos" -d "scratch-wholecourse/scratch-course" -l "course" -c "Course 2"`
 
+If your questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`) but there will need to be a matching file in the repos for the course and all the quizzes. If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file. Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.
+
+`php importwholecoursetomoodle.php -r "C:\question_repos" -d "scratch-wholecourse/scratch-course" -l "course" -c "Course 2" -y "true" -o "questiondefaultscomma.yml" -z`
+
 ## Scenario 1: Re-importing questions into Moodle when the manifest files already exist
 
 You should specify the course manifest file path and context will be extracted from that. You can still enter a subdirectory to only re-import some of the questions.
@@ -54,8 +59,6 @@ Import will only be possible if there are not updates to the questions in Moodle
 Only questions that have changed in the repo since the last import will be imported to Moodle (to avoid creating a new version in Moodle when nothing has changed).
 
 Quiz structure will not be updated.
-
-If your questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`) but there will need to be a matching file in the repos for the course and all the quizzes. If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file.
 
 ## Scenario 2: Importing questions into Moodle from an existing repo
 

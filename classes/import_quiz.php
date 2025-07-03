@@ -132,6 +132,11 @@ class import_quiz {
      * @var bool
      */
     public bool $useyaml;
+    /**
+     * Commit all questions?
+     * @var bool
+     */
+    public bool $forceimport;
 
     /**
      * Constructor
@@ -143,6 +148,7 @@ class import_quiz {
         // Convert command line options into variables.
         $this->clihelper = $clihelper;
         $arguments = $clihelper->get_arguments();
+        $this->forceimport = $arguments['forceimport'];
         if (isset($arguments['directory'])) {
             $directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
                                                     $arguments['directory'];
@@ -385,10 +391,11 @@ class import_quiz {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
+        $forceimport = ($this->forceimport) ? ' -z' : '';
         $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                         '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token .
-                        $ignorecat . ' -y ' . $useyaml . $defaults);
+                        $ignorecat . ' -y ' . $useyaml . $defaults . $forceimport);
     }
 
     /**
