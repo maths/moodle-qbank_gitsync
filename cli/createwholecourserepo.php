@@ -172,7 +172,9 @@ $scriptdirectory = dirname(__FILE__);
 $clihelper = new cli_helper($options);
 echo "Exporting a course. Associated quiz contexts will also be exported.\n";
 $createrepo = new create_repo($clihelper, $moodleinstances);
-$clihelper->create_directory(dirname($createrepo->manifestpath));
+if (!is_dir(dirname($createrepo->manifestpath))) {
+    $clihelper->create_directory(dirname($createrepo->manifestpath));
+}
 $clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);

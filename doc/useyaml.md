@@ -5,10 +5,10 @@ MoodleXML is a great way to store questions but is not very readable by humans a
 By setting `useyaml` to true either in your config file (`useyaml = true;`) or for individual script runs (`--useyaml "true"`), you can store questions in your repo as YAML difference representations. When exporting to the repo, Gitsync downloads questions as normal, converts them to YAML and then compares them with a defaults file. Fields that match the default (and are not part of the minimum represenations) are removed and then what's left is stored in the repo.
 
 Gitsync will select a defaults file on the following basis:
-    - If you supply a filename as a script argument (`--defaultfile` or `-o`), Gitsync will look for it in the repo directory.
-    - Otherwise, if there is a default file recorded in the manifest file from manifest creation, Gitsync will look for it in the repo directory.
-    - Failing that, Gitsync will look for a `questiondefault.yml` in the repo directory.
-    - As a last resort, Gitsync will use [it's own defaults file](../questiondefaults.yml).
+  - If you supply a filename as a script argument (`--defaultfile` or `-o`), Gitsync will look for it in the repo directory.
+  - Otherwise, if there is a default file recorded in the manifest file from manifest creation, Gitsync will look for it in the repo directory.
+  - Failing that, Gitsync will look for a `questiondefault.yml` in the repo directory.
+  - As a last resort, Gitsync will use [it's own defaults file](../questiondefaults.yml).
 
 Certain important fields are always included in the YAML representation even if they match the default. The example below is for a default question with a single input, PRT and node but fields will be shown for every input, prt and node in a more complex question.
 
@@ -52,6 +52,6 @@ specificfeedbackformat: html
 
 See [test question](../tests/fixtures/fullquestion.yml) for sample YAML layout.
 
-When importing to Moodle, Gitsync adds all the missing fields to the YAML representation from the defaults file, converts it to XML, creates a temporary XML file in the repo directory and then uploads this to Moodle. The defaults file is selected in the way way as for export so you can use different defaults if required.
+When importing to Moodle, Gitsync adds all the missing fields to the YAML representation from the defaults file, converts it to XML, creates a temporary XML file in the repo directory and then uploads this to Moodle. The defaults file is selected in the same way as for export so you can use different defaults if required.
 
 Obviously, using different defaults for import and export should be handled with care to avoid information loss! It makes most sense for altering site-specific settings that will be the same for every question e.g. decimal separator. Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.

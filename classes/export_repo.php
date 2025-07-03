@@ -396,34 +396,43 @@ class export_repo {
         $quizlocations = isset($this->manifestcontents->quizzes) ? $this->manifestcontents->quizzes : [];
         $locarray = array_column($quizlocations, null, 'moduleid');
         foreach ($contextinfo->quizzes as $quiz) {
+            // If the quiz is not in the manifest, create a new entry.
             $instanceid = (int) $quiz->instanceid;
             if (!isset($locarray[$instanceid])) {
                 $rootdirectory = $clihelper->create_directory(cli_helper::get_quiz_directory($basedirectory, $quiz->name));
-                if (!isset($locarray[$instanceid])) {
-                    $quizlocation = new \StdClass();
-                    $quizlocation->moduleid = $instanceid;
-                    $quizlocation->directory = basename($rootdirectory);
-                    $quizlocations[] = $quizlocation;
-                    $this->manifestcontents->quizzes = $quizlocations;
-                    $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
-                    if ($success === false) {
-                        echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
-                        exit();
-                    }
+                $quizlocation = new \StdClass();
+                $quizlocation->moduleid = $instanceid;
+                $quizlocation->directory = basename($rootdirectory);
+                $quizlocations[] = $quizlocation;
+                $this->manifestcontents->quizzes = $quizlocations;
+                $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+                if ($success === false) {
+                    echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
+                    exit();
+                }
+                if ($this->useyaml) {
+                    copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
                 }
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
                 $output = $this->call_repo_creation($rootdirectory, $moodleinstance,
                                                     $instanceid, $token, $ignorecat, $scriptdirectory);
             } else if (!is_dir(dirname($basedirectory) . '/' . $locarray[$instanceid]->directory)) {
+                // If the quiz is in the manifest but the directory does not exist, create it.
                 $rootdirectory = dirname($basedirectory) . '/' . $locarray[$instanceid]->directory;
                 mkdir($rootdirectory);
                 mkdir($rootdirectory . '/top');
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
+                if ($this->useyaml) {
+                    copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
+                }
                 $output = $this->call_repo_creation($rootdirectory, $moodleinstance,
                                                     $instanceid, $token, $ignorecat, $scriptdirectory);
             } else {
                 $rootdirectory = dirname($basedirectory) . '/' . $locarray[$instanceid]->directory;
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
+                if ($this->useyaml) {
+                    copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
+                }
                 $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
                                     $contextinfo->contextinfo->coursename, $quiz->name, '');
                 $output = $this->call_export_repo($rootdirectory, $moodleinstance, $token,

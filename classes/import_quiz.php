@@ -148,7 +148,7 @@ class import_quiz {
         // Convert command line options into variables.
         $this->clihelper = $clihelper;
         $arguments = $clihelper->get_arguments();
-        $this->forceimport = $arguments['forceimport'];
+        $this->forceimport = isset($arguments['forceimport']) ? $arguments['forceimport'] : false;
         if (isset($arguments['directory'])) {
             $directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
                                                     $arguments['directory'];
@@ -162,7 +162,7 @@ class import_quiz {
         $instanceid = $arguments['instanceid'];
         $contextlevel = cli_helper::get_context_level('course');
         $this->usegit = $arguments['usegit'];
-        $this->useyaml = $arguments['useyaml'];
+        $this->useyaml = isset($arguments['useyaml']) ? $arguments['useyaml'] : false;
         if (!empty($arguments['quizmanifestpath'])) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
                                 $directoryprefix . $arguments['quizmanifestpath'] : null;
@@ -193,6 +193,11 @@ class import_quiz {
                     return; // Required for unit tests.
                 } else {
                     $quizfiles = scandir($directory);
+                    if (!$quizfiles) {
+                        echo "\nNo quiz files found in directory: {$directory}\nAborting.\n";
+                        $this->call_exit();
+                        return; // Required for unit tests.
+                    }
                     $structurefile = null;
                     // Find the structure file.
                     foreach ($quizfiles as $quizfile) {
@@ -328,7 +333,7 @@ class import_quiz {
         if ($this->quizmanifestcontents) {
             echo "\nA question manifest already exists for this quiz in this Moodle instance.\n";
             echo "Use importrepotomoodle.php to update questions.\n";
-            echo "Use importquizstructuretomoodle if the quiz structure has not been imported.\n";
+            echo "Use importquizstructuretomoodle.php if the quiz structure has not been imported.\n";
             echo "Aborting.\n";
             $this->call_exit();
         }

@@ -237,7 +237,7 @@ class import_repo {
         $instanceid = $arguments['instanceid'];
         $this->ignorecat = $arguments['ignorecat'];
         $this->usegit = $arguments['usegit'];
-        $this->useyaml = $arguments['useyaml'];
+        $this->useyaml = isset($arguments['useyaml']) ? $arguments['useyaml'] : false;
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
@@ -349,8 +349,8 @@ class import_repo {
         if ($this->useyaml) {
             if ($arguments['defaultfile']) {
                 $this->defaultsfilepath = $this->directory . '/' . $arguments['defaultfile'];
-            } else if (!empty($this->manifestcontents->context->defaultdefaults)) {
-                $this->defaultsfilepath = $this->directory . '/' . $this->manifestcontents->context->defaultdefaults;
+            } else if (!empty($manifestcontents->context->defaultdefaults)) {
+                $this->defaultsfilepath = $this->directory . '/' . $manifestcontents->context->defaultdefaults;
             } else if (is_file(dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
                 $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
             } else {
@@ -1252,11 +1252,14 @@ class import_repo {
     public function call_import_repo(string $rootdirectory, string $moodleinstance, string $token,
                                     ?string $quizmanifestname, ?string $quizcmid,
                                     string $ignorecat, string $scriptdirectory): string {
-        chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
         $forceimport = ($this->forceimport) ? ' -z' : '';
         $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
+        if ($this->useyaml) {
+            copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
+        }
+        chdir($scriptdirectory);
         if ($quizmanifestname) {
             return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                             '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat .
