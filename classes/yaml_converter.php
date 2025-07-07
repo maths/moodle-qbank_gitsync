@@ -165,9 +165,6 @@ class yaml_converter {
         if (!(array) $question->sqrtsign) {
             self::set_field($question, 'sqrtsign', self::get_default('question', 'sqrtsign'));
         }
-        if (!(array) $question->questionsimplify) {
-            self::set_field($question, 'simplify', self::get_default('question', 'questionsimplify'));
-        }
         if (!(array) $question->assumepositive) {
             self::set_field($question, 'assumepos', self::get_default('question', 'assumepositive'));
         }
@@ -182,9 +179,6 @@ class yaml_converter {
         }
 
         foreach ($question->input as $inputdata) {
-            if (!(array) $inputdata->type) {
-                self::set_field($inputdata, 'type', self::get_default('input', 'type'));
-            }
             if (!(array) $inputdata->boxsize) {
                 self::set_field($inputdata, 'boxsize', self::get_default('input', 'boxsize'));
             }
@@ -203,33 +197,12 @@ class yaml_converter {
             if (!isset($inputdata->allowwords)) {
                 self::set_field($inputdata, 'allowwords', self::get_default('input', 'allowwords'));
             }
-            if (!(array) $inputdata->forbidfloat) {
-                self::set_field($inputdata, 'forbidfloat', self::get_default('input', 'forbidfloat'));
-            }
-            if (!(array) $inputdata->requirelowestterms) {
-                self::set_field($inputdata, 'requirelowestterms', self::get_default('input', 'requirelowestterms'));
-            }
-            if (!(array) $inputdata->checkanswertype) {
-                self::set_field($inputdata, 'checkanswertype', self::get_default('input', 'checkanswertype'));
-            }
-            if (!(array) $inputdata->mustverify) {
-                self::set_field($inputdata, 'mustverify', self::get_default('input', 'mustverify'));
-            }
-            if (!(array) $inputdata->showvalidation) {
-                self::set_field($inputdata, 'showvalidation', self::get_default('input', 'showvalidation'));
-            }
             if (!isset($inputdata->options)) {
                 self::set_field($inputdata, 'options', self::get_default('input', 'options'));
             }
         }
 
         foreach ($question->prt as $prtdata) {
-            if (!(array) $prtdata->autosimplify) {
-                self::set_field($prtdata, 'autosimplify', self::get_default('prt', 'autosimplify'));
-            }
-            if (!(array) $prtdata->feedbackstyle) {
-                self::set_field($prtdata, 'feedbackstyle', self::get_default('prt', 'feedbackstyle'));
-            }
             if (!(array) $prtdata->value) {
                 self::set_field($prtdata, 'value', self::get_default('prt', 'value'));
             }
@@ -241,14 +214,9 @@ class yaml_converter {
                 if (!isset($node->description)) {
                     self::set_field($node, 'description', self::get_default('node', 'description'));
                 }
-                if (!isset($node->answertest)) {
-                    self::set_field($node, 'answertest', self::get_default('node', 'answertest'));
-                }
+                self::parse_answertest($node);
                 if (!isset($node->testoptions)) {
                     self::set_field($node, 'testoptions', self::get_default('node', 'testoptions'));
-                }
-                if (!(array) $node->quiet) {
-                    self::set_field($node, 'quiet', self::get_default('node', 'quiet'));
                 }
                 if (!(array) $node->truescoremode) {
                     self::set_field($node, 'truescoremode', self::get_default('node', 'truescoremode'));
@@ -329,6 +297,16 @@ class yaml_converter {
         return $xmldata;
     }
 
+    public static function parse_answertest(&$node) {
+        if (substr($node->answertest, 0, 2) === 'AT') {
+            [$answertest, $sans, $tans, $testoptions] = self::split_answertest($node->answertest);
+            self::set_field($node, 'answertest', $answertest);
+            self::set_field($node, 'sans', $sans);
+            self::set_field($node, 'tans', $tans);
+            self::set_field($node, 'testoptions', $testoptions);
+        }
+    }
+
     /**
      * Set a field (including parents) in the XML element if it does not already exist.
      * @param mixed $element element to add the field to
@@ -367,6 +345,21 @@ class yaml_converter {
 
         if (isset(self::$defaults[$defaultcategory][$defaultname])) {
             return self::$defaults[$defaultcategory][$defaultname];
+        }
+
+        if ($defaultcategory === 'node'
+                && in_array($defaultname, ['sans', 'tans', 'testoptions'])) {
+            $answertest = self::get_default('node', 'answertest');
+            if (substr($answertest, 0, 2) === 'AT') {
+                [$answertest, $sans, $tans, $testoptions] = self::split_answertest($answertest);
+                if ($defaultname === 'sans') {
+                    return $sans;
+                } else if ($defaultname === 'tans') {
+                    return $tans;
+                } else if ($defaultname === 'testoptions') {
+                    return $testoptions;
+                }
+            }
         }
         // We could return $default here but we'd rather the default file was fixed.
         return null;
@@ -554,20 +547,39 @@ class yaml_converter {
                 $diffprt = self::obj_diff(self::$defaults['prt'], $prt);
                 foreach ($prt['node'] as $node) {
                     $diffnode = self::obj_diff(self::$defaults['node'], $node);
+                    if (substr(self::get_default('node', 'answertest'), 0, 2) === 'AT' &&
+                            substr($diffnode['answertest'], 0, 2) !== 'AT') {
+                        // This occurs if answertest set in XML but summary in defaults.
+                        // We need to build a summary from supplied XML fields and default summary.
+                        $diffanswertest = isset($node['answertest']) ?
+                            'AT' . $node['answertest'] : self::split_answertest(self::get_default('node', 'answertest'))[0];
+                        $diffsans = isset($node['sans']) ? $node['sans'] : self::get_default('node', 'sans');
+                        $difftans = isset($node['tans']) ? $node['tans'] : self::get_default('node', 'tans');
+                        $difftestoptions = isset($node->testoptions) ?
+                            $node->testoptions : self::get_default('node', 'testoptions');
+                        $diffnode['answertest'] =
+                            "{$diffanswertest}({$diffsans},{$difftans}" . ($difftestoptions !== '' ? ",{$difftestoptions}" : '') . ')';
+                        unset($diffnode['sans']);
+                        unset($diffnode['tans']);
+                        unset($diffnode['testoptions']);
+                    }
                     $diffprt['node'][] = $diffnode;
                 }
                 $diffprts[] = $diffprt;
             }
             $diff['prt'] = $diffprts;
         } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
+            $prtnode = ['name' => self::get_default('node', 'name'),
+                    'answertest' => self::get_default('node', 'answertest')];
+            if (substr($prtnode['answertest'], 0, 2) !== 'AT') {
+                $prtnode['sans'] = self::get_default('node', 'sans');
+                $prtnode['tans'] = self::get_default('node', 'tans');
+            }
+            $prtnode['quiet'] = self::get_default('node', 'quiet');
             $diff['prt'] = [['name' => self::get_default('prt', 'name'),
                 'autosimplify' => self::get_default('prt', 'autosimplify'),
                 'feedbackstyle' => self::get_default('prt', 'feedbackstyle'),
-                'node' => [['name' => self::get_default('node', 'name'),
-                    'answertest' => self::get_default('node', 'answertest'),
-                    'sans' => self::get_default('node', 'sans'),
-                    'tans' => self::get_default('node', 'tans'),
-                    'quiet' => self::get_default('node', 'quiet'), ]]]];
+                'node' => [$prtnode]]];
         } else {
             $diff['prt'] = [];
         }
@@ -674,5 +686,49 @@ class yaml_converter {
         } else {
             $xml[0] = $value;
         }
+    }
+
+    /**
+     * Split a string into a 4-item array such that:
+     * 'AAAA(X(X,X)XX, YYY, ZZZ, WWW)'
+     * becomes:
+     * [0] => 'AAAA'
+     * [1] => 'X(X,X)XX'
+     * [2] => 'YYY'
+     * [3] => 'ZZZ, WWW'
+     * @param string $answertest
+     * @return array
+     */
+    public static function split_answertest($answertest) {
+        $result = [];
+        $firstbracketpos = strpos($answertest, '(');
+        $result[] = substr($answertest, 0, $firstbracketpos);
+        $testprops = substr($answertest, $firstbracketpos + 1, strrpos($answertest, ')') - $firstbracketpos - 1);
+        $bracket_level = 0;
+        $current = '';
+        $count = 0;
+        $len = strlen($testprops);
+        for ($i = 0; $i < $len; $i++) {
+            $char = $testprops[$i];
+            if ($char === '(') {
+                $bracket_level++;
+                $current .= $char;
+            } else if ($char === ')') {
+                $bracket_level--;
+                $current .= $char;
+            } else if ($char === ',' && $bracket_level === 0 && $count < 2) {
+                $result[] = trim($current);
+                $current = '';
+                $count++;
+            } else {
+                $current .= $char;
+            }
+        }
+        $result[] = trim($current);
+        // Ensure always 4 items
+        while (count($result) < 4) {
+            $result[] = '';
+        }
+        return $result;
     }
 }

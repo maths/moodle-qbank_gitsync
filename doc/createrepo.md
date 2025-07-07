@@ -66,7 +66,7 @@ the top level category. When performing future tasks involving the manifest file
 
 If Git is being used, the destination directory must be an empty Git repo and the exported questions will be committed to the current branch.
 
-To export your questions as [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can add a `questiondefaults.yml` to your repo directory or add a file with a different name and supply the name as an argument (`--defaultfile` or `-o`). If you do not supply a defaults file, the [default file](../questiondefaults.yml) will be copied to your repo.
+To export your STACK questions as [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can add a `questiondefaults.yml` to your repo directory or add a file with a different name and supply the name as an argument (`--defaultfile` or `-o`). If you do not supply a defaults file, the [default file](../questiondefaults.yml) will be copied to your repo.
 
 ### Example 1:
 

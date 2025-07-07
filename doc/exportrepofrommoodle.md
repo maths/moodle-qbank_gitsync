@@ -37,7 +37,7 @@ If the manifest file was created using targeting, export will always use the sam
 
 Export will only be possible if there are no uncommitted changes in the repo. After the export, the manifest will be tidied to remove any entries where the question is no longer in Moodle. (The manifest is the link between your repo and Moodle and you can't link to something which isn't there.)
 
-To export your questions as [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`). If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used.
+To export your STACK questions as [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`). If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used.
 
 ### On failure
 

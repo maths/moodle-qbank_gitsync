@@ -421,6 +421,27 @@ final class yaml_converter_test extends \advanced_testcase {
             " '0.0000000'\n        expectedanswernote: 2-0-T\n";
         $this->assertStringContainsString($expectedstring, $diff);
         $this->assertEqualsCanonicalizing($expected, $diffarray);
+
+        // Check results when using answertest summary in defaults.
+        $diff = yaml_converter::detect_differences(
+            $yaml,
+            yaml_converter::load_defaults(__DIR__ . '/fixtures/questiondefaultssugar.yml')
+        );
+        $diffarray = Yaml::parse($diff);
+        $this->assertEquals(10, count($diffarray));
+        $expected['prt'][0]['node'][0] = [
+                            'name' => '0',
+                            'answertest' => 'ATAlgEquiv(ans1,ta1)',
+                            'quiet' => '1',
+        ];
+        $expected['prt'][1]['node'][0] = [
+                            'name' => '0',
+                            'answertest' => 'ATAlgEquiv(ans2,ta2)',
+                            'quiet' => '0',
+                            'falsescore' => '1',
+        ];
+        $this->assertEqualsCanonicalizing($expected, $diffarray);
+
         // Test the difference detection with a completely default XML question.
         $blankxml = '<quiz><question type="stack"></question></quiz>';
         $expected = [
@@ -460,6 +481,20 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals(4, count($diffarray));
         $this->assertEqualsCanonicalizing($expected, $diffarray);
 
+        // Check results when using answertest summary in defaults.
+        $diff = yaml_converter::detect_differences(
+            $blankxml,
+            yaml_converter::load_defaults(__DIR__ . '/fixtures/questiondefaultssugar.yml')
+        );
+        $diffarray = Yaml::parse($diff);
+        $this->assertEquals(4, count($diffarray));
+        $expected['prt'][0]['node'][0] = [
+                            'name' => '0',
+                            'answertest' => 'ATAlgEquiv(ans1,ta1)',
+                            'quiet' => '0',
+        ];
+        $this->assertEqualsCanonicalizing($expected, $diffarray);
+
         // Test the difference detection with an info XML question.
         $infoxml = '<quiz><question type="stack"><defaultgrade>0</defaultgrade></question></quiz>';
         $expected = [
@@ -474,5 +509,69 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals(5, count($diffarray));
 
         $this->assertEqualsCanonicalizing($expected, $diffarray);
+
+        // Check results when using answertest summary in defaults.
+        $diff = yaml_converter::detect_differences(
+            $infoxml,
+            yaml_converter::load_defaults(__DIR__ . '/fixtures/questiondefaultssugar.yml')
+        );
+        $diffarray = Yaml::parse($diff);
+        $this->assertEquals(5, count($diffarray));
+        $this->assertEqualsCanonicalizing($expected, $diffarray);
+    }
+
+    public function test_split_answertest_basic() {
+        $input = 'ATAlgEquiv(x^2+2x+1, (x+1)^2, 1, ignoreorder)';
+        $expected = [
+            'ATAlgEquiv',
+            'x^2+2x+1',
+            '(x+1)^2',
+            '1, ignoreorder'
+        ];
+        $this->assertEquals($expected, yaml_converter::split_answertest($input));
+    }
+
+    public function test_split_answertest_nested_parentheses() {
+        $input = 'ATTest(foo(bar, baz), qux, quux, corge)';
+        $expected = [
+            'ATTest',
+            'foo(bar, baz)',
+            'qux',
+            'quux, corge'
+        ];
+        $this->assertEquals($expected, yaml_converter::split_answertest($input));
+    }
+
+    public function test_split_answertest_missing_items() {
+        $input = 'ATTest(foo)';
+        $expected = [
+            'ATTest',
+            'foo',
+            '',
+            ''
+        ];
+        $this->assertEquals($expected, yaml_converter::split_answertest($input));
+    }
+
+    public function test_split_answertest_extra_commas() {
+        $input = 'ATTest(foo, bar, baz, qux, quux)';
+        $expected = [
+            'ATTest',
+            'foo',
+            'bar',
+            'baz, qux, quux'
+        ];
+        $this->assertEquals($expected, yaml_converter::split_answertest($input));
+    }
+
+    public function test_split_answertest_spaces() {
+        $input = 'ATTest( foo ( bar ), baz , qux )';
+        $expected = [
+            'ATTest',
+            'foo ( bar )',
+            'baz',
+            'qux'
+        ];
+        $this->assertEquals($expected, yaml_converter::split_answertest($input));
     }
 }

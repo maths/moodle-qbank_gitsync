@@ -45,7 +45,7 @@ This will import the quiz in the `quizexport` directory to the course with `id` 
 
 Import the quiz into the course specified in the manifest file. The quiz structure can contain questions from the manifest file and the quiz context.
 
-If your questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`). If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file. Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.
+If your STACK questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`). If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file. Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.
 
 `php importquiztomoodle.php -d 'quizexport' -f 'course1/instance2_course_course-1_question_manifest.json' -y 'true' -o 'questiondefaultscomma.yml' -z`
 
