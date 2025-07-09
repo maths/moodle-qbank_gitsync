@@ -52,6 +52,21 @@ specificfeedbackformat: html
 
 See [test question](../tests/fixtures/fullquestion.yml) for sample YAML layout.
 
+Additionally you can set your default file so that the answer tests for your questions are stored
+in a summary format:
+```
+ATanswertest(sans,tans,testoptions)
+```
+Default file example:
+```
+  answertest: ATAlgEquiv(ans1,ta1)
+  # sans, tans, testoptions will not be used but need to be here for diff compatibility
+  # with questions which have them rather than the summary answertest.
+  sans:
+  tans:
+  testoptions:
+```
+
 When importing to Moodle, Gitsync adds all the missing fields to the YAML representation from the defaults file, converts it to XML, creates a temporary XML file in the repo directory and then uploads this to Moodle. The defaults file is selected in the same way as for export so you can use different defaults if required.
 
 Obviously, using different defaults for import and export should be handled with care to avoid information loss! It makes most sense for altering site-specific settings that will be the same for every question e.g. decimal separator. Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.

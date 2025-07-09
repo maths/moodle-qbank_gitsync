@@ -297,10 +297,15 @@ class yaml_converter {
         return $xmldata;
     }
 
+    /**
+     * Splits an answertest string into its components and adds the fields to the node.
+     * @param mixed $node
+     * @return void
+     */
     public static function parse_answertest(&$node) {
         if (substr($node->answertest, 0, 2) === 'AT') {
             [$answertest, $sans, $tans, $testoptions] = self::split_answertest($node->answertest);
-            self::set_field($node, 'answertest', $answertest);
+            self::set_field($node, 'answertest', substr($answertest, 2));
             self::set_field($node, 'sans', $sans);
             self::set_field($node, 'tans', $tans);
             self::set_field($node, 'testoptions', $testoptions);
@@ -555,10 +560,11 @@ class yaml_converter {
                             'AT' . $node['answertest'] : self::split_answertest(self::get_default('node', 'answertest'))[0];
                         $diffsans = isset($node['sans']) ? $node['sans'] : self::get_default('node', 'sans');
                         $difftans = isset($node['tans']) ? $node['tans'] : self::get_default('node', 'tans');
-                        $difftestoptions = isset($node->testoptions) ?
-                            $node->testoptions : self::get_default('node', 'testoptions');
+                        $difftestoptions = isset($node['testoptions']) ?
+                            $node['testoptions'] : self::get_default('node', 'testoptions');
                         $diffnode['answertest'] =
-                            "{$diffanswertest}({$diffsans},{$difftans}" . ($difftestoptions !== '' ? ",{$difftestoptions}" : '') . ')';
+                            "{$diffanswertest}({$diffsans},{$difftans}" .
+                            ($difftestoptions !== '' ? ",{$difftestoptions}" : '') . ')';
                         unset($diffnode['sans']);
                         unset($diffnode['tans']);
                         unset($diffnode['testoptions']);
@@ -704,19 +710,19 @@ class yaml_converter {
         $firstbracketpos = strpos($answertest, '(');
         $result[] = substr($answertest, 0, $firstbracketpos);
         $testprops = substr($answertest, $firstbracketpos + 1, strrpos($answertest, ')') - $firstbracketpos - 1);
-        $bracket_level = 0;
+        $bracketlevel = 0;
         $current = '';
         $count = 0;
         $len = strlen($testprops);
         for ($i = 0; $i < $len; $i++) {
             $char = $testprops[$i];
             if ($char === '(') {
-                $bracket_level++;
+                $bracketlevel++;
                 $current .= $char;
             } else if ($char === ')') {
-                $bracket_level--;
+                $bracketlevel--;
                 $current .= $char;
-            } else if ($char === ',' && $bracket_level === 0 && $count < 2) {
+            } else if ($char === ',' && $bracketlevel === 0 && $count < 2) {
                 $result[] = trim($current);
                 $current = '';
                 $count++;
@@ -725,7 +731,7 @@ class yaml_converter {
             }
         }
         $result[] = trim($current);
-        // Ensure always 4 items
+        // Ensure always 4 items.
         while (count($result) < 4) {
             $result[] = '';
         }
