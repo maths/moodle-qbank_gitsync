@@ -165,6 +165,9 @@ class yaml_converter {
         if (!(array) $question->sqrtsign) {
             self::set_field($question, 'sqrtsign', self::get_default('question', 'sqrtsign'));
         }
+        if (!(array) $question->questionsimplify) {
+            self::set_field($question, 'simplify', self::get_default('question', 'questionsimplify'));
+        }
         if (!(array) $question->assumepositive) {
             self::set_field($question, 'assumepos', self::get_default('question', 'assumepositive'));
         }
@@ -179,6 +182,15 @@ class yaml_converter {
         }
 
         foreach ($question->input as $inputdata) {
+            if (!(array) $inputdata->name) {
+                self::set_field($inputdata, 'name', self::get_default('input', 'type'));
+            }
+            if (!(array) $inputdata->type) {
+                self::set_field($inputdata, 'type', self::get_default('input', 'type'));
+            }
+            if (!(array) $inputdata->tans) {
+                self::set_field($inputdata, 'tans', self::get_default('input', 'tans'));
+            }
             if (!(array) $inputdata->boxsize) {
                 self::set_field($inputdata, 'boxsize', self::get_default('input', 'boxsize'));
             }
@@ -197,12 +209,36 @@ class yaml_converter {
             if (!isset($inputdata->allowwords)) {
                 self::set_field($inputdata, 'allowwords', self::get_default('input', 'allowwords'));
             }
+            if (!(array) $inputdata->forbidfloat) {
+                self::set_field($inputdata, 'forbidfloat', self::get_default('input', 'forbidfloat'));
+            }
+            if (!(array) $inputdata->requirelowestterms) {
+                self::set_field($inputdata, 'requirelowestterms', self::get_default('input', 'requirelowestterms'));
+            }
+            if (!(array) $inputdata->checkanswertype) {
+                self::set_field($inputdata, 'checkanswertype', self::get_default('input', 'checkanswertype'));
+            }
+            if (!(array) $inputdata->mustverify) {
+                self::set_field($inputdata, 'mustverify', self::get_default('input', 'mustverify'));
+            }
+            if (!(array) $inputdata->showvalidation) {
+                self::set_field($inputdata, 'showvalidation', self::get_default('input', 'showvalidation'));
+            }
             if (!isset($inputdata->options)) {
                 self::set_field($inputdata, 'options', self::get_default('input', 'options'));
             }
         }
 
         foreach ($question->prt as $prtdata) {
+            if (!(array) $prtdata->name) {
+                self::set_field($prtdata, 'name', self::get_default('prt', 'name'));
+            }
+            if (!(array) $prtdata->autosimplify) {
+                self::set_field($prtdata, 'autosimplify', self::get_default('prt', 'autosimplify'));
+            }
+            if (!(array) $prtdata->feedbackstyle) {
+                self::set_field($prtdata, 'feedbackstyle', self::get_default('prt', 'feedbackstyle'));
+            }
             if (!(array) $prtdata->value) {
                 self::set_field($prtdata, 'value', self::get_default('prt', 'value'));
             }
@@ -211,12 +247,27 @@ class yaml_converter {
             }
 
             foreach ($prtdata->node as $node) {
+                if (!isset($node->name)) {
+                    self::set_field($node, 'name', self::get_default('node', 'name'));
+                }
                 if (!isset($node->description)) {
                     self::set_field($node, 'description', self::get_default('node', 'description'));
                 }
-                self::parse_answertest($node);
+                if (!isset($node->answertest)) {
+                    self::set_field($node, 'answertest', self::get_default('node', 'answertest'));
+                }
+                if (!isset($node->sans)) {
+                    self::set_field($node, 'sans', self::get_default('node', 'sand'));
+                }
+                if (!isset($node->tans)) {
+                    self::set_field($node, 'tans', self::get_default('node', 'tans'));
+                }
                 if (!isset($node->testoptions)) {
                     self::set_field($node, 'testoptions', self::get_default('node', 'testoptions'));
+                }
+                self::parse_answertest($node);
+                if (!(array) $node->quiet) {
+                    self::set_field($node, 'quiet', self::get_default('node', 'quiet'));
                 }
                 if (!(array) $node->truescoremode) {
                     self::set_field($node, 'truescoremode', self::get_default('node', 'truescoremode'));
