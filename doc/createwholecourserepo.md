@@ -45,7 +45,7 @@ For Moodle 5+, there is no longer a course context question bank. Questions are 
 
 `php createwholecourserepo.php -l 'module' -n 7 -d 'moodle-5/scratch-course'`
 
-To export your questions as [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. If you do not supply a defaults file, the [default file](../questiondefaults.yml) will be copied to your course repo. If you want to supply your own, you will need to create the directory for your course first. (In the example above this is `scratch-course` which would normally be created for you.) You can add a `questiondefaults.yml` to your course repo or add a file with a different name and supply the name as an argument (`--defaultfile` or `-o`). The same file will be used for the quizzes and copied to their folders.
+To export your STACK questions as [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. If you do not supply a defaults file, the [default file](../questiondefaults.yml) will be copied to your course repo. If you want to supply your own, you will need to create the directory for your course first. (In the example above this is `scratch-course` which would normally be created for you.) You can add a `questiondefaults.yml` to your course repo or add a file with a different name and supply the name as an argument (`--defaultfile` or `-o`). The same file will be used for the quizzes and copied to their folders.
 
 ### On failure
 

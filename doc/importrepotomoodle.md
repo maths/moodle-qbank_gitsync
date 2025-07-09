@@ -92,7 +92,7 @@ but it can be overridden by specifying `subdirectory` when running the script.
 
 ## YAML
 
-If your questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`). If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file. Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.
+If your STACK questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`). If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file. Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.
 
 `php importrepotomoodle.php -f 'course1/instance1_course_course-1_question_manifest.json' -y 'true' -o 'questiondefaultscomma.yml' -z`
 
