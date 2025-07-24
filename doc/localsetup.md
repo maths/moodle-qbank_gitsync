@@ -36,7 +36,7 @@ You need to download the gitsync scripts and set it up locally as described belo
   4) Restart the web server e.g. `systemctl restart apache2`.
 
 - YAML:
-  If you wish to store questions in YAML format you will need to install Symfony YAML. This can be done via composer. [Install composer](https://getcomposer.org/download/) if you do not have it already. Then, in the root folder containing your copy of Gitsync, `composer install`. (You need to be in the same folder as `composer.json`)
+  If you wish to store questions in YAML format you will need to install Symfony YAML for PHP on the local machine. This can be done via composer. [Install composer](https://getcomposer.org/download/) if you do not have it already. Then, in the root folder containing your copy of Gitsync, `composer install`. (You need to be in the same folder as `composer.json`)  This is not needed on the Moodle server.
 
 ## Setup
 - Open a terminal and clone this repository `git clone https://github.com/maths/moodle-qbank_gitsync.git gitsync`. The repository will be downloaded in a folder `gitsync` inside your current folder. If you have a local development environment for Moodle with the gitsync plugin installed, it is recommended to create a new copy of gitsync somewhere else to not confuse the server and the client side.

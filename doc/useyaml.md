@@ -2,6 +2,11 @@
 
 MoodleXML is a great way to store questions but is not very readable by humans and is difficult to edit.
 
+Notes: 
+
+1. _If you wish to store questions in YAML format you will need to install Symfony YAML on the local PHP setup (not on Moodle). This can be done via composer._
+2. _If you want to switch between using YAML and XML, create a new repo. Switching an existing repo will cause problems with filename extensions._
+
 By setting `useyaml` to true either in your config file (`useyaml = true;`) or for individual script runs (`--useyaml "true"`), you can store STACK questions in your repo as YAML difference representations. When exporting to the repo, Gitsync downloads STACK questions as normal, converts them to YAML and then compares them with a defaults file. Fields that match the default (and are not part of the minimum represenations) are removed and then what's left is stored in the repo. Non-STACK questions will be left as XML.
 
 Gitsync will select a defaults file on the following basis:
@@ -71,4 +76,3 @@ When importing to Moodle, Gitsync adds all the missing fields to the YAML repres
 
 Obviously, using different defaults for import and export should be handled with care to avoid information loss! It makes most sense for altering site-specific settings that will be the same for every question e.g. decimal separator. Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.
 
-If you want to switch between using YAML and XML, create a new repo. Switching an existing repo will cause problems with filename extensions.
