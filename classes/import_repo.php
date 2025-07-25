@@ -592,10 +592,11 @@ class import_repo {
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
 
-        if (!$this->subdirectory || $this->subdirectory === 'top') {
+        if (!$this->subdirectory || $this->subdirectory === 'top' || !$this->targetcategory) {
             $this->basecategoryname = 'top';
         } else {
-            $this->basecategoryname = null;
+            $this->basecategoryname =
+                cli_helper::get_question_category_from_file($subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml');
         }
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
@@ -619,12 +620,9 @@ class import_repo {
                             }
                         }
                         if ($this->targetcategory) {
-                            if (!$this->basecategoryname) {
-                                // If target category is not top,
-                                // the first category file we encounter will be for the target category.
+                            if (pathinfo($repoitem, PATHINFO_DIRNAME) === $subdirectory) {
                                 // This must already exist. (We've checked!).
-                                // Set base category name and skip upload.
-                                $this->basecategoryname = $qcategoryname;
+                                // Skip upload.
                                 continue;
                             }
                             // Strip base name from category name and replace with target category.
