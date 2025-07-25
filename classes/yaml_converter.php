@@ -24,8 +24,8 @@
 
 namespace qbank_gitsync;
 use SimpleXMLElement;
-use Symfony\Component\Yaml\Yaml;
 
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Handles conversion between YAML and XML for Stack questions.
@@ -61,6 +61,20 @@ class yaml_converter {
         'mustverify', 'showvalidation', 'autosimplify', 'feedbackstyle', 'answertest', 'sans',
         'quiet', 'name',
     ];
+
+    /**
+     * Check YAML has been installed on the local machine, and if not offer meaningful error.
+     */
+    private static function require_yaml() {
+        if (!file_exists(__DIR__.'/../vendor/autoload.php')) {
+            throw new \Exception('You asked for yaml. '.
+                'If you wish to store questions in YAML format you will need to install Symfony YAML, '.
+                'which appears to be missing on your installation. ' .
+                'Symfony YAML can be installed via composer.');
+        }
+        require_once(__DIR__.'/../vendor/autoload.php');
+    }
+
     // phpcs:ignore moodle.Commenting.MissingDocblock.Function
     public static function loadyaml($yaml, $defaults) {
         if ($defaults) {
@@ -395,7 +409,7 @@ class yaml_converter {
      */
     public static function get_default($defaultcategory, $defaultname) {
         if (!self::$defaults) {
-            require_once(__DIR__.'/../vendor/autoload.php');
+            self::require_yaml();
             self::$defaults = Yaml::parseFile(__DIR__ . '/../questiondefaults.yml');
         }
 
@@ -429,7 +443,7 @@ class yaml_converter {
      * @throws \stack_exception If the YAML string is invalid.
      */
     public static function yaml_to_xml($yamlstring) {
-        require_once(__DIR__.'/../vendor/autoload.php');
+        self::require_yaml();
         $yaml = Yaml::parse($yamlstring);
         if (!$yaml) {
             throw new \stack_exception("The provided file does not contain valid YAML or XML.");
@@ -539,7 +553,7 @@ class yaml_converter {
      * @return array YAML
      */
     public static function load_defaults($defaultfile) {
-        require_once(__DIR__.'/../vendor/autoload.php');
+        self::require_yaml();
         $defaults = Yaml::parseFile($defaultfile);
         if (!$defaults) {
             echo "\nUnable to access or parse default file: {$defaultfile}\nAborting.\n";
@@ -671,7 +685,7 @@ class yaml_converter {
             }
             $diff['qtest'] = $difftests;
         }
-        require_once(__DIR__.'/../vendor/autoload.php');
+        self::require_yaml();
         $yaml = Yaml::dump($diff, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
         return $yaml;
     }

@@ -146,7 +146,12 @@ class export_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
-        $this->moodleurl = $moodleinstances[$moodleinstance];
+        if (array_key_exists($moodleinstance, $moodleinstances)) {
+            $this->moodleurl = $moodleinstances[$moodleinstance];
+        } else {
+            throw new \Exception('Asked for moodle instance "' . $moodleinstance . '" which is not found. ' .
+                'Did you add this to the config.php file?');
+        }
         $this->usegit = $arguments['usegit'];
         $this->useyaml = $arguments['useyaml'];
         $defaultwarning = false;
