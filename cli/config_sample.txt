@@ -68,3 +68,9 @@ $ignorecat = null;
 
 // Should questions be exported as YAML difference files?
 $useyaml = false;
+
+// Max character length of category folder names and question file names.
+// You may need to reduce these on Windows so that overall filepath for questions does not excede the system limit.
+// Be careful with truncation of category names - duplicate truncated categories with the same parent category will be merged.
+$maxcatlength = 200;
+$maxqlength = 230;
