@@ -97,6 +97,12 @@ class create_repo {
      */
     public string $tempfilepath;
     /**
+     * Path to defaults file.
+     *
+     * @var string
+     */
+    public string $defaultsfilepath;
+    /**
      * Path of root of repo
      * i.e. folder containing manifest.
      *
@@ -110,6 +116,12 @@ class create_repo {
      */
     public ?\stdClass $manifestcontents;
     /**
+     * Parsed content of YAML defaults file.
+     *
+     * @var array|null
+     */
+    public ?array $defaults;
+    /**
      * URL of Moodle instance.
      *
      * @var string
@@ -121,6 +133,13 @@ class create_repo {
      * @var bool
      */
     public bool $usegit;
+    /**
+     * Are we using YAML?.
+     * Set in config. Saves questions as difference file and adds default file to repo.
+     * @var bool
+     */
+    public bool $useyaml;
+
     /**
      * Directory to export into. Will always be null or top.
      *
@@ -145,12 +164,27 @@ class create_repo {
         // (Moodle code rules don't allow 'extract()').
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
+        if (array_key_exists($moodleinstance, $moodleinstances)) {
+            $this->moodleurl = $moodleinstances[$moodleinstance];
+        } else {
+            throw new \Exception('Asked for moodle instance "' . $moodleinstance . '" which is not found. ' .
+                'Did you add this to the config.php file?');
+        }
         $this->usegit = $arguments['usegit'];
+        $this->useyaml = $arguments['useyaml'];
         if ($arguments['directory']) {
             $this->directory = ($arguments['rootdirectory']) ?
                     $arguments['rootdirectory'] . '/' . $arguments['directory'] : $arguments['directory'];
         } else {
             $this->directory = $arguments['rootdirectory'];
+        }
+        if ($this->useyaml) {
+            if ($arguments['defaultfile']) {
+                $this->defaultsfilepath = $this->directory . '/' . $arguments['defaultfile'];
+                $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+            } else {
+                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
+            }
         }
         if (!empty($arguments['nonquizmanifestpath'])) {
             $this->nonquizmanifestpath = ($arguments['rootdirectory']) ?
@@ -259,6 +293,8 @@ class create_repo {
         $this->manifestcontents->context->defaultsubcategoryid = $this->qcategoryid;
         $this->manifestcontents->context->defaultsubdirectory = null;
         $this->manifestcontents->context->defaultignorecat = $this->ignorecat;
+        $this->manifestcontents->context->defaultdefaults =
+            isset($this->defaultsfilepath) ? basename($this->defaultsfilepath) : null;
         $this->manifestcontents->context->moodleurl = $this->moodleurl;
         $this->manifestcontents->questions = [];
     }
@@ -270,6 +306,12 @@ class create_repo {
      * @return void
      */
     public function process(): void {
+        if (!isset($this->defaults) && $this->useyaml) {
+            // This occurs when creating whole course repo. We have had
+            // to wait until the course directory has been created.
+            copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+        }
         $this->export_to_repo();
         $this->manifestcontents->context->defaultsubdirectory = $this->subdirectory;
         cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,
@@ -315,6 +357,9 @@ class create_repo {
             $instanceid = $quiz->instanceid;
             $quizdirectory = cli_helper::get_quiz_directory($basedirectory, $quiz->name);
             $rootdirectory = $clihelper->create_directory($quizdirectory);
+            if ($this->useyaml) {
+                copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
+            }
             echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
             $output = $this->call_repo_creation($rootdirectory, $moodleinstance, $instanceid, $token, $ignorecat, $scriptdirectory);
             echo $output;
@@ -359,8 +404,10 @@ class create_repo {
                                       ): ?string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
+        $useyaml = ($this->useyaml) ? 'true' : 'false';
+        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r "' .
                 $rootdirectory .  '" -i "' . $moodleinstance .
-                '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat);
+                '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat . ' -y ' . $useyaml . $defaults);
     }
 }

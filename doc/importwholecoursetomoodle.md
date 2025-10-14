@@ -22,6 +22,7 @@ Commit this update.
 |r|rootdirectory|Directory on user's computer containing repos.|
 |f|manifestpath|Filepath of manifest file relative to root directory.|
 |d|directory|Directory of repo on users computer containing "top" folder, relative to root directory.|
+|o|defaultfile|Name of file containing custom question defaults.|
 |s|subdirectory|Relative subdirectory of repo to actually import.|
 |k|targetcategory|Category to import a subdirectory into.
 |a|targetcategoryname|Category to import a subdirectory into.
@@ -31,6 +32,8 @@ Commit this update.
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
+|z|forceimport|Force import of all questions, even if current commit previously imported.
+|y|useyaml|Export questions as YAML difference file?|
 
 Examples:
 
@@ -42,6 +45,10 @@ Example 2:
 To import course context questions, quiz context questions and quiz structures into a course for the first time, you will need to point the script to the course directory and the course to import into (using either coursename -c or id -n). You will also need to specify context level but this will always be course (`-l "course"`) for Moodle 4 and (`-l "module"`) for Moodle 5+.
 
 `php importwholecoursetomoodle.php -r "C:\question_repos" -d "scratch-wholecourse/scratch-course" -l "course" -c "Course 2"`
+
+If your STACK questions are [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. You can specify a file as an argument (`--defaultfile` or `-o`) but there will need to be a matching file in the repo for the course. This file will be copied to the repos for all the quizzes, overwriting any files with the same name. If you do not specify a defaults file, the one recorded in the manifest file on repo creation will be used, or the default file. (Again, the file will be copied to all the quizzes.) Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.
+
+`php importwholecoursetomoodle.php -r "C:\question_repos" -d "scratch-wholecourse/scratch-course" -l "course" -c "Course 2" -y "true" -o "questiondefaultscomma.yml" -z`
 
 ## Scenario 1: Re-importing questions into Moodle when the manifest files already exist
 

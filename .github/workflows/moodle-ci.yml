@@ -4,11 +4,11 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:15
         env:
           POSTGRES_USER: 'postgres'
           POSTGRES_HOST_AUTH_METHOD: 'trust'
@@ -37,9 +37,10 @@ jobs:
           - php: '8.2'
             moodle-branch: 'MOODLE_500_STABLE'
             database: 'pgsql'
+          # Edinburgh is planning to run the setup below for 2025-6.
           - php: '8.2'
             moodle-branch: 'MOODLE_405_STABLE'
-            database: 'pgsql'
+            database: 'mariadb'
           - php: '8.2'
             moodle-branch: 'MOODLE_404_STABLE'
             database: 'pgsql'
@@ -52,10 +53,9 @@ jobs:
           - php: '8.0'
             moodle-branch: 'MOODLE_402_STABLE'
             database: 'pgsql'
-          # Edinburgh is planning to run the setup below for 2023-24.
           - php: '7.4'
             moodle-branch: 'MOODLE_401_STABLE'
-            database: 'mariadb'
+            database: 'pgsql'
 
     steps:
       - name: Check out repository code
@@ -70,6 +70,28 @@ jobs:
           extensions: ${{ matrix.extensions }}
           ini-values: max_input_vars=5000
           coverage: none
+
+      - name: Validate composer.json and composer.lock
+        if: ${{ fromJSON(matrix.php) >= 8.2 }}
+        run: |
+          cd plugin
+          composer validate
+
+      - name: Cache Composer packages
+        id: composer-cache
+        if: ${{ fromJSON(matrix.php) >= 8.2 }}
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      - name: Install Dependencies
+        if: ${{ fromJSON(matrix.php) >= 8.2 }}
+        run: |
+          cd plugin
+          composer install
 
       - name: Initialise moodle-plugin-ci
         run: |

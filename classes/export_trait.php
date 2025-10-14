@@ -42,6 +42,18 @@ trait export_trait {
      */
     public ?string $subdirectory = null;
     /**
+     * Maximum character length of category folder names.
+     *
+     * @var int
+     */
+    public int $maxcatlength;
+    /**
+     * Maximum character length of question file name.
+     *
+     * @var int
+     */
+    public int $maxqlength;
+    /**
      * Obtain a list of questions from Moodle and loop through them.
      * If the question is not already in the manifest then create any necessary folders
      * and create the question file.
@@ -75,6 +87,11 @@ trait export_trait {
      * @return void
      */
     public function export_to_repo_main_process(object $moodlequestionlist): void {
+        if (is_file(__DIR__.'/../cli/config.php')) {
+            include(__DIR__.'/../cli/config.php');
+        }
+        $this->maxcatlength = $this->maxcatlength ?? $maxcatlength ?? 200;
+        $this->maxqlength = $this->maxqlength ?? $maxqlength ?? 230;
         // Make top folder in case we don't have any questions.
         if (!is_dir(dirname($this->manifestpath) . '/top')) {
             mkdir(dirname($this->manifestpath) . '/top');
@@ -157,7 +174,8 @@ trait export_trait {
                     // Sanitise individual parts of subcategory.
                     $sanitizedsubcat = '/' . implode('/',
                                                 array_map(
-                                                    fn($x) => preg_replace(cli_helper::BAD_CHARACTERS, '-', $x),
+                                                    fn($x) => preg_replace(cli_helper::BAD_CHARACTERS, '-',
+                                                    substr($x, 0, $this->maxcatlength)),
                                                     explode('/', $this->subcategory)
                                                 )
                                             );
@@ -165,7 +183,8 @@ trait export_trait {
                     $targettopfound = false;
                     $currentdirectory = null;
                     foreach ($directorylist as $categorydirectory) {
-                        $categorydirectory = preg_replace(cli_helper::BAD_CHARACTERS, '-', $categorydirectory);
+                        $categorydirectory = preg_replace(cli_helper::BAD_CHARACTERS, '-',
+                                                            substr($categorydirectory, 0, $this->maxcatlength));
                         $categorysofar .= "/{$categorydirectory}";
                         if ($this->targetdirectory && !$targettopfound) {
                             if (strpos($categorysofar, $sanitizedsubcat) === 0) {
@@ -216,23 +235,29 @@ trait export_trait {
                         }
                     }
                 }
-                $sanitisedqname = preg_replace(cli_helper::BAD_CHARACTERS, '-', substr($qname, 0, 230));
+                $filetype = 'xml';
+                if ($this->useyaml && strpos($question, '<question type="stack">') !== false) {
+                    $question = yaml_converter::detect_differences($question, $this->defaults);
+                    $filetype = 'yml';
+                }
+
+                $sanitisedqname = preg_replace(cli_helper::BAD_CHARACTERS, '-', substr($qname, 0, $this->maxqlength));
                 $holdername = $sanitisedqname;
                 $i = 2;
-                while (file_exists("{$bottomdirectory}/{$sanitisedqname}.xml")) {
+                while (file_exists("{$bottomdirectory}/{$sanitisedqname}.{$filetype}")) {
                     $sanitisedqname = "{$holdername}_{$i}";
                     $i++;
                 }
-                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.xml", $question);
+                $success = file_put_contents("{$bottomdirectory}/{$sanitisedqname}.{$filetype}", $question);
                 if ($success === false) {
                     echo "\nFile creation or update unsuccessful:\n";
-                    echo "{$bottomdirectory}/{$sanitisedqname}.xml";
+                    echo "{$bottomdirectory}/{$sanitisedqname}.{$filetype}";
                     continue;
                 }
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
-                    'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.xml",
+                    'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.{$filetype}",
                     'format' => 'xml',
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");

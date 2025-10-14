@@ -28,6 +28,7 @@ require_once('./config.php');
 require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/import_quiz.php');
+require_once('../classes/yaml_converter.php');
 
 $options = [
     [
@@ -54,6 +55,14 @@ $options = [
                          'relative to root directory.',
         'default' => '',
         'variable' => 'directory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'defaultfile',
+        'shortopt' => 'o',
+        'description' => 'Name of file containing custom question defaults.',
+        'default' => '',
+        'variable' => 'defaultfile',
         'valuerequired' => true,
     ],
     [
@@ -139,12 +148,28 @@ $options = [
         'valuerequired' => true,
     ],
     [
+        'longopt' => 'useyaml',
+        'shortopt' => 'y',
+        'description' => 'Export questions as YAML difference file?',
+        'default' => $useyaml,
+        'variable' => 'useyaml',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'ignorecat',
         'shortopt' => 'x',
         'description' => 'Regex of categories to ignore - add an extra leading / for Windows.',
         'default' => $ignorecat,
         'variable' => 'ignorecat',
         'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'forceimport',
+        'shortopt' => 'z',
+        'description' => 'Force import of all questions, even if current commit previously imported.',
+        'default' => false,
+        'variable' => 'forceimport',
+        'valuerequired' => false,
     ],
     [
         'longopt' => 'subcall',

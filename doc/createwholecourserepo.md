@@ -11,7 +11,8 @@
 |-|-|-|
 |i|moodleinstance|Key of Moodle instance in $moodleinstances to use. Should match end of instance URL.|
 |r|rootdirectory|Directory on user's computer containing repos.|
-|d|directory|Directory of repo on user's computer containing "top" folder, relative to root directory.|
+|d|directory|Directory of repo on user's computer containing "top" folder of course, relative to root directory.|
+|o|defaultfile|Name of file containing custom question defaults.|
 |l|contextlevel|Context from which to extract questions. Should always be module for Moodle 5+. Should always be course for Moodle < 5.|
 |s|subcategory|Relative subcategory of repo to actually export.|
 |k|istargeted|Are we targeting the subcategory only and not the wider category structure of the Moodle context?
@@ -22,6 +23,7 @@
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
+|y|useyaml|Export questions as YAML difference file?|
 
 This is very similar to [`createrepo.php`](createrepo.md) but normally Gitsync retrieves questions within a Moodle context, returning all or a subselection of question categories with the repo directory structure matching the category structure in Moodle. Courses and quizzes are in separate contexts, however. Use `createwholecourserepo.php` to keep quizzes with their parent course in a single repo.
 
@@ -42,6 +44,8 @@ Along with the "scratch-course" directory, there should be a directory created b
 For Moodle 5+, there is no longer a course context question bank. Questions are contained in module level question banks. Gitsync can be made to treat a course with a single question bank like an old course, however. Add `-l "module"` to the command line parameters and `cmid` from the URL of the question bank as `--instanceid`.
 
 `php createwholecourserepo.php -l 'module' -n 7 -d 'moodle-5/scratch-course'`
+
+To export your STACK questions as [YAML difference files](useyaml.md), set `useyaml` flag `-y`. You will need a defaults file. If you do not supply a defaults file, the [default file](../questiondefaults.yml) will be copied to your course repo. If you want to supply your own, you will need to create the directory for your course first. (In the example above this is `scratch-course` which would normally be created for you.) You can add a `questiondefaults.yml` to your course repo or add a file with a different name and supply the name as an argument (`--defaultfile` or `-o`). The same file will be used for the quizzes and copied to their folders.
 
 ### On failure
 

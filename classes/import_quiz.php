@@ -73,6 +73,12 @@ class import_quiz {
      */
     public ?string $quizmanifestpath = null;
     /**
+     * Path to defaults file.
+     *
+     * @var string
+     */
+    public string $defaultsfilepath;
+    /**
      * Parsed content of JSON manifest file
      *
      * @var \stdClass|null
@@ -120,6 +126,17 @@ class import_quiz {
      * @var bool
      */
     public bool $usegit;
+    /**
+     * Are we using YAML?.
+     * Set in config. Saves questions as difference file and adds default file to repo.
+     * @var bool
+     */
+    public bool $useyaml;
+    /**
+     * Commit all questions?
+     * @var bool
+     */
+    public bool $forceimport;
 
     /**
      * Constructor
@@ -131,6 +148,7 @@ class import_quiz {
         // Convert command line options into variables.
         $this->clihelper = $clihelper;
         $arguments = $clihelper->get_arguments();
+        $this->forceimport = isset($arguments['forceimport']) ? $arguments['forceimport'] : false;
         if (isset($arguments['directory'])) {
             $directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
                                                     $arguments['directory'];
@@ -144,6 +162,7 @@ class import_quiz {
         $instanceid = $arguments['instanceid'];
         $contextlevel = cli_helper::get_context_level('course');
         $this->usegit = $arguments['usegit'];
+        $this->useyaml = isset($arguments['useyaml']) ? $arguments['useyaml'] : false;
         if (!empty($arguments['quizmanifestpath'])) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
                                 $directoryprefix . $arguments['quizmanifestpath'] : null;
@@ -174,6 +193,11 @@ class import_quiz {
                     return; // Required for unit tests.
                 } else {
                     $quizfiles = scandir($directory);
+                    if (!$quizfiles) {
+                        echo "\nNo quiz files found in directory: {$directory}\nAborting.\n";
+                        $this->call_exit();
+                        return; // Required for unit tests.
+                    }
                     $structurefile = null;
                     // Find the structure file.
                     foreach ($quizfiles as $quizfile) {
@@ -309,7 +333,7 @@ class import_quiz {
         if ($this->quizmanifestcontents) {
             echo "\nA question manifest already exists for this quiz in this Moodle instance.\n";
             echo "Use importrepotomoodle.php to update questions.\n";
-            echo "Use importquizstructuretomoodle if the quiz structure has not been imported.\n";
+            echo "Use importquizstructuretomoodle.php if the quiz structure has not been imported.\n";
             echo "Aborting.\n";
             $this->call_exit();
         }
@@ -335,6 +359,20 @@ class import_quiz {
         $ignorecat = $arguments['ignorecat'];
         $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
         $this->import_quiz_data();
+        if ($this->useyaml) {
+            if ($arguments['defaultfile']) {
+                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . $arguments['defaultfile'];
+            } else if (!empty($this->quizmanifestcontents->context->defaultdefaults)) {
+                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' .
+                $this->quizmanifestcontents->context->defaultdefaults;
+            } else if (is_file(dirname($this->quizmanifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
+                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . cli_helper::DEFAULTS_FILE;
+            } else {
+                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . cli_helper::DEFAULTS_FILE;
+                copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);
+            }
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+        }
         $output = $this->call_import_repo($directory, $moodleinstance, $token,
                         $this->cmid, $ignorecat, $scriptdirectory);
         echo $output;
@@ -357,8 +395,12 @@ class import_quiz {
                                     ?string $quizcmid, string $ignorecat, string $scriptdirectory): string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
+        $useyaml = ($this->useyaml) ? 'true' : 'false';
+        $forceimport = ($this->forceimport) ? ' -z' : '';
+        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
-                        '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat);
+                        '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token .
+                        $ignorecat . ' -y ' . $useyaml . $defaults . $forceimport);
     }
 
     /**

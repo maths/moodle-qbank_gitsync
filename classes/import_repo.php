@@ -114,6 +114,12 @@ class import_repo {
      */
     public string $tempfilepath;
     /**
+     * Path to defaults file.
+     *
+     * @var string
+     */
+    public string $defaultsfilepath;
+    /**
      * Path to actual manifest file
      *
      * @var string
@@ -174,6 +180,23 @@ class import_repo {
      * @var \stdClass|null
      */
     public ?\stdClass $manifestcontents;
+    /**
+     * Parsed content of YAML defaults file.
+     *
+     * @var array|null
+     */
+    public ?array $defaults;
+    /**
+     * Are we using YAML?.
+     * Set in config. Saves questions as difference file and adds default file to repo.
+     * @var bool
+     */
+    public bool $useyaml;
+    /**
+     * Commit all questions?
+     * @var bool
+     */
+    public bool $forceimport;
 
     /**
      * Constructor
@@ -188,6 +211,7 @@ class import_repo {
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
         $manifestpath = $arguments['manifestpath'];
+        $this->forceimport = $arguments['forceimport'];
         if ($arguments['directory']) {
             $this->directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
                                             $arguments['directory'];
@@ -213,6 +237,7 @@ class import_repo {
         $instanceid = $arguments['instanceid'];
         $this->ignorecat = $arguments['ignorecat'];
         $this->usegit = $arguments['usegit'];
+        $this->useyaml = isset($arguments['useyaml']) ? $arguments['useyaml'] : false;
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
@@ -320,6 +345,20 @@ class import_repo {
             echo "\nUnable to parse manifest file: {$this->manifestpath}\nAborting.\n";
             $this->call_exit();
         }
+
+        if ($this->useyaml) {
+            if ($arguments['defaultfile']) {
+                $this->defaultsfilepath = $this->directory . '/' . $arguments['defaultfile'];
+            } else if (!empty($manifestcontents->context->defaultdefaults)) {
+                $this->defaultsfilepath = $this->directory . '/' . $manifestcontents->context->defaultdefaults;
+            } else if (is_file(dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
+                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
+            } else {
+                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
+                copy($this->directory . '/../questiondefaults.yml', $this->defaultsfilepath);
+            }
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+        }
         if (!$manifestcontents && $manifestpath) {
             echo "\nManifest file is empty: {$this->manifestpath}\n";
             echo "You will need to supply context details. Aborting.\n";
@@ -337,6 +376,8 @@ class import_repo {
             $this->manifestcontents->context->defaultsubcategoryid = $instanceinfo->contextinfo->qcategoryid;
             $this->manifestcontents->context->defaultsubdirectory = $this->subdirectory;
             $this->manifestcontents->context->defaultignorecat = $this->ignorecat;
+            $this->manifestcontents->context->defaultdefaults =
+                isset($this->defaultsfilepath) ? basename($this->defaultsfilepath) : null;
             $this->manifestcontents->context->moodleurl = $this->moodleurl;
             $this->manifestcontents->questions = [];
         } else {
@@ -551,10 +592,11 @@ class import_repo {
         // Categories will be dealt with before their sub-categories. Beyond that,
         // order is uncertain.
 
-        if (!$this->subdirectory || $this->subdirectory === 'top') {
+        if (!$this->subdirectory || $this->subdirectory === 'top' || !$this->targetcategory) {
             $this->basecategoryname = 'top';
         } else {
-            $this->basecategoryname = null;
+            $this->basecategoryname =
+                cli_helper::get_question_category_from_file($subdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml');
         }
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
@@ -578,12 +620,9 @@ class import_repo {
                             }
                         }
                         if ($this->targetcategory) {
-                            if (!$this->basecategoryname) {
-                                // If target category is not top,
-                                // the first category file we encounter will be for the target category.
+                            if (pathinfo($repoitem, PATHINFO_DIRNAME) === $subdirectory) {
                                 // This must already exist. (We've checked!).
-                                // Set base category name and skip upload.
-                                $this->basecategoryname = $qcategoryname;
+                                // Skip upload.
                                 continue;
                             }
                             // Strip base name from category name and replace with target category.
@@ -685,7 +724,7 @@ class import_repo {
         $categorynames = [];
         foreach ($this->subdirectoryiterator as $repoitem) {
             if ($repoitem->isFile()) {
-                if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
+                if (in_array(pathinfo($repoitem, PATHINFO_EXTENSION), ['xml', 'yml'])
                         && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
                     $currentdirectory = $this->subdirectoryiterator->getPath();
                     $qcategoryname = null;
@@ -727,7 +766,8 @@ class import_repo {
                             $this->postsettings['exportedversion'] = $existingentry->exportedversion;
                             if (isset($existingentry->currentcommit)
                                     && isset($existingentry->moodlecommit)
-                                    && $existingentry->currentcommit === $existingentry->moodlecommit) {
+                                    && $existingentry->currentcommit === $existingentry->moodlecommit
+                                    && !$this->forceimport) {
                                 continue;
                             }
                         } else {
@@ -735,7 +775,17 @@ class import_repo {
                             $this->postsettings['importedversion'] = null;
                             $this->postsettings['exportedversion'] = null;
                         }
-                        if (!$this->upload_file($repoitem)) {
+                        $tempqfile = null;
+                        if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'yml') {
+                            $tempqfile = cli_helper::create_temp_question_file($repoitem, $this->tempfilepath, $this->defaults);
+                            if (!$tempqfile) {
+                                echo 'File upload problem.\n';
+                                echo "{$repoitem->getPathname()} not imported.\n";
+                                continue;
+                            }
+                        }
+
+                        if (!$this->upload_file(($tempqfile) ? $tempqfile : $repoitem)) {
                             echo 'File upload problem.\n';
                             echo "{$repoitem->getPathname()} not imported.\n";
                             continue;
@@ -1200,14 +1250,22 @@ class import_repo {
     public function call_import_repo(string $rootdirectory, string $moodleinstance, string $token,
                                     ?string $quizmanifestname, ?string $quizcmid,
                                     string $ignorecat, string $scriptdirectory): string {
-        chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
+        $useyaml = ($this->useyaml) ? 'true' : 'false';
+        $forceimport = ($this->forceimport) ? ' -z' : '';
+        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
+        if ($this->useyaml) {
+            copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
+        }
+        chdir($scriptdirectory);
         if ($quizmanifestname) {
             return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
-                            '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat);
+                            '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat .
+                            ' -y ' . $useyaml . $defaults . $forceimport);
         } else {
             return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
-                            '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat);
+                            '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat .
+                            ' -y ' . $useyaml . $defaults . $forceimport);
         }
     }
 

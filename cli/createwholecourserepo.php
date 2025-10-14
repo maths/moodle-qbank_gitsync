@@ -32,6 +32,7 @@ require_once('../classes/curl_request.php');
 require_once('../classes/cli_helper.php');
 require_once('../classes/export_trait.php');
 require_once('../classes/create_repo.php');
+require_once('../classes/yaml_converter.php');
 
 $options = [
     [
@@ -56,10 +57,18 @@ $options = [
     [
         'longopt' => 'directory',
         'shortopt' => 'd',
-        'description' => 'Directory of repo on users computer, containing "top" folder, ' .
+        'description' => 'Directory of repo on users computer, containing "top" folder of course, ' .
                          'relative to root directory.',
         'default' => '',
         'variable' => 'directory',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'defaultfile',
+        'shortopt' => 'o',
+        'description' => 'Name of file containing custom question defaults.',
+        'default' => '',
+        'variable' => 'defaultfile',
         'valuerequired' => true,
     ],
     [
@@ -143,6 +152,14 @@ $options = [
         'variable' => 'ignorecat',
         'valuerequired' => true,
     ],
+    [
+        'longopt' => 'useyaml',
+        'shortopt' => 'y',
+        'description' => 'Export questions as YAML difference file?',
+        'default' => $useyaml,
+        'variable' => 'useyaml',
+        'valuerequired' => true,
+    ],
 ];
 
 if (!function_exists('simplexml_load_file')) {
@@ -155,7 +172,9 @@ $scriptdirectory = dirname(__FILE__);
 $clihelper = new cli_helper($options);
 echo "Exporting a course. Associated quiz contexts will also be exported.\n";
 $createrepo = new create_repo($clihelper, $moodleinstances);
-$clihelper->create_directory(dirname($createrepo->manifestpath));
+if (!is_dir(dirname($createrepo->manifestpath))) {
+    $clihelper->create_directory(dirname($createrepo->manifestpath));
+}
 $clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
