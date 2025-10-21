@@ -28,12 +28,11 @@ You need to download the gitsync scripts and set it up locally as described belo
   - Unzip the folder into a folder of your choice.
   - Add the folder to the `Path` variable of your system via 'Edit System Environment Variables'.
 
-  You will need to enable a PHP extension. On the command line, run `php -i`. This will display pages of information but near the top there should be a line similar to `Loaded Configuration File => C:\Program Files\php-x64\php.ini`. Open the shown file as an administrator and search for `;extension=curl`. Remove the semi-colon from this line and save. If you are on Windows, you will also need to [supply and maintain certificates](https://php.watch/articles/php-curl-windows-cainfo-fix):
+  You will need to enable a PHP extension. On the command line, run `php -i`. This will display pages of information but near the top there should be a line similar to `Loaded Configuration File => C:\Program Files\php-x64\php.ini`. Open the shown file as an administrator and search for `;extension=curl`. Remove the semi-colon from this line and save. You may also need to update and/or uncomment the line with `extension_dir`. On Unix, restart the web server e.g. `systemctl restart apache2`. Run `php -m` to check curl is loaded properly. If you are on Windows, you will also need to [supply and maintain certificates](https://php.watch/articles/php-curl-windows-cainfo-fix):
   
   1) Download the [`cacert.pem`](https://curl.se/ca/cacert.pem).
   2) Move the file to a directory accessible by PHP and the web server. For example, to `C:/php/cacert.pem`.
   3) Edit the `php.ini` file and modify the `curl.cainfo` entry to point to the absolute path to the `cacert.pem` file e.g. `curl.cainfo = "C:/php/cacert.pem"`.
-  4) Restart the web server e.g. `systemctl restart apache2`.
 
 - YAML:
   If you wish to store questions in YAML format you will need to install Symfony YAML for PHP on the local machine. This can be done via composer. [Install composer](https://getcomposer.org/download/) if you do not have it already. Then, in the root folder containing your copy of Gitsync, `composer install`. (You need to be in the same folder as `composer.json`)  This is not needed on the Moodle server.
