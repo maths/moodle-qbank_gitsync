@@ -128,10 +128,16 @@ class import_quiz {
     public bool $usegit;
     /**
      * Are we using YAML?.
-     * Set in config. Saves questions as difference file and adds default file to repo.
+     * Set in config. Saves questions as YAML.
      * @var bool
      */
     public bool $useyaml;
+    /**
+     * Are we using fragments?
+     * Set in config. Saves questions as difference file and adds default file to repo.
+     * @var bool
+     */
+    public bool $usefragments;
     /**
      * Commit all questions?
      * @var bool
@@ -163,6 +169,7 @@ class import_quiz {
         $contextlevel = cli_helper::get_context_level('course');
         $this->usegit = $arguments['usegit'];
         $this->useyaml = isset($arguments['useyaml']) ? $arguments['useyaml'] : false;
+        $this->usefragments = isset($arguments['usefragments']) ? $arguments['usefragments'] : false;
         if (!empty($arguments['quizmanifestpath'])) {
             $this->quizmanifestpath = ($arguments['quizmanifestpath']) ?
                                 $directoryprefix . $arguments['quizmanifestpath'] : null;
@@ -360,18 +367,19 @@ class import_quiz {
         $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
         $this->import_quiz_data();
         if ($this->useyaml) {
+            $defaultsfilename = cli_helper::DEFAULTS_FILE . ($this->useyaml ? 'yml' : 'xml');
             if ($arguments['defaultfile']) {
                 $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . $arguments['defaultfile'];
             } else if (!empty($this->quizmanifestcontents->context->defaultdefaults)) {
                 $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' .
                 $this->quizmanifestcontents->context->defaultdefaults;
-            } else if (is_file(dirname($this->quizmanifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
-                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . cli_helper::DEFAULTS_FILE;
+            } else if (is_file(dirname($this->quizmanifestpath) . '/' . $defaultsfilename)) {
+                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . $defaultsfilename;
             } else {
-                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . cli_helper::DEFAULTS_FILE;
-                copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);
+                $this->defaultsfilepath = dirname($this->quizmanifestpath) . '/' . $defaultsfilename;
+                copy(__DIR__ . '/../' . $defaultsfilename, $this->defaultsfilepath);
             }
-            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath, $this->useyaml);
         }
         $output = $this->call_import_repo($directory, $moodleinstance, $token,
                         $this->cmid, $ignorecat, $scriptdirectory);
@@ -397,7 +405,7 @@ class import_quiz {
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
         $forceimport = ($this->forceimport) ? ' -z' : '';
-        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
+        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
                         '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token .
                         $ignorecat . ' -y ' . $useyaml . $defaults . $forceimport);
@@ -535,12 +543,14 @@ class import_quiz {
      * @return void
      */
     public function handle_abort(): void {
-        echo "Abort? y/n\n";
+        global $usecontinue;
+        echo ($usecontinue ? "Continue? y/n\n" : "Abort? y/n\n");
         $handle = fopen ("php://stdin", "r");
         $line = fgets($handle);
-        if (trim($line) === 'y') {
-            $this->call_exit();
-        }
         fclose($handle);
+        if (($usecontinue && trim($line) === 'y') || (!$usecontinue && trim($line) === 'n')) {
+            return;
+        }
+        $this->call_exit();
     }
 }

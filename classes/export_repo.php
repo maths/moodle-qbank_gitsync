@@ -130,10 +130,16 @@ class export_repo {
     public bool $usegit;
     /**
      * Are we using YAML?.
-     * Set in config. Saves questions as difference file and adds default file to repo.
+     * Set in config. Saves questions as YAML.
      * @var bool
      */
     public bool $useyaml;
+    /**
+     * Are we using fragments?
+     * Set in config. Saves questions as difference file and adds default file to repo.
+     * @var bool
+     */
+    public bool $usefragments;
 
     /**
      * Constructor
@@ -154,6 +160,7 @@ class export_repo {
         }
         $this->usegit = $arguments['usegit'];
         $this->useyaml = $arguments['useyaml'];
+        $this->usefragments = $arguments['usefragments'];
         $defaultwarning = false;
         if ($arguments['manifestpath']) {
             $this->manifestpath = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['manifestpath'] :
@@ -189,18 +196,19 @@ class export_repo {
             }
         }
 
-        if ($this->useyaml) {
+        if ($this->usefragments) {
+            $defaultsfilename = cli_helper::DEFAULTS_FILE . ($this->useyaml ? 'yml' : 'xml');
             if ($arguments['defaultfile']) {
                 $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $arguments['defaultfile'];
             } else if (!empty($this->manifestcontents->context->defaultdefaults)) {
                 $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $this->manifestcontents->context->defaultdefaults;
-            } else if (is_file(dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
-                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE;
+            } else if (is_file(dirname($this->manifestpath) . '/' . $defaultsfilename)) {
+                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $defaultsfilename;
             } else {
-                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE;
-                copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);
+                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $defaultsfilename;
+                copy(__DIR__ . '/../' . $defaultsfilename, $this->defaultsfilepath);
             }
-            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath, $this->useyaml);
         }
 
         if ($arguments['subcategory']) {
@@ -354,8 +362,14 @@ class export_repo {
                     continue;
                 }
 
-                if ($this->useyaml && strpos($question, '<question type="stack">') !== false) {
-                    $question = yaml_converter::detect_differences($question, $this->defaults);
+                if (strpos($question, '<question type="stack">') !== false) {
+                    if ($this->usefragments) {
+                        $question = yaml_converter::detect_differences($question, $this->defaults, $this->useyaml);
+                    } else {
+                        if ($this->useyaml) {
+                            $question = yaml_converter::xmlstring_to_yamlstring($question);
+                        }
+                    }
                 }
                 $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
                 if ($success === false) {
@@ -415,7 +429,7 @@ class export_repo {
                     echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
                     exit();
                 }
-                if ($this->useyaml) {
+                if ($this->usefragments) {
                     copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
                 }
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
@@ -427,7 +441,7 @@ class export_repo {
                 mkdir($rootdirectory);
                 mkdir($rootdirectory . '/top');
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
-                if ($this->useyaml) {
+                if ($this->usefragments) {
                     copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
                 }
                 $output = $this->call_repo_creation($rootdirectory, $moodleinstance,
@@ -435,7 +449,7 @@ class export_repo {
             } else {
                 $rootdirectory = dirname($basedirectory) . '/' . $locarray[$instanceid]->directory;
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
-                if ($this->useyaml) {
+                if ($this->usefragments) {
                     copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
                 }
                 $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
@@ -467,7 +481,7 @@ class export_repo {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
-        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
+        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat . ' -y ' . $useyaml . $defaults);
     }
@@ -488,7 +502,7 @@ class export_repo {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
-        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
+        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php exportrepofrommoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory . '" -i "' .
                             $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat .
                             ' -y ' . $useyaml . $defaults);

@@ -80,7 +80,7 @@ class yaml_converter {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
-            self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml');
+            self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml', true);
         }
         try {
             $xmldata = self::yamlstring_to_xml($yaml);
@@ -629,7 +629,7 @@ class yaml_converter {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
-            self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml');
+            self::$defaults = self::load_defaults(__DIR__ . '/../' . cli_helper::DEFAULTS_FILE . ($useyaml ? 'yml' : 'xml'));
         }
         if (strpos($xml, '<question type="stack">') !== false || !$useyaml) {
             $xmldata = new SimpleXMLElement($xml);

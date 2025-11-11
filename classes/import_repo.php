@@ -188,10 +188,16 @@ class import_repo {
     public ?array $defaults;
     /**
      * Are we using YAML?.
-     * Set in config. Saves questions as difference file and adds default file to repo.
+     * Set in config. Saves questions as YAML.
      * @var bool
      */
     public bool $useyaml;
+    /**
+     * Are we using fragments?
+     * Set in config. Saves questions as difference file and adds default file to repo.
+     * @var bool
+     */
+    public bool $usefragments;
     /**
      * Commit all questions?
      * @var bool
@@ -238,6 +244,7 @@ class import_repo {
         $this->ignorecat = $arguments['ignorecat'];
         $this->usegit = $arguments['usegit'];
         $this->useyaml = isset($arguments['useyaml']) ? $arguments['useyaml'] : false;
+        $this->usefragments = isset($arguments['usefragments']) ? $arguments['usefragments'] : false;
 
         $this->moodleurl = $moodleinstances[$moodleinstance];
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
@@ -346,18 +353,19 @@ class import_repo {
             $this->call_exit();
         }
 
-        if ($this->useyaml) {
+        if ($this->usefragments) {
+            $defaultsfilename = cli_helper::DEFAULTS_FILE . ($this->useyaml ? 'yml' : 'xml');
             if ($arguments['defaultfile']) {
                 $this->defaultsfilepath = $this->directory . '/' . $arguments['defaultfile'];
             } else if (!empty($manifestcontents->context->defaultdefaults)) {
                 $this->defaultsfilepath = $this->directory . '/' . $manifestcontents->context->defaultdefaults;
-            } else if (is_file(dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
-                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
+            } else if (is_file(dirname($this->manifestpath) . '/' . $defaultsfilename)) {
+                $this->defaultsfilepath = $this->directory . '/' . $defaultsfilename;
             } else {
-                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
-                copy($this->directory . '/../questiondefaults.yml', $this->defaultsfilepath);
+                $this->defaultsfilepath = $this->directory . '/' . $defaultsfilename;
+                copy($this->directory . '/../' . $defaultsfilename, $this->defaultsfilepath);
             }
-            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath, $this->useyaml);
         }
         if (!$manifestcontents && $manifestpath) {
             echo "\nManifest file is empty: {$this->manifestpath}\n";
@@ -1002,13 +1010,15 @@ class import_repo {
      * @return void
      */
     public function handle_abort(): void {
-        echo "Abort? y/n\n";
+        global $usecontinue;
+        echo ($usecontinue ? "Continue? y/n\n" : "Abort? y/n\n");
         $handle = fopen ("php://stdin", "r");
         $line = fgets($handle);
-        if (trim($line) === 'y') {
-            $this->call_exit();
-        }
         fclose($handle);
+        if (($usecontinue && trim($line) === 'y') || (!$usecontinue && trim($line) === 'n')) {
+            return;
+        }
+        $this->call_exit();
     }
 
     /**
@@ -1253,8 +1263,8 @@ class import_repo {
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
         $forceimport = ($this->forceimport) ? ' -z' : '';
-        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
-        if ($this->useyaml) {
+        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
+        if ($this->usefragments) {
             copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
         }
         chdir($scriptdirectory);
