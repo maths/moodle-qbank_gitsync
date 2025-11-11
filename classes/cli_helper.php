@@ -107,7 +107,11 @@ class cli_helper {
         $argcount = count($commandlineargs);
         if (!isset($commandlineargs['w'])) {
             echo "\nProcessed {$argcount} valid command line argument" .
-                    (($argcount !== 1) ? 's' : '') . ".\n";
+                    (($argcount !== 1) ? 's' : '') . ":\n";
+            forEach ($commandlineargs as $option => $value) {
+                $description = strlen($option) > 1 ? $option : $parsed['linked'][$option] . " ({$option})";
+                echo "{$description}: {$value}\n";
+            }
         }
         $this->processedoptions = $this->prioritise_options($commandlineargs);
         if (!empty($this->processedoptions['help'])) {
@@ -127,6 +131,7 @@ class cli_helper {
     public function parse_options(): array {
         $shortopts = '';
         $longopts = [];
+        $pairs = [];
 
         foreach ($this->options as $option) {
             $shortopts .= $option['shortopt'];
@@ -136,9 +141,10 @@ class cli_helper {
             } else {
                 $longopts[] = $option['longopt'];
             }
+            $pairs[$option['shortopt']] = $option['longopt'];
         }
 
-        return ['shortopts' => $shortopts, 'longopts' => $longopts];
+        return ['shortopts' => $shortopts, 'longopts' => $longopts, 'linked' => $pairs];
     }
 
     /**
@@ -911,13 +917,15 @@ class cli_helper {
      * @return void
      */
     public static function handle_abort(): void {
-        echo "Abort? y/n\n";
+        global $usecontinue;
+        echo ($usecontinue ? "Continue? y/n\n" : "Abort? y/n\n");
         $handle = fopen ("php://stdin", "r");
         $line = fgets($handle);
-        if (trim($line) === 'y') {
-            static::call_exit();
-        }
         fclose($handle);
+        if (($usecontinue && trim($line) === 'y') || (!$usecontinue && trim($line) === 'n')) {
+            return;
+        }
+        static::call_exit();
     }
 
     /**

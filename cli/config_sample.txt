@@ -77,3 +77,8 @@ $usefragments = false;
 // Be careful with truncation of category names - duplicate truncated categories with the same parent category will be merged.
 $maxcatlength = 200;
 $maxqlength = 230;
+
+// At various points Gitsync will show information and then wait for a response. This information is important and worth reading.
+// The default prompt is 'Abort?' to avoid fast-fingering 'y' to continue. You can swap the question to 'Continue?'
+// with this flag.
+$usecontinue = false;
