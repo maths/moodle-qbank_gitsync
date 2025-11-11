@@ -256,13 +256,13 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('1', (string) $prt2->node[0]->falsescore);
     }
 
-    public function test_yaml_to_xml(): void {
+    public function test_yamlstring_to_xml(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
         }
         $yaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
-        $xml = yaml_converter::yaml_to_xml($yaml);
+        $xml = yaml_converter::yamlstring_to_xml($yaml);
         $this->assertEquals('Test question', (string)$xml->question->name->text);
         $this->assertEquals(1,
             preg_match('/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .

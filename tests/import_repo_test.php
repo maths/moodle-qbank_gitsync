@@ -112,6 +112,7 @@ final class import_repo_test extends advanced_testcase {
             'ignorecat' => null,
             'forceimport' => false,
             'useyaml' => false,
+            'usefragments' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments',

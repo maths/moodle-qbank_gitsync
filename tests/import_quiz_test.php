@@ -143,6 +143,7 @@ final class import_quiz_test extends advanced_testcase {
             'usegit' => true,
             'forceimport' => false,
             'useyaml' => false,
+            'usefragments' => false,
         ];
 
     }

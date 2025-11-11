@@ -75,6 +75,7 @@ final class export_trait_test extends advanced_testcase {
             'ignorecat' => null,
             'usegit' => true,
             'useyaml' => false,
+            'usefragments' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',
