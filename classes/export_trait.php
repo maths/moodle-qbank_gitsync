@@ -236,9 +236,17 @@ trait export_trait {
                     }
                 }
                 $filetype = 'xml';
-                if ($this->useyaml && strpos($question, '<question type="stack">') !== false) {
-                    $question = yaml_converter::detect_differences($question, $this->defaults);
-                    $filetype = 'yml';
+                if (strpos($question, '<question type="stack">') !== false) {
+                    if ($this->useyaml) {
+                        $filetype = 'yml';
+                    }
+                    if ($this->usefragments) {
+                        $question = yaml_converter::detect_differences($question, $this->defaults, $this->useyaml);
+                    } else {
+                        if ($this->useyaml) {
+                            $question = yaml_converter::xmlstring_to_yamlstring($question);
+                        }
+                    }
                 }
 
                 $sanitisedqname = preg_replace(cli_helper::BAD_CHARACTERS, '-', substr($qname, 0, $this->maxqlength));
@@ -258,7 +266,7 @@ trait export_trait {
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
                     'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.{$filetype}",
-                    'format' => 'xml',
+                    'format' => $filetype,
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");
             }

@@ -66,8 +66,11 @@ $usegit = true;
 // saved in the manifest file during repo creation will be used on import/export.
 $ignorecat = null;
 
-// Should questions be exported as YAML difference files?
+// Should questions be exported as YAMLfiles?
 $useyaml = false;
+
+// Should questions be exported as difference files?
+$usefragments = false;
 
 // Max character length of category folder names and question file names.
 // You may need to reduce these on Windows so that overall filepath for questions does not excede the system limit.

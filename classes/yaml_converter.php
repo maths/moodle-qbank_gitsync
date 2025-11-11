@@ -83,7 +83,7 @@ class yaml_converter {
             self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml');
         }
         try {
-            $xmldata = self::yaml_to_xml($yaml);
+            $xmldata = self::yamlstring_to_xml($yaml);
         } catch (\Exception $e) {
             throw new \Exception("The provided file does not contain valid YAML");
         }
@@ -442,12 +442,48 @@ class yaml_converter {
      * @return SimpleXMLElement The resulting XML object.
      * @throws \stack_exception If the YAML string is invalid.
      */
-    public static function yaml_to_xml($yamlstring) {
+    public static function yamlstring_to_xml($yamlstring) {
         self::require_yaml();
         $yaml = Yaml::parse($yamlstring);
         if (!$yaml) {
             throw new \stack_exception("The provided file does not contain valid YAML or XML.");
         }
+        $xml = self::yaml_to_xml($yaml);
+        return $xml;
+    }
+
+    /**
+     * Converts YAML to an XML string.
+     *
+     * @param array $yaml The YAML to convert.
+     * @return string The resulting XML string.
+     */
+    public static function yaml_to_xmlstring($yaml) {
+        $xml = self::yaml_to_xml($yaml);
+        return $xml->asXML();
+    }
+
+    /**
+     * Converts YAML string to an XML string.
+     *
+     * @param string $yamlstring The YAML string to convert.
+     * @return string The resulting XML string.
+     */
+    public static function xmlstring_to_yamlstring($xmlstring) {
+        $xml = new SimpleXMLElement($xmlstring);
+        $yaml = self::xml_to_array($xml);
+        self::require_yaml();
+        $yaml = Yaml::dump($yaml, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
+        return $yaml;
+    }
+
+    /**
+     * Converts YAML to a SimpleXMLElement object.
+     *
+     * @param string $yaml The YAML to convert.
+     * @return SimpleXMLElement $xml The resulting XML.
+     */
+    public static function yaml_to_xml($yaml) {
         $xml = new SimpleXMLElement("<?xml version='1.0' encoding='UTF-8'?><quiz></quiz>");
         $question = $xml->addChild('question');
         $question->addAttribute('type', 'stack');
@@ -477,7 +513,7 @@ class yaml_converter {
                 // Convert basic YAML field to node with text and format fields.
                 if ($key !== 'name') {
                     // Name is used in multiple places and sometimes has text property and sometimes not.
-                    // Handled in yaml_to_xml().
+                    // Handled in yamlstring_to_xml().
                     $subnode = $xml->addChild($key);
                     $subvalue = ['text' => $value];
                     if (isset($data[$key . 'format'])) {
@@ -516,9 +552,11 @@ class yaml_converter {
      * Converts a SimpleXMLElement object to an array for conversion to YAML.
      *
      * @param SimpleXMLElement The resulting XML object.
+     * @param array Previous output.
+     * @param boolean Are we converting a default file. We need to make it flatter.
      * @return array The resulting array.
      */
-    public static function xml_to_array($xmldata, &$output = []) {
+    public static function xml_to_array($xmldata, &$output = [], $isdefault = false) {
         foreach ($xmldata as $key => $value) {
             if (in_array($key, self::TEXTFIELDS)) {
                 if (isset($value->text)) {
@@ -530,14 +568,14 @@ class yaml_converter {
                     $output[$key . 'format'] = (string) $xmldata->{$key}['format'];
                 }
             } else if ($value instanceof SimpleXMLElement && $value->count()) {
-                if (in_array($key, self::ARRAYFIELDS)) {
+                if (in_array($key, self::ARRAYFIELDS) && !$isdefault) {
                     $output[$key][] = self::xml_to_array($value);
                 } else {
                     $output[$key] = [];
                     self::xml_to_array($value, $output[$key]);
                 }
             } else {
-                if (in_array($key, self::ARRAYFIELDS)) {
+                if (in_array($key, self::ARRAYFIELDS) && !$isdefault) {
                     $output[$key][] = (string) $value;
                 } else {
                     $output[$key] = (string) $value;
@@ -550,11 +588,18 @@ class yaml_converter {
     /**
      * Load a parse file with default values for questions.
      * @param string filepath
+     * @param boolean $isyaml Is default file YAML? (Rather than XML?).
      * @return array YAML
      */
-    public static function load_defaults($defaultfile) {
-        self::require_yaml();
-        $defaults = Yaml::parseFile($defaultfile);
+    public static function load_defaults($defaultfile, $isyaml = true) {
+        if ($isyaml) {
+            self::require_yaml();
+            $defaults = Yaml::parseFile($defaultfile);
+        } else {
+            $xml = file_get_contents($defaultfile);
+            $defaults = new SimpleXMLElement($xml);
+            $defaults = self::xml_to_array($defaults, isdefault: true);
+        }
         if (!$defaults) {
             echo "\nUnable to access or parse default file: {$defaultfile}\nAborting.\n";
             self::call_exit();
@@ -577,18 +622,19 @@ class yaml_converter {
      * Detects differences between the provided XML or YAML and the default question structure.
      *
      * @param string $xml The XML or YAML string to compare.
-     * @return string The differences in YAML format.
+     * @param boolean $useyaml Return YAML? (Rather than XML?).
+     * @return string The differences.
      */
-    public static function detect_differences($xml, $defaults) {
+    public static function detect_differences($xml, $defaults, $useyaml = true) {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
             self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml');
         }
-        if (strpos($xml, '<question type="stack">') !== false) {
+        if (strpos($xml, '<question type="stack">') !== false || !$useyaml) {
             $xmldata = new SimpleXMLElement($xml);
         } else {
-            $xmldata = self::yaml_to_xml($xml);
+            $xmldata = self::yamlstring_to_xml($xml);
         }
         $plaindata = self::xml_to_array($xmldata);
         $diff = self::obj_diff(self::$defaults['question'], $plaindata['question']);
@@ -685,9 +731,22 @@ class yaml_converter {
             }
             $diff['qtest'] = $difftests;
         }
-        self::require_yaml();
-        $yaml = Yaml::dump($diff, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
-        return $yaml;
+        if ($useyaml) {
+            self::require_yaml();
+            $yaml = Yaml::dump($diff, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
+            return $yaml;
+        } else {
+            $xmlstring = self::yaml_to_xmlstring($diff);
+            $dom = new \DOMDocument();
+
+            // Initial block (must before load xml string)
+            $dom->preserveWhiteSpace = false;
+            $dom->formatOutput = true;
+            // End initial block
+
+            $dom->loadXML($xmlstring);
+            return $dom->saveXML();
+        }
     }
 
     /**

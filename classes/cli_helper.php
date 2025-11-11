@@ -71,7 +71,7 @@ class cli_helper {
     /**
      * DEFAULTS_FILE - Default filename for question defaults.
      */
-    public const DEFAULTS_FILE = 'questiondefaults.yml';
+    public const DEFAULTS_FILE = 'questiondefaults.';
     /**
      * TEMP_MANIFEST_FILE - File name ending for temporary manifest file.
      * Appended to name of moodle instance.
@@ -353,7 +353,7 @@ class cli_helper {
                 } else {
                     $variables[$variablename] = $option['default'];
                 }
-                if (in_array($variablename, ['usegit', 'useyaml'])) {
+                if (in_array($variablename, ['usegit', 'useyaml', 'usefragments'])) {
                     $variables[$variablename] = ($variables[$variablename] === 'true') ? true : $variables[$variablename];
                     $variables[$variablename] = ($variables[$variablename] === 'false') ? false : $variables[$variablename];
                 }
@@ -892,8 +892,11 @@ class cli_helper {
             if (!empty($activity->forceimport)) {
                 echo "\nForce import: Importing all questions.\n";
             }
-            if (!empty($activity->useyaml) && !empty($activity->defaultsfilepath)) {
-                echo "\nUsing YAML with defaults file: " . basename($activity->defaultsfilepath) . "\n";
+            if (!empty($activity->useyaml)) {
+                echo "\nUsing YAML\n";
+            }
+            if (!empty($activity->usefragments) && !empty($activity->defaultsfilepath)) {
+                echo "\nUsing fragments with defaults file: " . basename($activity->defaultsfilepath) . "\n";
             }
             static::handle_abort();
         }
