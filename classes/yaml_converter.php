@@ -480,7 +480,7 @@ class yaml_converter {
     /**
      * Converts YAML to a SimpleXMLElement object.
      *
-     * @param string $yaml The YAML to convert.
+     * @param [] $yaml The YAML to convert.
      * @return SimpleXMLElement $xml The resulting XML.
      */
     public static function yaml_to_xml($yaml) {
@@ -592,16 +592,22 @@ class yaml_converter {
      * @return array YAML
      */
     public static function load_defaults($defaultfile, $isyaml = true) {
-        if ($isyaml) {
-            self::require_yaml();
-            $defaults = Yaml::parseFile($defaultfile);
-        } else {
-            $xml = file_get_contents($defaultfile);
-            $defaults = new SimpleXMLElement($xml);
-            $defaults = self::xml_to_array($defaults, isdefault: true);
+        try {
+            if ($isyaml) {
+                self::require_yaml();
+                $defaults = Yaml::parseFile($defaultfile);
+            } else {
+                $xml = file_get_contents($defaultfile);
+                $defaults = new SimpleXMLElement($xml);
+                $output = [];
+                $defaults = self::xml_to_array($defaults, $output, true);
+            }
+        } catch (\Exception $e) {
+            $defaults = null;
         }
         if (!$defaults) {
             echo "\nUnable to access or parse default file: {$defaultfile}\nAborting.\n";
+            echo "\n{$e->getMessage()}\n";
             self::call_exit();
         }
         return $defaults;

@@ -222,7 +222,6 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('1', (string) $prt2->node[0]->falsescore);
     }
 
-
     public function test_loadxml_summary(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
@@ -269,6 +268,60 @@ final class yaml_converter_test extends \advanced_testcase {
                 '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s', (string) $xml->question->questiontext->text));
         $this->assertEquals('html', (string)$xml->question->questiontext['format']);
         $this->assertEquals(false, isset($xml->question->questiontext->format));
+    }
+
+    public function test_yaml_to_xml(): void {
+        $data = [
+            'name' => 'Test',
+            'questiontext' => 'What is 2+2?',
+            'questiontextformat' => 'moodle',
+            'input' => [
+                [
+                    'name' => 'ans1',
+                    'tans' => '1',
+                ],
+                [
+                    'name' => 'ans1',
+                    'tans' => '2',
+                ],
+            ],
+            'prt' => [
+                [
+                    'name' => 'prt1',
+                    'value' => '23',
+                    'node' => [
+                        [
+                            'name' => '0',
+                            'sans' => '011',
+                            'tans' => '022',
+                        ],
+                        [
+                            'name' => '1',
+                            'sans' => '033',
+                            'tans' => '044',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $xml = yaml_converter::yaml_to_xml($data);
+        $this->assertEquals('Test', $xml->question->name->text);
+        $this->assertEquals('stack', $xml->question['type']);
+        $this->assertEquals('What is 2+2?', $xml->question->questiontext->text);
+        $this->assertEquals('moodle', $xml->question->questiontext['format']);
+        $this->assertEquals('1', $xml->question->prt[0]->node[1]->name);
+    }
+
+    public function xmlstring_to_yamlstring(): void {
+        if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
+            $this->markTestSkipped('Symfony YAML extension is not available.');
+            return;
+        }
+        // Test the difference detection with a full question.
+        $xmlstring = file_get_contents(__DIR__ . '/../questiondefaults.xml');
+        $expectedyamlstring = file_get_contents(__DIR__ . '/../questiondefaults.yml');
+        $yamlstring = yaml_converter::xmlstring_to_yamlstring($xmlstring);
+        $this->assertEquals($expectedyamlstring, $yamlstring);
     }
 
     public function test_array_to_xml_inverse(): void {
@@ -319,6 +372,48 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('044', $xml->prt[0]->node[1]->tans);
         $array = yaml_converter::xml_to_array($xml);
         $this->assertEqualsCanonicalizing($data, $array);
+    }
+
+    public function test_defaults_xml_to_array(): void {
+        $data = [
+            'name' => 'Test',
+            'questiontext' => 'What is 2+2?',
+            'questiontextformat' => 'moodle',
+            'input' => [
+                [
+                    'name' => 'ans1',
+                    'tans' => '1',
+                ],
+                [
+                    'name' => 'ans1',
+                    'tans' => '2',
+                ],
+            ],
+            'prt' => [
+                [
+                    'name' => 'prt1',
+                    'value' => '23',
+                ],
+            ],
+            'node' => [
+                        [
+                            'name' => '0',
+                            'sans' => '011',
+                            'tans' => '022',
+                        ]
+                    ],
+        ];
+        $xml = new \SimpleXMLElement('<question></question>');
+        yaml_converter::array_to_xml($data, $xml);
+        $this->assertEquals('Test', $xml->name);
+        $this->assertEquals('What is 2+2?', $xml->questiontext->text);
+        $this->assertEquals('moodle', $xml->questiontext['format']);
+        $this->assertEquals(2, count($xml->input));
+        $this->assertEquals(1, count($xml->prt));
+        $this->assertEquals('prt1', $xml->prt->name);
+        $this->assertEquals('0', $xml->node->name);
+        $this->assertEquals('011', $xml->node->sans);
+        $this->assertEquals('022', $xml->node->tans);
     }
 
     public function test_obj_diff(): void {

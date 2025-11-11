@@ -1019,7 +1019,13 @@ class cli_helper {
             echo "\nUnable to access file: {$filepath}\n";
             return null;
         }
-        $questionxml = yaml_converter::loadyaml($contents, $defaults);
+        try {
+            $questionxml = yaml_converter::loadyaml($contents, $defaults);
+        } catch (\Exception $e) {
+            echo "\nBroken YAML: {$filepath}\n";
+            echo "\n{$e->getMessage()}\n";
+            return null;
+        }
         $tempqfilepath = dirname($tempfilepath) . '/tempqfile.tmp';
         $success = file_put_contents($tempqfilepath, $questionxml->asXML());
         if ($success === false) {

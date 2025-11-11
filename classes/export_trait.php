@@ -236,17 +236,25 @@ trait export_trait {
                     }
                 }
                 $filetype = 'xml';
-                if (strpos($question, '<question type="stack">') !== false) {
-                    if ($this->useyaml) {
-                        $filetype = 'yml';
-                    }
-                    if ($this->usefragments) {
-                        $question = yaml_converter::detect_differences($question, $this->defaults, $this->useyaml);
-                    } else {
+                try {
+                    if (strpos($question, '<question type="stack">') !== false) {
                         if ($this->useyaml) {
-                            $question = yaml_converter::xmlstring_to_yamlstring($question);
+                            $filetype = 'yml';
+                        }
+                        if ($this->usefragments) {
+                            $question = yaml_converter::detect_differences($question, $this->defaults, $this->useyaml);
+                        } else {
+                            if ($this->useyaml) {
+                                $question = yaml_converter::xmlstring_to_yamlstring($question);
+                            }
                         }
                     }
+                } catch (\Exception $e) {
+                    echo "\nParsing issue.\n";
+                    echo "\n{$e->getMessage()}\n";
+                    echo "\nFile creation or update unsuccessful:\n";
+                    echo "{$bottomdirectory}/{$sanitisedqname}.{$filetype}";
+                    continue;
                 }
 
                 $sanitisedqname = preg_replace(cli_helper::BAD_CHARACTERS, '-', substr($qname, 0, $this->maxqlength));
