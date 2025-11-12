@@ -454,20 +454,20 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertStringContainsString('name: Test', $yaml);
     }
 
-    public function test_detect_difference_yml(): void {
+    public function test_detect_difference_xml(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
         }
         // Test the difference detection with a full question.
-        $yaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
-        $diff = yaml_converter::detect_differences($yaml, null);
+        $xml = file_get_contents(__DIR__ . '/fixtures/fullquestion.xml');
+        $diff = yaml_converter::detect_differences($xml, null, true);
         $diffarray = Yaml::parse($diff);
         $this->assertEquals(10, count($diffarray));
         $expected = [
             'name' => 'Test question',
-            'questiontext' => "<p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>\n    <p>[[input:ans2]] " .
-                "[[validation:ans2]]</p>\n",
+            'questiontext' => "<p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>\n<p>[[input:ans2]] " .
+                "[[validation:ans2]]</p>",
             'questionvariables' => 'ta1:1;ta2:2;',
             'questionsimplify' => '1',
             'prtcorrect' => '<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
@@ -562,8 +562,8 @@ final class yaml_converter_test extends \advanced_testcase {
                 ],
             ],
         ];
-        $expectedstring = "name: 'Test question'\nquestiontext: |\n  <p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>" .
-            "\n      <p>[[input:ans2]] [[validation:ans2]]</p>\nquestionvariables: 'ta1:1;ta2:2;" .
+        $expectedstring = "name: 'Test question'\nquestiontext: |-\n  <p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>" .
+            "\n  <p>[[input:ans2]] [[validation:ans2]]</p>\nquestionvariables: 'ta1:1;ta2:2;" .
             "'\nquestionsimplify: '1'\nprtcorrect: '<p>" .
             "<i class=\"fa fa-check\"></i> Correct answer*, well done.</p>'\nmultiplicationsign: cross\ninput:\n  - " .
             "name: ans1\n    type: algebraic\n    tans: ta1\n    boxsize: '25'\n    forbidfloat: '1'\n    " .
@@ -585,7 +585,7 @@ final class yaml_converter_test extends \advanced_testcase {
 
         // Check results when using answertest summary in defaults.
         $diff = yaml_converter::detect_differences(
-            $yaml,
+            $xml,
             yaml_converter::load_defaults(__DIR__ . '/fixtures/questiondefaultssugar.yml')
         );
         $diffarray = Yaml::parse($diff);

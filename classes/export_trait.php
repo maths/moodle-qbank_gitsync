@@ -252,8 +252,7 @@ trait export_trait {
                 } catch (\Exception $e) {
                     echo "\nParsing issue.\n";
                     echo "\n{$e->getMessage()}\n";
-                    echo "\nFile creation or update unsuccessful:\n";
-                    echo "{$bottomdirectory}/{$sanitisedqname}.{$filetype}";
+                    echo "\nQuestion: {$qname}\n";
                     continue;
                 }
 

@@ -784,10 +784,16 @@ class import_repo {
                             $this->postsettings['exportedversion'] = null;
                         }
                         $tempqfile = null;
-                        if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'yml') {
-                            $tempqfile = cli_helper::create_temp_question_file($repoitem, $this->tempfilepath, $this->defaults);
-                            if (!$tempqfile) {
-                                echo 'File upload problem.\n';
+                        if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'yml' || $this->usefragments) {
+                            // YAML files always need conversion. XML need conversion if fragments of STACK questions.
+                            // We don't have file contents yet so can't check question type here.
+                            $tempqfile = cli_helper::create_temp_question_file(
+                                $repoitem,
+                                $this->tempfilepath,
+                                $this->defaults,
+                                $this->useyaml
+                            );
+                            if ($tempqfile === false) {
                                 echo "{$repoitem->getPathname()} not imported.\n";
                                 continue;
                             }

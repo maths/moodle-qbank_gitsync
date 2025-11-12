@@ -206,8 +206,16 @@ class import_question extends external_api {
             throw new moodle_exception('importerror', 'qbank_gitsync', null, $filename);
         }
 
+        $errors = '';
+        $notices = '';
         if ($params['questionbankentryid']) {
-            \qbank_importasversion\importer::import_file($qformat, $question, $tempfile);
+            try {
+                $result = \qbank_importasversion\importer::import_file($qformat, $question, $tempfile);
+                $errors = $result->error ?? '';
+                $notices = $result->notice ?? '';
+            } catch (Exception $e) {
+                $errors = $e->getMessage();
+            }
         } else {
             if (!$qformat->importprocess()) {
                 throw new moodle_exception('importerror', 'qbank_gitsync', null, $filename);

@@ -1007,29 +1007,40 @@ class cli_helper {
      * @param string $filepath
      * @param string $tempfilepath Path of main temp file
      * @param string $defaults yml defaults
-     * @return object|null $tempqfilepath
+     * @return object|null|boolean $tempqfilepath else false on error and null if not a STACK question.
      */
-    public static function create_temp_question_file($filepath, $tempfilepath, $defaults) {
+    public static function create_temp_question_file($filepath, $tempfilepath, $defaults, $useyaml) {
         if (!is_file($filepath)) {
             echo "\nRequired question file does not exist: {$filepath}\n";
-            return null;
+            return false;
         }
         $contents = file_get_contents($filepath);
         if ($contents === false) {
             echo "\nUnable to access file: {$filepath}\n";
+            return false;
+        }
+        if (!$useyaml && strpos($contents, '<question type="stack">') === false) {
+            // Non-STACK XML question - not a fragment.
             return null;
         }
         try {
-            $questionxml = yaml_converter::loadyaml($contents, $defaults);
+            libxml_use_internal_errors(true);
+            $questionxml = yaml_converter::loadyaml($contents, $defaults, $useyaml);
+            libxml_use_internal_errors(false);
         } catch (\Exception $e) {
-            echo "\nBroken YAML: {$filepath}\n";
+            echo "\nBroken XML/YAML: {$filepath}\n";
             echo "\n{$e->getMessage()}\n";
-            return null;
+            foreach (libxml_get_errors() as $error) {
+                echo $error->message . "\n";
+            }
+            libxml_clear_errors();
+            libxml_use_internal_errors(false);
+            return false;
         }
         $tempqfilepath = dirname($tempfilepath) . '/tempqfile.tmp';
         $success = file_put_contents($tempqfilepath, $questionxml->asXML());
         if ($success === false) {
-            return null;
+            return false;
         }
         return new \SplFileInfo($tempqfilepath);
     }

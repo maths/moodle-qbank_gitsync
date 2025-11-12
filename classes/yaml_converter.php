@@ -76,17 +76,18 @@ class yaml_converter {
     }
 
     // phpcs:ignore moodle.Commenting.MissingDocblock.Function
-    public static function loadyaml($yaml, $defaults) {
+    public static function loadyaml($data, $defaults, $useyaml = true) {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
             self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml', true);
         }
-        try {
-            $xmldata = self::yamlstring_to_xml($yaml);
-        } catch (\Exception $e) {
-            throw new \Exception("The provided file does not contain valid YAML");
+        if ($useyaml) {
+            $xmldata = self::yamlstring_to_xml($data);
+        } else {
+            $xmldata = new SimpleXMLElement($data);
         }
+
         $question = $xmldata->question;
 
         // Based on Moodle's base question type.
@@ -607,7 +608,8 @@ class yaml_converter {
         }
         if (!$defaults) {
             echo "\nUnable to access or parse default file: {$defaultfile}\nAborting.\n";
-            echo "\n{$e->getMessage()}\n";
+            echo "{$e->getMessage()}\n";
+            echo "Make sure your 'useyaml' setting is correct for this repo.\n";
             self::call_exit();
         }
         return $defaults;
@@ -625,9 +627,9 @@ class yaml_converter {
     }
 
     /**
-     * Detects differences between the provided XML or YAML and the default question structure.
+     * Detects differences between the provided XML and the default question structure.
      *
-     * @param string $xml The XML or YAML string to compare.
+     * @param string $xml The XML string to compare.
      * @param boolean $useyaml Return YAML? (Rather than XML?).
      * @return string The differences.
      */
@@ -637,11 +639,7 @@ class yaml_converter {
         } else {
             self::$defaults = self::load_defaults(__DIR__ . '/../' . cli_helper::DEFAULTS_FILE . ($useyaml ? 'yml' : 'xml'));
         }
-        if (strpos($xml, '<question type="stack">') !== false || !$useyaml) {
-            $xmldata = new SimpleXMLElement($xml);
-        } else {
-            $xmldata = self::yamlstring_to_xml($xml);
-        }
+        $xmldata = new SimpleXMLElement($xml);
         $plaindata = self::xml_to_array($xmldata);
         $diff = self::obj_diff(self::$defaults['question'], $plaindata['question']);
         if (!empty($plaindata['question']['input'])) {

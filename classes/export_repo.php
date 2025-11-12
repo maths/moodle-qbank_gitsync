@@ -361,15 +361,21 @@ class export_repo {
                     echo "{$questioninfo->filepath} not updated.\n";
                     continue;
                 }
-
-                if (strpos($question, '<question type="stack">') !== false) {
-                    if ($this->usefragments) {
-                        $question = yaml_converter::detect_differences($question, $this->defaults, $this->useyaml);
-                    } else {
-                        if ($this->useyaml) {
-                            $question = yaml_converter::xmlstring_to_yamlstring($question);
+                try {
+                    if (strpos($question, '<question type="stack">') !== false) {
+                        if ($this->usefragments) {
+                            $question = yaml_converter::detect_differences($question, $this->defaults, $this->useyaml);
+                        } else {
+                            if ($this->useyaml) {
+                                $question = yaml_converter::xmlstring_to_yamlstring($question);
+                            }
                         }
                     }
+                } catch (\Exception $e) {
+                    echo "\nParsing issue.\n";
+                    echo "\n{$e->getMessage()}\n";
+                    echo "{$questioninfo->filepath} not updated.\n";
+                    continue;
                 }
                 $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
                 if ($success === false) {
