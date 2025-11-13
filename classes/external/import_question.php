@@ -81,6 +81,7 @@ class import_question extends external_api {
         return new external_single_structure([
             'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'questionbankentry id'),
             'version' => new external_value(PARAM_SEQUENCE, 'question version'),
+            'validation' => new external_value(PARAM_RAW, 'validation issues'),
         ]);
     }
 
@@ -209,12 +210,11 @@ class import_question extends external_api {
         $errors = '';
         $notices = '';
         if ($params['questionbankentryid']) {
-            try {
-                $result = \qbank_importasversion\importer::import_file($qformat, $question, $tempfile);
-                $errors = $result->error ?? '';
-                $notices = $result->notice ?? '';
-            } catch (Exception $e) {
-                $errors = $e->getMessage();
+            $result = \qbank_importasversion\importer::import_file($qformat, $question, $tempfile);
+            $errors = $result->error ?? '';
+            $notices = $result->notice ?? '';
+            if ($errors) {
+                throw new moodle_exception('importerror' . '', 'qbank_gitsync', null, $filename, $errors);
             }
         } else {
             if (!$qformat->importprocess()) {
@@ -231,6 +231,7 @@ class import_question extends external_api {
         $response = new \stdClass();
         $response->questionbankentryid = null;
         $response->version = null;
+        $response->validation = $notices;
         // Log imported question and return id of new question ready to make manifest file.
         if (!$params['questionbankentryid'] && !$iscategory) {
             $eventparams = [

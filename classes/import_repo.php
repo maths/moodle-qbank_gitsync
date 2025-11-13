@@ -835,6 +835,10 @@ class import_repo {
                                 $fileoutput['currentcommit'] = $commithash;
                             }
                             fwrite($tempfile, json_encode($fileoutput) . "\n");
+                            if ($responsejson->validation) {
+                                echo "\n{$repoitem->getPathname()} imported but has validation issues. Please exportrepofrommoodle to identify any changes which have been made.\n";
+                                echo "{$responsejson->validation}\n";
+                            }
                         }
                     } else {
                         echo "Problem with the category file or file location.\n" .
