@@ -254,6 +254,7 @@ class import_question extends external_api {
                 ['questionbankentryid' => $response->questionbankentryid]
             );
         }
+        ob_clean();
         return $response;
     }
 }

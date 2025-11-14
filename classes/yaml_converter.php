@@ -199,7 +199,7 @@ class yaml_converter {
             self::set_field($question, 'scientificnotation', self::get_default('question', 'scientificnotation'));
         }
 
-        if ($question->defaultgrade && (!$question->input || !count($question->input))) {
+        if ($question->defaultgrade != '0' && (!$question->input || !count($question->input))) {
             self::set_field($question, 'input->0', '');
         }
 
@@ -254,7 +254,7 @@ class yaml_converter {
             }
         }
 
-        if ($question->defaultgrade && (!$question->prt || !count($question->prt))) {
+        if ($question->defaultgrade != '0' && (!$question->prt || !count($question->prt))) {
             self::set_field($question, 'prt->0', '');
         }
 
@@ -352,11 +352,11 @@ class yaml_converter {
                 if (!isset($testinput->name)) {
                     self::set_field($testinput, 'name', self::get_default('testinput', 'name'));
                 }
-                if (!(array) $testinput->value) {
+                if (!isset($testinput->value)) {
                     self::set_field($testinput, 'value', self::get_default('testinput', 'value'));
                 }
             }
-            if (!(array) $test->description) {
+            if (!isset($test->description)) {
                 self::set_field($test, 'description', self::get_default('qtest', 'description'));
             }
             if (!(array) $test->testcase) {
@@ -372,7 +372,7 @@ class yaml_converter {
                 if (!(array) $expected->expectedpenalty) {
                     self::set_field($expected, 'expectedpenalty', self::get_default('expected', 'expectedpenalty'));
                 }
-                if (!(array) $expected->expectedanswernote) {
+                if (!isset($expected->expectedanswernote)) {
                     self::set_field($expected, 'expectedanswernote', self::get_default('expected', 'expectedanswernote'));
                 }
             }
@@ -511,7 +511,7 @@ class yaml_converter {
         // Name is a special case. Has text tag but no format.
         $name = isset($xml->question->name) ? (string) $xml->question->name : self::get_default('question', 'name');
         $xml->question->name = new SimpleXMLElement('<root></root>');
-        $xml->question->name->addChild('text', $name);
+        $xml->question->name->text = $name;
         return $xml;
     }
 
@@ -667,7 +667,7 @@ class yaml_converter {
                 $diffinputs[] = $diffinput;
             }
             $diff['input'] = $diffinputs;
-        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
+        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade'] != '0') {
             $diff['input'] = [['name' => self::get_default('input', 'name'),
                 'type' => self::get_default('input', 'type'),
                 'tans' => self::get_default('input', 'tans'),
@@ -707,7 +707,7 @@ class yaml_converter {
                 $diffprts[] = $diffprt;
             }
             $diff['prt'] = $diffprts;
-        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
+        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade'] != '0') {
             $prtnode = ['name' => self::get_default('node', 'name'),
                     'answertest' => self::get_default('node', 'answertest')];
             if (substr($prtnode['answertest'], 0, 2) !== 'AT') {
@@ -737,13 +737,13 @@ class yaml_converter {
                 $difftest = [];
                 $difftest['testcase'] = $test['testcase'];
                 $difftest = array_merge($difftest, self::obj_diff(self::$defaults['qtest'], $test));
-                foreach ($test['testinput'] as $tinput) {
+                foreach ($test['testinput'] ?? [] as $tinput) {
                     $difftinput = [];
                     $difftinput['name'] = $tinput['name'];
                     $difftinput = array_merge($difftinput, self::obj_diff(self::$defaults['testinput'], $tinput));
                     $difftest['testinput'][] = $difftinput;
                 }
-                foreach ($test['expected'] as $texpected) {
+                foreach ($test['expected'] ?? [] as $texpected) {
                     $difftexpected = [];
                     $difftexpected['name'] = $texpected['name'];
                     $difftexpected = array_merge($difftexpected, self::obj_diff(self::$defaults['expected'], $texpected));
@@ -831,7 +831,7 @@ class yaml_converter {
      * @param string $value The value to add as CDATA.
      */
     public static function add_cdata(&$xml, $value) {
-        if (!empty($value) && $value&& htmlspecialchars($value, ENT_COMPAT) != $value) {
+        if (!empty($value) && $value && htmlspecialchars($value, ENT_COMPAT) != $value) {
             $node = dom_import_simplexml($xml);
             $no = $node->ownerDocument;
             $node->appendChild($no->createCDATASection($value));
