@@ -899,10 +899,14 @@ class cli_helper {
                 echo "\nForce import: Importing all questions.\n";
             }
             if (!empty($activity->useyaml)) {
-                echo "\nUsing YAML\n";
+                echo "\nCreating or expecting YAML files.\n";
+            } else {
+                echo "\nCreating or expecting XML files.\n";
             }
             if (!empty($activity->usefragments) && !empty($activity->defaultsfilepath)) {
-                echo "\nUsing fragments with defaults file: " . basename($activity->defaultsfilepath) . "\n";
+                echo "\nCreating or expecting question fragments using defaults file: " . basename($activity->defaultsfilepath) . "\n";
+            } else {
+                echo "\nCreating or expecting full question files not fragments.\n";
             }
             static::handle_abort();
         }
@@ -1025,7 +1029,7 @@ class cli_helper {
         }
         try {
             libxml_use_internal_errors(true);
-            $questionxml = yaml_converter::loadyaml($contents, $defaults, $useyaml);
+            $questionxml = yaml_converter::load_string_as_xml($contents, $defaults, $useyaml);
             libxml_use_internal_errors(false);
         } catch (\Exception $e) {
             echo "\nBroken XML/YAML: {$filepath}\n";

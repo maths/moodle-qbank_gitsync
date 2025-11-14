@@ -6,7 +6,7 @@
     </name>
     <questiontext format="html">
       <text><![CDATA[<p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>
-<p>[[input:ans2]] [[validation:ans2]]</p>]]></text>
+    <p>[[input:ans2]] [[validation:ans2]]</p>]]></text>
     </questiontext>
     <generalfeedback format="html">
       <text/>
@@ -22,10 +22,10 @@
       <text>ta1:1;ta2:2;</text>
     </questionvariables>
     <specificfeedback format="html">
-      <text><![CDATA[<p>[[feedback:prt1]]</p>]]></text>
+      <text><![CDATA[[[feedback:prt1]]]]></text>
     </specificfeedback>
     <questionnote format="html">
-      <text><![CDATA[<p>{@ta1@}</p>]]></text>
+      <text><![CDATA[{@ta1@}]]></text>
     </questionnote>
     <questiondescription format="html">
       <text/>
@@ -37,10 +37,10 @@
       <text><![CDATA[<p><i class="fa fa-check"></i> Correct answer*, well done.</p>]]></text>
     </prtcorrect>
     <prtpartiallycorrect format="html">
-      <text><![CDATA[<p><i class="fa fa-adjust"></i> Your answer is partially correct.</p>]]></text>
+      <text><![CDATA[<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.]]></text>
     </prtpartiallycorrect>
     <prtincorrect format="html">
-      <text><![CDATA[<p><i class="fa fa-times"></i> Incorrect answer.</p>]]></text>
+      <text><![CDATA[<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.]]></text>
     </prtincorrect>
     <decimals>.</decimals>
     <scientificnotation>*10</scientificnotation>

@@ -11,20 +11,20 @@ question:
   idnumber: ''
   stackversion: '2025042500'
   questionvariables: 'ta1:1;'
-  specificfeedback: '<p>[[feedback:prt1]]</p>'
+  specificfeedback: '[[feedback:prt1]]'
   specificfeedbackformat: html
-  questionnote: '<p>{@ta1@}</p>'
+  questionnote: '{@ta1@}'
   questionnoteformat: html
   questiondescription: ''
   questiondescriptionformat: html
   questionsimplify: '1'
   assumepositive: '0'
   assumereal: '0'
-  prtcorrect: '<p><i class="fa fa-check"></i> Correct answer, well done.</p>'
+  prtcorrect: '<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.'
   prtcorrectformat: html
-  prtpartiallycorrect: <p><i class="fa fa-adjust"></i> Your answer is partially correct.</p>
+  prtpartiallycorrect: '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.'
   prtpartiallycorrectformat: html
-  prtincorrect: <p><i class="fa fa-times"></i> Incorrect answer.</p>
+  prtincorrect: '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.'
   prtincorrectformat: html
   decimals: .
   scientificnotation: '*10'

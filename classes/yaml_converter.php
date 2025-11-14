@@ -76,7 +76,7 @@ class yaml_converter {
     }
 
     // phpcs:ignore moodle.Commenting.MissingDocblock.Function
-    public static function loadyaml($data, $defaults, $useyaml = true) {
+    public static function load_string_as_xml($data, $defaults, $useyaml = true) {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
@@ -98,7 +98,7 @@ class yaml_converter {
             self::set_field($question, 'questiontext->text', self::get_default('question', 'questiontext'));
         }
         if (!isset($question->questiontext['format'])) {
-            self::get_default('question', 'questiontextformat');
+            $question->questiontext['format'] = self::get_default('question', 'questiontextformat');
         }
         if (!isset($question->generalfeedback->text)) {
             self::set_field($question, 'generalfeedback->text', self::get_default('question', 'generalfeedback'));
@@ -162,6 +162,9 @@ class yaml_converter {
         if (!(array) $question->isbroken) {
             self::set_field($question, 'isbroken', self::get_default('question', 'isbroken'));
         }
+        if (!(array) $question->hidden) {
+            self::set_field($question, 'hidden', self::get_default('question', 'hidden'));
+        }
         if (!(array) $question->multiplicationsign) {
             self::set_field($question, 'multiplicationsign', self::get_default('question', 'multiplicationsign'));
         }
@@ -181,10 +184,10 @@ class yaml_converter {
             self::set_field($question, 'sqrtsign', self::get_default('question', 'sqrtsign'));
         }
         if (!(array) $question->questionsimplify) {
-            self::set_field($question, 'simplify', self::get_default('question', 'questionsimplify'));
+            self::set_field($question, 'questionsimplify', self::get_default('question', 'questionsimplify'));
         }
         if (!(array) $question->assumepositive) {
-            self::set_field($question, 'assumepos', self::get_default('question', 'assumepositive'));
+            self::set_field($question, 'assumepositive', self::get_default('question', 'assumepositive'));
         }
         if (!(array) $question->assumereal) {
             self::set_field($question, 'assumereal', self::get_default('question', 'assumereal'));
@@ -196,15 +199,22 @@ class yaml_converter {
             self::set_field($question, 'scientificnotation', self::get_default('question', 'scientificnotation'));
         }
 
+        if ($question->defaultgrade && (!$question->input || !count($question->input))) {
+            self::set_field($question, 'input->0', '');
+        }
+
         foreach ($question->input as $inputdata) {
             if (!(array) $inputdata->name) {
-                self::set_field($inputdata, 'name', self::get_default('input', 'type'));
+                self::set_field($inputdata, 'name', self::get_default('input', 'name'));
             }
             if (!(array) $inputdata->type) {
                 self::set_field($inputdata, 'type', self::get_default('input', 'type'));
             }
             if (!(array) $inputdata->tans) {
                 self::set_field($inputdata, 'tans', self::get_default('input', 'tans'));
+            }
+            if (!(array) $inputdata->strictsyntax) {
+                self::set_field($inputdata, 'strictsyntax', self::get_default('input', 'strictsyntax'));
             }
             if (!(array) $inputdata->boxsize) {
                 self::set_field($inputdata, 'boxsize', self::get_default('input', 'boxsize'));
@@ -244,6 +254,10 @@ class yaml_converter {
             }
         }
 
+        if ($question->defaultgrade && (!$question->prt || !count($question->prt))) {
+            self::set_field($question, 'prt->0', '');
+        }
+
         foreach ($question->prt as $prtdata) {
             if (!(array) $prtdata->name) {
                 self::set_field($prtdata, 'name', self::get_default('prt', 'name'));
@@ -261,6 +275,10 @@ class yaml_converter {
                 self::set_field($prtdata, 'feedbackvariables->text', self::get_default('prt', 'feedbackvariables'));
             }
 
+            if (!$prtdata->node || !count($prtdata->node)) {
+                self::set_field($prtdata, 'node', '');
+            }
+
             foreach ($prtdata->node as $node) {
                 if (!isset($node->name)) {
                     self::set_field($node, 'name', self::get_default('node', 'name'));
@@ -272,7 +290,7 @@ class yaml_converter {
                     self::set_field($node, 'answertest', self::get_default('node', 'answertest'));
                 }
                 if (!isset($node->sans)) {
-                    self::set_field($node, 'sans', self::get_default('node', 'sand'));
+                    self::set_field($node, 'sans', self::get_default('node', 'sans'));
                 }
                 if (!isset($node->tans)) {
                     self::set_field($node, 'tans', self::get_default('node', 'tans'));
@@ -441,13 +459,13 @@ class yaml_converter {
      *
      * @param string $yamlstring The YAML string to convert.
      * @return SimpleXMLElement The resulting XML object.
-     * @throws \stack_exception If the YAML string is invalid.
+     * @throws \Exception If the YAML string is invalid.
      */
     public static function yamlstring_to_xml($yamlstring) {
         self::require_yaml();
         $yaml = Yaml::parse($yamlstring);
         if (!$yaml) {
-            throw new \stack_exception("The provided file does not contain valid YAML or XML.");
+            throw new \Exception("The provided file does not contain valid YAML or XML.");
         }
         $xml = self::yaml_to_xml($yaml);
         return $xml;
@@ -813,7 +831,7 @@ class yaml_converter {
      * @param string $value The value to add as CDATA.
      */
     public static function add_cdata(&$xml, $value) {
-        if (!empty($value) && htmlspecialchars($value, ENT_COMPAT) != $value) {
+        if (!empty($value) && $value&& htmlspecialchars($value, ENT_COMPAT) != $value) {
             $node = dom_import_simplexml($xml);
             $no = $node->ownerDocument;
             $node->appendChild($no->createCDATASection($value));

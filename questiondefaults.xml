@@ -16,10 +16,10 @@
     <stackversion>2025042500</stackversion>
     <questionvariables>ta1:1;</questionvariables>
     <specificfeedback format="html">
-      <text><![CDATA[<p>[[feedback:prt1]]</p>]]></text>
+      <text><![CDATA[[[feedback:prt1]]]]></text>
     </specificfeedback>
     <questionnote format="html">
-      <text><![CDATA[<p>{@ta1@}</p>]]></text>
+      <text><![CDATA[{@ta1@}]]></text>
     </questionnote>
     <questiondescription format="html">
       <text></text>
@@ -28,13 +28,13 @@
     <assumepositive>0</assumepositive>
     <assumereal>0</assumereal>
     <prtcorrect format="html">
-      <text><![CDATA[<p><i class="fa fa-check"></i> Correct answer, well done.</p>]]></text>
+      <text><![CDATA[<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.]]></text>
     </prtcorrect>
     <prtpartiallycorrect format="html">
-      <text><![CDATA[<p><i class="fa fa-adjust"></i> Your answer is partially correct.</p>]]></text>
+      <text><![CDATA[<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.]]></text>
     </prtpartiallycorrect>
-      <prtincorrect format="html">
-    <text><![CDATA[<p><i class="fa fa-times"></i> Incorrect answer.</p>]]></text>
+    <prtincorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.]]></text>
     </prtincorrect>
     <decimals>.</decimals>
     <scientificnotation>*10</scientificnotation>
@@ -72,7 +72,9 @@
     <value>1.0000000</value>
     <autosimplify>1</autosimplify>
     <feedbackstyle>1</feedbackstyle>
-    <feedbackvariables></feedbackvariables>
+    <feedbackvariables>
+      <text></text>
+    </feedbackvariables>
   </prt>
 
   <node>
