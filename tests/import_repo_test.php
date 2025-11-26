@@ -1444,7 +1444,7 @@ final class import_repo_test extends advanced_testcase {
         );
         $clihelper->processedoptions = $this->options;
         $clihelper->check_context($this->importrepo);
-        $this->expectOutputRegex('/^\nPreparing to.*import_repo.*Question subdirectory: top\n$/s');
+        $this->expectOutputRegex('/^\nPreparing to.*import_repo.*Question subdirectory: top\n.*files not fragments.\n$/s');
     }
 
     /**

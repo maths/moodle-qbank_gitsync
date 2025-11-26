@@ -13,7 +13,9 @@
     <penalty>0.1</penalty>
     <hidden>0</hidden>
     <idnumber></idnumber>
-    <stackversion>2025042500</stackversion>
+    <stackversion>
+      <text>2025102200</text>
+    </stackversion>
     <questionvariables>ta1:1;</questionvariables>
     <specificfeedback format="html">
       <text><![CDATA[[[feedback:prt1]]]]></text>
