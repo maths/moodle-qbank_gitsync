@@ -790,7 +790,7 @@ class import_repo {
                             $tempqfile = cli_helper::create_temp_question_file(
                                 $repoitem,
                                 $this->tempfilepath,
-                                $this->defaults,
+                                ($this->usefragments) ? $this->defaults : null,
                                 $this->useyaml
                             );
                             if ($tempqfile === false) {

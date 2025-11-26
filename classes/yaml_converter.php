@@ -504,14 +504,13 @@ class yaml_converter {
      */
     public static function yaml_to_xml($yaml) {
         $xml = new SimpleXMLElement("<?xml version='1.0' encoding='UTF-8'?><quiz></quiz>");
-        $question = $xml->addChild('question');
-        $question->addAttribute('type', 'stack');
 
-        self::array_to_xml($yaml, $question);
+        self::array_to_xml($yaml, $xml);
         // Name is a special case. Has text tag but no format.
         $name = isset($xml->question->name) ? (string) $xml->question->name : self::get_default('question', 'name');
         $xml->question->name = new SimpleXMLElement('<root></root>');
         $xml->question->name->text = $name;
+        $xml->question->addAttribute('type', 'stack');
         return $xml;
     }
 
@@ -842,11 +841,11 @@ class yaml_converter {
 
     /**
      * Split a string into a 4-item array such that:
-     * 'AAAA(X(X,X)XX, YYY, ZZZ, WWW)'
+     * 'AAAA(X(X,X)XX, YYY[Y,Y], ZZZ, WWW)'
      * becomes:
      * [0] => 'AAAA'
      * [1] => 'X(X,X)XX'
-     * [2] => 'YYY'
+     * [2] => 'YYY[Y,Y]'
      * [3] => 'ZZZ, WWW'
      * @param string $answertest
      * @return array
@@ -854,21 +853,34 @@ class yaml_converter {
     public static function split_answertest($answertest) {
         $result = [];
         $firstbracketpos = strpos($answertest, '(');
+        if ($firstbracketpos === false) {
+            // No brackets found — return original code and empty fields.
+            return [$answertest, '', '', ''];
+        }
         $result[] = substr($answertest, 0, $firstbracketpos);
         $testprops = substr($answertest, $firstbracketpos + 1, strrpos($answertest, ')') - $firstbracketpos - 1);
-        $bracketlevel = 0;
+
+        $parenLevel = 0;
+        $squareLevel = 0;
         $current = '';
         $count = 0;
         $len = strlen($testprops);
         for ($i = 0; $i < $len; $i++) {
             $char = $testprops[$i];
             if ($char === '(') {
-                $bracketlevel++;
+                $parenLevel++;
                 $current .= $char;
             } else if ($char === ')') {
-                $bracketlevel--;
+                $parenLevel--;
                 $current .= $char;
-            } else if ($char === ',' && $bracketlevel === 0 && $count < 2) {
+            } else if ($char === '[') {
+                $squareLevel++;
+                $current .= $char;
+            } else if ($char === ']') {
+                $squareLevel--;
+                $current .= $char;
+            } else if ($char === ',' && $parenLevel === 0 && $squareLevel === 0 && $count < 2) {
+                // Split only on top-level commas (not inside () or []) and only for first two splits.
                 $result[] = trim($current);
                 $current = '';
                 $count++;

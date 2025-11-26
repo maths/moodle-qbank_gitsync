@@ -374,7 +374,7 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('0.1', $question->penalty);
         $this->assertEquals('0', $question->hidden);
         $this->assertEquals(
-            '2025042500',
+            $defaults['question']['stackversion'],
             $question->stackversion->text
         );
         $this->assertEquals(
@@ -490,7 +490,7 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('0.1', $question->penalty);
         $this->assertEquals('0', $question->hidden);
         $this->assertEquals(
-            '2025042500',
+            $defaults['question']['stackversion'],
             $question->stackversion->text
         );
         $this->assertEquals(
@@ -844,11 +844,12 @@ final class yaml_converter_test extends \advanced_testcase {
         $xml = file_get_contents(__DIR__ . '/fixtures/fullquestion.xml');
         $diff = yaml_converter::detect_differences($xml, null, true);
         $diffarray = Yaml::parse($diff);
-        $this->assertEquals(10, count($diffarray));
+        $this->assertEquals(11, count($diffarray));
         $expected = [
             'name' => 'Test question',
             'questiontext' => "<p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>\n    <p>[[input:ans2]] " .
                 "[[validation:ans2]]</p>",
+            'stackversion' => '2025042500',
             'questionvariables' => 'ta1:1;ta2:2;',
             'questionsimplify' => '1',
             'prtcorrect' => '<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
@@ -944,7 +945,7 @@ final class yaml_converter_test extends \advanced_testcase {
             ],
         ];
         $expectedstring = "name: 'Test question'\nquestiontext: |-\n  <p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>" .
-            "\n      <p>[[input:ans2]] [[validation:ans2]]</p>\nquestionvariables: 'ta1:1;ta2:2;" .
+            "\n      <p>[[input:ans2]] [[validation:ans2]]</p>\nstackversion: '2025042500'\nquestionvariables: 'ta1:1;ta2:2;" .
             "'\nquestionsimplify: '1'\nprtcorrect: '<p>" .
             "<i class=\"fa fa-check\"></i> Correct answer*, well done.</p>'\nmultiplicationsign: cross\ninput:\n  - " .
             "name: ans1\n    type: algebraic\n    tans: ta1\n    boxsize: '25'\n    forbidfloat: '1'\n    " .
@@ -970,7 +971,7 @@ final class yaml_converter_test extends \advanced_testcase {
             yaml_converter::load_defaults(__DIR__ . '/fixtures/questiondefaultssugar.yml')
         );
         $diffarray = Yaml::parse($diff);
-        $this->assertEquals(10, count($diffarray));
+        $this->assertEquals(11, count($diffarray));
         $expected['prt'][0]['node'][0] = [
                             'name' => '0',
                             'answertest' => 'ATAlgEquiv(ans1,ta1)',
@@ -1113,6 +1114,28 @@ final class yaml_converter_test extends \advanced_testcase {
             'foo ( bar )',
             'baz',
             'qux',
+        ];
+        $this->assertEquals($expected, yaml_converter::split_answertest($input));
+    }
+
+    public function test_split_answertest_square(): void {
+        $input = 'ATTest( foo[bar, again], baz , qux )';
+        $expected = [
+            'ATTest',
+            'foo[bar, again]',
+            'baz',
+            'qux',
+        ];
+        $this->assertEquals($expected, yaml_converter::split_answertest($input));
+    }
+
+    public function test_split_answertest_mix(): void {
+        $input = 'ATTest( foo[bar, (again, hello)], ([baz, baz]), ([qux, qux2]) )';
+        $expected = [
+            'ATTest',
+            'foo[bar, (again, hello)]',
+            '([baz, baz])',
+            '([qux, qux2])',
         ];
         $this->assertEquals($expected, yaml_converter::split_answertest($input));
     }
