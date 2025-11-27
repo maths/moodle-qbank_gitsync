@@ -504,8 +504,13 @@ class yaml_converter {
      */
     public static function yaml_to_xml($yaml) {
         $xml = new SimpleXMLElement("<?xml version='1.0' encoding='UTF-8'?><quiz></quiz>");
+        if (!isset($yaml['question'])) {
+            $question = $xml->addChild('question');
+            self::array_to_xml($yaml, $question);
+        } else {
+            self::array_to_xml($yaml, $xml);
+        }
 
-        self::array_to_xml($yaml, $xml);
         // Name is a special case. Has text tag but no format.
         $name = isset($xml->question->name) ? (string) $xml->question->name : self::get_default('question', 'name');
         $xml->question->name = new SimpleXMLElement('<root></root>');

@@ -1023,7 +1023,7 @@ class cli_helper {
             echo "\nUnable to access file: {$filepath}\n";
             return false;
         }
-        if (!$useyaml && strpos($contents, '<question type="stack">') === false) {
+        if (pathinfo($filepath, PATHINFO_EXTENSION) === 'xml' && strpos($contents, '<question type="stack">') === false) {
             // Non-STACK XML question - not a fragment.
             return null;
         }
