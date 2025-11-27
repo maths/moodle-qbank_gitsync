@@ -105,18 +105,21 @@ class cli_helper {
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
         $argcount = count($commandlineargs);
-        if (!isset($commandlineargs['w'])) {
-            echo "\nProcessed {$argcount} valid command line argument" .
-                    (($argcount !== 1) ? 's' : '') . ":\n";
-            forEach ($commandlineargs as $option => $value) {
-                $description = strlen($option) > 1 ? $option : $parsed['linked'][$option] . " ({$option})";
-                echo "{$description}: {$value}\n";
-            }
-        }
         $this->processedoptions = $this->prioritise_options($commandlineargs);
         if (!empty($this->processedoptions['help'])) {
             $this->show_help();
             exit;
+        }
+        if (!isset($commandlineargs['w'])) {
+            echo "\nProcessed {$argcount} valid command line argument" .
+                    (($argcount !== 1) ? 's' : '') . ":\n";
+            forEach ($commandlineargs as $option => $value) {
+                $description = strlen($option) > 1 ? $option : $parsed['linked'][$option]['longopt'] . " ({$option})";
+                $argvalue = $this->processedoptions[$parsed['linked'][$option]['variablename']];
+                $argvalue = ($argvalue === false) ? 'false' : $argvalue;
+                $argvalue = ($argvalue === true) ? 'true' : $argvalue;
+                echo "{$description}: {$argvalue}\n";
+            }
         }
         $this->validate_and_clean_args();
         return $this->processedoptions;
@@ -141,7 +144,7 @@ class cli_helper {
             } else {
                 $longopts[] = $option['longopt'];
             }
-            $pairs[$option['shortopt']] = $option['longopt'];
+            $pairs[$option['shortopt']] = ['longopt' => $option['longopt'], 'variablename' => $option['variable']];
         }
 
         return ['shortopts' => $shortopts, 'longopts' => $longopts, 'linked' => $pairs];
