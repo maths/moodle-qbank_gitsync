@@ -934,7 +934,8 @@ class cli_helper {
                 echo "\nCreating or expecting XML files.\n";
             }
             if (!empty($activity->usefragments) && !empty($activity->defaultsfilepath)) {
-                echo "\nCreating or expecting question fragments using defaults file: " . basename($activity->defaultsfilepath) . "\n";
+                echo "\nCreating or expecting question fragments using defaults file: " .
+                    basename($activity->defaultsfilepath) . "\n";
             } else {
                 echo "\nCreating or expecting full question files not fragments.\n";
             }

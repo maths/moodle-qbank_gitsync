@@ -857,7 +857,8 @@ class import_repo {
                             }
                             fwrite($tempfile, json_encode($fileoutput) . "\n");
                             if (!empty($responsejson->validation)) {
-                                echo "\n{$repoitem->getPathname()} imported but has validation issues. Please exportrepofrommoodle to identify any changes which have been made.\n";
+                                echo "\n{$repoitem->getPathname()} imported but has validation issues. " .
+                                    "Please exportrepofrommoodle to identify any changes which have been made.\n";
                                 echo "{$responsejson->validation}\n";
                             }
                         }

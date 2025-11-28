@@ -186,7 +186,8 @@ class export_repo {
             $this->call_exit();
         }
         if ($this->manifestcontents->context->moodleurl !== $this->moodleurl) {
-            echo "\nManifest file is for the wrong Moodle instance: {$this->manifestcontents->context->moodleurl} is not expected {$this->moodleurl}\nAborting.\n";
+            echo "\nManifest file is for the wrong Moodle instance: " .
+                "{$this->manifestcontents->context->moodleurl} is not expected {$this->moodleurl}\nAborting.\n";
             $this->call_exit();
         }
         if (!empty($this->manifestcontents->context->istargeted)) {

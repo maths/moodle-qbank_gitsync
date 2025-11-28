@@ -864,26 +864,26 @@ class yaml_converter {
         $result[] = substr($answertest, 0, $firstbracketpos);
         $testprops = substr($answertest, $firstbracketpos + 1, strrpos($answertest, ')') - $firstbracketpos - 1);
 
-        $parenLevel = 0;
-        $squareLevel = 0;
+        $parenlevel = 0;
+        $squarelevel = 0;
         $current = '';
         $count = 0;
         $len = strlen($testprops);
         for ($i = 0; $i < $len; $i++) {
             $char = $testprops[$i];
             if ($char === '(') {
-                $parenLevel++;
+                $parenlevel++;
                 $current .= $char;
             } else if ($char === ')') {
-                $parenLevel--;
+                $parenlevel--;
                 $current .= $char;
             } else if ($char === '[') {
-                $squareLevel++;
+                $squarelevel++;
                 $current .= $char;
             } else if ($char === ']') {
-                $squareLevel--;
+                $squarelevel--;
                 $current .= $char;
-            } else if ($char === ',' && $parenLevel === 0 && $squareLevel === 0 && $count < 2) {
+            } else if ($char === ',' && $parenlevel === 0 && $squarelevel === 0 && $count < 2) {
                 // Split only on top-level commas (not inside () or []) and only for first two splits.
                 $result[] = trim($current);
                 $current = '';

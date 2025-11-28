@@ -391,7 +391,8 @@ final class export_trait_test extends advanced_testcase {
                           '<question type=\"category\"><category><text>top/bob/colin/Source 2/cat 3</text></category></question>' .
                           '<question><name><text>Seven</text></name></question></quiz>"' .
                           ', "version": "1"}',
-                    '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2/cat 2</text></category></question>' .
+                    '{"question": "<quiz><question type=\"category\"><category>' .
+                          '<text>top/Source 2/cat 2</text></category></question>' .
                           '<question type=\"category\"><category><text>top/bob/colin/' .
                           'Source 2/cat 2/subcat 2_1</text></category></question>' .
                           '<question><name><text>Eight</text></name></question></quiz>"' .

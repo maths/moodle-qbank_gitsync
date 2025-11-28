@@ -32,6 +32,7 @@ use org\bovigo\vfs\vfsStream;
 
 /**
  * Allows testing of errors that lead to an exit.
+ * phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses
  */
 class fake_cli_helper extends cli_helper {
     /**
