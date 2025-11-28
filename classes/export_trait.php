@@ -87,8 +87,8 @@ trait export_trait {
      * @return void
      */
     public function export_to_repo_main_process(object $moodlequestionlist): void {
-        if (is_file(__DIR__.'/../cli/config.php')) {
-            include(__DIR__.'/../cli/config.php');
+        if (is_file(__DIR__ . '/../cli/config.php')) {
+            include(__DIR__ . '/../cli/config.php');
         }
         $this->maxcatlength = $this->maxcatlength ?? $maxcatlength ?? 200;
         $this->maxqlength = $this->maxqlength ?? $maxqlength ?? 230;
@@ -172,19 +172,26 @@ trait export_trait {
                     $directorylist = array_map(fn($dir) => trim(str_replace('//', '/', $dir)), $directorylist);
                     $categorysofar = '';
                     // Sanitise individual parts of subcategory.
-                    $sanitizedsubcat = '/' . implode('/',
-                                                array_map(
-                                                    fn($x) => preg_replace(cli_helper::BAD_CHARACTERS, '-',
-                                                    substr($x, 0, $this->maxcatlength)),
-                                                    explode('/', $this->subcategory)
-                                                )
-                                            );
+                    $sanitizedsubcat = '/' . implode(
+                        '/',
+                        array_map(
+                            fn($x) => preg_replace(
+                                cli_helper::BAD_CHARACTERS,
+                                '-',
+                                substr($x, 0, $this->maxcatlength)
+                            ),
+                            explode('/', $this->subcategory)
+                        )
+                    );
                     // Create directory structure for category if it doesn't.
                     $targettopfound = false;
                     $currentdirectory = null;
                     foreach ($directorylist as $categorydirectory) {
-                        $categorydirectory = preg_replace(cli_helper::BAD_CHARACTERS, '-',
-                                                            substr($categorydirectory, 0, $this->maxcatlength));
+                        $categorydirectory = preg_replace(
+                            cli_helper::BAD_CHARACTERS,
+                            '-',
+                            substr($categorydirectory, 0, $this->maxcatlength)
+                        );
                         $categorysofar .= "/{$categorydirectory}";
                         if ($this->targetdirectory && !$targettopfound) {
                             if (strpos($categorysofar, $sanitizedsubcat) === 0) {
@@ -272,7 +279,7 @@ trait export_trait {
                 $fileoutput = [
                     'questionbankentryid' => $questioninfo->questionbankentryid,
                     'version' => $responsejson->version,
-                    'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.{$filetype}",
+                    'filepath' => str_replace('\\', '/', $bottomdirectory) . "/{$sanitisedqname}.{$filetype}",
                     'format' => $filetype,
                 ];
                 fwrite($tempfile, json_encode($fileoutput) . "\n");
@@ -294,11 +301,21 @@ trait export_trait {
         } else {
             $token = $arguments['token'];
         }
-        $quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
-                    $this->manifestcontents->context->coursename,
-                    $this->manifestcontents->context->modulename, dirname($this->manifestpath));
-        $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath,
-                                            $this->nonquizmanifestpath, $scriptdirectory);
+        $quizmanifestpath = cli_helper::get_manifest_path(
+            $moodleinstance,
+            'module',
+            null,
+            $this->manifestcontents->context->coursename,
+            $this->manifestcontents->context->modulename,
+            dirname($this->manifestpath)
+        );
+        $output = $this->call_export_quiz(
+            $moodleinstance,
+            $token,
+            $quizmanifestpath,
+            $this->nonquizmanifestpath,
+            $scriptdirectory
+        );
         echo $output;
     }
 
@@ -312,14 +329,19 @@ trait export_trait {
      * @param string $scriptdirectory
      * @return string|null
      */
-    public function call_export_quiz(string $moodleinstance, string $token, string $quizmanifestpath,
-                                    ?string $nonquizmanifestpath, string $scriptdirectory): ?string {
+    public function call_export_quiz(
+        string $moodleinstance,
+        string $token,
+        string $quizmanifestpath,
+        ?string $nonquizmanifestpath,
+        string $scriptdirectory
+    ): ?string {
         chdir($scriptdirectory);
         $nonquiz = ($nonquizmanifestpath) ? ' -p "' . $nonquizmanifestpath . '"' : '';
         $usegit = ($this->usegit) ? 'true' : 'false';
         return shell_exec('php exportquizstructurefrommoodle.php -u ' . $usegit .
                 ' -w -r "" -i "' . $moodleinstance . '" -t "'
-                . $token. '" -f "' . $quizmanifestpath . '"' . $nonquiz);
+                . $token . '" -f "' . $quizmanifestpath . '"' . $nonquiz);
     }
 
     /**

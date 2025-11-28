@@ -187,4 +187,3 @@ $clihelper->check_repo_initialised($createrepo->manifestpath);
 $createrepo->process();
 $clihelper->commit_hash_setup($createrepo);
 $createrepo->create_quiz_directories($clihelper, $scriptdirectory);
-

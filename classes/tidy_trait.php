@@ -89,8 +89,10 @@ trait tidy_trait {
                     $this->call_exit();
                     $movedquestionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
                 }
-                $questionsinmoodle->questions = array_merge($questionsinmoodle->questions,
-                                                            $movedquestionsinmoodle->questions);
+                $questionsinmoodle->questions = array_merge(
+                    $questionsinmoodle->questions,
+                    $movedquestionsinmoodle->questions
+                );
             }
             $existingquestions = array_column($questionsinmoodle->questions, null, 'questionbankentryid');
             $newentrylist = [];

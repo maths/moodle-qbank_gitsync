@@ -145,7 +145,6 @@ final class import_quiz_test extends advanced_testcase {
             'useyaml' => false,
             'usefragments' => false,
         ];
-
     }
 
     /**

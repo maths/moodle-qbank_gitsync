@@ -29,7 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot . '/lib/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot . '/question/format/xml/format.php');
-require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
+require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 
 use context;
 use external_api;
@@ -45,7 +45,6 @@ use core_question\local\bank\question_edit_contexts;
  * A webservice function to export a single question with metadata.
  */
 class export_question extends external_api {
-
     /**
      * Returns description of webservice function parameters.
      * @return external_function_parameters
@@ -96,13 +95,15 @@ class export_question extends external_api {
                 $course = $DB->get_record('course', ['id' => $questiondata->instanceid], '*', $strictness = MUST_EXIST);
                 break;
             case \CONTEXT_MODULE:
-                $course = $DB->get_record_sql("
+                $course = $DB->get_record_sql(
+                    "
                     SELECT c.*
                       FROM {course_modules} cm
                       JOIN {course} c ON c.id = cm.course
                      WHERE cm.id = :moduleid",
-                ['moduleid' => $questiondata->instanceid],
-                MUST_EXIST);
+                    ['moduleid' => $questiondata->instanceid],
+                    MUST_EXIST
+                );
                 break;
             default:
                 throw new moodle_exception('contexterror', 'qbank_gitsync', null, $questiondata->contextlevel);

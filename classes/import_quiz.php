@@ -184,8 +184,10 @@ class import_quiz {
                 }
                 $this->cmid = $this->quizmanifestcontents->context->instanceid;
                 $this->quizdatapath = ($arguments['quizdatapath']) ? $directoryprefix . $arguments['quizdatapath']
-                                        : cli_helper::get_quiz_structure_path($this->quizmanifestcontents->context->modulename,
-                                                                                dirname($this->quizmanifestpath));
+                                        : cli_helper::get_quiz_structure_path(
+                                            $this->quizmanifestcontents->context->modulename,
+                                            dirname($this->quizmanifestpath)
+                                        );
                 $instanceid = $this->cmid;
                 $coursename = '';
                 $contextlevel = cli_helper::get_context_level('module');
@@ -302,8 +304,14 @@ class import_quiz {
         $this->postsettings['quiz[courseid]'] = $instanceinfo->contextinfo->courseid;
 
         if (!$this->quizmanifestpath) {
-            $this->quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
-                                $instanceinfo->contextinfo->coursename, $this->quizdatacontents->quiz->name, $directory);
+            $this->quizmanifestpath = cli_helper::get_manifest_path(
+                $moodleinstance,
+                'module',
+                null,
+                $instanceinfo->contextinfo->coursename,
+                $this->quizdatacontents->quiz->name,
+                $directory
+            );
             if (!is_file($this->quizmanifestpath)) {
                 $this->quizmanifestcontents = null;
                 $this->cmid = '';
@@ -381,8 +389,14 @@ class import_quiz {
             }
             $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath, $this->useyaml);
         }
-        $output = $this->call_import_repo($directory, $moodleinstance, $token,
-                        $this->cmid, $ignorecat, $scriptdirectory);
+        $output = $this->call_import_repo(
+            $directory,
+            $moodleinstance,
+            $token,
+            $this->cmid,
+            $ignorecat,
+            $scriptdirectory
+        );
         echo $output;
         $output = $this->call_import_quiz_data($moodleinstance, $token, $scriptdirectory);
         echo $output;
@@ -399,8 +413,14 @@ class import_quiz {
      * @param string $scriptdirectory
      * @return string|null
      */
-    public function call_import_repo(string $rootdirectory, string $moodleinstance, string $token,
-                                    ?string $quizcmid, string $ignorecat, string $scriptdirectory): string {
+    public function call_import_repo(
+        string $rootdirectory,
+        string $moodleinstance,
+        string $token,
+        ?string $quizcmid,
+        string $ignorecat,
+        string $scriptdirectory
+    ): string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
@@ -424,8 +444,8 @@ class import_quiz {
         $nonquiz = ($this->nonquizmanifestpath) ? ' -p "' . $this->nonquizmanifestpath . '"' : '';
         $usegit = ($this->usegit) ? 'true' : 'false';
         return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
-                    ' -w -r "" -i "' . $moodleinstance . '" -t ' . $token. ' -a "' . $this->quizdatapath .
-                    '" -f "' . $this->quizmanifestpath. '"' . $nonquiz);
+                    ' -w -r "" -i "' . $moodleinstance . '" -t ' . $token . ' -a "' . $this->quizdatapath .
+                    '" -f "' . $this->quizmanifestpath . '"' . $nonquiz);
     }
 
     /**
@@ -545,7 +565,7 @@ class import_quiz {
     public function handle_abort(): void {
         global $usecontinue;
         echo ($usecontinue ? "Continue? y/n\n" : "Abort? y/n\n");
-        $handle = fopen ("php://stdin", "r");
+        $handle = fopen("php://stdin", "r");
         $line = fgets($handle);
         fclose($handle);
         if (($usecontinue && trim($line) === 'y') || (!$usecontinue && trim($line) === 'n')) {

@@ -29,7 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot . '/lib/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->dirroot . '/question/format/xml/format.php');
-require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
+require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 
 use context;
 use external_api;
@@ -102,11 +102,19 @@ class import_question extends external_api {
      *  for course level) to search for questions (supercedes $coursename, $modulename & $coursecategory)
      * @return object \stdClass with property questionbankentryid'
      */
-    public static function execute(?string $questionbankentryid, ?string $importedversion, ?string $exportedversion,
-                                    ?string $qcategoryname, array $fileinfo,
-                                    int $contextlevel, ?string $coursename = null, ?string $modulename = null,
-                                    ?string $coursecategory = null,  ?string $qcategoryid = null,
-                                    ?string $instanceid = null): object {
+    public static function execute(
+        ?string $questionbankentryid,
+        ?string $importedversion,
+        ?string $exportedversion,
+        ?string $qcategoryname,
+        array $fileinfo,
+        int $contextlevel,
+        ?string $coursename = null,
+        ?string $modulename = null,
+        ?string $coursecategory = null,
+        ?string $qcategoryid = null,
+        ?string $instanceid = null
+    ): object {
         global $CFG, $DB, $USER;
         $params = self::validate_parameters(self::execute_parameters(), [
             'questionbankentryid' => $questionbankentryid,
@@ -128,21 +136,31 @@ class import_question extends external_api {
         if ($params['questionbankentryid']) {
             $questiondata = get_question_data($params['questionbankentryid']);
             $thiscontext = context::instance_by_id($questiondata->contextid);
-            if (strval($questiondata->version) !== $params['importedversion']
-                       && strval($questiondata->version) !== $params['exportedversion']) {
+            if (
+                strval($questiondata->version) !== $params['importedversion']
+                       && strval($questiondata->version) !== $params['exportedversion']
+            ) {
                 // This should only happen if another user updated the question during the import process.
                 $qinfo = get_minimal_question_data($params['questionbankentryid']);
-                throw new moodle_exception('importversionerror', 'qbank_gitsync', null,
-                            ['name' => $qinfo->name,
+                throw new moodle_exception(
+                    'importversionerror',
+                    'qbank_gitsync',
+                    null,
+                    ['name' => $qinfo->name,
                              'currentversion' => $questiondata->version,
                              'importedversion' => $params['importedversion'],
                              'exportedversion' => $params['exportedversion'],
-                            ]);
+                    ]
+                );
             }
         } else {
-            $thiscontext = get_context($params['contextlevel'], $params['coursecategory'],
-                                       $params['coursename'], $params['modulename'],
-                                       $params['instanceid'])->context;
+            $thiscontext = get_context(
+                $params['contextlevel'],
+                $params['coursecategory'],
+                $params['coursename'],
+                $params['modulename'],
+                $params['instanceid']
+            )->context;
         }
 
         $qformat = new qformat_xml();
@@ -186,9 +204,14 @@ class import_question extends external_api {
             $iscategory = true;
         }
         $fs = get_file_storage();
-        $file = $fs->get_file($params['fileinfo']['contextid'], $params['fileinfo']['component'],
-                              $params['fileinfo']['filearea'], $params['fileinfo']['itemid'],
-                              $params['fileinfo']['filepath'], $params['fileinfo']['filename']);
+        $file = $fs->get_file(
+            $params['fileinfo']['contextid'],
+            $params['fileinfo']['component'],
+            $params['fileinfo']['filearea'],
+            $params['fileinfo']['itemid'],
+            $params['fileinfo']['filepath'],
+            $params['fileinfo']['filename']
+        );
         $filename = $file->get_filename();
         $requestdir = make_request_directory();
         $tempfile = $file->copy_content_to_temp("{$requestdir}/{$filename}");
@@ -241,8 +264,12 @@ class import_question extends external_api {
             $event = \core\event\questions_imported::create($eventparams);
             $event->trigger();
 
-            $newquestionbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
-                            ['questionid' => $qformat->questionids[0]], $strictness = MUST_EXIST);
+            $newquestionbankentryid = $DB->get_field(
+                'question_versions',
+                'questionbankentryid',
+                ['questionid' => $qformat->questionids[0]],
+                $strictness = MUST_EXIST
+            );
             $response->questionbankentryid = $newquestionbankentryid;
         }
         if ($params['questionbankentryid']) {

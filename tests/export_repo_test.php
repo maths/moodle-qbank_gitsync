@@ -177,7 +177,7 @@ final class export_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
 
@@ -339,7 +339,7 @@ final class export_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
 
@@ -388,7 +388,7 @@ final class export_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
 
@@ -576,7 +576,7 @@ final class export_repo_test extends advanced_testcase {
                 "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/bob/clive/subcat 2_1"},
               "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
-              '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
                 "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/bob/clive/subcat 2_1"},
               "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
@@ -586,7 +586,7 @@ final class export_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
 
@@ -608,5 +608,4 @@ final class export_repo_test extends advanced_testcase {
 
         $this->expectOutputRegex('/^\nExported 2 previously linked questions.*Added 0 questions.\n$/s');
     }
-
 }

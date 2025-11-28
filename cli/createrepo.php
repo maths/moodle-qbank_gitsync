@@ -220,4 +220,3 @@ if ($createrepo->manifestcontents->context->contextlevel === 70 && !$clihelper->
         exec('git commit -m "Initial Commit - Quiz structure"');
     }
 }
-
