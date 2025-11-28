@@ -80,7 +80,7 @@ class yaml_converter {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
-            self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml', true);
+            self::$defaults = self::load_defaults(__DIR__ . '/../' . cli_helper::DEFAULTS_FILE . ($useyaml ? 'yml' : 'xml'));
         }
         if ($useyaml) {
             $xmldata = self::yamlstring_to_xml($data);
@@ -764,12 +764,8 @@ class yaml_converter {
         } else {
             $xmlstring = self::yaml_to_xmlstring($diff);
             $dom = new \DOMDocument();
-
-            // Initial block (must before load xml string)
             $dom->preserveWhiteSpace = false;
             $dom->formatOutput = true;
-            // End initial block
-
             $dom->loadXML($xmlstring);
             return $dom->saveXML();
         }
