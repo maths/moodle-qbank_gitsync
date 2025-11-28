@@ -136,8 +136,7 @@ class export_quiz_data extends external_api {
         );
 
         $response->questions = $DB->get_records_sql(
-            "
-        SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark
+            "SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark
             FROM {quiz_slots} qs
             JOIN {question_references} qr ON qr.itemid = qs.id
             WHERE qr.usingcontextid = :contextid

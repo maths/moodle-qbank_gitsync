@@ -116,8 +116,7 @@ function get_context(
                 if ($ismoodle5plus) {
                      // Assuming here that the module is a quiz or question bank.
                      $instancedata = $DB->get_record_sql(
-                         "
-                     SELECT cm.id as cmid, q.id as quizid, c.id as courseid
+                         "SELECT cm.id as cmid, q.id as quizid, c.id as courseid
                          FROM {course_modules} cm
                          JOIN {course} c ON c.id = cm.course
                          JOIN {modules} m ON m.id = cm.module
@@ -130,8 +129,7 @@ function get_context(
                 } else {
                     // Assuming here that the module is a quiz.
                     $instancedata = $DB->get_record_sql(
-                        "
-                    SELECT cm.id as cmid, q.id as quizid, c.id as courseid
+                        "SELECT cm.id as cmid, q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
                         JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
@@ -151,8 +149,7 @@ function get_context(
             } else {
                 if ($ismoodle5plus) {
                     $instancedata = $DB->get_record_sql(
-                        "
-                    SELECT c.fullname as coursename, CASE WHEN q.name IS NOT NULL THEN q.name
+                        "SELECT c.fullname as coursename, CASE WHEN q.name IS NOT NULL THEN q.name
                                                     WHEN b.name IS NOT NULL THEN b.name
                                                     ELSE NULL END as modulename,
                                                     q.id as quizid, c.id as courseid
@@ -167,8 +164,7 @@ function get_context(
                     );
                 } else {
                     $instancedata = $DB->get_record_sql(
-                        "
-                    SELECT c.fullname as coursename, q.name as modulename, q.id as quizid, c.id as courseid
+                        "SELECT c.fullname as coursename, q.name as modulename, q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
                         JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
@@ -190,7 +186,6 @@ function get_context(
             return $result;
         default:
             throw new moodle_exception('contexterror', 'qbank_gitsync', null, $contextlevel);
-        ;
     }
 }
 
@@ -203,8 +198,7 @@ function get_context(
 function get_question_data(string $questionbankentryid): stdClass {
     global $DB;
     $questiondata = $DB->get_record_sql(
-        "
-    SELECT qc.contextid as contextid, c.contextlevel as contextlevel,
+        "SELECT qc.contextid as contextid, c.contextlevel as contextlevel,
             q.id as questionid, c.instanceid as instanceid,
             qc.id as categoryid, qv.version as version
         FROM {question_categories} qc
@@ -230,8 +224,7 @@ function get_question_data(string $questionbankentryid): stdClass {
 function get_minimal_question_data(string $questionbankentryid): stdClass {
     global $DB;
     $questiondata = $DB->get_record_sql(
-        "
-    SELECT q.id as questionid, q.name as name, qv.version as version, qv.status as status
+        "SELECT q.id as questionid, q.name as name, qv.version as version, qv.status as status
         FROM {question} q
         JOIN {question_versions} qv ON qv.questionid = q.id
         JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid

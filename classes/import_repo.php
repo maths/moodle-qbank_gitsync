@@ -578,7 +578,6 @@ class import_repo {
                     } else {
                         // If there is no parent file, we must be one below top.
                         $cattext = 'top' . '/' . $newcategory;
-                        ;
                     }
                     $catfile = fopen($catfilepath, 'w+');
                     if ($catfile === false) {

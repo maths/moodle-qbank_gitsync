@@ -202,7 +202,6 @@ final class export_quiz_data_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $returnvalue = export_quiz_data::execute($this->quizmoduleid, null, null);
-        ;
 
         $returnvalue = external_api::clean_returnvalue(
             export_quiz_data::execute_returns(),
@@ -224,7 +223,6 @@ final class export_quiz_data_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $returnvalue = export_quiz_data::execute(null, $this->course->fullname, self::QUIZNAME);
-        ;
 
         $returnvalue = external_api::clean_returnvalue(
             export_quiz_data::execute_returns(),

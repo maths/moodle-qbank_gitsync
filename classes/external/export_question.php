@@ -96,8 +96,7 @@ class export_question extends external_api {
                 break;
             case \CONTEXT_MODULE:
                 $course = $DB->get_record_sql(
-                    "
-                    SELECT c.*
+                    "SELECT c.*
                       FROM {course_modules} cm
                       JOIN {course} c ON c.id = cm.course
                      WHERE cm.id = :moduleid",

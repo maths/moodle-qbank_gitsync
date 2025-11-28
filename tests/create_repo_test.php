@@ -97,7 +97,6 @@ final class create_repo_test extends advanced_testcase {
         $this->listcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
-        ;
         $this->createrepo = $this->getMockBuilder(\qbank_gitsync\create_repo::class)->onlyMethods([
             'get_curl_request', 'call_repo_creation', 'call_export_quiz',
         ])->setConstructorArgs([$this->clihelper, $this->moodleinstances])->getMock();
