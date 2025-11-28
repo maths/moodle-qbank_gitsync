@@ -33,4 +33,3 @@ $service = $webservicemanager->get_external_service_by_shortname('qbank_gitsync_
 $service->enabled = true;
 $service->uploadfiles = "1";
 $webservicemanager->update_external_service($service);
-

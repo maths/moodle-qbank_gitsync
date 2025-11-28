@@ -186,8 +186,10 @@ final class export_trait_test extends advanced_testcase {
         $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml'));
         // New question in new folder.
         $this->assertStringContainsString('Six', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Six.xml'));
-        $this->assertStringContainsString('top/Source 2/cat 3',
-            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml'));
+        $this->assertStringContainsString(
+            'top/Source 2/cat 3',
+            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml')
+        );
         // New question in existing folder - 2 category questions.
         $this->assertStringContainsString('Seven', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Seven.xml'));
         // New question in new folder - 2 category questions.
@@ -330,8 +332,10 @@ final class export_trait_test extends advanced_testcase {
         $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml'));
         $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five_2.xml'));
         $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five_3.xml'));
-        $this->assertStringContainsString('top/Source 2/cat 3',
-            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml'));
+        $this->assertStringContainsString(
+            'top/Source 2/cat 3',
+            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml')
+        );
         $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Five.xml'));
         $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Five_2.xml'));
 
@@ -376,23 +380,24 @@ final class export_trait_test extends advanced_testcase {
 
         $this->exportrepo->postsettings = ['questionbankentryid' => null];
                 $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"question": "<quiz><question type=\"category\"><category>' .
+                    '{"question": "<quiz><question type=\"category\"><category>' .
                           '<text>top/bob/colin/Source 2/cat 2/subcat 2_1</text></category></question>' .
                           '<question><name><text>Five</text></name></question></quiz>", "version": "10"}',
-            '{"question": "<quiz><question type=\"category\"><category><text>top/bob/colin/' .
+                    '{"question": "<quiz><question type=\"category\"><category><text>top/bob/colin/' .
                           'Source 2/cat 3</text></category></question>' .
                           '<question><name><text>Six</text></name></question></quiz>"' .
                           ', "version": "1"}',
-            '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2</text></category></question>' .
+                    '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2</text></category></question>' .
                           '<question type=\"category\"><category><text>top/bob/colin/Source 2/cat 3</text></category></question>' .
                           '<question><name><text>Seven</text></name></question></quiz>"' .
                           ', "version": "1"}',
-            '{"question": "<quiz><question type=\"category\"><category><text>top/Source 2/cat 2</text></category></question>' .
+                    '{"question": "<quiz><question type=\"category\"><category>' .
+                          '<text>top/Source 2/cat 2</text></category></question>' .
                           '<question type=\"category\"><category><text>top/bob/colin/' .
                           'Source 2/cat 2/subcat 2_1</text></category></question>' .
                           '<question><name><text>Eight</text></name></question></quiz>"' .
                           ', "version": "1"}',
-        );
+                );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
@@ -410,8 +415,10 @@ final class export_trait_test extends advanced_testcase {
         $this->assertStringContainsString('Five', file_get_contents($this->rootpath . '/top/Source-2/cat-2/subcat-2_1/Five.xml'));
         // New question in new folder.
         $this->assertStringContainsString('Six', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Six.xml'));
-        $this->assertStringContainsString('<text>top/Source 2/cat 3</text>',
-            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml'));
+        $this->assertStringContainsString(
+            '<text>top/Source 2/cat 3</text>',
+            file_get_contents($this->rootpath . '/top/Source-2/cat-3/' . cli_helper::CATEGORY_FILE . '.xml')
+        );
         // New question in existing folder - 2 category questions.
         $this->assertStringContainsString('Seven', file_get_contents($this->rootpath . '/top/Source-2/cat-3/Seven.xml'));
         // New question in new folder - 2 category questions.

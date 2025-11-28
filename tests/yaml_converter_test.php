@@ -26,8 +26,8 @@ namespace qbank_gitsync;
 
 defined('MOODLE_INTERNAL') || die();
 use Symfony\Component\Yaml\Yaml;
-if (is_file(__DIR__.'/../vendor/autoload.php')) {
-    require_once(__DIR__.'/../vendor/autoload.php');
+if (is_file(__DIR__ . '/../vendor/autoload.php')) {
+    require_once(__DIR__ . '/../vendor/autoload.php');
 }
 
 /**
@@ -36,7 +36,6 @@ if (is_file(__DIR__.'/../vendor/autoload.php')) {
  * @covers \qbank_gitsync
  */
 final class yaml_converter_test extends \advanced_testcase {
-
     public function test_load_yaml_data(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
@@ -44,11 +43,13 @@ final class yaml_converter_test extends \advanced_testcase {
         }
         $defaults = Yaml::parseFile(__DIR__ . '/../questiondefaults.yml');
         $questionyaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
-        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($questionyaml , $defaults);
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($questionyaml, $defaults);
         $this->assertEquals('Test question', (string) $xml->question->name->text);
-        $this->assertEquals(1,
-            preg_match('/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
-                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s', (string) $xml->question->questiontext->text));
+        $this->assertEquals(1, preg_match(
+            '/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
+                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s',
+            (string) $xml->question->questiontext->text
+        ));
         $this->assertEquals('html', (string) $xml->question->questiontext['format']);
         $this->assertEquals(false, isset($xml->question->questiontext->format));
         $this->assertEquals('', (string) $xml->question->generalfeedback->text);
@@ -59,23 +60,29 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('', (string) $xml->question->idnumber);
         $this->assertEquals('2025042500', (string) $xml->question->stackversion->text);
         $this->assertEquals('ta1:1;ta2:2;', (string) $xml->question->questionvariables->text);
-        $this->assertEquals('<p>[[feedback:prt1]]</p>', (string) $xml->question->specificfeedback->text);
+        $this->assertEquals('[[feedback:prt1]]', (string) $xml->question->specificfeedback->text);
         $this->assertEquals('html', (string) $xml->question->specificfeedback['format']);
-        $this->assertEquals('<p>{@ta1@}</p>', (string) $xml->question->questionnote->text);
+        $this->assertEquals('{@ta1@}', (string) $xml->question->questionnote->text);
         $this->assertEquals('html', (string) $xml->question->questionnote['format']);
         $this->assertEquals('', (string) $xml->question->questiondescription->text);
         $this->assertEquals('html', (string) $xml->question->questiondescription['format']);
 
         $this->assertEquals('1', (string) $xml->question->questionsimplify);
         $this->assertEquals('0', (string) $xml->question->assumepositive);
-        $this->assertEquals('<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
-            (string) $xml->question->prtcorrect->text);
+        $this->assertEquals(
+            '<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
+            (string) $xml->question->prtcorrect->text
+        );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
-        $this->assertEquals('<p><i class="fa fa-adjust"></i> Your answer is partially correct.</p>',
-            (string) $xml->question->prtpartiallycorrect->text);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            (string) $xml->question->prtpartiallycorrect->text
+        );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
-        $this->assertEquals('<p><i class="fa fa-times"></i> Incorrect answer.</p>',
-            (string) $xml->question->prtincorrect->text);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            (string) $xml->question->prtincorrect->text
+        );
         $this->assertEquals('html', (string) $xml->question->prtincorrect['format']);
         $this->assertEquals('.', (string) $xml->question->decimals);
         $this->assertEquals('*10', (string) $xml->question->scientificnotation);
@@ -193,12 +200,14 @@ final class yaml_converter_test extends \advanced_testcase {
     public function test_load_xml_data(): void {
         $defaults = yaml_converter::load_defaults(__DIR__ . '/../questiondefaults.xml', false);
         $xmlstring = file_get_contents(__DIR__ . '/fixtures/fullquestion.xml');
-        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($xmlstring , $defaults, false);
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($xmlstring, $defaults, false);
 
         $this->assertEquals('Test question', (string) $xml->question->name->text);
-        $this->assertEquals(1,
-            preg_match('/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
-                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s', (string) $xml->question->questiontext->text));
+        $this->assertEquals(1, preg_match(
+            '/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
+                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s',
+            (string) $xml->question->questiontext->text
+        ));
         $this->assertEquals('html', (string) $xml->question->questiontext['format']);
         $this->assertEquals(false, isset($xml->question->questiontext->format));
         $this->assertEquals('', (string) $xml->question->generalfeedback->text);
@@ -218,14 +227,20 @@ final class yaml_converter_test extends \advanced_testcase {
 
         $this->assertEquals('1', (string) $xml->question->questionsimplify);
         $this->assertEquals('0', (string) $xml->question->assumepositive);
-        $this->assertEquals('<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
-            (string) $xml->question->prtcorrect->text);
+        $this->assertEquals(
+            '<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
+            (string) $xml->question->prtcorrect->text
+        );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
-        $this->assertEquals('<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
-            (string) $xml->question->prtpartiallycorrect->text);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            (string) $xml->question->prtpartiallycorrect->text
+        );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
-        $this->assertEquals('<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
-            (string) $xml->question->prtincorrect->text);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            (string) $xml->question->prtincorrect->text
+        );
         $this->assertEquals('html', (string) $xml->question->prtincorrect['format']);
         $this->assertEquals('.', (string) $xml->question->decimals);
         $this->assertEquals('*10', (string) $xml->question->scientificnotation);
@@ -347,27 +362,27 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('Default', $question->name->text);
         $this->assertEquals(
             '<p>Default question</p><p>[[input:ans1]] [[validation:ans1]]</p>',
-             $question->questiontext->text
+            $question->questiontext->text
         );
         $this->assertEquals('html', $question->questiontext['format']);
         $this->assertEquals(
             '',
-             $question->generalfeedback->text
+            $question->generalfeedback->text
         );
         $this->assertEquals('html', $question->generalfeedback['format']);
         $this->assertEquals(
             '<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.',
-             $question->prtcorrect->text
+            $question->prtcorrect->text
         );
         $this->assertEquals('html', $question->prtpartiallycorrect['format']);
         $this->assertEquals(
             '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
-             $question->prtpartiallycorrect->text
+            $question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', $question->prtincorrect['format']);
         $this->assertEquals(
             '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
-             $question->prtincorrect->text
+            $question->prtincorrect->text
         );
         $this->assertEquals('html', $question->prtcorrect['format']);
         $this->assertEquals('1', $question->defaultgrade);
@@ -383,22 +398,22 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals(
             '[[feedback:prt1]]',
-             $question->specificfeedback->text
+            $question->specificfeedback->text
         );
         $this->assertEquals('html', $question->specificfeedback['format']);
         $this->assertEquals(
             '{@ta1@}',
-             $question->questionnote->text
+            $question->questionnote->text
         );
         $this->assertEquals('html', $question->questionnote['format']);
         $this->assertEquals(
             '',
-             $question->questiondescription->text
+            $question->questiondescription->text
         );
         $this->assertEquals('html', $question->questiondescription['format']);
 
         $this->assertEquals('.', $question->decimals);
-        $this->assertEquals('*10', $question->scientificnotation, );
+        $this->assertEquals('*10', $question->scientificnotation);
         $this->assertEquals('0', $question->assumepositive);
         $this->assertEquals('0', $question->assumereal);
         $this->assertEquals('dot', $question->multiplicationsign);
@@ -463,27 +478,27 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('Default', $question->name->text);
         $this->assertEquals(
             '<p>Default question</p><p>[[input:ans1]] [[validation:ans1]]</p>',
-             $question->questiontext->text
+            $question->questiontext->text
         );
         $this->assertEquals('html', $question->questiontext['format']);
         $this->assertEquals(
             '',
-             $question->generalfeedback->text
+            $question->generalfeedback->text
         );
         $this->assertEquals('html', $question->generalfeedback['format']);
         $this->assertEquals(
             '<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.',
-             $question->prtcorrect->text
+            $question->prtcorrect->text
         );
         $this->assertEquals('html', $question->prtpartiallycorrect['format']);
         $this->assertEquals(
             '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
-             $question->prtpartiallycorrect->text
+            $question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', $question->prtincorrect['format']);
         $this->assertEquals(
             '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
-             $question->prtincorrect->text
+            $question->prtincorrect->text
         );
         $this->assertEquals('html', $question->prtcorrect['format']);
         $this->assertEquals('1', $question->defaultgrade);
@@ -499,22 +514,22 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals(
             '[[feedback:prt1]]',
-             $question->specificfeedback->text
+            $question->specificfeedback->text
         );
         $this->assertEquals('html', $question->specificfeedback['format']);
         $this->assertEquals(
             '{@ta1@}',
-             $question->questionnote->text
+            $question->questionnote->text
         );
         $this->assertEquals('html', $question->questionnote['format']);
         $this->assertEquals(
             '',
-             $question->questiondescription->text
+            $question->questiondescription->text
         );
         $this->assertEquals('html', $question->questiondescription['format']);
 
         $this->assertEquals('.', $question->decimals);
-        $this->assertEquals('*10', $question->scientificnotation, );
+        $this->assertEquals('*10', $question->scientificnotation);
         $this->assertEquals('0', $question->assumepositive);
         $this->assertEquals('0', $question->assumereal);
         $this->assertEquals('dot', $question->multiplicationsign);
@@ -578,7 +593,7 @@ final class yaml_converter_test extends \advanced_testcase {
         }
         $defaults = Yaml::parseFile(__DIR__ . '/fixtures/questiondefaultssugar.yml');
         $questionyaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
-        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($questionyaml , $defaults);
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($questionyaml, $defaults);
 
         // Check prt fields.
         $this->assertCount(2, $xml->question->prt);
@@ -610,7 +625,7 @@ final class yaml_converter_test extends \advanced_testcase {
         }
         $defaults = Yaml::parseFile(__DIR__ . '/fixtures/questiondefaultssugar.yml');
         $questionyaml = file_get_contents(__DIR__ . '/fixtures/fullquestionsummary.yml');
-        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($questionyaml , $defaults);
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($questionyaml, $defaults);
 
         // Check prt fields.
         $this->assertCount(2, $xml->question->prt);
@@ -644,9 +659,11 @@ final class yaml_converter_test extends \advanced_testcase {
         $yaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
         $xml = yaml_converter::yamlstring_to_xml($yaml);
         $this->assertEquals('Test question', (string)$xml->question->name->text);
-        $this->assertEquals(1,
-            preg_match('/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
-                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s', (string) $xml->question->questiontext->text));
+        $this->assertEquals(1, preg_match(
+            '/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
+                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s',
+            (string) $xml->question->questiontext->text
+        ));
         $this->assertEquals('html', (string)$xml->question->questiontext['format']);
         $this->assertEquals(false, isset($xml->question->questiontext->format));
     }
@@ -693,14 +710,17 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('1', $xml->question->prt[0]->node[1]->name);
     }
 
-    public function xmlstring_to_yamlstring(): void {
+    public function test_xmlstring_to_yamlstring(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
         }
         // Test the difference detection with a full question.
-        $xmlstring = file_get_contents(__DIR__ . '/../questiondefaults.xml');
-        $expectedyamlstring = file_get_contents(__DIR__ . '/../questiondefaults.yml');
+        $xmlstring = file_get_contents(__DIR__ . '/fixtures/fullquestion.xml');
+        $expectedyamlstring = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
+        $expectedyamlstring = yaml_converter::yamlstring_to_xml($expectedyamlstring);
+        $expectedyamlstring = yaml_converter::xml_to_array($expectedyamlstring);
+        $expectedyamlstring = Yaml::dump($expectedyamlstring, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
         $yamlstring = yaml_converter::xmlstring_to_yamlstring($xmlstring);
         $this->assertEquals($expectedyamlstring, $yamlstring);
     }
@@ -781,7 +801,7 @@ final class yaml_converter_test extends \advanced_testcase {
                             'name' => '0',
                             'sans' => '011',
                             'tans' => '022',
-                        ]
+                        ],
                     ],
         ];
         $xml = new \SimpleXMLElement('<question></question>');

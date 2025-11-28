@@ -32,6 +32,7 @@ namespace qbank_gitsync;
  */
 class import_repo {
     use tidy_trait;
+
     /**
      * CLI helper for this import
      *
@@ -310,21 +311,28 @@ class import_repo {
             $this->subdirectory = ($arguments['subdirectory']) ? $arguments['subdirectory'] : 'top';
             $instanceinfo = $this->clihelper->check_context($this, false, false);
             if ($this->targetcategory) {
-                $this->manifestpath = cli_helper::get_manifest_path_targeted($moodleinstance, $contextlevel,
-                                                $instanceinfo->contextinfo->categoryname,
-                                                $instanceinfo->contextinfo->coursename,
-                                                $instanceinfo->contextinfo->modulename,
-                                                $instanceinfo->contextinfo->qcategoryname,
-                                                $instanceinfo->contextinfo->qcategoryid,
-                                                $this->subdirectory,
-                                                $this->directory);
+                $this->manifestpath = cli_helper::get_manifest_path_targeted(
+                    $moodleinstance,
+                    $contextlevel,
+                    $instanceinfo->contextinfo->categoryname,
+                    $instanceinfo->contextinfo->coursename,
+                    $instanceinfo->contextinfo->modulename,
+                    $instanceinfo->contextinfo->qcategoryname,
+                    $instanceinfo->contextinfo->qcategoryid,
+                    $this->subdirectory,
+                    $this->directory
+                );
                 $this->targetcategoryname = $instanceinfo->contextinfo->qcategoryname;
                 $this->targetcategory = $instanceinfo->contextinfo->qcategoryid;
             } else {
-                $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
-                                                $instanceinfo->contextinfo->categoryname,
-                                                $instanceinfo->contextinfo->coursename,
-                                                $instanceinfo->contextinfo->modulename, $this->directory);
+                $this->manifestpath = cli_helper::get_manifest_path(
+                    $moodleinstance,
+                    $contextlevel,
+                    $instanceinfo->contextinfo->categoryname,
+                    $instanceinfo->contextinfo->coursename,
+                    $instanceinfo->contextinfo->modulename,
+                    $this->directory
+                );
             }
             $this->postsettings['instanceid'] = $instanceinfo->contextinfo->instanceid;
             $this->postsettings['coursename'] = $instanceinfo->contextinfo->coursename;
@@ -335,9 +343,11 @@ class import_repo {
             $this->listpostsettings['modulename'] = $instanceinfo->contextinfo->modulename;
             $this->listpostsettings['ignorecat'] = $this->ignorecat;
         }
-        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
-                                          '_import' . cli_helper::TEMP_MANIFEST_FILE,
-                                           $this->manifestpath);
+        $this->tempfilepath = str_replace(
+            cli_helper::MANIFEST_FILE,
+            '_import' . cli_helper::TEMP_MANIFEST_FILE,
+            $this->manifestpath
+        );
         // Create manifest file if it doesn't already exist.
         $manifestfile = fopen($this->manifestpath, 'a+');
         if ($manifestfile === false) {
@@ -472,10 +482,12 @@ class import_repo {
     public function process(): void {
         $this->import_categories();
         $this->import_questions();
-        $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
-                                                                   $this->tempfilepath,
-                                                                   $this->manifestpath,
-                                                                   true);
+        $this->manifestcontents = cli_helper::create_manifest_file(
+            $this->manifestcontents,
+            $this->tempfilepath,
+            $this->manifestpath,
+            true
+        );
         unlink($this->tempfilepath);
         $this->delete_no_file_questions(false);
         $this->delete_no_record_questions(false);
@@ -513,9 +525,11 @@ class import_repo {
             $itemdirname = pathinfo($repoitem, PATHINFO_DIRNAME);
             $topdir = $this->directory . '/top';
             if ($repoitem->isDir()) {
-                if (strpos($itemdirname, $topdir) === false
+                if (
+                    strpos($itemdirname, $topdir) === false
                     || pathinfo($repoitem, PATHINFO_BASENAME) === '..'
-                    || $itemdirname === $topdir) {
+                    || $itemdirname === $topdir
+                ) {
                     // Make sure we're actually in the category structure and below top.
                     continue;
                 }
@@ -523,15 +537,15 @@ class import_repo {
                 $newcategory;
                 if (pathinfo($repoitem, PATHINFO_BASENAME) === '.') {
                     $basepath = pathinfo($repoitem, PATHINFO_DIRNAME);
-                    $newcategory = str_replace( '-', ' ', pathinfo($basepath, PATHINFO_BASENAME));
+                    $newcategory = str_replace('-', ' ', pathinfo($basepath, PATHINFO_BASENAME));
                 } else {
                     $basepath = $repoitem->__toString();
-                    $newcategory = str_replace( '-', ' ', pathinfo($repoitem, PATHINFO_BASENAME));
+                    $newcategory = str_replace('-', ' ', pathinfo($repoitem, PATHINFO_BASENAME));
                 }
 
                 $catfilepath = $basepath . '/' . cli_helper::CATEGORY_FILE . '.xml';
                 if (!is_file($catfilepath)) {
-                    $parentpath = str_replace( '\\', '/', pathinfo($basepath, PATHINFO_DIRNAME));
+                    $parentpath = str_replace('\\', '/', pathinfo($basepath, PATHINFO_DIRNAME));
                     $parentfilepath = $parentpath . '/' . cli_helper::CATEGORY_FILE . '.xml';
                     // If there is a category file in a subdirectory it will have the info
                     // we need.
@@ -551,7 +565,7 @@ class import_repo {
                         $childcontents = simplexml_load_string(file_get_contents($childcatfile));
                         $childcategory = $childcontents->question->category->text;
                         $childparts = $this->split_category_path($childcategory);
-                        $dirparts = explode('/', str_replace( '\\', '/', substr($basepath, strlen($this->directory) + 1)));
+                        $dirparts = explode('/', str_replace('\\', '/', substr($basepath, strlen($this->directory) + 1)));
                         foreach ($dirparts as $key => $dirpart) {
                             $cattext .= ($cattext) ? '/' . $childparts[$key] : $childparts[$key];
                         }
@@ -563,7 +577,7 @@ class import_repo {
                         $cattext = $parentcategory . '/' . $newcategory;
                     } else {
                         // If there is no parent file, we must be one below top.
-                        $cattext = 'top' . '/' . $newcategory;;
+                        $cattext = 'top' . '/' . $newcategory;
                     }
                     $catfile = fopen($catfilepath, 'w+');
                     if ($catfile === false) {
@@ -608,8 +622,10 @@ class import_repo {
         }
         foreach ($this->repoiterator as $repoitem) {
             if ($repoitem->isFile()) {
-                if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
-                        && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE) {
+                if (
+                    pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml'
+                        && pathinfo($repoitem, PATHINFO_FILENAME) === cli_helper::CATEGORY_FILE
+                ) {
                     $this->postsettings['qcategoryname'] = '';
                     $newcategory = null;
                     if ($this->ignorecat || $this->targetcategory) {
@@ -732,8 +748,10 @@ class import_repo {
         $categorynames = [];
         foreach ($this->subdirectoryiterator as $repoitem) {
             if ($repoitem->isFile()) {
-                if (in_array(pathinfo($repoitem, PATHINFO_EXTENSION), ['xml', 'yml'])
-                        && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE) {
+                if (
+                    in_array(pathinfo($repoitem, PATHINFO_EXTENSION), ['xml', 'yml'])
+                        && pathinfo($repoitem, PATHINFO_FILENAME) !== cli_helper::CATEGORY_FILE
+                ) {
                     $currentdirectory = $this->subdirectoryiterator->getPath();
                     $qcategoryname = null;
                     if (isset($categorynames[$currentdirectory])) {
@@ -746,7 +764,7 @@ class import_repo {
                         }
                         $categorynames[$currentdirectory] = $qcategoryname;
                     } else {
-                        $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
+                        $categoryfile = $currentdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
                         $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
                         if ($this->targetcategory) {
                             // Strip base name from category name and replace with target category.
@@ -766,16 +784,18 @@ class import_repo {
                             }
                         }
                         $relpath = str_replace(dirname($this->manifestpath), '', $repoitem->getPathname());
-                        $relpath = str_replace( '\\', '/', $relpath);
+                        $relpath = str_replace('\\', '/', $relpath);
                         $existingentry = $existingentries[$relpath] ?? false;
                         if ($existingentry) {
                             $this->postsettings['questionbankentryid'] = $existingentry->questionbankentryid;
                             $this->postsettings['importedversion'] = $existingentry->importedversion;
                             $this->postsettings['exportedversion'] = $existingentry->exportedversion;
-                            if (isset($existingentry->currentcommit)
+                            if (
+                                isset($existingentry->currentcommit)
                                     && isset($existingentry->moodlecommit)
                                     && $existingentry->currentcommit === $existingentry->moodlecommit
-                                    && !$this->forceimport) {
+                                    && !$this->forceimport
+                            ) {
                                 continue;
                             }
                         } else {
@@ -821,7 +841,7 @@ class import_repo {
                             $fileoutput = [
                                 'questionbankentryid' => $responsejson->questionbankentryid,
                                 'version' => $responsejson->version,
-                                'filepath' => str_replace( '\\', '/', $repoitem->getPathname()),
+                                'filepath' => str_replace('\\', '/', $repoitem->getPathname()),
                                 'format' => 'xml',
                             ];
                             if ($existingentry && isset($existingentry->currentcommit)) {
@@ -836,7 +856,8 @@ class import_repo {
                             }
                             fwrite($tempfile, json_encode($fileoutput) . "\n");
                             if (!empty($responsejson->validation)) {
-                                echo "\n{$repoitem->getPathname()} imported but has validation issues. Please exportrepofrommoodle to identify any changes which have been made.\n";
+                                echo "\n{$repoitem->getPathname()} imported but has validation issues. " .
+                                    "Please exportrepofrommoodle to identify any changes which have been made.\n";
                                 echo "{$responsejson->validation}\n";
                             }
                         }
@@ -859,10 +880,12 @@ class import_repo {
     public function recovery(): void {
         if (file_exists($this->tempfilepath)) {
             echo 'Attempting recovery from failure on previous run. Updating manifest:';
-            $this->manifestcontents = cli_helper::create_manifest_file($this->manifestcontents,
-                                                                    $this->tempfilepath,
-                                                                    $this->manifestpath,
-                                                                    true);
+            $this->manifestcontents = cli_helper::create_manifest_file(
+                $this->manifestcontents,
+                $this->tempfilepath,
+                $this->manifestpath,
+                true
+            );
             unlink($this->tempfilepath);
             echo 'Recovery successful. Continuing...';
         }
@@ -875,14 +898,14 @@ class import_repo {
      * @param bool $deleteenabled Allows question delete if true, otherwise just lists applicable questions
      * @return void
      */
-    public function delete_no_file_questions(bool $deleteenabled=false): void {
+    public function delete_no_file_questions(bool $deleteenabled = false): void {
         // Get all manifest entries for imported subdirectory.
         // Filepath should equal subdirectory or path must be longer and continue with
         // one (and only) one slash.
-        $manifestentries = array_filter($this->manifestcontents->questions, function($value) {
+        $manifestentries = array_filter($this->manifestcontents->questions, function ($value) {
             return (substr($value->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory
                     && (strlen($value->filepath) === strlen($this->subdirectory) + 1
-                        || preg_match('/^\/{1}(?!\/)/' , substr($value->filepath, strlen($this->subdirectory) + 1))));
+                        || preg_match('/^\/{1}(?!\/)/', substr($value->filepath, strlen($this->subdirectory) + 1))));
         });
         // Check to see there is a matching file in the repo still.
         $questionstodelete = [];
@@ -927,7 +950,7 @@ class import_repo {
      * @param bool $deleteenabled Allows question delete if true, otherwise just lists applicable questions
      * @return void
      */
-    public function delete_no_record_questions(bool $deleteenabled=false): void {
+    public function delete_no_record_questions(bool $deleteenabled = false): void {
         if (count($this->manifestcontents->questions) === 0 && $deleteenabled) {
             echo 'Manifest file is empty or inaccessible. You probably want to abort.\n';
             $this->handle_abort();
@@ -986,7 +1009,7 @@ class import_repo {
      */
     public function handle_delete(object $question): bool {
         $deleted = false;
-        $handle = fopen ("php://stdin", "r");
+        $handle = fopen("php://stdin", "r");
         $line = fgets($handle);
         if (trim($line) === 'y') {
             $this->deletepostsettings['questionbankentryid'] = $question->questionbankentryid;
@@ -1022,7 +1045,7 @@ class import_repo {
     public function handle_abort(): void {
         global $usecontinue;
         echo ($usecontinue ? "Continue? y/n\n" : "Abort? y/n\n");
-        $handle = fopen ("php://stdin", "r");
+        $handle = fopen("php://stdin", "r");
         $line = fgets($handle);
         fclose($handle);
         if (($usecontinue && trim($line) === 'y') || (!$usecontinue && trim($line) === 'n')) {
@@ -1071,8 +1094,10 @@ class import_repo {
         // We do this in a second pass to minimise the size of passed array.
         $retrievedentries = array_column($questionsinmoodle->questions, null, 'questionbankentryid');
         foreach ($this->manifestcontents->questions as $manifestquestion) {
-            if (substr($manifestquestion->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory
-                && preg_match('/^\/{1}(?!\/)/' , substr($manifestquestion->filepath, strlen($this->subdirectory) + 1))) {
+            if (
+                substr($manifestquestion->filepath, 1, strlen($this->subdirectory)) === $this->subdirectory
+                && preg_match('/^\/{1}(?!\/)/', substr($manifestquestion->filepath, strlen($this->subdirectory) + 1))
+            ) {
                 // Start of filepath of question must match start of subdirectory to import.
                 // Filepath must continue with one (and only) one slash.
                 $retrievedalready = $retrievedentries["{$manifestquestion->questionbankentryid}"] ?? false;
@@ -1103,8 +1128,10 @@ class import_repo {
                 $this->call_exit();
                 $movedquestionsinmoodle = json_decode('{"questions": []}'); // Required for unit tests.
             }
-            $questionsinmoodle->questions = array_merge($questionsinmoodle->questions,
-                                                        $movedquestionsinmoodle->questions);
+            $questionsinmoodle->questions = array_merge(
+                $questionsinmoodle->questions,
+                $movedquestionsinmoodle->questions
+            );
         }
         $manifestentries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
         $changes = false;
@@ -1113,9 +1140,11 @@ class import_repo {
         // If the last exportedversion doesn't match either we haven't exported the changes from Moodle and dealt with
         // them locally. Instruct user to export.
         foreach ($questionsinmoodle->questions as $moodleq) {
-            if (isset($manifestentries[$moodleq->questionbankentryid])
+            if (
+                isset($manifestentries[$moodleq->questionbankentryid])
                     && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->importedversion
-                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->exportedversion) {
+                    && $moodleq->version !== $manifestentries[$moodleq->questionbankentryid]->exportedversion
+            ) {
                 echo "{$moodleq->questionbankentryid} - {$moodleq->questioncategory} - {$moodleq->name}\n";
                 echo "Moodle question version: {$moodleq->version}\n";
                 echo "Version on last import to Moodle: {$manifestentries[$moodleq->questionbankentryid]->importedversion}\n";
@@ -1175,8 +1204,14 @@ class import_repo {
             $structurefilepath = $rootdirectory . '/' . $structurefile;
             $contentsjson = file_get_contents($structurefilepath);
             $structurecontents = json_decode($contentsjson);
-            $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
-                                $contextinfo->contextinfo->coursename, $structurecontents->quiz->name, '');
+            $quizmanifestname = cli_helper::get_manifest_path(
+                $moodleinstance,
+                'module',
+                null,
+                $contextinfo->contextinfo->coursename,
+                $structurecontents->quiz->name,
+                ''
+            );
             $quizmanifestpath = $rootdirectory . $quizmanifestname;
             $quizcmid = null;
 
@@ -1184,15 +1219,27 @@ class import_repo {
                 // The quiz does not exist in the targeted Moodle instance. We need to create it,
                 // import questions and then add questions to the quiz.
                 echo "\nCreating quiz: {$structurecontents->quiz->name}\n";
-                $output = $this->call_import_quiz_data($moodleinstance, $token,
-                            $contextinfo->contextinfo->instanceid,
-                            null, $structurefilepath, $scriptdirectory);
+                $output = $this->call_import_quiz_data(
+                    $moodleinstance,
+                    $token,
+                    $contextinfo->contextinfo->instanceid,
+                    null,
+                    $structurefilepath,
+                    $scriptdirectory
+                );
             }
             // Import quiz context questions.
             echo "\nImporting quiz context: {$structurecontents->quiz->name}\n";
             if (is_file($quizmanifestpath)) {
-                $output = $this->call_import_repo($rootdirectory, $moodleinstance, $token,
-                        $quizmanifestname, null, $ignorecat, $scriptdirectory);
+                $output = $this->call_import_repo(
+                    $rootdirectory,
+                    $moodleinstance,
+                    $token,
+                    $quizmanifestname,
+                    null,
+                    $ignorecat,
+                    $scriptdirectory
+                );
                 echo $output;
             } else {
                 // No quiz manifest. We need to import questions into context of created quiz.
@@ -1211,16 +1258,28 @@ class import_repo {
                     $instanceid = 'Test'; // Required for unit tests.
                     $this->manifestcontents->quizzes = [];
                 }
-                $output = $this->call_import_repo($rootdirectory, $moodleinstance, $token,
-                        null, $quizcmid, $ignorecat, $scriptdirectory);
+                $output = $this->call_import_repo(
+                    $rootdirectory,
+                    $moodleinstance,
+                    $token,
+                    null,
+                    $quizcmid,
+                    $ignorecat,
+                    $scriptdirectory
+                );
                 echo $output;
             }
             if ($instanceid === false) {
                 // Import quiz structure as it's not currenty in the nonquizmanifest.
                 echo "\nImporting quiz structure: {$structurecontents->quiz->name}\n";
-                $output = $this->call_import_quiz_data($moodleinstance, $token,
-                            $contextinfo->contextinfo->instanceid,
-                            $quizmanifestpath, $structurefilepath, $scriptdirectory);
+                $output = $this->call_import_quiz_data(
+                    $moodleinstance,
+                    $token,
+                    $contextinfo->contextinfo->instanceid,
+                    $quizmanifestpath,
+                    $structurefilepath,
+                    $scriptdirectory
+                );
                 echo $output;
                 $quizlocation = new \StdClass();
                 if (!$quizcmid) {
@@ -1267,9 +1326,15 @@ class import_repo {
      * @param string $scriptdirectory
      * @return string|null
      */
-    public function call_import_repo(string $rootdirectory, string $moodleinstance, string $token,
-                                    ?string $quizmanifestname, ?string $quizcmid,
-                                    string $ignorecat, string $scriptdirectory): string {
+    public function call_import_repo(
+        string $rootdirectory,
+        string $moodleinstance,
+        string $token,
+        ?string $quizmanifestname,
+        ?string $quizcmid,
+        string $ignorecat,
+        string $scriptdirectory
+    ): string {
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
         $forceimport = ($this->forceimport) ? ' -z' : '';
@@ -1300,19 +1365,25 @@ class import_repo {
      * @param string $scriptdirectory
      * @return string|null
      */
-    public function call_import_quiz_data(string $moodleinstance, string $token, string $instanceid,
-                                    ?string $quizmanifestpath, string $structurefilepath, string $scriptdirectory): ?string {
+    public function call_import_quiz_data(
+        string $moodleinstance,
+        string $token,
+        string $instanceid,
+        ?string $quizmanifestpath,
+        string $structurefilepath,
+        string $scriptdirectory
+    ): ?string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         if ($quizmanifestpath) {
             return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
                     ' -w -r "" -i "' . $moodleinstance . '" -n ' .
-                    $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath . '" -f "' .
+                    $instanceid . ' -t ' . $token . ' -p "' . $this->manifestpath . '" -f "' .
                     $quizmanifestpath . '" -a "' . $structurefilepath . '"');
         } else {
             return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
                     ' -w -r "" -i "' . $moodleinstance . '" -n ' .
-                    $instanceid . ' -t ' . $token. ' -p "' . $this->manifestpath. '" -a "' . $structurefilepath . '"');
+                    $instanceid . ' -t ' . $token . ' -p "' . $this->manifestpath . '" -a "' . $structurefilepath . '"');
         }
     }
 

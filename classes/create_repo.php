@@ -32,6 +32,7 @@ namespace qbank_gitsync;
  */
 class create_repo {
     use export_trait;
+
     /**
      * Settings for POST request.
      *
@@ -265,30 +266,38 @@ class create_repo {
         $this->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->listpostsettings);
         if (!empty($arguments['istargeted'])) {
             $this->targetcategory = $this->qcategoryid;
-            $this->manifestpath = cli_helper::get_manifest_path_targeted($moodleinstance, $contextlevel,
-                                                $instanceinfo->contextinfo->categoryname,
-                                                $instanceinfo->contextinfo->coursename,
-                                                $instanceinfo->contextinfo->modulename,
-                                                $instanceinfo->contextinfo->qcategoryname,
-                                                $instanceinfo->contextinfo->qcategoryid,
-                                                'top',
-                                                $this->directory);
+            $this->manifestpath = cli_helper::get_manifest_path_targeted(
+                $moodleinstance,
+                $contextlevel,
+                $instanceinfo->contextinfo->categoryname,
+                $instanceinfo->contextinfo->coursename,
+                $instanceinfo->contextinfo->modulename,
+                $instanceinfo->contextinfo->qcategoryname,
+                $instanceinfo->contextinfo->qcategoryid,
+                'top',
+                $this->directory
+            );
         } else {
             $this->targetcategory = null;
-            $this->manifestpath = cli_helper::get_manifest_path($moodleinstance, $contextlevel,
-                                                $instanceinfo->contextinfo->categoryname,
-                                                $instanceinfo->contextinfo->coursename,
-                                                $instanceinfo->contextinfo->modulename,
-                                                $this->directory);
+            $this->manifestpath = cli_helper::get_manifest_path(
+                $moodleinstance,
+                $contextlevel,
+                $instanceinfo->contextinfo->categoryname,
+                $instanceinfo->contextinfo->coursename,
+                $instanceinfo->contextinfo->modulename,
+                $this->directory
+            );
         }
         if (file_exists($this->directory . '/top')) {
             echo 'The specified directory already contains files. Please delete them if you really want to continue.';
             echo "\n{$this->directory}\n";
             $this->call_exit();
         }
-        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
-                                          '_export' . cli_helper::TEMP_MANIFEST_FILE,
-                                          $this->manifestpath);
+        $this->tempfilepath = str_replace(
+            cli_helper::MANIFEST_FILE,
+            '_export' . cli_helper::TEMP_MANIFEST_FILE,
+            $this->manifestpath
+        );
         $this->manifestcontents = new \stdClass();
         $this->manifestcontents->context = new \stdClass();
         $this->manifestcontents->context->contextlevel = cli_helper::get_context_level($instanceinfo->contextinfo->contextlevel);
@@ -324,8 +333,12 @@ class create_repo {
         }
         $this->export_to_repo();
         $this->manifestcontents->context->defaultsubdirectory = $this->subdirectory;
-        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,
-                                         $this->manifestpath, false);
+        cli_helper::create_manifest_file(
+            $this->manifestcontents,
+            $this->tempfilepath,
+            $this->manifestpath,
+            false
+        );
         unlink($this->tempfilepath);
     }
 
@@ -373,10 +386,21 @@ class create_repo {
             echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
             $output = $this->call_repo_creation($rootdirectory, $moodleinstance, $instanceid, $token, $ignorecat, $scriptdirectory);
             echo $output;
-            $quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
-                                    $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
-            $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath,
-                                                $this->manifestpath, $scriptdirectory);
+            $quizmanifestpath = cli_helper::get_manifest_path(
+                $moodleinstance,
+                'module',
+                null,
+                $contextinfo->contextinfo->coursename,
+                $quiz->name,
+                $rootdirectory
+            );
+            $output = $this->call_export_quiz(
+                $moodleinstance,
+                $token,
+                $quizmanifestpath,
+                $this->manifestpath,
+                $scriptdirectory
+            );
             $quizlocation = new \StdClass();
             $quizlocation->moduleid = $instanceid;
             $quizlocation->directory = basename($rootdirectory);
@@ -409,9 +433,14 @@ class create_repo {
      * @param string $scriptdirectory
      * @return string|null
      */
-    public function call_repo_creation(string $rootdirectory, string $moodleinstance, string $instanceid,
-                                       string $token, string $ignorecat, string $scriptdirectory
-                                      ): ?string {
+    public function call_repo_creation(
+        string $rootdirectory,
+        string $moodleinstance,
+        string $instanceid,
+        string $token,
+        string $ignorecat,
+        string $scriptdirectory
+    ): ?string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';

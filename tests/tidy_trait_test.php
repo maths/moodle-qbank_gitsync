@@ -113,7 +113,7 @@ final class tidy_trait_test extends advanced_testcase {
               "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
                             {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
                             {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
 
         $this->exportrepo->tidy_manifest();
 
@@ -202,7 +202,7 @@ final class tidy_trait_test extends advanced_testcase {
                             {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
                             {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
                             {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
 
         $this->exportrepo->tidy_manifest();
 
@@ -222,16 +222,16 @@ final class tidy_trait_test extends advanced_testcase {
      */
     public function test_tidy_manifest_nothing_removed_two_passes(): void {
         $this->listcurl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
               "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
                         {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
-             '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
+            '{"contextinfo":{"contextlevel": "module", "categoryname":"", "coursename":"Course 1",
                 "modulename":"Module 1", "instanceid":"", "qcategoryname":"top"},
               "questions": [{"questionbankentryid": "35001", "name": "One", "questioncategory": ""},
                     {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
                     {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""}]}'
-            );
+        );
 
         $this->exportrepo->tidy_manifest();
 
@@ -244,5 +244,4 @@ final class tidy_trait_test extends advanced_testcase {
         $this->assertArrayHasKey('35003', $existingentries);
         $this->assertArrayHasKey('35004', $existingentries);
     }
-
 }

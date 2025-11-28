@@ -217,4 +217,3 @@ $importrepo->check_question_versions();
 $clihelper->commit_hash_update($importrepo);
 $importrepo->process();
 $importrepo->update_quizzes($clihelper, $scriptdirectory);
-
