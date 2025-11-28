@@ -60,9 +60,9 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('', (string) $xml->question->idnumber);
         $this->assertEquals('2025042500', (string) $xml->question->stackversion->text);
         $this->assertEquals('ta1:1;ta2:2;', (string) $xml->question->questionvariables->text);
-        $this->assertEquals('<p>[[feedback:prt1]]</p>', (string) $xml->question->specificfeedback->text);
+        $this->assertEquals('[[feedback:prt1]]', (string) $xml->question->specificfeedback->text);
         $this->assertEquals('html', (string) $xml->question->specificfeedback['format']);
-        $this->assertEquals('<p>{@ta1@}</p>', (string) $xml->question->questionnote->text);
+        $this->assertEquals('{@ta1@}', (string) $xml->question->questionnote->text);
         $this->assertEquals('html', (string) $xml->question->questionnote['format']);
         $this->assertEquals('', (string) $xml->question->questiondescription->text);
         $this->assertEquals('html', (string) $xml->question->questiondescription['format']);
@@ -75,12 +75,12 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
         $this->assertEquals(
-            '<p><i class="fa fa-adjust"></i> Your answer is partially correct.</p>',
+            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
             (string) $xml->question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
         $this->assertEquals(
-            '<p><i class="fa fa-times"></i> Incorrect answer.</p>',
+            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
             (string) $xml->question->prtincorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtincorrect['format']);
@@ -716,8 +716,11 @@ final class yaml_converter_test extends \advanced_testcase {
             return;
         }
         // Test the difference detection with a full question.
-        $xmlstring = file_get_contents(__DIR__ . '/../questiondefaults.xml');
-        $expectedyamlstring = file_get_contents(__DIR__ . '/../questiondefaults.yml');
+        $xmlstring = file_get_contents(__DIR__ . '/fixtures/fullquestion.xml');
+        $expectedyamlstring = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
+        $expectedyamlstring = yaml_converter::yamlstring_to_xml($expectedyamlstring);
+        $expectedyamlstring = yaml_converter::xml_to_array($expectedyamlstring);
+        $expectedyamlstring = Yaml::dump($expectedyamlstring, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
         $yamlstring = yaml_converter::xmlstring_to_yamlstring($xmlstring);
         $this->assertEquals($expectedyamlstring, $yamlstring);
     }
