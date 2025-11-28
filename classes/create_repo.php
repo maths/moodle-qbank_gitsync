@@ -135,10 +135,16 @@ class create_repo {
     public bool $usegit;
     /**
      * Are we using YAML?.
-     * Set in config. Saves questions as difference file and adds default file to repo.
+     * Set in config. Saves questions as YAML.
      * @var bool
      */
     public bool $useyaml;
+    /**
+     * Are we using fragments?
+     * Set in config. Saves questions as difference file and adds default file to repo.
+     * @var bool
+     */
+    public bool $usefragments;
 
     /**
      * Directory to export into. Will always be null or top.
@@ -172,18 +178,19 @@ class create_repo {
         }
         $this->usegit = $arguments['usegit'];
         $this->useyaml = $arguments['useyaml'];
+        $this->usefragments = $arguments['usefragments'];
         if ($arguments['directory']) {
             $this->directory = ($arguments['rootdirectory']) ?
                     $arguments['rootdirectory'] . '/' . $arguments['directory'] : $arguments['directory'];
         } else {
             $this->directory = $arguments['rootdirectory'];
         }
-        if ($this->useyaml) {
+        if ($this->usefragments) {
             if ($arguments['defaultfile']) {
                 $this->defaultsfilepath = $this->directory . '/' . $arguments['defaultfile'];
-                $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+                $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath, $this->useyaml);
             } else {
-                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE;
+                $this->defaultsfilepath = $this->directory . '/' . cli_helper::DEFAULTS_FILE . ($this->useyaml ? 'yml' : 'xml');
             }
         }
         if (!empty($arguments['nonquizmanifestpath'])) {
@@ -306,11 +313,14 @@ class create_repo {
      * @return void
      */
     public function process(): void {
-        if (!isset($this->defaults) && $this->useyaml) {
+        if (!isset($this->defaults) && $this->useyaml && $this->usefragments) {
             // This occurs when creating whole course repo. We have had
             // to wait until the course directory has been created.
-            copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);
-            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+            copy(__DIR__ . '/../' . cli_helper::DEFAULTS_FILE . 'yml', $this->defaultsfilepath);
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath, true);
+        } else if (!isset($this->defaults) && $this->usefragments) {
+            copy(__DIR__ . '/../' . cli_helper::DEFAULTS_FILE . 'xml', $this->defaultsfilepath);
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath, false);
         }
         $this->export_to_repo();
         $this->manifestcontents->context->defaultsubdirectory = $this->subdirectory;
@@ -357,7 +367,7 @@ class create_repo {
             $instanceid = $quiz->instanceid;
             $quizdirectory = cli_helper::get_quiz_directory($basedirectory, $quiz->name);
             $rootdirectory = $clihelper->create_directory($quizdirectory);
-            if ($this->useyaml) {
+            if ($this->usefragments) {
                 copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
             }
             echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
@@ -405,7 +415,7 @@ class create_repo {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
-        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
+        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r "' .
                 $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat . ' -y ' . $useyaml . $defaults);

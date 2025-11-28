@@ -54,7 +54,7 @@ class cli_helper {
      * GITSYNC_VERSION - Current version of Gitsync.
      * Should match version in version.php .
      */
-    public const GITSYNC_VERSION = '2025101400';
+    public const GITSYNC_VERSION = '2025111300';
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -71,7 +71,7 @@ class cli_helper {
     /**
      * DEFAULTS_FILE - Default filename for question defaults.
      */
-    public const DEFAULTS_FILE = 'questiondefaults.yml';
+    public const DEFAULTS_FILE = 'questiondefaults.';
     /**
      * TEMP_MANIFEST_FILE - File name ending for temporary manifest file.
      * Appended to name of moodle instance.
@@ -105,14 +105,21 @@ class cli_helper {
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
         $argcount = count($commandlineargs);
-        if (!isset($commandlineargs['w'])) {
-            echo "\nProcessed {$argcount} valid command line argument" .
-                    (($argcount !== 1) ? 's' : '') . ".\n";
-        }
         $this->processedoptions = $this->prioritise_options($commandlineargs);
         if (!empty($this->processedoptions['help'])) {
             $this->show_help();
             exit;
+        }
+        if (!isset($commandlineargs['w'])) {
+            echo "\nProcessed {$argcount} valid command line argument" .
+                    (($argcount !== 1) ? 's' : '') . ":\n";
+            forEach ($commandlineargs as $option => $value) {
+                $description = strlen($option) > 1 ? $option : $parsed['linked'][$option]['longopt'] . " ({$option})";
+                $argvalue = $this->processedoptions[$parsed['linked'][$option]['variablename']];
+                $argvalue = ($argvalue === false) ? 'false' : $argvalue;
+                $argvalue = ($argvalue === true) ? 'true' : $argvalue;
+                echo "{$description}: {$argvalue}\n";
+            }
         }
         $this->validate_and_clean_args();
         return $this->processedoptions;
@@ -127,6 +134,7 @@ class cli_helper {
     public function parse_options(): array {
         $shortopts = '';
         $longopts = [];
+        $pairs = [];
 
         foreach ($this->options as $option) {
             $shortopts .= $option['shortopt'];
@@ -136,9 +144,10 @@ class cli_helper {
             } else {
                 $longopts[] = $option['longopt'];
             }
+            $pairs[$option['shortopt']] = ['longopt' => $option['longopt'], 'variablename' => $option['variable']];
         }
 
-        return ['shortopts' => $shortopts, 'longopts' => $longopts];
+        return ['shortopts' => $shortopts, 'longopts' => $longopts, 'linked' => $pairs];
     }
 
     /**
@@ -353,7 +362,7 @@ class cli_helper {
                 } else {
                     $variables[$variablename] = $option['default'];
                 }
-                if (in_array($variablename, ['usegit', 'useyaml'])) {
+                if (in_array($variablename, ['usegit', 'useyaml', 'usefragments'])) {
                     $variables[$variablename] = ($variables[$variablename] === 'true') ? true : $variables[$variablename];
                     $variables[$variablename] = ($variables[$variablename] === 'false') ? false : $variables[$variablename];
                 }
@@ -892,8 +901,15 @@ class cli_helper {
             if (!empty($activity->forceimport)) {
                 echo "\nForce import: Importing all questions.\n";
             }
-            if (!empty($activity->useyaml) && !empty($activity->defaultsfilepath)) {
-                echo "\nUsing YAML with defaults file: " . basename($activity->defaultsfilepath) . "\n";
+            if (!empty($activity->useyaml)) {
+                echo "\nCreating or expecting YAML files.\n";
+            } else {
+                echo "\nCreating or expecting XML files.\n";
+            }
+            if (!empty($activity->usefragments) && !empty($activity->defaultsfilepath)) {
+                echo "\nCreating or expecting question fragments using defaults file: " . basename($activity->defaultsfilepath) . "\n";
+            } else {
+                echo "\nCreating or expecting full question files not fragments.\n";
             }
             static::handle_abort();
         }
@@ -908,13 +924,15 @@ class cli_helper {
      * @return void
      */
     public static function handle_abort(): void {
-        echo "Abort? y/n\n";
+        global $usecontinue;
+        echo ($usecontinue ? "Continue? y/n\n" : "Abort? y/n\n");
         $handle = fopen ("php://stdin", "r");
         $line = fgets($handle);
-        if (trim($line) === 'y') {
-            static::call_exit();
-        }
         fclose($handle);
+        if (($usecontinue && trim($line) === 'y') || (!$usecontinue && trim($line) === 'n')) {
+            return;
+        }
+        static::call_exit();
     }
 
     /**
@@ -996,23 +1014,40 @@ class cli_helper {
      * @param string $filepath
      * @param string $tempfilepath Path of main temp file
      * @param string $defaults yml defaults
-     * @return object|null $tempqfilepath
+     * @return object|null|boolean $tempqfilepath else false on error and null if not a STACK question.
      */
-    public static function create_temp_question_file($filepath, $tempfilepath, $defaults) {
+    public static function create_temp_question_file($filepath, $tempfilepath, $defaults, $useyaml) {
         if (!is_file($filepath)) {
             echo "\nRequired question file does not exist: {$filepath}\n";
-            return null;
+            return false;
         }
         $contents = file_get_contents($filepath);
         if ($contents === false) {
             echo "\nUnable to access file: {$filepath}\n";
+            return false;
+        }
+        if (pathinfo($filepath, PATHINFO_EXTENSION) === 'xml' && strpos($contents, '<question type="stack">') === false) {
+            // Non-STACK XML question - not a fragment.
             return null;
         }
-        $questionxml = yaml_converter::loadyaml($contents, $defaults);
+        try {
+            libxml_use_internal_errors(true);
+            $questionxml = yaml_converter::load_string_as_xml($contents, $defaults, $useyaml);
+            libxml_use_internal_errors(false);
+        } catch (\Exception $e) {
+            echo "\nBroken XML/YAML: {$filepath}\n";
+            echo "\n{$e->getMessage()}\n";
+            foreach (libxml_get_errors() as $error) {
+                echo $error->message . "\n";
+            }
+            libxml_clear_errors();
+            libxml_use_internal_errors(false);
+            return false;
+        }
         $tempqfilepath = dirname($tempfilepath) . '/tempqfile.tmp';
         $success = file_put_contents($tempqfilepath, $questionxml->asXML());
         if ($success === false) {
-            return null;
+            return false;
         }
         return new \SplFileInfo($tempqfilepath);
     }

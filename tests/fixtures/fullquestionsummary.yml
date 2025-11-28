@@ -11,9 +11,9 @@ hidden: 0
 idnumber:
 stackversion: 2025042500
 questionvariables: ta1:1;ta2:2;
-specificfeedback: <p>[[feedback:prt1]]</p>
+specificfeedback: '[[feedback:prt1]]'
 specificfeedbackformat: html
-questionnote: <p>{@ta1@}</p>
+questionnote: '{@ta1@}'
 questionnoteformat: html
 questiondescription:
 questiondescriptionformat: html
