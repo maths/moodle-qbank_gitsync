@@ -260,7 +260,7 @@ trait export_trait {
                     'filepath' => str_replace( '\\', '/', $bottomdirectory) . "/{$sanitisedqname}.{$filetype}",
                     'format' => 'xml',
                 ];
-                fwrite($tempfile, json_encode($fileoutput) . "\n");
+                fwrite($tempfile, json_encode($fileoutput, JSON_PRETTY_PRINT) . "\n");
             }
         }
     }

@@ -261,7 +261,7 @@ class export_quiz {
             echo "Quiz structure file: {$this->filepath} not updated.\n";
         } else {
             // Save exported information (including relative file location but not QBE id so Moodle independent).
-            $success = file_put_contents($this->filepath, json_encode($responsejson));
+            $success = file_put_contents($this->filepath, json_encode($responsejson, JSON_PRETTY_PRINT));
             if ($success === false) {
                 echo "\nUnable to update quiz structure file: {$this->filepath}\n Aborting.\n";
                 $this->call_exit();

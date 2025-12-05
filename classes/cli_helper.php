@@ -571,7 +571,7 @@ class cli_helper {
         if ($showupdated) {
             echo "Updated {$updatedcount} question" . (($updatedcount !== 1) ? 's' : '') . ".\n";
         }
-        $success = file_put_contents($manifestpath, json_encode($manifestcontents));
+        $success = file_put_contents($manifestpath, json_encode($manifestcontents, JSON_PRETTY_PRINT));
         if ($success === false) {
             echo "\nUnable to update manifest file: {$manifestpath}\n Aborting.\n";
             static::call_exit();
@@ -615,7 +615,7 @@ class cli_helper {
                 $question->currentcommit = $commithash;
             }
         }
-        $success = file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
+        $success = file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents, JSON_PRETTY_PRINT));
         if ($success === false) {
             echo "\nUnable to update manifest file: {$activity->manifestpath}\n Aborting.\n";
             exit;
@@ -646,7 +646,7 @@ class cli_helper {
             }
         }
         // Happens last so no need to abort on failure.
-        file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents));
+        file_put_contents($activity->manifestpath, json_encode($activity->manifestcontents, JSON_PRETTY_PRINT));
     }
 
     /**
@@ -944,7 +944,7 @@ class cli_helper {
         }
         if ($replacement) {
             $categoryxml->question->category->text = $replacement;
-            $success = file_put_contents($filepath, json_encode($contents));
+            $success = file_put_contents($filepath, json_encode($contents, JSON_PRETTY_PRINT));
             if ($success === false) {
                 echo "\nUnable to update category file: {$contents}. Check your repo carefully before committing.\n";
             }
