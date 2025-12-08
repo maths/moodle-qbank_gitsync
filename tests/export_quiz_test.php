@@ -127,7 +127,6 @@ final class export_quiz_test extends advanced_testcase {
             'help' => false,
             'subcall' => false,
         ];
-
     }
 
     /**

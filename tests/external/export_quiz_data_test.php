@@ -46,7 +46,7 @@ use moodle_exception;
  */
 final class export_quiz_data_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */
-    protected \core_question_generator  $generator;
+    protected \core_question_generator $generator;
     /** @var \mod_quiz_generator plugin generator */
     protected \mod_quiz_generator $quizgenerator;
     /** @var \stdClass generated course object */
@@ -76,16 +76,27 @@ final class export_quiz_data_test extends externallib_advanced_testcase {
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $this->course = $this->getDataGenerator()->create_course();
         $this->qcategory = $this->generator->create_question_category(
-                        ['contextid' => \context_course::instance($this->course->id)->id]);
+            ['contextid' => \context_course::instance($this->course->id)->id]
+        );
         $user = $this->getDataGenerator()->create_user();
         $this->user = $user;
         $this->setUser($user);
-        $this->q = $this->generator->create_question('shortanswer', null,
-                        ['name' => self::QNAME, 'category' => $this->qcategory->id]);
-        $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
-                        ['questionid' => $this->q->id], $strictness = MUST_EXIST);
-        $q2 = $this->generator->create_question('shortanswer', null,
-                        ['name' => self::QNAME . '2', 'category' => $this->qcategory->id]);
+        $this->q = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME, 'category' => $this->qcategory->id]
+        );
+        $this->qbankentryid = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $this->q->id],
+            $strictness = MUST_EXIST
+        );
+        $q2 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '2', 'category' => $this->qcategory->id]
+        );
 
         $quizgenerator = new \testing_data_generator();
         $this->quizgenerator = $quizgenerator->get_plugin_generator('mod_quiz');
@@ -103,7 +114,6 @@ final class export_quiz_data_test extends externallib_advanced_testcase {
             $quizobj = \quiz::create($this->quiz->id);
         }
         \mod_quiz\structure::create_for_quiz($quizobj);
-
     }
 
     /**
@@ -191,7 +201,7 @@ final class export_quiz_data_test extends externallib_advanced_testcase {
         $context = context_course::instance($this->course->id);
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
-        $returnvalue = export_quiz_data::execute($this->quizmoduleid, null, null);;
+        $returnvalue = export_quiz_data::execute($this->quizmoduleid, null, null);
 
         $returnvalue = external_api::clean_returnvalue(
             export_quiz_data::execute_returns(),
@@ -212,7 +222,7 @@ final class export_quiz_data_test extends externallib_advanced_testcase {
         $context = context_course::instance($this->course->id);
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
-        $returnvalue = export_quiz_data::execute(null, $this->course->fullname, self::QUIZNAME);;
+        $returnvalue = export_quiz_data::execute(null, $this->course->fullname, self::QUIZNAME);
 
         $returnvalue = external_api::clean_returnvalue(
             export_quiz_data::execute_returns(),

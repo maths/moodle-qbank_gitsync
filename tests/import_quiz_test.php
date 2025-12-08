@@ -31,6 +31,7 @@ use org\bovigo\vfs\vfsStream;
 
 /**
  * Allows testing of errors that lead to an exit.
+ * phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses
  */
 class fake_import_cli_helper extends cli_helper {
     /**
@@ -143,8 +144,8 @@ final class import_quiz_test extends advanced_testcase {
             'usegit' => true,
             'forceimport' => false,
             'useyaml' => false,
+            'usefragments' => false,
         ];
-
     }
 
     /**

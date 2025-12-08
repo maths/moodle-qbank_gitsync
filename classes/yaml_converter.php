@@ -24,7 +24,6 @@
 
 namespace qbank_gitsync;
 use SimpleXMLElement;
-
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -66,27 +65,28 @@ class yaml_converter {
      * Check YAML has been installed on the local machine, and if not offer meaningful error.
      */
     private static function require_yaml() {
-        if (!file_exists(__DIR__.'/../vendor/autoload.php')) {
-            throw new \Exception('You asked for yaml. '.
-                'If you wish to store questions in YAML format you will need to install Symfony YAML, '.
+        if (!file_exists(__DIR__ . '/../vendor/autoload.php')) {
+            throw new \Exception('You asked for yaml. ' .
+                'If you wish to store questions in YAML format you will need to install Symfony YAML, ' .
                 'which appears to be missing on your installation. ' .
                 'Symfony YAML can be installed via composer.');
         }
-        require_once(__DIR__.'/../vendor/autoload.php');
+        require_once(__DIR__ . '/../vendor/autoload.php');
     }
 
     // phpcs:ignore moodle.Commenting.MissingDocblock.Function
-    public static function loadyaml($yaml, $defaults) {
+    public static function load_string_as_xml($data, $defaults, $useyaml = true) {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
-            self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml');
+            self::$defaults = self::load_defaults(__DIR__ . '/../' . cli_helper::DEFAULTS_FILE . ($useyaml ? 'yml' : 'xml'));
         }
-        try {
-            $xmldata = self::yaml_to_xml($yaml);
-        } catch (\Exception $e) {
-            throw new \Exception("The provided file does not contain valid YAML");
+        if ($useyaml) {
+            $xmldata = self::yamlstring_to_xml($data);
+        } else {
+            $xmldata = new SimpleXMLElement($data);
         }
+
         $question = $xmldata->question;
 
         // Based on Moodle's base question type.
@@ -97,7 +97,7 @@ class yaml_converter {
             self::set_field($question, 'questiontext->text', self::get_default('question', 'questiontext'));
         }
         if (!isset($question->questiontext['format'])) {
-            self::get_default('question', 'questiontextformat');
+            $question->questiontext['format'] = self::get_default('question', 'questiontextformat');
         }
         if (!isset($question->generalfeedback->text)) {
             self::set_field($question, 'generalfeedback->text', self::get_default('question', 'generalfeedback'));
@@ -161,6 +161,9 @@ class yaml_converter {
         if (!(array) $question->isbroken) {
             self::set_field($question, 'isbroken', self::get_default('question', 'isbroken'));
         }
+        if (!(array) $question->hidden) {
+            self::set_field($question, 'hidden', self::get_default('question', 'hidden'));
+        }
         if (!(array) $question->multiplicationsign) {
             self::set_field($question, 'multiplicationsign', self::get_default('question', 'multiplicationsign'));
         }
@@ -180,10 +183,10 @@ class yaml_converter {
             self::set_field($question, 'sqrtsign', self::get_default('question', 'sqrtsign'));
         }
         if (!(array) $question->questionsimplify) {
-            self::set_field($question, 'simplify', self::get_default('question', 'questionsimplify'));
+            self::set_field($question, 'questionsimplify', self::get_default('question', 'questionsimplify'));
         }
         if (!(array) $question->assumepositive) {
-            self::set_field($question, 'assumepos', self::get_default('question', 'assumepositive'));
+            self::set_field($question, 'assumepositive', self::get_default('question', 'assumepositive'));
         }
         if (!(array) $question->assumereal) {
             self::set_field($question, 'assumereal', self::get_default('question', 'assumereal'));
@@ -195,15 +198,22 @@ class yaml_converter {
             self::set_field($question, 'scientificnotation', self::get_default('question', 'scientificnotation'));
         }
 
+        if ($question->defaultgrade != '0' && (!$question->input || !count($question->input))) {
+            self::set_field($question, 'input->0', '');
+        }
+
         foreach ($question->input as $inputdata) {
             if (!(array) $inputdata->name) {
-                self::set_field($inputdata, 'name', self::get_default('input', 'type'));
+                self::set_field($inputdata, 'name', self::get_default('input', 'name'));
             }
             if (!(array) $inputdata->type) {
                 self::set_field($inputdata, 'type', self::get_default('input', 'type'));
             }
             if (!(array) $inputdata->tans) {
                 self::set_field($inputdata, 'tans', self::get_default('input', 'tans'));
+            }
+            if (!(array) $inputdata->strictsyntax) {
+                self::set_field($inputdata, 'strictsyntax', self::get_default('input', 'strictsyntax'));
             }
             if (!(array) $inputdata->boxsize) {
                 self::set_field($inputdata, 'boxsize', self::get_default('input', 'boxsize'));
@@ -243,6 +253,10 @@ class yaml_converter {
             }
         }
 
+        if ($question->defaultgrade != '0' && (!$question->prt || !count($question->prt))) {
+            self::set_field($question, 'prt->0', '');
+        }
+
         foreach ($question->prt as $prtdata) {
             if (!(array) $prtdata->name) {
                 self::set_field($prtdata, 'name', self::get_default('prt', 'name'));
@@ -260,6 +274,10 @@ class yaml_converter {
                 self::set_field($prtdata, 'feedbackvariables->text', self::get_default('prt', 'feedbackvariables'));
             }
 
+            if (!$prtdata->node || !count($prtdata->node)) {
+                self::set_field($prtdata, 'node', '');
+            }
+
             foreach ($prtdata->node as $node) {
                 if (!isset($node->name)) {
                     self::set_field($node, 'name', self::get_default('node', 'name'));
@@ -271,7 +289,7 @@ class yaml_converter {
                     self::set_field($node, 'answertest', self::get_default('node', 'answertest'));
                 }
                 if (!isset($node->sans)) {
-                    self::set_field($node, 'sans', self::get_default('node', 'sand'));
+                    self::set_field($node, 'sans', self::get_default('node', 'sans'));
                 }
                 if (!isset($node->tans)) {
                     self::set_field($node, 'tans', self::get_default('node', 'tans'));
@@ -333,11 +351,11 @@ class yaml_converter {
                 if (!isset($testinput->name)) {
                     self::set_field($testinput, 'name', self::get_default('testinput', 'name'));
                 }
-                if (!(array) $testinput->value) {
+                if (!isset($testinput->value)) {
                     self::set_field($testinput, 'value', self::get_default('testinput', 'value'));
                 }
             }
-            if (!(array) $test->description) {
+            if (!isset($test->description)) {
                 self::set_field($test, 'description', self::get_default('qtest', 'description'));
             }
             if (!(array) $test->testcase) {
@@ -353,7 +371,7 @@ class yaml_converter {
                 if (!(array) $expected->expectedpenalty) {
                     self::set_field($expected, 'expectedpenalty', self::get_default('expected', 'expectedpenalty'));
                 }
-                if (!(array) $expected->expectedanswernote) {
+                if (!isset($expected->expectedanswernote)) {
                     self::set_field($expected, 'expectedanswernote', self::get_default('expected', 'expectedanswernote'));
                 }
             }
@@ -417,8 +435,10 @@ class yaml_converter {
             return self::$defaults[$defaultcategory][$defaultname];
         }
 
-        if ($defaultcategory === 'node'
-                && in_array($defaultname, ['sans', 'tans', 'testoptions'])) {
+        if (
+            $defaultcategory === 'node'
+                && in_array($defaultname, ['sans', 'tans', 'testoptions'])
+        ) {
             $answertest = self::get_default('node', 'answertest');
             if (substr($answertest, 0, 2) === 'AT') {
                 [$answertest, $sans, $tans, $testoptions] = self::split_answertest($answertest);
@@ -440,23 +460,63 @@ class yaml_converter {
      *
      * @param string $yamlstring The YAML string to convert.
      * @return SimpleXMLElement The resulting XML object.
-     * @throws \stack_exception If the YAML string is invalid.
+     * @throws \Exception If the YAML string is invalid.
      */
-    public static function yaml_to_xml($yamlstring) {
+    public static function yamlstring_to_xml($yamlstring) {
         self::require_yaml();
         $yaml = Yaml::parse($yamlstring);
         if (!$yaml) {
-            throw new \stack_exception("The provided file does not contain valid YAML or XML.");
+            throw new \Exception("The provided file does not contain valid YAML or XML.");
         }
-        $xml = new SimpleXMLElement("<?xml version='1.0' encoding='UTF-8'?><quiz></quiz>");
-        $question = $xml->addChild('question');
-        $question->addAttribute('type', 'stack');
+        $xml = self::yaml_to_xml($yaml);
+        return $xml;
+    }
 
-        self::array_to_xml($yaml, $question);
+    /**
+     * Converts YAML to an XML string.
+     *
+     * @param array $yaml The YAML to convert.
+     * @return string The resulting XML string.
+     */
+    public static function yaml_to_xmlstring($yaml) {
+        $xml = self::yaml_to_xml($yaml);
+        return $xml->asXML();
+    }
+
+    /**
+     * Converts YAML string to an XML string.
+     *
+     * @param string $yamlstring The YAML string to convert.
+     * @return string The resulting XML string.
+     */
+    public static function xmlstring_to_yamlstring($xmlstring) {
+        $xml = new SimpleXMLElement($xmlstring);
+        $yaml = self::xml_to_array($xml);
+        self::require_yaml();
+        $yaml = Yaml::dump($yaml, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
+        return $yaml;
+    }
+
+    /**
+     * Converts YAML to a SimpleXMLElement object.
+     *
+     * @param [] $yaml The YAML to convert.
+     * @return SimpleXMLElement $xml The resulting XML.
+     */
+    public static function yaml_to_xml($yaml) {
+        $xml = new SimpleXMLElement("<?xml version='1.0' encoding='UTF-8'?><quiz></quiz>");
+        if (!isset($yaml['question'])) {
+            $question = $xml->addChild('question');
+            self::array_to_xml($yaml, $question);
+        } else {
+            self::array_to_xml($yaml, $xml);
+        }
+
         // Name is a special case. Has text tag but no format.
         $name = isset($xml->question->name) ? (string) $xml->question->name : self::get_default('question', 'name');
         $xml->question->name = new SimpleXMLElement('<root></root>');
-        $xml->question->name->addChild('text', $name);
+        $xml->question->name->text = $name;
+        $xml->question->addAttribute('type', 'stack');
         return $xml;
     }
 
@@ -477,7 +537,7 @@ class yaml_converter {
                 // Convert basic YAML field to node with text and format fields.
                 if ($key !== 'name') {
                     // Name is used in multiple places and sometimes has text property and sometimes not.
-                    // Handled in yaml_to_xml().
+                    // Handled in yamlstring_to_xml().
                     $subnode = $xml->addChild($key);
                     $subvalue = ['text' => $value];
                     if (isset($data[$key . 'format'])) {
@@ -516,9 +576,11 @@ class yaml_converter {
      * Converts a SimpleXMLElement object to an array for conversion to YAML.
      *
      * @param SimpleXMLElement The resulting XML object.
+     * @param array Previous output.
+     * @param boolean Are we converting a default file. We need to make it flatter.
      * @return array The resulting array.
      */
-    public static function xml_to_array($xmldata, &$output = []) {
+    public static function xml_to_array($xmldata, &$output = [], $isdefault = false) {
         foreach ($xmldata as $key => $value) {
             if (in_array($key, self::TEXTFIELDS)) {
                 if (isset($value->text)) {
@@ -530,14 +592,14 @@ class yaml_converter {
                     $output[$key . 'format'] = (string) $xmldata->{$key}['format'];
                 }
             } else if ($value instanceof SimpleXMLElement && $value->count()) {
-                if (in_array($key, self::ARRAYFIELDS)) {
+                if (in_array($key, self::ARRAYFIELDS) && !$isdefault) {
                     $output[$key][] = self::xml_to_array($value);
                 } else {
                     $output[$key] = [];
                     self::xml_to_array($value, $output[$key]);
                 }
             } else {
-                if (in_array($key, self::ARRAYFIELDS)) {
+                if (in_array($key, self::ARRAYFIELDS) && !$isdefault) {
                     $output[$key][] = (string) $value;
                 } else {
                     $output[$key] = (string) $value;
@@ -550,13 +612,27 @@ class yaml_converter {
     /**
      * Load a parse file with default values for questions.
      * @param string filepath
+     * @param boolean $isyaml Is default file YAML? (Rather than XML?).
      * @return array YAML
      */
-    public static function load_defaults($defaultfile) {
-        self::require_yaml();
-        $defaults = Yaml::parseFile($defaultfile);
+    public static function load_defaults($defaultfile, $isyaml = true) {
+        try {
+            if ($isyaml) {
+                self::require_yaml();
+                $defaults = Yaml::parseFile($defaultfile);
+            } else {
+                $xml = file_get_contents($defaultfile);
+                $defaults = new SimpleXMLElement($xml);
+                $output = [];
+                $defaults = self::xml_to_array($defaults, $output, true);
+            }
+        } catch (\Exception $e) {
+            $defaults = null;
+        }
         if (!$defaults) {
             echo "\nUnable to access or parse default file: {$defaultfile}\nAborting.\n";
+            echo "{$e->getMessage()}\n";
+            echo "Make sure your 'useyaml' setting is correct for this repo.\n";
             self::call_exit();
         }
         return $defaults;
@@ -574,22 +650,19 @@ class yaml_converter {
     }
 
     /**
-     * Detects differences between the provided XML or YAML and the default question structure.
+     * Detects differences between the provided XML and the default question structure.
      *
-     * @param string $xml The XML or YAML string to compare.
-     * @return string The differences in YAML format.
+     * @param string $xml The XML string to compare.
+     * @param boolean $useyaml Return YAML? (Rather than XML?).
+     * @return string The differences.
      */
-    public static function detect_differences($xml, $defaults) {
+    public static function detect_differences($xml, $defaults, $useyaml = true) {
         if ($defaults) {
             self::$defaults = $defaults;
         } else {
-            self::$defaults = self::load_defaults(__DIR__ . '/../questiondefaults.yml');
+            self::$defaults = self::load_defaults(__DIR__ . '/../' . cli_helper::DEFAULTS_FILE . ($useyaml ? 'yml' : 'xml'));
         }
-        if (strpos($xml, '<question type="stack">') !== false) {
-            $xmldata = new SimpleXMLElement($xml);
-        } else {
-            $xmldata = self::yaml_to_xml($xml);
-        }
+        $xmldata = new SimpleXMLElement($xml);
         $plaindata = self::xml_to_array($xmldata);
         $diff = self::obj_diff(self::$defaults['question'], $plaindata['question']);
         if (!empty($plaindata['question']['input'])) {
@@ -599,7 +672,7 @@ class yaml_converter {
                 $diffinputs[] = $diffinput;
             }
             $diff['input'] = $diffinputs;
-        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
+        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade'] != '0') {
             $diff['input'] = [['name' => self::get_default('input', 'name'),
                 'type' => self::get_default('input', 'type'),
                 'tans' => self::get_default('input', 'tans'),
@@ -617,8 +690,10 @@ class yaml_converter {
                 $diffprt = self::obj_diff(self::$defaults['prt'], $prt);
                 foreach ($prt['node'] as $node) {
                     $diffnode = self::obj_diff(self::$defaults['node'], $node);
-                    if (substr(self::get_default('node', 'answertest'), 0, 2) === 'AT' &&
-                            substr($diffnode['answertest'], 0, 2) !== 'AT') {
+                    if (
+                        substr(self::get_default('node', 'answertest'), 0, 2) === 'AT' &&
+                            substr($diffnode['answertest'], 0, 2) !== 'AT'
+                    ) {
                         // This occurs if answertest set in XML but summary in defaults.
                         // We need to build a summary from supplied XML fields and default summary.
                         $diffanswertest = isset($node['answertest']) ?
@@ -639,7 +714,7 @@ class yaml_converter {
                 $diffprts[] = $diffprt;
             }
             $diff['prt'] = $diffprts;
-        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade']) {
+        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade'] != '0') {
             $prtnode = ['name' => self::get_default('node', 'name'),
                     'answertest' => self::get_default('node', 'answertest')];
             if (substr($prtnode['answertest'], 0, 2) !== 'AT') {
@@ -669,13 +744,13 @@ class yaml_converter {
                 $difftest = [];
                 $difftest['testcase'] = $test['testcase'];
                 $difftest = array_merge($difftest, self::obj_diff(self::$defaults['qtest'], $test));
-                foreach ($test['testinput'] as $tinput) {
+                foreach ($test['testinput'] ?? [] as $tinput) {
                     $difftinput = [];
                     $difftinput['name'] = $tinput['name'];
                     $difftinput = array_merge($difftinput, self::obj_diff(self::$defaults['testinput'], $tinput));
                     $difftest['testinput'][] = $difftinput;
                 }
-                foreach ($test['expected'] as $texpected) {
+                foreach ($test['expected'] ?? [] as $texpected) {
                     $difftexpected = [];
                     $difftexpected['name'] = $texpected['name'];
                     $difftexpected = array_merge($difftexpected, self::obj_diff(self::$defaults['expected'], $texpected));
@@ -685,9 +760,18 @@ class yaml_converter {
             }
             $diff['qtest'] = $difftests;
         }
-        self::require_yaml();
-        $yaml = Yaml::dump($diff, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
-        return $yaml;
+        if ($useyaml) {
+            self::require_yaml();
+            $yaml = Yaml::dump($diff, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
+            return $yaml;
+        } else {
+            $xmlstring = self::yaml_to_xmlstring($diff);
+            $dom = new \DOMDocument();
+            $dom->preserveWhiteSpace = false;
+            $dom->formatOutput = true;
+            $dom->loadXML($xmlstring);
+            return $dom->saveXML();
+        }
     }
 
     /**
@@ -750,7 +834,7 @@ class yaml_converter {
      * @param string $value The value to add as CDATA.
      */
     public static function add_cdata(&$xml, $value) {
-        if (!empty($value) && htmlspecialchars($value, ENT_COMPAT) != $value) {
+        if (!empty($value) && $value && htmlspecialchars($value, ENT_COMPAT) != $value) {
             $node = dom_import_simplexml($xml);
             $no = $node->ownerDocument;
             $node->appendChild($no->createCDATASection($value));
@@ -761,11 +845,11 @@ class yaml_converter {
 
     /**
      * Split a string into a 4-item array such that:
-     * 'AAAA(X(X,X)XX, YYY, ZZZ, WWW)'
+     * 'AAAA(X(X,X)XX, YYY[Y,Y], ZZZ, WWW)'
      * becomes:
      * [0] => 'AAAA'
      * [1] => 'X(X,X)XX'
-     * [2] => 'YYY'
+     * [2] => 'YYY[Y,Y]'
      * [3] => 'ZZZ, WWW'
      * @param string $answertest
      * @return array
@@ -773,21 +857,34 @@ class yaml_converter {
     public static function split_answertest($answertest) {
         $result = [];
         $firstbracketpos = strpos($answertest, '(');
+        if ($firstbracketpos === false) {
+            // No brackets found — return original code and empty fields.
+            return [$answertest, '', '', ''];
+        }
         $result[] = substr($answertest, 0, $firstbracketpos);
         $testprops = substr($answertest, $firstbracketpos + 1, strrpos($answertest, ')') - $firstbracketpos - 1);
-        $bracketlevel = 0;
+
+        $parenlevel = 0;
+        $squarelevel = 0;
         $current = '';
         $count = 0;
         $len = strlen($testprops);
         for ($i = 0; $i < $len; $i++) {
             $char = $testprops[$i];
             if ($char === '(') {
-                $bracketlevel++;
+                $parenlevel++;
                 $current .= $char;
             } else if ($char === ')') {
-                $bracketlevel--;
+                $parenlevel--;
                 $current .= $char;
-            } else if ($char === ',' && $bracketlevel === 0 && $count < 2) {
+            } else if ($char === '[') {
+                $squarelevel++;
+                $current .= $char;
+            } else if ($char === ']') {
+                $squarelevel--;
+                $current .= $char;
+            } else if ($char === ',' && $parenlevel === 0 && $squarelevel === 0 && $count < 2) {
+                // Split only on top-level commas (not inside () or []) and only for first two splits.
                 $result[] = trim($current);
                 $current = '';
                 $count++;

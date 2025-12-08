@@ -28,7 +28,8 @@
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
-|y|useyaml|Export questions as YAML difference file?|
+|y|useyaml|Export questions as YAML?|
+|b|usefragments|Export questions as difference files?|
 
 For Moodle 5+, there are no longer course, course category or system context question banks. Questions are contained
 in module level question banks. This makes things simpler. Where command line parameters for

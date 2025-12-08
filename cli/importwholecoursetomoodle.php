@@ -168,9 +168,17 @@ $options = [
     [
         'longopt' => 'useyaml',
         'shortopt' => 'y',
-        'description' => 'Export questions as YAML difference file?',
+        'description' => 'Export questions as YAML?',
         'default' => $useyaml,
         'variable' => 'useyaml',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'usefragments',
+        'shortopt' => 'b',
+        'description' => 'Export questions as difference files?',
+        'default' => $usefragments,
+        'variable' => 'usefragments',
         'valuerequired' => true,
     ],
     [
@@ -209,4 +217,3 @@ $importrepo->check_question_versions();
 $clihelper->commit_hash_update($importrepo);
 $importrepo->process();
 $importrepo->update_quizzes($clihelper, $scriptdirectory);
-

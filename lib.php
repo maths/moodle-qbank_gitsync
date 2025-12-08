@@ -57,8 +57,13 @@ function split_category_path(?string $path): array {
  * @param string|null $instanceid
  * @return object
  */
-function get_context(int $contextlevel, ?string $categoryname = null,
-                    ?string $coursename = null, ?string $modulename = null, ?string $instanceid = null): object {
+function get_context(
+    int $contextlevel,
+    ?string $categoryname = null,
+    ?string $coursename = null,
+    ?string $modulename = null,
+    ?string $instanceid = null
+): object {
     global $DB, $CFG;
     if ($instanceid === '') {
         $instanceid = null;
@@ -79,8 +84,12 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                 $instanceid = $DB->get_field('course_categories', 'id', ['name' => $categoryname], $strictness = MUST_EXIST);
                 $result->categoryname = $categoryname;
             } else {
-                $result->categoryname = $DB->get_field('course_categories', 'name',
-                                                       ['id' => $instanceid], $strictness = MUST_EXIST);
+                $result->categoryname = $DB->get_field(
+                    'course_categories',
+                    'name',
+                    ['id' => $instanceid],
+                    $strictness = MUST_EXIST
+                );
             }
             $result->contextlevel = 'coursecategory';
             $result->context = context_coursecat::instance($instanceid);
@@ -106,8 +115,8 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                 // Assuming here that the module is a quiz or question bank.
                 if ($ismoodle5plus) {
                      // Assuming here that the module is a quiz or question bank.
-                     $instancedata = $DB->get_record_sql("
-                     SELECT cm.id as cmid, q.id as quizid, c.id as courseid
+                     $instancedata = $DB->get_record_sql(
+                         "SELECT cm.id as cmid, q.id as quizid, c.id as courseid
                          FROM {course_modules} cm
                          JOIN {course} c ON c.id = cm.course
                          JOIN {modules} m ON m.id = cm.module
@@ -115,11 +124,12 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                          LEFT JOIN {qbank} b ON b.course = cm.course AND b.id = cm.instance AND m.name = 'qbank'
                          WHERE c.fullname = :coursename
                                  AND (q.name = :modulename1 OR b.name = :modulename2)",
-                     ['coursename' => $coursename, 'modulename1' => $modulename, 'modulename2' => $modulename]);
+                         ['coursename' => $coursename, 'modulename1' => $modulename, 'modulename2' => $modulename]
+                     );
                 } else {
                     // Assuming here that the module is a quiz.
-                    $instancedata = $DB->get_record_sql("
-                    SELECT cm.id as cmid, q.id as quizid, c.id as courseid
+                    $instancedata = $DB->get_record_sql(
+                        "SELECT cm.id as cmid, q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
                         JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
@@ -127,7 +137,9 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                         WHERE c.fullname = :coursename
                                 AND q.name = :quizname
                                 AND m.name = 'quiz'",
-                    ['coursename' => $coursename, 'quizname' => $modulename], $strictness = MUST_EXIST);
+                        ['coursename' => $coursename, 'quizname' => $modulename],
+                        $strictness = MUST_EXIST
+                    );
                 }
                 $instanceid = $instancedata->cmid;
                 $result->coursename = $coursename;
@@ -136,8 +148,8 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                 $result->quizid = $instancedata->quizid;
             } else {
                 if ($ismoodle5plus) {
-                    $instancedata = $DB->get_record_sql("
-                    SELECT c.fullname as coursename, CASE WHEN q.name IS NOT NULL THEN q.name
+                    $instancedata = $DB->get_record_sql(
+                        "SELECT c.fullname as coursename, CASE WHEN q.name IS NOT NULL THEN q.name
                                                     WHEN b.name IS NOT NULL THEN b.name
                                                     ELSE NULL END as modulename,
                                                     q.id as quizid, c.id as courseid
@@ -147,17 +159,21 @@ function get_context(int $contextlevel, ?string $categoryname = null,
                         LEFT JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance AND m.name = 'quiz'
                         LEFT JOIN {qbank} b ON b.course = cm.course AND b.id = cm.instance AND m.name = 'qbank'
                         WHERE cm.id = :instanceid",
-                    ['instanceid' => $instanceid], $strictness = MUST_EXIST);
+                        ['instanceid' => $instanceid],
+                        $strictness = MUST_EXIST
+                    );
                 } else {
-                    $instancedata = $DB->get_record_sql("
-                    SELECT c.fullname as coursename, q.name as modulename, q.id as quizid, c.id as courseid
+                    $instancedata = $DB->get_record_sql(
+                        "SELECT c.fullname as coursename, q.name as modulename, q.id as quizid, c.id as courseid
                         FROM {course_modules} cm
                         JOIN {quiz} q ON q.course = cm.course AND q.id = cm.instance
                         JOIN {course} c ON c.id = cm.course
                         JOIN {modules} m ON m.id = cm.module
                         WHERE cm.id = :instanceid
                                 AND m.name = 'quiz'",
-                    ['instanceid' => $instanceid], $strictness = MUST_EXIST);
+                        ['instanceid' => $instanceid],
+                        $strictness = MUST_EXIST
+                    );
                 }
                 $result->coursename = $instancedata->coursename;
                 $result->modulename = $instancedata->modulename;
@@ -169,7 +185,7 @@ function get_context(int $contextlevel, ?string $categoryname = null,
             $result->instanceid = $instanceid;
             return $result;
         default:
-            throw new moodle_exception('contexterror', 'qbank_gitsync', null, $contextlevel);;
+            throw new moodle_exception('contexterror', 'qbank_gitsync', null, $contextlevel);
     }
 }
 
@@ -181,8 +197,8 @@ function get_context(int $contextlevel, ?string $categoryname = null,
  */
 function get_question_data(string $questionbankentryid): stdClass {
     global $DB;
-    $questiondata = $DB->get_record_sql("
-    SELECT qc.contextid as contextid, c.contextlevel as contextlevel,
+    $questiondata = $DB->get_record_sql(
+        "SELECT qc.contextid as contextid, c.contextlevel as contextlevel,
             q.id as questionid, c.instanceid as instanceid,
             qc.id as categoryid, qv.version as version
         FROM {question_categories} qc
@@ -192,8 +208,9 @@ function get_question_data(string $questionbankentryid): stdClass {
         JOIN {context} c on qc.contextid = c.id
         WHERE qbe.id = :questionbankentryid1
         AND qv.version = (SELECT MAX(version) FROM {question_versions} WHERE questionbankentryid = :questionbankentryid2)",
-    ['questionbankentryid1' => $questionbankentryid, 'questionbankentryid2' => $questionbankentryid],
-    MUST_EXIST);
+        ['questionbankentryid1' => $questionbankentryid, 'questionbankentryid2' => $questionbankentryid],
+        MUST_EXIST
+    );
 
     return $questiondata;
 }
@@ -206,15 +223,16 @@ function get_question_data(string $questionbankentryid): stdClass {
  */
 function get_minimal_question_data(string $questionbankentryid): stdClass {
     global $DB;
-    $questiondata = $DB->get_record_sql("
-    SELECT q.id as questionid, q.name as name, qv.version as version, qv.status as status
+    $questiondata = $DB->get_record_sql(
+        "SELECT q.id as questionid, q.name as name, qv.version as version, qv.status as status
         FROM {question} q
         JOIN {question_versions} qv ON qv.questionid = q.id
         JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
         WHERE qbe.id = :questionbankentryid1
         AND qv.version = (SELECT MAX(version) FROM {question_versions} WHERE questionbankentryid = :questionbankentryid2)",
-    ['questionbankentryid1' => $questionbankentryid, 'questionbankentryid2' => $questionbankentryid],
-    MUST_EXIST);
+        ['questionbankentryid1' => $questionbankentryid, 'questionbankentryid2' => $questionbankentryid],
+        MUST_EXIST
+    );
 
     return $questiondata;
 }

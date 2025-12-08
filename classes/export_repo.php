@@ -34,6 +34,7 @@ namespace qbank_gitsync;
 class export_repo {
     use export_trait;
     use tidy_trait;
+
     /**
      * Settings for POST request
      *
@@ -130,10 +131,16 @@ class export_repo {
     public bool $usegit;
     /**
      * Are we using YAML?.
-     * Set in config. Saves questions as difference file and adds default file to repo.
+     * Set in config. Saves questions as YAML.
      * @var bool
      */
     public bool $useyaml;
+    /**
+     * Are we using fragments?
+     * Set in config. Saves questions as difference file and adds default file to repo.
+     * @var bool
+     */
+    public bool $usefragments;
 
     /**
      * Constructor
@@ -154,6 +161,7 @@ class export_repo {
         }
         $this->usegit = $arguments['usegit'];
         $this->useyaml = $arguments['useyaml'];
+        $this->usefragments = $arguments['usefragments'];
         $defaultwarning = false;
         if ($arguments['manifestpath']) {
             $this->manifestpath = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['manifestpath'] :
@@ -178,7 +186,8 @@ class export_repo {
             $this->call_exit();
         }
         if ($this->manifestcontents->context->moodleurl !== $this->moodleurl) {
-            echo "\nManifest file is for the wrong Moodle instance: {$this->manifestcontents->context->moodleurl} is not expected {$this->moodleurl}\nAborting.\n";
+            echo "\nManifest file is for the wrong Moodle instance: " .
+                "{$this->manifestcontents->context->moodleurl} is not expected {$this->moodleurl}\nAborting.\n";
             $this->call_exit();
         }
         if (!empty($this->manifestcontents->context->istargeted)) {
@@ -189,18 +198,19 @@ class export_repo {
             }
         }
 
-        if ($this->useyaml) {
+        if ($this->usefragments) {
+            $defaultsfilename = cli_helper::DEFAULTS_FILE . ($this->useyaml ? 'yml' : 'xml');
             if ($arguments['defaultfile']) {
                 $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $arguments['defaultfile'];
             } else if (!empty($this->manifestcontents->context->defaultdefaults)) {
                 $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $this->manifestcontents->context->defaultdefaults;
-            } else if (is_file(dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE)) {
-                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE;
+            } else if (is_file(dirname($this->manifestpath) . '/' . $defaultsfilename)) {
+                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $defaultsfilename;
             } else {
-                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . cli_helper::DEFAULTS_FILE;
-                copy(__DIR__ . '/../questiondefaults.yml', $this->defaultsfilepath);
+                $this->defaultsfilepath = dirname($this->manifestpath) . '/' . $defaultsfilename;
+                copy(__DIR__ . '/../' . $defaultsfilename, $this->defaultsfilepath);
             }
-            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath);
+            $this->defaults = yaml_converter::load_defaults($this->defaultsfilepath, $this->useyaml);
         }
 
         if ($arguments['subcategory']) {
@@ -222,9 +232,11 @@ class export_repo {
             $this->ignorecat = $this->manifestcontents->context->defaultignorecat ?? null;
         }
 
-        $this->tempfilepath = str_replace(cli_helper::MANIFEST_FILE,
-                                          '_export' . cli_helper::TEMP_MANIFEST_FILE,
-                                          $this->manifestpath);
+        $this->tempfilepath = str_replace(
+            cli_helper::MANIFEST_FILE,
+            '_export' . cli_helper::TEMP_MANIFEST_FILE,
+            $this->manifestpath
+        );
         $wsurl = $this->moodleurl . '/webservice/rest/server.php';
 
         $this->curlrequest = $this->get_curl_request($wsurl);
@@ -272,8 +284,12 @@ class export_repo {
         $this->export_questions_in_manifest();
         // Export any questions that are in Moodle but not in the manifest.
         $this->export_to_repo();
-        cli_helper::create_manifest_file($this->manifestcontents, $this->tempfilepath,
-                                         $this->manifestpath, false);
+        cli_helper::create_manifest_file(
+            $this->manifestcontents,
+            $this->tempfilepath,
+            $this->manifestpath,
+            false
+        );
         unlink($this->tempfilepath);
         // Remove questions from manifest that are no longer in Moodle.
         // Will be restored from repo on next import if file is still there.
@@ -307,7 +323,7 @@ class export_repo {
                 $qcategoryname = 'top';
                 $categorynames[$currentdirectory] = $qcategoryname;
             } else {
-                $categoryfile = $currentdirectory. '/' . cli_helper::CATEGORY_FILE . '.xml';
+                $categoryfile = $currentdirectory . '/' . cli_helper::CATEGORY_FILE . '.xml';
                 $qcategoryname = cli_helper::get_question_category_from_file($categoryfile);
                 $categorynames[$currentdirectory] = $qcategoryname;
             }
@@ -323,8 +339,10 @@ class export_repo {
                     // Start of category path of question must match start of subcategory to export.
                     continue;
                 }
-                if (strlen($qcategoryname) > strlen($this->subcategory)
-                        && !preg_match('/^\/{1}(?!\/)/' , substr($qcategoryname, strlen($this->subcategory)))) {
+                if (
+                    strlen($qcategoryname) > strlen($this->subcategory)
+                        && !preg_match('/^\/{1}(?!\/)/', substr($qcategoryname, strlen($this->subcategory)))
+                ) {
                     // Category path and subcategory must either match or path must be longer and continue with
                     // one (and only) one slash i.e. for subcategory parameter of top/cat, a question
                     // in top/cat/subcat is fine but one in top/cat2 is not and nor is top/cat//one.
@@ -353,9 +371,21 @@ class export_repo {
                     echo "{$questioninfo->filepath} not updated.\n";
                     continue;
                 }
-
-                if ($this->useyaml && strpos($question, '<question type="stack">') !== false) {
-                    $question = yaml_converter::detect_differences($question, $this->defaults);
+                try {
+                    if (strpos($question, '<question type="stack">') !== false) {
+                        if ($this->usefragments) {
+                            $question = yaml_converter::detect_differences($question, $this->defaults, $this->useyaml);
+                        } else {
+                            if ($this->useyaml) {
+                                $question = yaml_converter::xmlstring_to_yamlstring($question);
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    echo "\nParsing issue.\n";
+                    echo "\n{$e->getMessage()}\n";
+                    echo "{$questioninfo->filepath} not updated.\n";
+                    continue;
                 }
                 $success = file_put_contents(dirname($this->manifestpath) . $questioninfo->filepath, $question);
                 if ($success === false) {
@@ -415,37 +445,67 @@ class export_repo {
                     echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
                     exit();
                 }
-                if ($this->useyaml) {
+                if ($this->usefragments) {
                     copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
                 }
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
-                $output = $this->call_repo_creation($rootdirectory, $moodleinstance,
-                                                    $instanceid, $token, $ignorecat, $scriptdirectory);
+                $output = $this->call_repo_creation(
+                    $rootdirectory,
+                    $moodleinstance,
+                    $instanceid,
+                    $token,
+                    $ignorecat,
+                    $scriptdirectory
+                );
             } else if (!is_dir(dirname($basedirectory) . '/' . $locarray[$instanceid]->directory)) {
                 // If the quiz is in the manifest but the directory does not exist, create it.
                 $rootdirectory = dirname($basedirectory) . '/' . $locarray[$instanceid]->directory;
                 mkdir($rootdirectory);
                 mkdir($rootdirectory . '/top');
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
-                if ($this->useyaml) {
+                if ($this->usefragments) {
                     copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
                 }
-                $output = $this->call_repo_creation($rootdirectory, $moodleinstance,
-                                                    $instanceid, $token, $ignorecat, $scriptdirectory);
+                $output = $this->call_repo_creation(
+                    $rootdirectory,
+                    $moodleinstance,
+                    $instanceid,
+                    $token,
+                    $ignorecat,
+                    $scriptdirectory
+                );
             } else {
                 $rootdirectory = dirname($basedirectory) . '/' . $locarray[$instanceid]->directory;
                 echo "\nExporting quiz: {$quiz->name} to {$rootdirectory}\n";
-                if ($this->useyaml) {
+                if ($this->usefragments) {
                     copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
                 }
-                $quizmanifestname = cli_helper::get_manifest_path($moodleinstance, 'module', null,
-                                    $contextinfo->contextinfo->coursename, $quiz->name, '');
-                $output = $this->call_export_repo($rootdirectory, $moodleinstance, $token,
-                                    $quizmanifestname, $ignorecat, $scriptdirectory);
+                $quizmanifestname = cli_helper::get_manifest_path(
+                    $moodleinstance,
+                    'module',
+                    null,
+                    $contextinfo->contextinfo->coursename,
+                    $quiz->name,
+                    ''
+                );
+                $output = $this->call_export_repo(
+                    $rootdirectory,
+                    $moodleinstance,
+                    $token,
+                    $quizmanifestname,
+                    $ignorecat,
+                    $scriptdirectory
+                );
             }
             echo $output;
-            $quizmanifestpath = cli_helper::get_manifest_path($moodleinstance, 'module', null,
-                                    $contextinfo->contextinfo->coursename, $quiz->name, $rootdirectory);
+            $quizmanifestpath = cli_helper::get_manifest_path(
+                $moodleinstance,
+                'module',
+                null,
+                $contextinfo->contextinfo->coursename,
+                $quiz->name,
+                $rootdirectory
+            );
             $output = $this->call_export_quiz($moodleinstance, $token, $quizmanifestpath, $this->manifestpath, $scriptdirectory);
             echo $output;
         }
@@ -461,13 +521,18 @@ class export_repo {
      * @param string $ignorecat
      * @return string|null
      */
-    public function call_repo_creation(string $rootdirectory, string $moodleinstance, string $instanceid,
-                                       string $token, string $ignorecat, string $scriptdirectory
-                                      ): ?string {
+    public function call_repo_creation(
+        string $rootdirectory,
+        string $moodleinstance,
+        string $instanceid,
+        string $token,
+        string $ignorecat,
+        string $scriptdirectory
+    ): ?string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
-        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
+        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
                 '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat . ' -y ' . $useyaml . $defaults);
     }
@@ -483,12 +548,18 @@ class export_repo {
      * @param string $scriptdirectory
      * @return string|null
      */
-    public function call_export_repo(string $rootdirectory, string $moodleinstance, string $token,
-                string $quizmanifestname, string $ignorecat, string $scriptdirectory): ?string {
+    public function call_export_repo(
+        string $rootdirectory,
+        string $moodleinstance,
+        string $token,
+        string $quizmanifestname,
+        string $ignorecat,
+        string $scriptdirectory
+    ): ?string {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
-        $defaults = ($this->useyaml) ? ' -o "' . basename($this->defaultsfilepath) . '"' : '';
+        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
         return shell_exec('php exportrepofrommoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory . '" -i "' .
                             $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat .
                             ' -y ' . $useyaml . $defaults);
