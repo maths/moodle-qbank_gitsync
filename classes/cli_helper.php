@@ -54,7 +54,7 @@ class cli_helper {
      * GITSYNC_VERSION - Current version of Gitsync.
      * Should match version in version.php .
      */
-    public const GITSYNC_VERSION = '2025101400';
+    public const GITSYNC_VERSION = '2025121000';
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -80,7 +80,7 @@ class cli_helper {
     /**
      * BAD_CHARACTERS - Characters to remove for filename sanitisation
      */
-    public const BAD_CHARACTERS = '/[\/\\\?\%\'*:|"<> .$!\`&]+/'; // phpcs:ignore moodle.Strings.ForbiddenStrings.Found
+    public const BAD_CHARACTERS = '/[\/\\\?\%\'*:|"<> .$!\`&\t]+/'; // phpcs:ignore moodle.Strings.ForbiddenStrings.Found
     /**
      * Constructor
      *

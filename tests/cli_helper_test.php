@@ -219,7 +219,7 @@ final class cli_helper_test extends advanced_testcase {
         $this->assertEquals('directoryname/moodleinstanc-name_course_cours-nam-' . cli_helper::MANIFEST_FILE,
                             $manifestpath);
         // System level.
-        $manifestpath = $helper->get_manifest_path('moodleinstanc<name', 'system', 'cat<goryname',
+        $manifestpath = $helper->get_manifest_path("moodleinstanc\tname", 'system', 'cat<goryname',
                                                     'cours<nam<', 'Modul<name', 'directoryname');
         $this->assertEquals('directoryname/moodleinstanc-name_system' . cli_helper::MANIFEST_FILE,
                             $manifestpath);
