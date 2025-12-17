@@ -838,7 +838,7 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->process();
 
         // Manifest file is a single array.
-        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $this->assertEquals(45, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(4, $manifestcontents->questions);
 
@@ -888,7 +888,7 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->process();
 
         // Manifest file is a single array.
-        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $this->assertEquals(31, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(2, $manifestcontents->questions);
 
@@ -935,7 +935,7 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->process();
 
         // Manifest file is a single array.
-        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $this->assertEquals(24, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(1, $manifestcontents->questions);
 
@@ -981,7 +981,7 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->process();
 
         // Manifest file is a single array.
-        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $this->assertEquals(31, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(2, $manifestcontents->questions);
 

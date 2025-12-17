@@ -248,7 +248,7 @@ final class cli_helper_test extends advanced_testcase {
         );
         // System level.
         $manifestpath = $helper->get_manifest_path(
-            'moodleinstanc<name',
+            "moodleinstanc\tname",
             'system',
             'cat<goryname',
             'cours<nam<',

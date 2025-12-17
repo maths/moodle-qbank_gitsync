@@ -934,7 +934,7 @@ class import_repo {
                 }
                 $this->manifestcontents->questions = array_values($existingentries);
                 // On file failure will be picked up next time.
-                file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+                file_put_contents($this->manifestpath, json_encode($this->manifestcontents, JSON_PRETTY_PRINT));
             } else {
                 echo "Run deletefrommoodle for the option to delete.\n";
             }
@@ -1294,7 +1294,7 @@ class import_repo {
                 $quizlocation->directory = basename($rootdirectory);
                 $quizlocations[] = $quizlocation;
                 $this->manifestcontents->quizzes = $quizlocations;
-                $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+                $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents, JSON_PRETTY_PRINT));
                 if ($success === false) {
                     echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
                     exit();

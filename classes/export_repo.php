@@ -403,7 +403,7 @@ class export_repo {
         }
         // Will not be updated properly if there is an error but this is no loss.
         // Process can simply be run again from start.
-        $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+        $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents, JSON_PRETTY_PRINT));
         if ($success === false) {
             echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
             $this->call_exit();
@@ -440,7 +440,7 @@ class export_repo {
                 $quizlocation->directory = basename($rootdirectory);
                 $quizlocations[] = $quizlocation;
                 $this->manifestcontents->quizzes = $quizlocations;
-                $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents));
+                $success = file_put_contents($this->manifestpath, json_encode($this->manifestcontents, JSON_PRETTY_PRINT));
                 if ($success === false) {
                     echo "\nUnable to update manifest file: {$this->manifestpath}\n Aborting.\n";
                     exit();

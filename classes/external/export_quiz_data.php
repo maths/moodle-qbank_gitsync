@@ -140,7 +140,8 @@ class export_quiz_data extends external_api {
             FROM {quiz_slots} qs
             JOIN {question_references} qr ON qr.itemid = qs.id
             WHERE qr.usingcontextid = :contextid
-            AND qr.questionarea = 'slot'",
+            AND qr.questionarea = 'slot'
+            ORDER BY qs.slot",
             ['contextid' => $contextinfo->context->id]
         );
 
