@@ -38,7 +38,8 @@ Commit this update.
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
 |z|forceimport|Force import of all questions, even if current commit previously imported.
-|y|useyaml|Export questions as YAML difference file?|
+|y|useyaml|Export questions as YAML?|
+|b|usefragments|Export questions as difference files?|
 
 ## Scenario 1: Importing questions into Moodle from an existing repo
 

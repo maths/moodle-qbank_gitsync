@@ -46,7 +46,7 @@ use moodle_exception;
  */
 final class import_quiz_data_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */
-    protected \core_question_generator  $generator;
+    protected \core_question_generator $generator;
     /** @var \stdClass generated course object */
     protected \stdClass $course;
     /** @var \stdClass generated question_category object */
@@ -131,18 +131,33 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $this->course = $this->getDataGenerator()->create_course();
         $this->qcategory = $this->generator->create_question_category(
-                        ['contextid' => \context_course::instance($this->course->id)->id]);
+            ['contextid' => \context_course::instance($this->course->id)->id]
+        );
         $user = $this->getDataGenerator()->create_user();
         $this->user = $user;
         $this->setUser($user);
-        $this->q = $this->generator->create_question('shortanswer', null,
-                        ['name' => self::QNAME, 'category' => $this->qcategory->id]);
-        $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
-                        ['questionid' => $this->q->id], $strictness = MUST_EXIST);
-        $this->q2 = $this->generator->create_question('shortanswer', null,
-                        ['name' => self::QNAME . '2', 'category' => $this->qcategory->id]);
-        $this->qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
-                        ['questionid' => $this->q2->id], $strictness = MUST_EXIST);
+        $this->q = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME, 'category' => $this->qcategory->id]
+        );
+        $this->qbankentryid = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $this->q->id],
+            $strictness = MUST_EXIST
+        );
+        $this->q2 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '2', 'category' => $this->qcategory->id]
+        );
+        $this->qbankentryid2 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $this->q2->id],
+            $strictness = MUST_EXIST
+        );
         $this->quizinput['quiz']['coursename'] = $this->course->fullname;
         $this->quizinput['quiz']['courseid'] = $this->course->id;
         $this->quizinput['questions'][0]['questionbankentryid'] = $this->qbankentryid;
@@ -159,8 +174,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
 
-        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], $this->quizinput['sections'],
-                                            $this->quizinput['questions'], $this->quizinput['feedback']);
+        $returnvalue = import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            $this->quizinput['sections'],
+            $this->quizinput['questions'],
+            $this->quizinput['feedback']
+        );
 
         // We need to execute the return values cleaning process to simulate
         // the web service server.
@@ -183,8 +202,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        import_quiz_data::execute($this->quizinput['quiz'], $this->quizinput['sections'],
-                                $this->quizinput['questions'], $this->quizinput['feedback']);
+        import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            $this->quizinput['sections'],
+            $this->quizinput['questions'],
+            $this->quizinput['feedback']
+        );
     }
 
     /**
@@ -198,8 +221,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $this->unassignUserCapability('qbank/gitsync:importquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
         $this->expectExceptionMessage('you do not currently have permissions to do that (Import)');
-        import_quiz_data::execute($this->quizinput['quiz'], $this->quizinput['sections'],
-                                $this->quizinput['questions'], $this->quizinput['feedback']);
+        import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            $this->quizinput['sections'],
+            $this->quizinput['questions'],
+            $this->quizinput['feedback']
+        );
     }
 
     /**
@@ -208,8 +235,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
     public function test_import_capability(): void {
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        import_quiz_data::execute($this->quizinput['quiz'], $this->quizinput['sections'],
-                                $this->quizinput['questions'], $this->quizinput['feedback']);
+        import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            $this->quizinput['sections'],
+            $this->quizinput['questions'],
+            $this->quizinput['feedback']
+        );
     }
 
     /**
@@ -226,8 +257,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $this->expectException(moodle_exception::class);
         $this->expectExceptionMessage('Not enrolled');
         // User has import capability on course 1 but not course 2.
-        import_quiz_data::execute($this->quizinput['quiz'], $this->quizinput['sections'],
-                                    $this->quizinput['questions'], $this->quizinput['feedback']);
+        import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            $this->quizinput['sections'],
+            $this->quizinput['questions'],
+            $this->quizinput['feedback']
+        );
     }
 
     /**
@@ -239,8 +274,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $context = context_course::instance($this->course->id);
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
-        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], $this->quizinput['sections'],
-                        $this->quizinput['questions'], $this->quizinput['feedback']);
+        $returnvalue = import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            $this->quizinput['sections'],
+            $this->quizinput['questions'],
+            $this->quizinput['feedback']
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             import_quiz_data::execute_returns(),
@@ -250,8 +289,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $quizref = $DB->get_field('modules', 'id', ['name' => 'quiz']);
         $quiz = $DB->get_record('course_modules', ['module' => $quizref]);
         $this->quizinput['quiz']['cmid'] = $quiz->id;
-        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], $this->quizinput['sections'],
-                       $this->quizinput['questions'], $this->quizinput['feedback']);
+        $returnvalue = import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            $this->quizinput['sections'],
+            $this->quizinput['questions'],
+            $this->quizinput['feedback']
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             import_quiz_data::execute_returns(),
@@ -306,14 +349,22 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $context = context_course::instance($this->course->id);
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
-        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], [],
-                        $this->quizinput['questions'], []);
+        $returnvalue = import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            [],
+            $this->quizinput['questions'],
+            []
+        );
 
         $quizref = $DB->get_field('modules', 'id', ['name' => 'quiz']);
         $quiz = $DB->get_record('course_modules', ['module' => $quizref]);
         $this->quizinput['quiz']['cmid'] = $quiz->id;
-        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], [],
-        $this->quizinput['questions'], []);
+        $returnvalue = import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            [],
+            $this->quizinput['questions'],
+            []
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             import_quiz_data::execute_returns(),
@@ -347,8 +398,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
         $this->quizinput['questions'][1]['requireprevious'] = '1';
-        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], [],
-                        $this->quizinput['questions'], []);
+        $returnvalue = import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            [],
+            $this->quizinput['questions'],
+            []
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             import_quiz_data::execute_returns(),
@@ -358,8 +413,12 @@ final class import_quiz_data_test extends externallib_advanced_testcase {
         $quizref = $DB->get_field('modules', 'id', ['name' => 'quiz']);
         $quiz = $DB->get_record('course_modules', ['module' => $quizref]);
         $this->quizinput['quiz']['cmid'] = $quiz->id;
-        $returnvalue = import_quiz_data::execute($this->quizinput['quiz'], [],
-                        $this->quizinput['questions'], []);
+        $returnvalue = import_quiz_data::execute(
+            $this->quizinput['quiz'],
+            [],
+            $this->quizinput['questions'],
+            []
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             import_quiz_data::execute_returns(),

@@ -66,11 +66,19 @@ $usegit = true;
 // saved in the manifest file during repo creation will be used on import/export.
 $ignorecat = null;
 
-// Should questions be exported as YAML difference files?
+// Should questions be exported as YAMLfiles?
 $useyaml = false;
+
+// Should questions be exported as difference files?
+$usefragments = false;
 
 // Max character length of category folder names and question file names.
 // You may need to reduce these on Windows so that overall filepath for questions does not excede the system limit.
 // Be careful with truncation of category names - duplicate truncated categories with the same parent category will be merged.
 $maxcatlength = 200;
 $maxqlength = 230;
+
+// At various points Gitsync will show information and then wait for a response. This information is important and worth reading.
+// The default prompt is 'Abort?' to avoid fast-fingering 'y' to continue. You can swap the question to 'Continue?'
+// with this flag.
+$usecontinue = false;

@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/lib/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
-require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
+require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 
 use core_question\local\bank\question_version_status;
 use external_api;
@@ -128,20 +128,29 @@ class export_quiz_data extends external_api {
         $quiz->name = $contextinfo->modulename;
         $response->quiz = $quiz;
 
-        $response->sections = $DB->get_records('quiz_sections', ['quizid' => $quizid], null,
-                                                'firstslot, heading, shufflequestions');
+        $response->sections = $DB->get_records(
+            'quiz_sections',
+            ['quizid' => $quizid],
+            null,
+            'firstslot, heading, shufflequestions'
+        );
 
-        $response->questions = $DB->get_records_sql("
-        SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark
+        $response->questions = $DB->get_records_sql(
+            "SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark
             FROM {quiz_slots} qs
             JOIN {question_references} qr ON qr.itemid = qs.id
             WHERE qr.usingcontextid = :contextid
             AND qr.questionarea = 'slot'
             ORDER BY qs.slot",
-        ['contextid' => $contextinfo->context->id]);
+            ['contextid' => $contextinfo->context->id]
+        );
 
-        $response->feedback = $DB->get_records('quiz_feedback', ['quizid' => $quizid], null,
-                                                'feedbacktext, feedbacktextformat, mingrade, maxgrade');
+        $response->feedback = $DB->get_records(
+            'quiz_feedback',
+            ['quizid' => $quizid],
+            null,
+            'feedbacktext, feedbacktextformat, mingrade, maxgrade'
+        );
         return $response;
     }
 }

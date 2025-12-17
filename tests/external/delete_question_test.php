@@ -46,7 +46,7 @@ use moodle_exception;
  */
 final class delete_question_test extends externallib_advanced_testcase {
     /** @var \core_question_generator plugin generator */
-    protected \core_question_generator  $generator;
+    protected \core_question_generator $generator;
     /** @var \stdClass generated course object */
     protected \stdClass $course;
     /** @var \stdClass generated question_category object */
@@ -67,15 +67,22 @@ final class delete_question_test extends externallib_advanced_testcase {
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $this->course = $this->getDataGenerator()->create_course();
         $this->qcategory = $this->generator->create_question_category(
-                        ['contextid' => \context_course::instance($this->course->id)->id]);
+            ['contextid' => \context_course::instance($this->course->id)->id]
+        );
         $user = $this->getDataGenerator()->create_user();
         $this->user = $user;
         $this->setUser($user);
-        $this->q = $this->generator->create_question('shortanswer', null,
-                        ['name' => self::QNAME, 'category' => $this->qcategory->id]);
-        $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
-                                             ['questionid' => $this->q->id], $strictness = MUST_EXIST);
-
+        $this->q = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME, 'category' => $this->qcategory->id]
+        );
+        $this->qbankentryid = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $this->q->id],
+            $strictness = MUST_EXIST
+        );
     }
 
     /**
@@ -145,10 +152,17 @@ final class delete_question_test extends externallib_advanced_testcase {
         $context = context_course::instance($this->course->id);
         $course2 = $this->getDataGenerator()->create_course();
         $catincourse2 = $this->generator->create_question_category(['contextid' => \context_course::instance($course2->id)->id]);
-        $qincourse2 = $this->generator->create_question('numerical', null,
-            ['name' => 'Example numerical question', 'category' => $catincourse2->id]);
-        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
-                                        ['questionid' => $qincourse2->id], $strictness = MUST_EXIST);
+        $qincourse2 = $this->generator->create_question(
+            'numerical',
+            null,
+            ['name' => 'Example numerical question', 'category' => $catincourse2->id]
+        );
+        $qbankentryid2 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $qincourse2->id],
+            $strictness = MUST_EXIST
+        );
 
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $context->id);
@@ -176,7 +190,7 @@ final class delete_question_test extends externallib_advanced_testcase {
             $returnvalue
         );
 
-        $this->assertEquals(true , $returnvalue["success"]);
+        $this->assertEquals(true, $returnvalue["success"]);
 
         $events = $sink->get_events();
         $this->assertEquals(count($events), 1);

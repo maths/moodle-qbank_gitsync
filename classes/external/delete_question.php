@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/lib/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
-require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
+require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 
 use context;
 use external_api;
@@ -41,7 +41,6 @@ use moodle_exception;
  * A webservice function to delete a single question.
  */
 class delete_question extends external_api {
-
     /**
      * Returns description of webservice function parameters.
      * @return external_function_parameters

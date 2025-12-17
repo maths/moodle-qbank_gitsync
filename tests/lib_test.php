@@ -26,7 +26,7 @@ namespace qbank_gitsync;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
-require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
+require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 use core_course_category;
 use context_system;
 use context_coursecat;
@@ -150,13 +150,21 @@ final class lib_test extends \advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $course = $this->getDataGenerator()->create_course();
         $qcategory = $generator->create_question_category(
-                            ['contextid' => \context_course::instance($course->id)->id]);
+            ['contextid' => \context_course::instance($course->id)->id]
+        );
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        $q = $generator->create_question('shortanswer', null,
-                            ['name' => 'This is the first version', 'category' => $qcategory->id]);
-        $qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
-                                                ['questionid' => $q->id], $strictness = MUST_EXIST);
+        $q = $generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => 'This is the first version', 'category' => $qcategory->id]
+        );
+        $qbankentryid = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $q->id],
+            $strictness = MUST_EXIST
+        );
         $generator->update_question($q, null, ['name' => 'This is the second version']);
         $v3 = $generator->update_question($q, null, ['name' => 'This is the third version']);
 

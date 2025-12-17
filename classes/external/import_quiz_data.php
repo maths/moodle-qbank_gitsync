@@ -26,11 +26,11 @@ namespace qbank_gitsync\external;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot .'/course/lib.php');
+require_once($CFG->dirroot . '/course/lib.php');
 require_once($CFG->dirroot . '/question/editlib.php');
 require_once($CFG->dirroot . '/lib/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
-require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
+require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 require_once($CFG->dirroot . '/course/modlib.php');
 
@@ -77,7 +77,10 @@ class import_quiz_data extends external_api {
                     'page' => new external_value(PARAM_SEQUENCE, 'page number'),
                     'requireprevious' => new external_value(PARAM_INT, 'Require completion of previous question?'),
                     'maxmark' => new external_value(PARAM_TEXT, 'maximum mark'),
-                ]), '', VALUE_DEFAULT, []
+                ]),
+                '',
+                VALUE_DEFAULT,
+                []
             ),
             'feedback' => new external_multiple_structure(
                 new external_single_structure([
@@ -85,7 +88,10 @@ class import_quiz_data extends external_api {
                     'feedbacktextformat' => new external_value(PARAM_SEQUENCE, 'Format of feedback', VALUE_OPTIONAL),
                     'mingrade' => new external_value(PARAM_TEXT, 'minimum mark', VALUE_OPTIONAL),
                     'maxgrade' => new external_value(PARAM_TEXT, 'maximum mark', VALUE_OPTIONAL),
-                ]), '', VALUE_DEFAULT, []
+                ]),
+                '',
+                VALUE_DEFAULT,
+                []
             ),
         ]);
     }
@@ -156,7 +162,7 @@ class import_quiz_data extends external_api {
             $moduleinfo->coursemodule = (int) $params['quiz']['cmid'];
             $moduleinfo->cmidnumber = $moduleinfo->coursemodule;
             $module = get_coursemodule_from_id('', $moduleinfo->coursemodule, 0, false, \MUST_EXIST);
-            list($module, $moduleinfo) = \update_moduleinfo($module, $moduleinfo, \get_course($contextinfo->instanceid));
+            [$module, $moduleinfo] = \update_moduleinfo($module, $moduleinfo, \get_course($contextinfo->instanceid));
             $module = get_module_from_cmid($moduleinfo->coursemodule)[0];
         } else {
             $moduleinfo->cmidnumber = '';
@@ -178,7 +184,7 @@ class import_quiz_data extends external_api {
         $DB->update_record('quiz', $reviewchoice);
 
         // Sort questions by slot.
-        usort($params['questions'], function($a, $b) {
+        usort($params['questions'], function ($a, $b) {
             if ((int) $a['slot'] > (int) $b['slot']) {
                 return 1;
             } else if ((int) $a['slot'] < (int) $b['slot']) {
@@ -196,8 +202,11 @@ class import_quiz_data extends external_api {
                 quiz_add_quiz_question($qdata->questionid, $module, (int) $question['page'], (float) $question['maxmark']);
                 if ($question['requireprevious']) {
                     $quizcontext = get_context(\CONTEXT_MODULE, null, null, null, $moduleinfo->coursemodule);
-                    $itemid = $DB->get_field('question_references', 'itemid',
-                        ['usingcontextid' => $quizcontext->context->id, 'questionbankentryid' => $question['questionbankentryid']]);
+                    $itemid = $DB->get_field(
+                        'question_references',
+                        'itemid',
+                        ['usingcontextid' => $quizcontext->context->id, 'questionbankentryid' => $question['questionbankentryid']]
+                    );
                     $DB->set_field('quiz_slots', 'requireprevious', 1, ['id' => $itemid]);
                 }
             }
@@ -212,15 +221,21 @@ class import_quiz_data extends external_api {
                 $section['firstslot'] = (int) $section['firstslot'];
                 // First slot will have been automatically created so we need to overwrite.
                 if ($section['firstslot'] == 1) {
-                    $sectionid = $DB->get_field('quiz_sections', 'id',
-                        ['quizid' => $moduleinfo->instance, 'firstslot' => 1]);
+                    $sectionid = $DB->get_field(
+                        'quiz_sections',
+                        'id',
+                        ['quizid' => $moduleinfo->instance, 'firstslot' => 1]
+                    );
                     $section['id'] = $sectionid;
                     $DB->update_record('quiz_sections', $section);
                 } else {
                     $sectionid = $DB->insert_record('quiz_sections', $section);
                 }
-                $slotid = $DB->get_field('quiz_slots', 'id',
-                    ['quizid' => $moduleinfo->instance, 'slot' => (int) $section['firstslot']]);
+                $slotid = $DB->get_field(
+                    'quiz_slots',
+                    'id',
+                    ['quizid' => $moduleinfo->instance, 'slot' => (int) $section['firstslot']]
+                );
 
                 // Log section break created event.
                 $event = \mod_quiz\event\section_break_created::create([

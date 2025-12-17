@@ -31,6 +31,7 @@ use org\bovigo\vfs\vfsStream;
 
 /**
  * Allows testing of errors that lead to an exit.
+ * phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses
  */
 class fake_export_cli_helper extends cli_helper {
     /**
@@ -100,6 +101,7 @@ final class export_repo_test extends advanced_testcase {
             'ignorecat' => null,
             'usegit' => true,
             'useyaml' => false,
+            'usefragments' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments', 'check_context',
@@ -176,7 +178,7 @@ final class export_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
 
@@ -338,7 +340,7 @@ final class export_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
 
@@ -387,7 +389,7 @@ final class export_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
 
@@ -575,7 +577,7 @@ final class export_repo_test extends advanced_testcase {
                 "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/bob/clive/subcat 2_1"},
               "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
-              '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
+            '{"contextinfo": {"contextlevel": "module", "categoryname": "", "coursename": "Course 1",
                 "modulename": "Module 1", "instanceid": "", "qcategoryname":"top/bob/clive/subcat 2_1"},
               "questions": [{"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}',
@@ -585,7 +587,7 @@ final class export_repo_test extends advanced_testcase {
               {"questionbankentryid": "35002", "name": "Two", "questioncategory": ""},
               {"questionbankentryid": "35003", "name": "Three", "questioncategory": ""},
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
-            );
+        );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
         $this->exportrepo->process();
 
@@ -607,5 +609,4 @@ final class export_repo_test extends advanced_testcase {
 
         $this->expectOutputRegex('/^\nExported 2 previously linked questions.*Added 0 questions.\n$/s');
     }
-
 }

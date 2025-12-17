@@ -71,7 +71,7 @@ class cli_helper {
     /**
      * DEFAULTS_FILE - Default filename for question defaults.
      */
-    public const DEFAULTS_FILE = 'questiondefaults.yml';
+    public const DEFAULTS_FILE = 'questiondefaults.';
     /**
      * TEMP_MANIFEST_FILE - File name ending for temporary manifest file.
      * Appended to name of moodle instance.
@@ -105,14 +105,21 @@ class cli_helper {
         $longopts = $parsed['longopts'];
         $commandlineargs = getopt($shortopts, $longopts);
         $argcount = count($commandlineargs);
-        if (!isset($commandlineargs['w'])) {
-            echo "\nProcessed {$argcount} valid command line argument" .
-                    (($argcount !== 1) ? 's' : '') . ".\n";
-        }
         $this->processedoptions = $this->prioritise_options($commandlineargs);
         if (!empty($this->processedoptions['help'])) {
             $this->show_help();
             exit;
+        }
+        if (!isset($commandlineargs['w'])) {
+            echo "\nProcessed {$argcount} valid command line argument" .
+                    (($argcount !== 1) ? 's' : '') . ":\n";
+            foreach ($commandlineargs as $option => $value) {
+                $description = strlen($option) > 1 ? $option : $parsed['linked'][$option]['longopt'] . " ({$option})";
+                $argvalue = $this->processedoptions[$parsed['linked'][$option]['variablename']];
+                $argvalue = ($argvalue === false) ? 'false' : $argvalue;
+                $argvalue = ($argvalue === true) ? 'true' : $argvalue;
+                echo "{$description}: {$argvalue}\n";
+            }
         }
         $this->validate_and_clean_args();
         return $this->processedoptions;
@@ -127,6 +134,7 @@ class cli_helper {
     public function parse_options(): array {
         $shortopts = '';
         $longopts = [];
+        $pairs = [];
 
         foreach ($this->options as $option) {
             $shortopts .= $option['shortopt'];
@@ -136,9 +144,10 @@ class cli_helper {
             } else {
                 $longopts[] = $option['longopt'];
             }
+            $pairs[$option['shortopt']] = ['longopt' => $option['longopt'], 'variablename' => $option['variable']];
         }
 
-        return ['shortopts' => $shortopts, 'longopts' => $longopts];
+        return ['shortopts' => $shortopts, 'longopts' => $longopts, 'linked' => $pairs];
     }
 
     /**
@@ -160,14 +169,14 @@ class cli_helper {
             $cliargs['directory'] = $this->trim_slashes($cliargs['directory']);
         }
         if (isset($cliargs['manifestpath'])) {
-            if (isset($cliargs['directory']) && strlen($cliargs['directory']) > 0 ) {
+            if (isset($cliargs['directory']) && strlen($cliargs['directory']) > 0) {
                 echo "\nYou have supplied a manifest file path (possibly as a default in your config file) " .
                      "and a directory. Please use only one.\n";
                 static::call_exit();
             }
         }
         if (isset($cliargs['rootdirectory'])) {
-            $cliargs['rootdirectory'] = str_replace( '\\', '/', $cliargs['rootdirectory']);
+            $cliargs['rootdirectory'] = str_replace('\\', '/', $cliargs['rootdirectory']);
             if (substr($cliargs['rootdirectory'], strlen($cliargs['rootdirectory']) - 1, 1) === '/') {
                 $cliargs['rootdirectory'] = substr($cliargs['rootdirectory'], 0, strlen($cliargs['rootdirectory']) - 1);
             }
@@ -206,10 +215,12 @@ class cli_helper {
         }
         if (isset($cliargs['manifestpath'])) {
             $cliargs['manifestpath'] = $this->trim_slashes($cliargs['manifestpath']);
-            if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
+            if (
+                isset($cliargs['coursename']) || isset($cliargs['modulename'])
                         || isset($cliargs['coursecategory']) || isset($cliargs['instanceid'])
                         || isset($cliargs['contextlevel']) || isset($cliargs['targetcategory'])
-                        || isset($cliargs['targetcategoryname'])) {
+                        || isset($cliargs['targetcategoryname'])
+            ) {
                 echo "\nYou have specified a manifest file (possibly as a default in your config file). " .
                         "Contextlevel, instance id, target category, course name, module name " .
                         "and/or course category are not needed. " .
@@ -225,8 +236,10 @@ class cli_helper {
             }
         }
         if (isset($cliargs['instanceid'])) {
-            if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
-                    || isset($cliargs['coursecategory'])) {
+            if (
+                isset($cliargs['coursename']) || isset($cliargs['modulename'])
+                    || isset($cliargs['coursecategory'])
+            ) {
                 echo "\nIf instanceid is supplied, you do not require " .
                      "course name, module name and/or course category.\n";
                 static::call_exit();
@@ -247,8 +260,10 @@ class cli_helper {
         if (isset($cliargs['contextlevel'])) {
             switch ($cliargs['contextlevel']) {
                 case 'system':
-                    if (isset($cliargs['coursename']) || isset($cliargs['modulename'])
-                            || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid']))) {
+                    if (
+                        isset($cliargs['coursename']) || isset($cliargs['modulename'])
+                            || isset($cliargs['coursecategory']) || (isset($cliargs['instanceid']))
+                    ) {
                         echo "\nYou have specified system level context. Instance id, " .
                             "course name, module name and/or course category are not needed.\n";
                         static::call_exit();
@@ -286,8 +301,10 @@ class cli_helper {
                             "Course category name is not needed.\n";
                         static::call_exit();
                     }
-                    if ((!isset($cliargs['coursename']) || !isset($cliargs['modulename']))
-                                && !isset($cliargs['instanceid'])) {
+                    if (
+                        (!isset($cliargs['coursename']) || !isset($cliargs['modulename']))
+                                && !isset($cliargs['instanceid'])
+                    ) {
                         echo "\nYou have specified module level context. " .
                             "You must specify the full course name (--coursename) and \n" .
                             "module name (--modulename) or give the module Moodle id (--instanceid).\n";
@@ -300,8 +317,10 @@ class cli_helper {
                     break;
             }
         }
-        if (!isset($cliargs['manifestpath']) && !isset($cliargs['quizmanifestpath'])
-                    && !isset($cliargs['contextlevel']) && !isset($cliargs['quizdatapath'])) {
+        if (
+            !isset($cliargs['manifestpath']) && !isset($cliargs['quizmanifestpath'])
+                    && !isset($cliargs['contextlevel']) && !isset($cliargs['quizdatapath'])
+        ) {
             echo "\nYou have not specified context. " .
                  "You must specify context level (--contextlevel) unless " .
                  "using a function where this information can be read from a manifest file, in which case " .
@@ -322,7 +341,7 @@ class cli_helper {
      * @return string
      */
     public function trim_slashes(string $path): string {
-        $path = str_replace( '\\', '/', $path);
+        $path = str_replace('\\', '/', $path);
         if (substr($path, 0, 1) === '/') {
             $path = substr($path, 1);
         }
@@ -353,7 +372,7 @@ class cli_helper {
                 } else {
                     $variables[$variablename] = $option['default'];
                 }
-                if (in_array($variablename, ['usegit', 'useyaml'])) {
+                if (in_array($variablename, ['usegit', 'useyaml', 'usefragments'])) {
                     $variables[$variablename] = ($variables[$variablename] === 'true') ? true : $variables[$variablename];
                     $variables[$variablename] = ($variables[$variablename] === 'false') ? false : $variables[$variablename];
                 }
@@ -367,7 +386,6 @@ class cli_helper {
         }
 
         return $variables;
-
     }
 
     /**
@@ -418,8 +436,14 @@ class cli_helper {
      * @param string $directory
      * @return string
      */
-    public static function get_manifest_path(string $moodleinstance, string $contextlevel, ?string $coursecategory,
-                            ?string $coursename, ?string $modulename, string $directory): string {
+    public static function get_manifest_path(
+        string $moodleinstance,
+        string $contextlevel,
+        ?string $coursecategory,
+        ?string $coursename,
+        ?string $modulename,
+        string $directory
+    ): string {
         $filenamemod = '_' . $contextlevel;
         switch ($contextlevel) {
             case 'coursecategory':
@@ -456,9 +480,17 @@ class cli_helper {
      * @param string $directory
      * @return string
      */
-    public static function get_manifest_path_targeted(string $moodleinstance, string $contextlevel, ?string $coursecategory,
-                            ?string $coursename, ?string $modulename, string $categoryname,
-                            string $categoryid, string $subdirectory, string $directory): string {
+    public static function get_manifest_path_targeted(
+        string $moodleinstance,
+        string $contextlevel,
+        ?string $coursecategory,
+        ?string $coursename,
+        ?string $modulename,
+        string $categoryname,
+        string $categoryid,
+        string $subdirectory,
+        string $directory
+    ): string {
         $filenamemod = '_' . $contextlevel;
         switch ($contextlevel) {
             case 'coursecategory':
@@ -521,15 +553,17 @@ class cli_helper {
      * @param bool $showupdated
      * @return object
      */
-    public static function create_manifest_file(object $manifestcontents,
-                                                string $tempfilepath,
-                                                string $manifestpath,
-                                                bool $showupdated=true): object {
+    public static function create_manifest_file(
+        object $manifestcontents,
+        string $tempfilepath,
+        string $manifestpath,
+        bool $showupdated = true
+    ): object {
         // Read in temp file a question at a time, process and add to manifest.
         // No actual processing at the moment so could simplify to write straight
         // to manifest in the first place if no processing materialises.
         $manifestdir = dirname($manifestpath);
-        $manifestdir = str_replace( '\\', '/', $manifestdir);
+        $manifestdir = str_replace('\\', '/', $manifestdir);
         $tempfile = fopen($tempfilepath, 'r');
         $updatedcount = 0;
         $addedcount = 0;
@@ -801,7 +835,7 @@ class cli_helper {
      * @param bool $silent If true, don't display returned info
      * @return object
      */
-    public function check_context(object $activity, bool $defaultwarning=false, bool $silent=false): object {
+    public function check_context(object $activity, bool $defaultwarning = false, bool $silent = false): object {
         $activity->listpostsettings['contextonly'] = 1;
         $activity->listcurlrequest->set_option(CURLOPT_POSTFIELDS, $activity->listpostsettings);
         $response = $activity->listcurlrequest->execute();
@@ -883,8 +917,10 @@ class cli_helper {
                 }
             }
 
-            if ($defaultwarning && !isset($activity->subdirectory)
-                    && !isset($activity->targetcategory) && !isset($activity->targetdirectory)) {
+            if (
+                $defaultwarning && !isset($activity->subdirectory)
+                    && !isset($activity->targetcategory) && !isset($activity->targetdirectory)
+            ) {
                 echo "\nUsing default question category from manifest file.\n";
                 echo "Set --subcategory or --questioncategoryid to override.\n";
             }
@@ -892,8 +928,16 @@ class cli_helper {
             if (!empty($activity->forceimport)) {
                 echo "\nForce import: Importing all questions.\n";
             }
-            if (!empty($activity->useyaml) && !empty($activity->defaultsfilepath)) {
-                echo "\nUsing YAML with defaults file: " . basename($activity->defaultsfilepath) . "\n";
+            if (!empty($activity->useyaml)) {
+                echo "\nCreating or expecting YAML files.\n";
+            } else {
+                echo "\nCreating or expecting XML files.\n";
+            }
+            if (!empty($activity->usefragments) && !empty($activity->defaultsfilepath)) {
+                echo "\nCreating or expecting question fragments using defaults file: " .
+                    basename($activity->defaultsfilepath) . "\n";
+            } else {
+                echo "\nCreating or expecting full question files not fragments.\n";
             }
             static::handle_abort();
         }
@@ -908,13 +952,15 @@ class cli_helper {
      * @return void
      */
     public static function handle_abort(): void {
-        echo "Abort? y/n\n";
-        $handle = fopen ("php://stdin", "r");
+        global $usecontinue;
+        echo ($usecontinue ? "Continue? y/n\n" : "Abort? y/n\n");
+        $handle = fopen("php://stdin", "r");
         $line = fgets($handle);
-        if (trim($line) === 'y') {
-            static::call_exit();
-        }
         fclose($handle);
+        if (($usecontinue && trim($line) === 'y') || (!$usecontinue && trim($line) === 'n')) {
+            return;
+        }
+        static::call_exit();
     }
 
     /**
@@ -996,23 +1042,40 @@ class cli_helper {
      * @param string $filepath
      * @param string $tempfilepath Path of main temp file
      * @param string $defaults yml defaults
-     * @return object|null $tempqfilepath
+     * @return object|null|boolean $tempqfilepath else false on error and null if not a STACK question.
      */
-    public static function create_temp_question_file($filepath, $tempfilepath, $defaults) {
+    public static function create_temp_question_file($filepath, $tempfilepath, $defaults, $useyaml) {
         if (!is_file($filepath)) {
             echo "\nRequired question file does not exist: {$filepath}\n";
-            return null;
+            return false;
         }
         $contents = file_get_contents($filepath);
         if ($contents === false) {
             echo "\nUnable to access file: {$filepath}\n";
+            return false;
+        }
+        if (pathinfo($filepath, PATHINFO_EXTENSION) === 'xml' && strpos($contents, '<question type="stack">') === false) {
+            // Non-STACK XML question - not a fragment.
             return null;
         }
-        $questionxml = yaml_converter::loadyaml($contents, $defaults);
+        try {
+            libxml_use_internal_errors(true);
+            $questionxml = yaml_converter::load_string_as_xml($contents, $defaults, $useyaml);
+            libxml_use_internal_errors(false);
+        } catch (\Exception $e) {
+            echo "\nBroken XML/YAML: {$filepath}\n";
+            echo "\n{$e->getMessage()}\n";
+            foreach (libxml_get_errors() as $error) {
+                echo $error->message . "\n";
+            }
+            libxml_clear_errors();
+            libxml_use_internal_errors(false);
+            return false;
+        }
         $tempqfilepath = dirname($tempfilepath) . '/tempqfile.tmp';
         $success = file_put_contents($tempqfilepath, $questionxml->asXML());
         if ($success === false) {
-            return null;
+            return false;
         }
         return new \SplFileInfo($tempqfilepath);
     }

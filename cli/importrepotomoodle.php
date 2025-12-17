@@ -165,9 +165,17 @@ $options = [
     [
         'longopt' => 'useyaml',
         'shortopt' => 'y',
-        'description' => 'Export questions as YAML difference file?',
+        'description' => 'Export questions as YAML?',
         'default' => $useyaml,
         'variable' => 'useyaml',
+        'valuerequired' => true,
+    ],
+    [
+        'longopt' => 'usefragments',
+        'shortopt' => 'b',
+        'description' => 'Export questions as difference files?',
+        'default' => $usefragments,
+        'variable' => 'usefragments',
         'valuerequired' => true,
     ],
     [
