@@ -26,8 +26,8 @@ namespace qbank_gitsync;
 
 defined('MOODLE_INTERNAL') || die();
 use Symfony\Component\Yaml\Yaml;
-if (is_file(__DIR__.'/../vendor/autoload.php')) {
-    require_once(__DIR__.'/../vendor/autoload.php');
+if (is_file(__DIR__ . '/../vendor/autoload.php')) {
+    require_once(__DIR__ . '/../vendor/autoload.php');
 }
 
 /**
@@ -36,19 +36,20 @@ if (is_file(__DIR__.'/../vendor/autoload.php')) {
  * @covers \qbank_gitsync
  */
 final class yaml_converter_test extends \advanced_testcase {
-
-    public function test_loadxml(): void {
+    public function test_load_yaml_data(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
         }
         $defaults = Yaml::parseFile(__DIR__ . '/../questiondefaults.yml');
         $questionyaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
-        $xml = \qbank_gitsync\yaml_converter::loadyaml($questionyaml , $defaults);
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($questionyaml, $defaults);
         $this->assertEquals('Test question', (string) $xml->question->name->text);
-        $this->assertEquals(1,
-            preg_match('/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
-                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s', (string) $xml->question->questiontext->text));
+        $this->assertEquals(1, preg_match(
+            '/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
+                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s',
+            (string) $xml->question->questiontext->text
+        ));
         $this->assertEquals('html', (string) $xml->question->questiontext['format']);
         $this->assertEquals(false, isset($xml->question->questiontext->format));
         $this->assertEquals('', (string) $xml->question->generalfeedback->text);
@@ -59,24 +60,29 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('', (string) $xml->question->idnumber);
         $this->assertEquals('2025042500', (string) $xml->question->stackversion->text);
         $this->assertEquals('ta1:1;ta2:2;', (string) $xml->question->questionvariables->text);
-        $this->assertEquals('<p>[[feedback:prt1]]</p>', (string) $xml->question->specificfeedback->text);
+        $this->assertEquals('[[feedback:prt1]]', (string) $xml->question->specificfeedback->text);
         $this->assertEquals('html', (string) $xml->question->specificfeedback['format']);
-        $this->assertEquals('<p>{@ta1@}</p>', (string) $xml->question->questionnote->text);
+        $this->assertEquals('{@ta1@}', (string) $xml->question->questionnote->text);
         $this->assertEquals('html', (string) $xml->question->questionnote['format']);
         $this->assertEquals('', (string) $xml->question->questiondescription->text);
         $this->assertEquals('html', (string) $xml->question->questiondescription['format']);
 
         $this->assertEquals('1', (string) $xml->question->questionsimplify);
         $this->assertEquals('0', (string) $xml->question->assumepositive);
-        $this->assertEquals('0', (string) $xml->question->assumepositive);
-        $this->assertEquals('<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
-            (string) $xml->question->prtcorrect->text);
+        $this->assertEquals(
+            '<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
+            (string) $xml->question->prtcorrect->text
+        );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
-        $this->assertEquals('<p><i class="fa fa-adjust"></i> Your answer is partially correct.</p>',
-            (string) $xml->question->prtpartiallycorrect->text);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            (string) $xml->question->prtpartiallycorrect->text
+        );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
-        $this->assertEquals('<p><i class="fa fa-times"></i> Incorrect answer.</p>',
-            (string) $xml->question->prtincorrect->text);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            (string) $xml->question->prtincorrect->text
+        );
         $this->assertEquals('html', (string) $xml->question->prtincorrect['format']);
         $this->assertEquals('.', (string) $xml->question->decimals);
         $this->assertEquals('*10', (string) $xml->question->scientificnotation);
@@ -127,7 +133,7 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('2', (string) $prt1->value);
         $this->assertEquals('1', (string) $prt1->autosimplify);
         $this->assertEquals('1', (string) $prt1->feedbackstyle);
-        $this->assertEquals('', (string) $prt1->feedbackvariables);
+        $this->assertEquals('', (string) $prt1->feedbackvariables->text);
         $this->assertCount(1, $prt1->node);
         $this->assertEquals('0', (string) $prt1->node[0]->name);
         $this->assertEquals('', (string) $prt1->node[0]->description);
@@ -190,6 +196,396 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('2-0-T', (string) $qtest->expected[1]->expectedanswernote);
     }
 
+
+    public function test_load_xml_data(): void {
+        $defaults = yaml_converter::load_defaults(__DIR__ . '/../questiondefaults.xml', false);
+        $xmlstring = file_get_contents(__DIR__ . '/fixtures/fullquestion.xml');
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($xmlstring, $defaults, false);
+
+        $this->assertEquals('Test question', (string) $xml->question->name->text);
+        $this->assertEquals(1, preg_match(
+            '/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
+                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s',
+            (string) $xml->question->questiontext->text
+        ));
+        $this->assertEquals('html', (string) $xml->question->questiontext['format']);
+        $this->assertEquals(false, isset($xml->question->questiontext->format));
+        $this->assertEquals('', (string) $xml->question->generalfeedback->text);
+        $this->assertEquals('html', (string) $xml->question->generalfeedback['format']);
+        $this->assertEquals('1', (string) $xml->question->defaultgrade);
+        $this->assertEquals('0.1', (string) $xml->question->penalty);
+        $this->assertEquals('0', (string) $xml->question->hidden);
+        $this->assertEquals('', (string) $xml->question->idnumber);
+        $this->assertEquals('2025042500', (string) $xml->question->stackversion->text);
+        $this->assertEquals('ta1:1;ta2:2;', (string) $xml->question->questionvariables->text);
+        $this->assertEquals('[[feedback:prt1]]', (string) $xml->question->specificfeedback->text);
+        $this->assertEquals('html', (string) $xml->question->specificfeedback['format']);
+        $this->assertEquals('{@ta1@}', (string) $xml->question->questionnote->text);
+        $this->assertEquals('html', (string) $xml->question->questionnote['format']);
+        $this->assertEquals('', (string) $xml->question->questiondescription->text);
+        $this->assertEquals('html', (string) $xml->question->questiondescription['format']);
+
+        $this->assertEquals('1', (string) $xml->question->questionsimplify);
+        $this->assertEquals('0', (string) $xml->question->assumepositive);
+        $this->assertEquals(
+            '<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
+            (string) $xml->question->prtcorrect->text
+        );
+        $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            (string) $xml->question->prtpartiallycorrect->text
+        );
+        $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            (string) $xml->question->prtincorrect->text
+        );
+        $this->assertEquals('html', (string) $xml->question->prtincorrect['format']);
+        $this->assertEquals('.', (string) $xml->question->decimals);
+        $this->assertEquals('*10', (string) $xml->question->scientificnotation);
+        $this->assertEquals('cross', (string) $xml->question->multiplicationsign);
+        $this->assertEquals('1', (string) $xml->question->sqrtsign);
+        $this->assertEquals('i', (string) $xml->question->complexno);
+        $this->assertEquals('cos-1', (string) $xml->question->inversetrig);
+        $this->assertEquals('lang', (string) $xml->question->logicsymbol);
+        $this->assertEquals('[', (string) $xml->question->matrixparens);
+        $this->assertEquals('0', (string) $xml->question->isbroken);
+        $this->assertEquals('', (string) $xml->question->variantsselectionseed);
+
+        // Check input fields.
+        $this->assertCount(2, $xml->question->input);
+        $input1 = $xml->question->input[0];
+        $input2 = $xml->question->input[1];
+        $this->assertEquals('ans1', (string) $input1->name);
+        $this->assertEquals('algebraic', (string) $input1->type);
+        $this->assertEquals('ta1', (string) $input1->tans);
+        $this->assertEquals('25', (string) $input1->boxsize);
+        $this->assertEquals('1', (string) $input1->strictsyntax);
+        $this->assertEquals('0', (string) $input1->insertstars);
+        $this->assertEquals('', (string) $input1->syntaxhint);
+        $this->assertEquals('0', (string) $input1->syntaxattribute);
+        $this->assertEquals('', (string) $input1->forbidwords);
+        $this->assertEquals('', (string) $input1->allowwords);
+        $this->assertEquals('1', (string) $input1->forbidfloat);
+        $this->assertEquals('0', (string) $input1->requirelowestterms);
+        $this->assertEquals('0', (string) $input1->checkanswertype);
+        $this->assertEquals('1', (string) $input1->mustverify);
+        $this->assertEquals('1', (string) $input1->showvalidation);
+        $this->assertEquals('', (string) $input1->options);
+
+        $this->assertEquals('ans2', (string) $input2->name);
+        $this->assertEquals('algebraic', (string) $input2->type);
+        $this->assertEquals('ta2', (string) $input2->tans);
+        $this->assertEquals('1', (string) $input2->forbidfloat);
+        $this->assertEquals('0', (string) $input2->requirelowestterms);
+        $this->assertEquals('0', (string) $input2->checkanswertype);
+        $this->assertEquals('1', (string) $input2->mustverify);
+        $this->assertEquals('1', (string) $input2->showvalidation);
+
+        // Check prt fields.
+        $this->assertCount(2, $xml->question->prt);
+        $prt1 = $xml->question->prt[0];
+        $prt2 = $xml->question->prt[1];
+        $this->assertEquals('prt1', (string) $prt1->name);
+        $this->assertEquals('2', (string) $prt1->value);
+        $this->assertEquals('1', (string) $prt1->autosimplify);
+        $this->assertEquals('1', (string) $prt1->feedbackstyle);
+        $this->assertEquals('', (string) $prt1->feedbackvariables->text);
+        $this->assertCount(1, $prt1->node);
+        $this->assertEquals('0', (string) $prt1->node[0]->name);
+        $this->assertEquals('', (string) $prt1->node[0]->description);
+        $this->assertEquals('AlgEquiv', (string) $prt1->node[0]->answertest);
+        $this->assertEquals('ans1', (string) $prt1->node[0]->sans);
+        $this->assertEquals('ta1', (string) $prt1->node[0]->tans);
+        $this->assertEquals('', (string) $prt1->node[0]->testoptions);
+        $this->assertEquals('1', (string) $prt1->node[0]->quiet);
+        $this->assertEquals('=', (string) $prt1->node[0]->truescoremode);
+        $this->assertEquals('1', (string) $prt1->node[0]->truescore);
+        $this->assertEquals('', (string) $prt1->node[0]->truepenalty);
+        $this->assertEquals('-1', (string) $prt1->node[0]->truenextnode);
+        $this->assertEquals('prt1-1-T', (string) $prt1->node[0]->trueanswernote);
+        $this->assertEquals('', (string) $prt1->node[0]->truefeedback->text);
+        $this->assertEquals('html', (string) $prt1->node[0]->truefeedback['format']);
+        $this->assertEquals('=', (string) $prt1->node[0]->falsescoremode);
+        $this->assertEquals('0', (string) $prt1->node[0]->falsescore);
+        $this->assertEquals('', (string) $prt1->node[0]->falsepenalty);
+        $this->assertEquals('-1', (string) $prt1->node[0]->falsenextnode);
+        $this->assertEquals('prt1-1-F', (string) $prt1->node[0]->falseanswernote);
+        $this->assertEquals('', (string) $prt1->node[0]->falsefeedback->text);
+        $this->assertEquals('html', (string) $prt1->node[0]->falsefeedback['format']);
+
+        $this->assertEquals('prt2', (string) $prt2->name);
+        $this->assertEquals('1.0000001', (string) $prt2->value);
+        $this->assertEquals('1', (string) $prt2->autosimplify);
+        $this->assertEquals('1', (string) $prt2->feedbackstyle);
+        $this->assertCount(1, $prt2->node);
+        $this->assertEquals('0', (string) $prt2->node[0]->name);
+        $this->assertEquals('AlgEquiv', (string) $prt2->node[0]->answertest);
+        $this->assertEquals('ans2', (string) $prt2->node[0]->sans);
+        $this->assertEquals('ta2', (string) $prt2->node[0]->tans);
+        $this->assertEquals('0', (string) $prt2->node[0]->quiet);
+        $this->assertEquals('1', (string) $prt2->node[0]->falsescore);
+
+        // Check deployedseed.
+        $this->assertCount(3, $xml->question->deployedseed);
+        $this->assertEquals('1', (string) $xml->question->deployedseed[0]);
+        $this->assertEquals('2', (string) $xml->question->deployedseed[1]);
+        $this->assertEquals('3', (string) $xml->question->deployedseed[2]);
+
+        // Check qtest.
+        $this->assertCount(1, $xml->question->qtest);
+        $qtest = $xml->question->qtest[0];
+        $this->assertEquals('1', (string) $qtest->testcase);
+        $this->assertEquals('A test', (string) $qtest->description);
+        $this->assertCount(2, $qtest->testinput);
+        $this->assertEquals('ans1', (string) $qtest->testinput[0]->name);
+        $this->assertEquals('ta1', (string) $qtest->testinput[0]->value);
+        $this->assertEquals('ans2', (string) $qtest->testinput[1]->name);
+        $this->assertEquals('ta2', (string) $qtest->testinput[1]->value);
+        $this->assertCount(2, $qtest->expected);
+        $this->assertEquals('prt1', (string) $qtest->expected[0]->name);
+        $this->assertEquals('1.0000000', (string) $qtest->expected[0]->expectedscore);
+        $this->assertEquals('0.0000000', (string) $qtest->expected[0]->expectedpenalty);
+        $this->assertEquals('1-0-T', (string) $qtest->expected[0]->expectedanswernote);
+        $this->assertEquals('prt2', (string) $qtest->expected[1]->name);
+        $this->assertEquals('1.0000000', (string) $qtest->expected[1]->expectedscore);
+        $this->assertEquals('0.0000000', (string) $qtest->expected[1]->expectedpenalty);
+        $this->assertEquals('2-0-T', (string) $qtest->expected[1]->expectedanswernote);
+    }
+
+    public function test_load_xml_frag_data(): void {
+        $defaults = yaml_converter::load_defaults(__DIR__ . '/../questiondefaults.xml', false);
+        $xmlstring = '<quiz><question type="stack"></question></quiz>';
+        $question = \qbank_gitsync\yaml_converter::load_string_as_xml($xmlstring, $defaults, false);
+        $question = $question->question;
+        $this->assertEquals('Default', $question->name->text);
+        $this->assertEquals(
+            '<p>Default question</p><p>[[input:ans1]] [[validation:ans1]]</p>',
+            $question->questiontext->text
+        );
+        $this->assertEquals('html', $question->questiontext['format']);
+        $this->assertEquals(
+            '',
+            $question->generalfeedback->text
+        );
+        $this->assertEquals('html', $question->generalfeedback['format']);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.',
+            $question->prtcorrect->text
+        );
+        $this->assertEquals('html', $question->prtpartiallycorrect['format']);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            $question->prtpartiallycorrect->text
+        );
+        $this->assertEquals('html', $question->prtincorrect['format']);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            $question->prtincorrect->text
+        );
+        $this->assertEquals('html', $question->prtcorrect['format']);
+        $this->assertEquals('1', $question->defaultgrade);
+        $this->assertEquals('0.1', $question->penalty);
+        $this->assertEquals('0', $question->hidden);
+        $this->assertEquals(
+            $defaults['question']['stackversion'],
+            $question->stackversion->text
+        );
+        $this->assertEquals(
+            'ta1:1;',
+            $question->questionvariables->text
+        );
+        $this->assertEquals(
+            '[[feedback:prt1]]',
+            $question->specificfeedback->text
+        );
+        $this->assertEquals('html', $question->specificfeedback['format']);
+        $this->assertEquals(
+            '{@ta1@}',
+            $question->questionnote->text
+        );
+        $this->assertEquals('html', $question->questionnote['format']);
+        $this->assertEquals(
+            '',
+            $question->questiondescription->text
+        );
+        $this->assertEquals('html', $question->questiondescription['format']);
+
+        $this->assertEquals('.', $question->decimals);
+        $this->assertEquals('*10', $question->scientificnotation);
+        $this->assertEquals('0', $question->assumepositive);
+        $this->assertEquals('0', $question->assumereal);
+        $this->assertEquals('dot', $question->multiplicationsign);
+        $this->assertEquals('1', $question->sqrtsign);
+        $this->assertEquals('i', $question->complexno);
+        $this->assertEquals('lang', $question->logicsymbol);
+        $this->assertEquals('cos-1', $question->inversetrig);
+        $this->assertEquals('[', $question->matrixparens);
+        $this->assertEquals('1', $question->questionsimplify);
+        $this->assertEquals('0', $question->isbroken);
+
+        $this->assertEquals('1', $question->prt[0]->value);
+        $this->assertEquals('1', $question->prt[0]->autosimplify);
+        $this->assertEquals('1', $question->prt[0]->feedbackstyle);
+        $this->assertEquals('', $question->prt[0]->feedbackvariables);
+
+        $this->assertEquals('', $question->prt[0]->node[0]->description);
+        $this->assertEquals('AlgEquiv', $question->prt[0]->node[0]->answertest);
+        $this->assertEquals('ans1', $question->prt[0]->node[0]->sans);
+        $this->assertEquals('ta1', $question->prt[0]->node[0]->tans);
+        $this->assertEquals('0', $question->prt[0]->node[0]->quiet);
+        $this->assertEquals('', $question->prt[0]->node[0]->testoptions);
+        $this->assertEquals('-1', $question->prt[0]->node[0]->truenextnode);
+        $this->assertEquals('prt1-1-T', $question->prt[0]->node[0]->trueanswernote);
+        $this->assertEquals('1', $question->prt[0]->node[0]->truescore);
+        $this->assertEquals('', $question->prt[0]->node[0]->truepenalty);
+        $this->assertEquals('=', $question->prt[0]->node[0]->truescoremode);
+        $this->assertEquals('', $question->prt[0]->node[0]->truefeedback->text);
+        $this->assertEquals('html', $question->prt[0]->node[0]->truefeedback['format']);
+        $this->assertEquals('=', $question->prt[0]->node[0]->truescoremode);
+        $this->assertEquals('-1', $question->prt[0]->node[0]->falsenextnode);
+        $this->assertEquals('prt1-1-F', $question->prt[0]->node[0]->falseanswernote);
+        $this->assertEquals('0', $question->prt[0]->node[0]->falsescore);
+        $this->assertEquals('=', $question->prt[0]->node[0]->falsescoremode);
+        $this->assertEquals('', $question->prt[0]->node[0]->falsepenalty);
+        $this->assertEquals('', $question->prt[0]->node[0]->falsefeedback->text);
+        $this->assertEquals('html', $question->prt[0]->node[0]->falsefeedback['format']);
+        $input1 = $question->input[0];
+        $this->assertEquals('ans1', (string) $input1->name);
+        $this->assertEquals('algebraic', (string) $input1->type);
+        $this->assertEquals('ta1', (string) $input1->tans);
+        $this->assertEquals('15', (string) $input1->boxsize);
+        $this->assertEquals('1', (string) $input1->strictsyntax);
+        $this->assertEquals('0', (string) $input1->insertstars);
+        $this->assertEquals('', (string) $input1->syntaxhint);
+        $this->assertEquals('0', (string) $input1->syntaxattribute);
+        $this->assertEquals('', (string) $input1->forbidwords);
+        $this->assertEquals('', (string) $input1->allowwords);
+        $this->assertEquals('1', (string) $input1->forbidfloat);
+        $this->assertEquals('0', (string) $input1->requirelowestterms);
+        $this->assertEquals('0', (string) $input1->checkanswertype);
+        $this->assertEquals('1', (string) $input1->mustverify);
+        $this->assertEquals('1', (string) $input1->showvalidation);
+        $this->assertEquals('', (string) $input1->options);
+    }
+
+    public function test_load_yml_frag_data(): void {
+        $defaults = yaml_converter::load_defaults(__DIR__ . '/../questiondefaults.yml', true);
+        $yamlstring = 'name: Default';
+        $question = \qbank_gitsync\yaml_converter::load_string_as_xml($yamlstring, $defaults, true);
+        $question = $question->question;
+        $this->assertEquals('Default', $question->name->text);
+        $this->assertEquals(
+            '<p>Default question</p><p>[[input:ans1]] [[validation:ans1]]</p>',
+            $question->questiontext->text
+        );
+        $this->assertEquals('html', $question->questiontext['format']);
+        $this->assertEquals(
+            '',
+            $question->generalfeedback->text
+        );
+        $this->assertEquals('html', $question->generalfeedback['format']);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.',
+            $question->prtcorrect->text
+        );
+        $this->assertEquals('html', $question->prtpartiallycorrect['format']);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            $question->prtpartiallycorrect->text
+        );
+        $this->assertEquals('html', $question->prtincorrect['format']);
+        $this->assertEquals(
+            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            $question->prtincorrect->text
+        );
+        $this->assertEquals('html', $question->prtcorrect['format']);
+        $this->assertEquals('1', $question->defaultgrade);
+        $this->assertEquals('0.1', $question->penalty);
+        $this->assertEquals('0', $question->hidden);
+        $this->assertEquals(
+            $defaults['question']['stackversion'],
+            $question->stackversion->text
+        );
+        $this->assertEquals(
+            'ta1:1;',
+            $question->questionvariables->text
+        );
+        $this->assertEquals(
+            '[[feedback:prt1]]',
+            $question->specificfeedback->text
+        );
+        $this->assertEquals('html', $question->specificfeedback['format']);
+        $this->assertEquals(
+            '{@ta1@}',
+            $question->questionnote->text
+        );
+        $this->assertEquals('html', $question->questionnote['format']);
+        $this->assertEquals(
+            '',
+            $question->questiondescription->text
+        );
+        $this->assertEquals('html', $question->questiondescription['format']);
+
+        $this->assertEquals('.', $question->decimals);
+        $this->assertEquals('*10', $question->scientificnotation);
+        $this->assertEquals('0', $question->assumepositive);
+        $this->assertEquals('0', $question->assumereal);
+        $this->assertEquals('dot', $question->multiplicationsign);
+        $this->assertEquals('1', $question->sqrtsign);
+        $this->assertEquals('i', $question->complexno);
+        $this->assertEquals('lang', $question->logicsymbol);
+        $this->assertEquals('cos-1', $question->inversetrig);
+        $this->assertEquals('[', $question->matrixparens);
+        $this->assertEquals('1', $question->questionsimplify);
+        $this->assertEquals('0', $question->isbroken);
+
+        $this->assertEquals('1', $question->prt[0]->value);
+        $this->assertEquals('1', $question->prt[0]->autosimplify);
+        $this->assertEquals('1', $question->prt[0]->feedbackstyle);
+        $this->assertEquals('', $question->prt[0]->feedbackvariables);
+
+        $this->assertEquals('', $question->prt[0]->node[0]->description);
+        $this->assertEquals('AlgEquiv', $question->prt[0]->node[0]->answertest);
+        $this->assertEquals('ans1', $question->prt[0]->node[0]->sans);
+        $this->assertEquals('ta1', $question->prt[0]->node[0]->tans);
+        $this->assertEquals('0', $question->prt[0]->node[0]->quiet);
+        $this->assertEquals('', $question->prt[0]->node[0]->testoptions);
+        $this->assertEquals('-1', $question->prt[0]->node[0]->truenextnode);
+        $this->assertEquals('prt1-1-T', $question->prt[0]->node[0]->trueanswernote);
+        $this->assertEquals('1', $question->prt[0]->node[0]->truescore);
+        $this->assertEquals('', $question->prt[0]->node[0]->truepenalty);
+        $this->assertEquals('=', $question->prt[0]->node[0]->truescoremode);
+        $this->assertEquals('', $question->prt[0]->node[0]->truefeedback->text);
+        $this->assertEquals('html', $question->prt[0]->node[0]->truefeedback['format']);
+        $this->assertEquals('=', $question->prt[0]->node[0]->truescoremode);
+        $this->assertEquals('-1', $question->prt[0]->node[0]->falsenextnode);
+        $this->assertEquals('prt1-1-F', $question->prt[0]->node[0]->falseanswernote);
+        $this->assertEquals('0', $question->prt[0]->node[0]->falsescore);
+        $this->assertEquals('=', $question->prt[0]->node[0]->falsescoremode);
+        $this->assertEquals('', $question->prt[0]->node[0]->falsepenalty);
+        $this->assertEquals('', $question->prt[0]->node[0]->falsefeedback->text);
+        $this->assertEquals('html', $question->prt[0]->node[0]->falsefeedback['format']);
+        $input1 = $question->input[0];
+        $this->assertEquals('ans1', (string) $input1->name);
+        $this->assertEquals('algebraic', (string) $input1->type);
+        $this->assertEquals('ta1', (string) $input1->tans);
+        $this->assertEquals('15', (string) $input1->boxsize);
+        $this->assertEquals('1', (string) $input1->strictsyntax);
+        $this->assertEquals('0', (string) $input1->insertstars);
+        $this->assertEquals('', (string) $input1->syntaxhint);
+        $this->assertEquals('0', (string) $input1->syntaxattribute);
+        $this->assertEquals('', (string) $input1->forbidwords);
+        $this->assertEquals('', (string) $input1->allowwords);
+        $this->assertEquals('1', (string) $input1->forbidfloat);
+        $this->assertEquals('0', (string) $input1->requirelowestterms);
+        $this->assertEquals('0', (string) $input1->checkanswertype);
+        $this->assertEquals('1', (string) $input1->mustverify);
+        $this->assertEquals('1', (string) $input1->showvalidation);
+        $this->assertEquals('', (string) $input1->options);
+    }
+
     public function test_loadxml_summary_default(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
@@ -197,7 +593,7 @@ final class yaml_converter_test extends \advanced_testcase {
         }
         $defaults = Yaml::parseFile(__DIR__ . '/fixtures/questiondefaultssugar.yml');
         $questionyaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
-        $xml = \qbank_gitsync\yaml_converter::loadyaml($questionyaml , $defaults);
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($questionyaml, $defaults);
 
         // Check prt fields.
         $this->assertCount(2, $xml->question->prt);
@@ -222,7 +618,6 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('1', (string) $prt2->node[0]->falsescore);
     }
 
-
     public function test_loadxml_summary(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
@@ -230,7 +625,7 @@ final class yaml_converter_test extends \advanced_testcase {
         }
         $defaults = Yaml::parseFile(__DIR__ . '/fixtures/questiondefaultssugar.yml');
         $questionyaml = file_get_contents(__DIR__ . '/fixtures/fullquestionsummary.yml');
-        $xml = \qbank_gitsync\yaml_converter::loadyaml($questionyaml , $defaults);
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($questionyaml, $defaults);
 
         // Check prt fields.
         $this->assertCount(2, $xml->question->prt);
@@ -256,19 +651,79 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('1', (string) $prt2->node[0]->falsescore);
     }
 
-    public function test_yaml_to_xml(): void {
+    public function test_yamlstring_to_xml(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
         }
         $yaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
-        $xml = yaml_converter::yaml_to_xml($yaml);
+        $xml = yaml_converter::yamlstring_to_xml($yaml);
         $this->assertEquals('Test question', (string)$xml->question->name->text);
-        $this->assertEquals(1,
-            preg_match('/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
-                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s', (string) $xml->question->questiontext->text));
+        $this->assertEquals(1, preg_match(
+            '/<p>Question<\/p><p>\[\[input:ans1\]\] \[\[validation:ans1\]\]<\/p>\n    <p>' .
+                '\[\[input:ans2\]\] \[\[validation:ans2\]\]<\/p>/s',
+            (string) $xml->question->questiontext->text
+        ));
         $this->assertEquals('html', (string)$xml->question->questiontext['format']);
         $this->assertEquals(false, isset($xml->question->questiontext->format));
+    }
+
+    public function test_yaml_to_xml(): void {
+        $data = [
+            'name' => 'Test',
+            'questiontext' => 'What is 2+2?',
+            'questiontextformat' => 'moodle',
+            'input' => [
+                [
+                    'name' => 'ans1',
+                    'tans' => '1',
+                ],
+                [
+                    'name' => 'ans1',
+                    'tans' => '2',
+                ],
+            ],
+            'prt' => [
+                [
+                    'name' => 'prt1',
+                    'value' => '23',
+                    'node' => [
+                        [
+                            'name' => '0',
+                            'sans' => '011',
+                            'tans' => '022',
+                        ],
+                        [
+                            'name' => '1',
+                            'sans' => '033',
+                            'tans' => '044',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $xml = yaml_converter::yaml_to_xml($data);
+        $this->assertEquals('Test', $xml->question->name->text);
+        $this->assertEquals('stack', $xml->question['type']);
+        $this->assertEquals('What is 2+2?', $xml->question->questiontext->text);
+        $this->assertEquals('moodle', $xml->question->questiontext['format']);
+        $this->assertEquals('1', $xml->question->prt[0]->node[1]->name);
+    }
+
+    public function test_xmlstring_to_yamlstring(): void {
+        if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
+            $this->markTestSkipped('Symfony YAML extension is not available.');
+            return;
+        }
+        // Test the difference detection with a full question.
+        $xmlstring = file_get_contents(__DIR__ . '/fixtures/fullquestion.xml');
+        $expectedyamlstring = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
+        $expectedyamlstring = yaml_converter::yamlstring_to_xml($expectedyamlstring);
+        $expectedyamlstring = yaml_converter::xml_to_array($expectedyamlstring);
+        $expectedyamlstring =
+            Yaml::dump($expectedyamlstring, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
+        $yamlstring = yaml_converter::xmlstring_to_yamlstring($xmlstring);
+        $this->assertEquals($expectedyamlstring, $yamlstring);
     }
 
     public function test_array_to_xml_inverse(): void {
@@ -321,6 +776,48 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEqualsCanonicalizing($data, $array);
     }
 
+    public function test_defaults_xml_to_array(): void {
+        $data = [
+            'name' => 'Test',
+            'questiontext' => 'What is 2+2?',
+            'questiontextformat' => 'moodle',
+            'input' => [
+                [
+                    'name' => 'ans1',
+                    'tans' => '1',
+                ],
+                [
+                    'name' => 'ans1',
+                    'tans' => '2',
+                ],
+            ],
+            'prt' => [
+                [
+                    'name' => 'prt1',
+                    'value' => '23',
+                ],
+            ],
+            'node' => [
+                        [
+                            'name' => '0',
+                            'sans' => '011',
+                            'tans' => '022',
+                        ],
+                    ],
+        ];
+        $xml = new \SimpleXMLElement('<question></question>');
+        yaml_converter::array_to_xml($data, $xml);
+        $this->assertEquals('Test', $xml->name);
+        $this->assertEquals('What is 2+2?', $xml->questiontext->text);
+        $this->assertEquals('moodle', $xml->questiontext['format']);
+        $this->assertEquals(2, count($xml->input));
+        $this->assertEquals(1, count($xml->prt));
+        $this->assertEquals('prt1', $xml->prt->name);
+        $this->assertEquals('0', $xml->node->name);
+        $this->assertEquals('011', $xml->node->sans);
+        $this->assertEquals('022', $xml->node->tans);
+    }
+
     public function test_obj_diff(): void {
         $a = (object) ['a' => 1, 'b' => 2];
         $b = (object) ['a' => 1, 'b' => 3];
@@ -359,20 +856,21 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertStringContainsString('name: Test', $yaml);
     }
 
-    public function test_detect_difference_yml(): void {
+    public function test_detect_difference_xml(): void {
         if (!defined('Symfony\Component\Yaml\Yaml::DUMP_COMPACT_NESTED_MAPPING')) {
             $this->markTestSkipped('Symfony YAML extension is not available.');
             return;
         }
         // Test the difference detection with a full question.
-        $yaml = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
-        $diff = yaml_converter::detect_differences($yaml, null);
+        $xml = file_get_contents(__DIR__ . '/fixtures/fullquestion.xml');
+        $diff = yaml_converter::detect_differences($xml, null, true);
         $diffarray = Yaml::parse($diff);
-        $this->assertEquals(10, count($diffarray));
+        $this->assertEquals(11, count($diffarray));
         $expected = [
             'name' => 'Test question',
             'questiontext' => "<p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>\n    <p>[[input:ans2]] " .
-                "[[validation:ans2]]</p>\n",
+                "[[validation:ans2]]</p>",
+            'stackversion' => '2025042500',
             'questionvariables' => 'ta1:1;ta2:2;',
             'questionsimplify' => '1',
             'prtcorrect' => '<p><i class="fa fa-check"></i> Correct answer*, well done.</p>',
@@ -467,8 +965,8 @@ final class yaml_converter_test extends \advanced_testcase {
                 ],
             ],
         ];
-        $expectedstring = "name: 'Test question'\nquestiontext: |\n  <p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>" .
-            "\n      <p>[[input:ans2]] [[validation:ans2]]</p>\nquestionvariables: 'ta1:1;ta2:2;" .
+        $expectedstring = "name: 'Test question'\nquestiontext: |-\n  <p>Question</p><p>[[input:ans1]] [[validation:ans1]]</p>" .
+            "\n      <p>[[input:ans2]] [[validation:ans2]]</p>\nstackversion: '2025042500'\nquestionvariables: 'ta1:1;ta2:2;" .
             "'\nquestionsimplify: '1'\nprtcorrect: '<p>" .
             "<i class=\"fa fa-check\"></i> Correct answer*, well done.</p>'\nmultiplicationsign: cross\ninput:\n  - " .
             "name: ans1\n    type: algebraic\n    tans: ta1\n    boxsize: '25'\n    forbidfloat: '1'\n    " .
@@ -490,11 +988,11 @@ final class yaml_converter_test extends \advanced_testcase {
 
         // Check results when using answertest summary in defaults.
         $diff = yaml_converter::detect_differences(
-            $yaml,
+            $xml,
             yaml_converter::load_defaults(__DIR__ . '/fixtures/questiondefaultssugar.yml')
         );
         $diffarray = Yaml::parse($diff);
-        $this->assertEquals(10, count($diffarray));
+        $this->assertEquals(11, count($diffarray));
         $expected['prt'][0]['node'][0] = [
                             'name' => '0',
                             'answertest' => 'ATAlgEquiv(ans1,ta1)',
@@ -637,6 +1135,28 @@ final class yaml_converter_test extends \advanced_testcase {
             'foo ( bar )',
             'baz',
             'qux',
+        ];
+        $this->assertEquals($expected, yaml_converter::split_answertest($input));
+    }
+
+    public function test_split_answertest_square(): void {
+        $input = 'ATTest( foo[bar, again], baz , qux )';
+        $expected = [
+            'ATTest',
+            'foo[bar, again]',
+            'baz',
+            'qux',
+        ];
+        $this->assertEquals($expected, yaml_converter::split_answertest($input));
+    }
+
+    public function test_split_answertest_mix(): void {
+        $input = 'ATTest( foo[bar, (again, hello)], ([baz, baz]), ([qux, qux2]) )';
+        $expected = [
+            'ATTest',
+            'foo[bar, (again, hello)]',
+            '([baz, baz])',
+            '([qux, qux2])',
         ];
         $this->assertEquals($expected, yaml_converter::split_answertest($input));
     }

@@ -32,6 +32,7 @@ use org\bovigo\vfs\vfsStream;
 
 /**
  * Allows testing of errors that lead to an exit.
+ * phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses
  */
 class fake_helper extends cli_helper {
     /**
@@ -112,6 +113,7 @@ final class import_repo_test extends advanced_testcase {
             'ignorecat' => null,
             'forceimport' => false,
             'useyaml' => false,
+            'usefragments' => false,
         ];
         $this->clihelper = $this->getMockBuilder(\qbank_gitsync\cli_helper::class)->onlyMethods([
             'get_arguments',
@@ -836,7 +838,7 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->process();
 
         // Manifest file is a single array.
-        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $this->assertEquals(45, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(4, $manifestcontents->questions);
 
@@ -886,7 +888,7 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->process();
 
         // Manifest file is a single array.
-        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $this->assertEquals(31, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(2, $manifestcontents->questions);
 
@@ -933,7 +935,7 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->process();
 
         // Manifest file is a single array.
-        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $this->assertEquals(24, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(1, $manifestcontents->questions);
 
@@ -979,7 +981,7 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->process();
 
         // Manifest file is a single array.
-        $this->assertEquals(1, count(file($this->importrepo->manifestpath)));
+        $this->assertEquals(31, count(file($this->importrepo->manifestpath)));
         $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
         $this->assertCount(2, $manifestcontents->questions);
 
@@ -1443,7 +1445,7 @@ final class import_repo_test extends advanced_testcase {
         );
         $clihelper->processedoptions = $this->options;
         $clihelper->check_context($this->importrepo);
-        $this->expectOutputRegex('/^\nPreparing to.*import_repo.*Question subdirectory: top\n$/s');
+        $this->expectOutputRegex('/^\nPreparing to.*import_repo.*Question subdirectory: top\n.*files not fragments.\n$/s');
     }
 
     /**

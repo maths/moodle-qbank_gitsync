@@ -23,7 +23,8 @@
 |h|help|
 |u|usegit|Is the repo controlled using Git?
 |x|ignorecat|Regex of categories to ignore - add an extra leading / for Windows.
-|y|useyaml|Export questions as YAML difference file?|
+|y|useyaml|Export questions as YAML?|
+|b|usefragments|Export questions as difference files?|
 
 This is very similar to [`createrepo.php`](createrepo.md) but normally Gitsync retrieves questions within a Moodle context, returning all or a subselection of question categories with the repo directory structure matching the category structure in Moodle. Courses and quizzes are in separate contexts, however. Use `createwholecourserepo.php` to keep quizzes with their parent course in a single repo.
 

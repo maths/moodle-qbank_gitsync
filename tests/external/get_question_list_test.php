@@ -87,15 +87,22 @@ final class get_question_list_test extends externallib_advanced_testcase {
             $category = question_make_default_categories([$this->context]);
         }
         $this->qcategory = $this->generator->create_question_category(
-                        ['contextid' => $this->context->id]);
+            ['contextid' => $this->context->id]
+        );
         $user = $this->getDataGenerator()->create_user();
         $this->user = $user;
         $this->setUser($user);
-        $this->q = $this->generator->create_question('shortanswer', null,
-                        ['name' => self::QNAME, 'category' => $this->qcategory->id]);
-        $this->qbankentryid = $DB->get_field('question_versions', 'questionbankentryid',
-                                             ['questionid' => $this->q->id], $strictness = MUST_EXIST);
-
+        $this->q = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME, 'category' => $this->qcategory->id]
+        );
+        $this->qbankentryid = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $this->q->id],
+            $strictness = MUST_EXIST
+        );
     }
 
     /**
@@ -107,9 +114,18 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
 
-        $returnvalue = get_question_list::execute('top', 70, get_config('qbank_gitsync')->version,
-                                                  $this->course->fullname, $this->module->name, null,
-                                                  null, null, false, ['']);
+        $returnvalue = get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            null,
+            null,
+            false,
+            ['']
+        );
 
         // We need to execute the return values cleaning process to simulate
         // the web service server.
@@ -131,8 +147,18 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
         $this->expectExceptionMessage('not logged in');
-        get_question_list::execute('top', 70, get_config('qbank_gitsync')->version, $this->course->fullname,
-                                   $this->module->name, null, null, null, false, ['']);
+        get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            null,
+            null,
+            false,
+            ['']
+        );
     }
 
     /**
@@ -145,8 +171,18 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $this->unassignUserCapability('qbank/gitsync:listquestions', \context_system::instance()->id, $managerroleid);
         $this->expectException(required_capability_exception::class);
         $this->expectExceptionMessage('you do not currently have permissions to do that (List)');
-        get_question_list::execute('top', 70, get_config('qbank_gitsync')->version, $this->course->fullname,
-                                   $this->module->name, null, null, null, false, ['']);
+        get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            null,
+            null,
+            false,
+            ['']
+        );
     }
 
     /**
@@ -155,8 +191,18 @@ final class get_question_list_test extends externallib_advanced_testcase {
     public function test_list_capability(): void {
         $this->expectException(require_login_exception::class);
         $this->expectExceptionMessage('Not enrolled');
-        get_question_list::execute('top', 70, get_config('qbank_gitsync')->version, $this->course->fullname,
-                                   $this->module->name, null, null, null, false, ['']);
+        get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            null,
+            null,
+            false,
+            ['']
+        );
     }
 
     /**
@@ -169,8 +215,11 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $quiz2context = \context_module::instance($quiz2->cmid);
         $catinquiz2 = $this->generator->create_question_category(['contextid' => $quiz2context->id]);
 
-        $qinquiz2 = $this->generator->create_question('numerical', null,
-            ['name' => 'Example numerical question', 'category' => $catinquiz2->id]);
+        $qinquiz2 = $this->generator->create_question(
+            'numerical',
+            null,
+            ['name' => 'Example numerical question', 'category' => $catinquiz2->id]
+        );
 
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
@@ -178,8 +227,18 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $this->expectExceptionMessage('Not enrolled');
         // Trying to list question from course 2 using context of course 1.
         // User has list capability on course 1 but not course 2.
-        get_question_list::execute('top', 70, get_config('qbank_gitsync')->version, $course2->fullname,
-                                   $quiz2->name, null, null, null, false, ['']);
+        get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            $course2->fullname,
+            $quiz2->name,
+            null,
+            null,
+            null,
+            false,
+            ['']
+        );
     }
 
     /**
@@ -192,14 +251,33 @@ final class get_question_list_test extends externallib_advanced_testcase {
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
 
         $qcategory2 = $this->generator->create_question_category(
-            ['contextid' => $this->context->id]);
-        $q2 = $this->generator->create_question('shortanswer', null,
-                                                ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
-        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
-                             ['questionid' => $q2->id], $strictness = MUST_EXIST);
+            ['contextid' => $this->context->id]
+        );
+        $q2 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]
+        );
+        $qbankentryid2 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $q2->id],
+            $strictness = MUST_EXIST
+        );
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 70, get_config('qbank_gitsync')->version, $this->course->fullname,
-                                                  $this->module->name, null, null, null, false, [''], '');
+        $returnvalue = get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            null,
+            null,
+            false,
+            [''],
+            ''
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),
@@ -240,13 +318,30 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
         $qcategory2 = $this->generator->create_question_category(['contextid' => $this->context->id]);
-        $q2 = $this->generator->create_question('shortanswer', null,
-                                                ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
-        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
-                             ['questionid' => $q2->id], $strictness = MUST_EXIST);
+        $q2 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]
+        );
+        $qbankentryid2 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $q2->id],
+            $strictness = MUST_EXIST
+        );
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 70, get_config('qbank_gitsync')->version, null, null,
-                                                  null, null, $this->module->cmid, false, ['']);
+        $returnvalue = get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            null,
+            null,
+            null,
+            null,
+            $this->module->cmid,
+            false,
+            ['']
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),
@@ -287,21 +382,46 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
         $qcategory2 = $this->generator->create_question_category(['contextid' => $this->context->id]);
-        $q2 = $this->generator->create_question('shortanswer', null,
-                                                ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
-        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
-                             ['questionid' => $q2->id], $strictness = MUST_EXIST);
+        $q2 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]
+        );
+        $qbankentryid2 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $q2->id],
+            $strictness = MUST_EXIST
+        );
         $quiz2 = $this->getDataGenerator()->create_module('quiz', ['course' => $this->course->id, 'name' => 'QUIZ2 TEST']);
         $quiz2context = \context_module::instance($quiz2->cmid);
         $catinquiz2 = $this->generator->create_question_category(['contextid' => $quiz2context->id]);
-        $qinquiz2 = $this->generator->create_question('numerical', null,
-                                            ['name' => 'Example numerical question', 'category' => $catinquiz2->id]);
-        $qbankentryid3 = $DB->get_field('question_versions', 'questionbankentryid',
-                                                             ['questionid' => $qinquiz2->id], $strictness = MUST_EXIST);
+        $qinquiz2 = $this->generator->create_question(
+            'numerical',
+            null,
+            ['name' => 'Example numerical question', 'category' => $catinquiz2->id]
+        );
+        $qbankentryid3 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $qinquiz2->id],
+            $strictness = MUST_EXIST
+        );
 
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 70, get_config('qbank_gitsync')->version, null, null,
-                                                    null, null, $this->module->cmid, false, [$qbankentryid2, $qbankentryid3], '');
+        $returnvalue = get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            null,
+            null,
+            null,
+            null,
+            $this->module->cmid,
+            false,
+            [$qbankentryid2, $qbankentryid3],
+            ''
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),
@@ -353,8 +473,19 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $this->expectExceptionMessage('The category is not in the supplied context.');
         // Trying to list question from course 2 using context of course 1.
         // User has list capability on course 1 but not course 2.
-        get_question_list::execute('top', 70, get_config('qbank_gitsync')->version, $this->course->fullname,
-                                                  $this->module->name, null, $catinquiz2->id, null, false, [''], '');
+        get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            $catinquiz2->id,
+            null,
+            false,
+            [''],
+            ''
+        );
     }
 
     /**
@@ -365,24 +496,31 @@ final class get_question_list_test extends externallib_advanced_testcase {
      */
     public function test_get_category_path(): void {
         $qcategory2 = $this->generator->create_question_category(
-            ['contextid' => $this->context->id, 'parent' => $this->qcategory->id, 'name' => "Tim's questions"]);
+            ['contextid' => $this->context->id, 'parent' => $this->qcategory->id, 'name' => "Tim's questions"]
+        );
         $qcategory3 = $this->generator->create_question_category(
-            ['contextid' => $this->context->id, 'parent' => $qcategory2->id, 'name' => "Tricky things like / // and so on"]);
+            ['contextid' => $this->context->id, 'parent' => $qcategory2->id, 'name' => "Tricky things like / // and so on"]
+        );
         $qcategory4 = $this->generator->create_question_category(
-            ['contextid' => $this->context->id, 'parent' => $qcategory3->id, 'name' => 'Category name ending in /']);
+            ['contextid' => $this->context->id, 'parent' => $qcategory3->id, 'name' => 'Category name ending in /']
+        );
         $qcategory5 = $this->generator->create_question_category(
-            ['contextid' => $this->context->id, 'parent' => $qcategory4->id, 'name' => '/ and one that starts with one']);
+            ['contextid' => $this->context->id, 'parent' => $qcategory4->id, 'name' => '/ and one that starts with one']
+        );
         $qcategory6 = $this->generator->create_question_category(
             ['contextid' => $this->context->id, 'parent' => $qcategory5->id,
              'name' => '<span lang="en" class="multilang">Matematically</span> ' .
              '<span lang="sv" class="multilang">Matematiskt (svenska)</span>"',
-            ]);
+            ]
+        );
 
-        $this->assertEquals('top/' . $this->qcategory->name .
+        $this->assertEquals(
+            'top/' . $this->qcategory->name .
             '/Tim\'s questions/Tricky things like // //// and so on/Category name ending in ' .
             '// / // and one that starts with one/<span lang="en" class="multilang">Matematically<//span> ' .
             '<span lang="sv" class="multilang">Matematiskt (svenska)<//span>"',
-            get_question_list::get_category_path($qcategory6));
+            get_question_list::get_category_path($qcategory6)
+        );
     }
 
     /**
@@ -394,14 +532,33 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
         $qcategory2 = $this->generator->create_question_category(
-            ['contextid' => $this->context->id]);
-        $q2 = $this->generator->create_question('shortanswer', null,
-                                                ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
-        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
-                             ['questionid' => $q2->id], $strictness = MUST_EXIST);
+            ['contextid' => $this->context->id]
+        );
+        $q2 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]
+        );
+        $qbankentryid2 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $q2->id],
+            $strictness = MUST_EXIST
+        );
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top/' . $qcategory2->name, 70, get_config('qbank_gitsync')->version,
-                                                  $this->course->fullname, $this->module->name, null, null, null, false, [''], '');
+        $returnvalue = get_question_list::execute(
+            'top/' . $qcategory2->name,
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            null,
+            null,
+            false,
+            [''],
+            ''
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),
@@ -437,15 +594,33 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
         $qcategory2 = $this->generator->create_question_category(
-            ['contextid' => $this->context->id]);
-        $q2 = $this->generator->create_question('shortanswer', null,
-                                                ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
-        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
-                             ['questionid' => $q2->id], $strictness = MUST_EXIST);
+            ['contextid' => $this->context->id]
+        );
+        $q2 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]
+        );
+        $qbankentryid2 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $q2->id],
+            $strictness = MUST_EXIST
+        );
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 70, get_config('qbank_gitsync')->version,
-                                                  $this->course->fullname, $this->module->name,
-                                                  null, $qcategory2->id, null, false, [''], '');
+        $returnvalue = get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            $qcategory2->id,
+            null,
+            false,
+            [''],
+            ''
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),
@@ -482,25 +657,47 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
         $qcategory2 = $this->generator->create_question_category(
-            ['contextid' => $this->context->id, 'name' => 'Cat2_DO_NOT_SHARE']);
+            ['contextid' => $this->context->id, 'name' => 'Cat2_DO_NOT_SHARE']
+        );
         $qcategory3 = $this->generator->create_question_category(
             ['contextid' => $this->context->id, 'name' => 'SubCat1',
-            'parent' => $qcategory2->id]);
+            'parent' => $qcategory2->id]
+        );
         $qcategory4 = $this->generator->create_question_category(
             ['contextid' => $this->context->id, 'name' => 'SubCat2',
-            'parent' => $qcategory2->id]);
+            'parent' => $qcategory2->id]
+        );
 
-        $q2 = $this->generator->create_question('shortanswer', null,
-                                            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
-        $q3 = $this->generator->create_question('shortanswer', null,
-                                            ['name' => self::QNAME . '3', 'category' => $qcategory3->id]);
-        $q4 = $this->generator->create_question('shortanswer', null,
-                                            ['name' => self::QNAME . '4', 'category' => $qcategory4->id]);
+        $q2 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]
+        );
+        $q3 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '3', 'category' => $qcategory3->id]
+        );
+        $q4 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '4', 'category' => $qcategory4->id]
+        );
 
         $sink = $this->redirectEvents();
-        $returnvalue = get_question_list::execute('top', 70, get_config('qbank_gitsync')->version,
-                                                  $this->course->fullname, $this->module->name,
-                                                  null, null, null, false, [''], '/.*DO_NOT_SHARE/');
+        $returnvalue = get_question_list::execute(
+            'top',
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            null,
+            null,
+            false,
+            [''],
+            '/.*DO_NOT_SHARE/'
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),
@@ -537,31 +734,61 @@ final class get_question_list_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
         $qcategory2 = $this->generator->create_question_category(
-            ['contextid' => $this->context->id, 'name' => 'Cat2']);
+            ['contextid' => $this->context->id, 'name' => 'Cat2']
+        );
         $qcategory3 = $this->generator->create_question_category(
             ['contextid' => $this->context->id, 'name' => 'SubCat1',
-            'parent' => $qcategory2->id]);
+            'parent' => $qcategory2->id]
+        );
         $qcategory4 = $this->generator->create_question_category(
             ['contextid' => $this->context->id, 'name' => 'SubCat2_DO_NOT_SHARE',
-            'parent' => $qcategory2->id]);
+            'parent' => $qcategory2->id]
+        );
 
-        $q2 = $this->generator->create_question('shortanswer', null,
-                                            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]);
-        $q3 = $this->generator->create_question('shortanswer', null,
-                                            ['name' => self::QNAME . '3', 'category' => $qcategory3->id]);
-        $q4 = $this->generator->create_question('shortanswer', null,
-                                            ['name' => self::QNAME . '4', 'category' => $qcategory4->id]);
+        $q2 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '2', 'category' => $qcategory2->id]
+        );
+        $q3 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '3', 'category' => $qcategory3->id]
+        );
+        $q4 = $this->generator->create_question(
+            'shortanswer',
+            null,
+            ['name' => self::QNAME . '4', 'category' => $qcategory4->id]
+        );
 
-        $qbankentryid2 = $DB->get_field('question_versions', 'questionbankentryid',
-                             ['questionid' => $q2->id], $strictness = MUST_EXIST);
-        $qbankentryid3 = $DB->get_field('question_versions', 'questionbankentryid',
-                             ['questionid' => $q3->id], $strictness = MUST_EXIST);
+        $qbankentryid2 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $q2->id],
+            $strictness = MUST_EXIST
+        );
+        $qbankentryid3 = $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $q3->id],
+            $strictness = MUST_EXIST
+        );
 
         $sink = $this->redirectEvents();
 
-        $returnvalue = get_question_list::execute('top/' . $qcategory2->name, 70, get_config('qbank_gitsync')->version,
-                                                  $this->course->fullname, $this->module->name,
-                                                  null, null, null, false, [''], '/.*DO_NOT_SHARE/');
+        $returnvalue = get_question_list::execute(
+            'top/' . $qcategory2->name,
+            70,
+            get_config('qbank_gitsync')->version,
+            $this->course->fullname,
+            $this->module->name,
+            null,
+            null,
+            null,
+            false,
+            [''],
+            '/.*DO_NOT_SHARE/'
+        );
 
         $returnvalue = external_api::clean_returnvalue(
             get_question_list::execute_returns(),

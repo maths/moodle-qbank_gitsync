@@ -248,9 +248,10 @@ class export_quiz {
             } else {
                 $missingquestions = true;
                 $multiple = ($this->quizmanifestpath && $this->nonquizmanifestpath) ? 's' : '';
-                echo "\nQuestion: {$question->questionbankentryid}\n";
+                echo "\nQuestion: {$question->name}\n";
                 echo "This question is in the quiz but not in the supplied manifest file{$multiple}\n";
             }
+            unset($question->name);
         }
         if ($missingquestions) {
             echo "Questions must either be in the repo for the quiz context defined by a supplied quiz manifest " .
@@ -261,7 +262,7 @@ class export_quiz {
             echo "Quiz structure file: {$this->filepath} not updated.\n";
         } else {
             // Save exported information (including relative file location but not QBE id so Moodle independent).
-            $success = file_put_contents($this->filepath, json_encode($responsejson));
+            $success = file_put_contents($this->filepath, json_encode($responsejson, JSON_PRETTY_PRINT));
             if ($success === false) {
                 echo "\nUnable to update quiz structure file: {$this->filepath}\n Aborting.\n";
                 $this->call_exit();

@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/lib/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
-require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
+require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 
 use core_question\local\bank\question_version_status;
 use external_api;
@@ -114,12 +114,19 @@ class get_question_list extends external_api {
      * @param string|null $ignorecat Regex of categories to ignore (along with their descendants)
      * @return object containing context info and an array of question data
      */
-    public static function execute(?string $qcategoryname,
-                                    int $contextlevel, string $localversion,
-                                    ?string $coursename = null, ?string $modulename = null,
-                                    ?string $coursecategory = null, ?string $qcategoryid = null,
-                                    ?string $instanceid = null, bool $contextonly = false,
-                                    ?array $qbankentryids = [''], ?string $ignorecat = null): object {
+    public static function execute(
+        ?string $qcategoryname,
+        int $contextlevel,
+        string $localversion,
+        ?string $coursename = null,
+        ?string $modulename = null,
+        ?string $coursecategory = null,
+        ?string $qcategoryid = null,
+        ?string $instanceid = null,
+        bool $contextonly = false,
+        ?array $qbankentryids = [''],
+        ?string $ignorecat = null
+    ): object {
         global $CFG, $DB;
         $params = self::validate_parameters(self::execute_parameters(), [
             'qcategoryname' => $qcategoryname,
@@ -137,14 +144,21 @@ class get_question_list extends external_api {
 
         $serverversion = get_config('qbank_gitsync')->version;
         if ($params['localversion'] !== $serverversion) {
-            throw new \moodle_exception('versionmismatch', 'qbank_gitsync', null,
-                                        ['local' => $params['localversion'], 'moodle' => $serverversion]);
+            throw new \moodle_exception(
+                'versionmismatch',
+                'qbank_gitsync',
+                null,
+                ['local' => $params['localversion'], 'moodle' => $serverversion]
+            );
         }
 
-        $contextinfo = get_context($params['contextlevel'], $params['coursecategory'],
-                                   $params['coursename'], $params['modulename'],
-                                   $params['instanceid']
-                                );
+        $contextinfo = get_context(
+            $params['contextlevel'],
+            $params['coursecategory'],
+            $params['coursename'],
+            $params['modulename'],
+            $params['instanceid']
+        );
 
         $thiscontext = $contextinfo->context;
 
@@ -171,9 +185,11 @@ class get_question_list extends external_api {
                 $catnames = split_category_path($params['qcategoryname']);
                 $parent = 0;
                 foreach ($catnames as $catname) {
-                    $category = $DB->get_record('question_categories',
-                                    ['name' => $catname, 'contextid' => $thiscontext->id, 'parent' => $parent],
-                                    'id, parent, name');
+                    $category = $DB->get_record(
+                        'question_categories',
+                        ['name' => $catname, 'contextid' => $thiscontext->id, 'parent' => $parent],
+                        'id, parent, name'
+                    );
                     $parent = $category->id;
                 }
             } else {
@@ -206,7 +222,8 @@ class get_question_list extends external_api {
                     WHERE cm.course = :courseid
                         AND m.name = 'quiz'
                         AND cm.deletioninprogress = 0",
-                    ['courseid' => (int) $contextinfo->courseid]);
+                    ['courseid' => (int) $contextinfo->courseid]
+                );
             }
 
             if ($contextonly) {

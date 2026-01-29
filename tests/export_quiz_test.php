@@ -93,6 +93,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '1',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'A',
             ],
         ],
         'feedback' => [
@@ -127,7 +128,6 @@ final class export_quiz_test extends advanced_testcase {
             'help' => false,
             'subcall' => false,
         ];
-
     }
 
     /**
@@ -234,6 +234,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'A',
             ];
         $this->set_up_mocks();
         $this->curl->expects($this->any())->method('execute')->willReturn(
@@ -262,6 +263,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'A',
             ],
             [
                 'questionbankentryid' => '35003',
@@ -269,6 +271,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'A',
             ],
         ];
         $this->set_up_mocks();
@@ -298,6 +301,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'A',
             ],
             [
                 'questionbankentryid' => '36001',
@@ -305,6 +309,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'B',
             ],
             [
                 'questionbankentryid' => '37001',
@@ -312,6 +317,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'C',
             ],
         ];
         $this->set_up_mocks();
@@ -320,7 +326,7 @@ final class export_quiz_test extends advanced_testcase {
         );
         $this->exportquiz->process();
         $this->assertEquals(false, is_file($this->exportquiz->filepath));
-        $this->expectOutputRegex('/\nQuestion: 37001\nThis question is in the quiz but not in the supplied manifest files\n' .
+        $this->expectOutputRegex('/\nQuestion: C\nThis question is in the quiz but not in the supplied manifest files\n' .
                             'Questions must either be in the repo.*testrepo_quiz_quiz-1\/quiz-1_quiz.json not updated.\n$/s');
     }
 
@@ -335,6 +341,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'A',
             ],
             [
                 'questionbankentryid' => '35002',
@@ -342,6 +349,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '2',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'A',
             ],
             [
                 'questionbankentryid' => '36001',
@@ -349,6 +357,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '3',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'A',
             ],
             [
                 'questionbankentryid' => '36002',
@@ -356,6 +365,7 @@ final class export_quiz_test extends advanced_testcase {
                 'page' => '4',
                 'requireprevious' => 0,
                 'maxmark' => '1.0000000',
+                'name' => 'A',
             ],
         ];
         $this->set_up_mocks();

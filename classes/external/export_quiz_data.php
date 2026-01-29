@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/lib/externallib.php');
 require_once($CFG->libdir . '/questionlib.php');
-require_once($CFG->dirroot. '/question/bank/gitsync/lib.php');
+require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 
 use core_question\local\bank\question_version_status;
 use external_api;
@@ -81,6 +81,7 @@ class export_quiz_data extends external_api {
                     'page' => new external_value(PARAM_SEQUENCE, 'page number'),
                     'requireprevious' => new external_value(PARAM_INT, 'Require completion of previous question?'),
                     'maxmark' => new external_value(PARAM_TEXT, 'maximum mark'),
+                    'name' => new external_value(PARAM_TEXT, 'question name'),
                 ])
             ),
             'feedback' => new external_multiple_structure(
@@ -128,19 +129,32 @@ class export_quiz_data extends external_api {
         $quiz->name = $contextinfo->modulename;
         $response->quiz = $quiz;
 
-        $response->sections = $DB->get_records('quiz_sections', ['quizid' => $quizid], null,
-                                                'firstslot, heading, shufflequestions');
+        $response->sections = $DB->get_records(
+            'quiz_sections',
+            ['quizid' => $quizid],
+            null,
+            'firstslot, heading, shufflequestions'
+        );
 
-        $response->questions = $DB->get_records_sql("
-        SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark
+        $response->questions = $DB->get_records_sql(
+            "SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark, q.name
             FROM {quiz_slots} qs
             JOIN {question_references} qr ON qr.itemid = qs.id
+            JOIN {question_versions} qv ON qv.questionbankentryid = qr.questionbankentryid
+            JOIN {question} q ON q.id = qv.questionid
             WHERE qr.usingcontextid = :contextid
-            AND qr.questionarea = 'slot'",
-        ['contextid' => $contextinfo->context->id]);
+            AND qr.questionarea = 'slot'
+            AND qv.version = (SELECT MAX(version) FROM {question_versions} WHERE questionbankentryid = qr.questionbankentryid)
+            ORDER BY qs.slot",
+            ['contextid' => $contextinfo->context->id]
+        );
 
-        $response->feedback = $DB->get_records('quiz_feedback', ['quizid' => $quizid], null,
-                                                'feedbacktext, feedbacktextformat, mingrade, maxgrade');
+        $response->feedback = $DB->get_records(
+            'quiz_feedback',
+            ['quizid' => $quizid],
+            null,
+            'feedbacktext, feedbacktextformat, mingrade, maxgrade'
+        );
         return $response;
     }
 }
