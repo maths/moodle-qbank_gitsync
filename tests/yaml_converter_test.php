@@ -720,7 +720,8 @@ final class yaml_converter_test extends \advanced_testcase {
         $expectedyamlstring = file_get_contents(__DIR__ . '/fixtures/fullquestion.yml');
         $expectedyamlstring = yaml_converter::yamlstring_to_xml($expectedyamlstring);
         $expectedyamlstring = yaml_converter::xml_to_array($expectedyamlstring);
-        $expectedyamlstring = Yaml::dump($expectedyamlstring, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
+        $expectedyamlstring =
+            Yaml::dump($expectedyamlstring, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_COMPACT_NESTED_MAPPING);
         $yamlstring = yaml_converter::xmlstring_to_yamlstring($xmlstring);
         $this->assertEquals($expectedyamlstring, $yamlstring);
     }
