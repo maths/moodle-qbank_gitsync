@@ -25,14 +25,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Should match GITSYNC_VERSION in cli_helper.
-$plugin->version   = 2025121700;
+$plugin->version   = 2026012900;
 // Question versions functionality of Moodle 4 required.
 // Question delete fix for Moodle 4.1.5 required.
 // NB 4.2.0 and 4.2.1 do not have the fix.
 $plugin->requires  = 2022112805;
 $plugin->component = 'qbank_gitsync';
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.10.0 for Moodle 4.1+';
+$plugin->release   = '1.2.0 for Moodle 4.1+';
 
 $plugin->dependencies = [
     'qbank_importasversion'     => 2025121600,

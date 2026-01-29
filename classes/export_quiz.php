@@ -248,9 +248,10 @@ class export_quiz {
             } else {
                 $missingquestions = true;
                 $multiple = ($this->quizmanifestpath && $this->nonquizmanifestpath) ? 's' : '';
-                echo "\nQuestion: {$question->questionbankentryid}\n";
+                echo "\nQuestion: {$question->name}\n";
                 echo "This question is in the quiz but not in the supplied manifest file{$multiple}\n";
             }
+            unset($question->name);
         }
         if ($missingquestions) {
             echo "Questions must either be in the repo for the quiz context defined by a supplied quiz manifest " .

@@ -81,6 +81,7 @@ class export_quiz_data extends external_api {
                     'page' => new external_value(PARAM_SEQUENCE, 'page number'),
                     'requireprevious' => new external_value(PARAM_INT, 'Require completion of previous question?'),
                     'maxmark' => new external_value(PARAM_TEXT, 'maximum mark'),
+                    'name' => new external_value(PARAM_TEXT, 'question name'),
                 ])
             ),
             'feedback' => new external_multiple_structure(
@@ -136,11 +137,14 @@ class export_quiz_data extends external_api {
         );
 
         $response->questions = $DB->get_records_sql(
-            "SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark
+            "SELECT qr.questionbankentryid, qs.slot, qs.page, qs.requireprevious, qs.maxmark, q.name
             FROM {quiz_slots} qs
             JOIN {question_references} qr ON qr.itemid = qs.id
+            JOIN {question_versions} qv ON qv.questionbankentryid = qr.questionbankentryid
+            JOIN {question} q ON q.id = qv.questionid
             WHERE qr.usingcontextid = :contextid
             AND qr.questionarea = 'slot'
+            AND qv.version = (SELECT MAX(version) FROM {question_versions} WHERE questionbankentryid = qr.questionbankentryid)
             ORDER BY qs.slot",
             ['contextid' => $contextinfo->context->id]
         );
