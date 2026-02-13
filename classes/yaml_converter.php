@@ -698,10 +698,11 @@ class yaml_converter {
             self::get_default('question', 'specificfeedback')
         );
         $isrequesteddefaultprt = isset($plaindata['question']['questiontext']) &&
-            isset($plaindata['question']['specificfeedback']) && preg_match(
-            "/\[\[feedback:{" . self::get_default('prt', 'name') . "}\]\]/",
-            $plaindata['question']['questiontext'] . $plaindata['question']['specificfeedback']
-        );
+            isset($plaindata['question']['specificfeedback']) &&
+            preg_match(
+                "/\[\[feedback:{" . self::get_default('prt', 'name') . "}\]\]/",
+                $plaindata['question']['questiontext'] . $plaindata['question']['specificfeedback']
+            );
         if (!empty($plaindata['question']['input'])) {
             $diffinputs = [];
             foreach ($plaindata['question']['input'] as $input) {
@@ -709,8 +710,8 @@ class yaml_converter {
                 $diffinputs[] = $diffinput;
             }
             $diff['input'] = $diffinputs;
-        // We need to create an input if questiontext contains [[input:ansnamedefault]] or
-        // questiontext doesn't exist and default contains [[input:ansnamedefault]].
+            // We need to create an input if questiontext contains [[input:ansnamedefault]] or
+            // questiontext doesn't exist and default contains [[input:ansnamedefault]].
         } else if ((!$isquestiontext && $isdefaultinput) || $isrequesteddefaultinput) {
             $diff['input'] = [['name' => self::get_default('input', 'name'),
                 'type' => self::get_default('input', 'type'),
@@ -720,8 +721,8 @@ class yaml_converter {
                 'checkanswertype' => self::get_default('input', 'checkanswertype'),
                 'mustverify' => self::get_default('input', 'mustverify'),
                 'showvalidation' => self::get_default('input', 'showvalidation')]];
-        // We need to create a PRT if questiontext contains [[input:ansnamedefault]] or
-        // questiontext doesn't exist and default contains [[input:ansnamedefault]].
+            // We need to create a PRT if questiontext contains [[input:ansnamedefault]] or
+            // questiontext doesn't exist and default contains [[input:ansnamedefault]].
         } else {
             $diff['input'] = [];
             if (self::get_default('question', 'defaultgrade') !== 0) {
