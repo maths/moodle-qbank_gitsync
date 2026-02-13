@@ -1059,28 +1059,147 @@ final class yaml_converter_test extends \advanced_testcase {
         ];
         $this->assertEqualsCanonicalizing($expected, $diffarray);
 
-        // Test the difference detection with an info XML question.
-        $infoxml = '<quiz><question type="stack"><defaultgrade>0</defaultgrade></question></quiz>';
+        // Empty question with default grade.
+        $xml = '<quiz>
+                    <question type="stack">
+                        <defaultgrade>2</defaultgrade>
+                    </question>
+                </quiz>';
         $expected = [
             'name' => 'Default',
+            'defaultgrade' => '2',
             'questionsimplify' => '1',
-            'defaultgrade' => '0',
-            'input' => [],
-            'prt' => [],
+            'input' => [
+                [
+                    'name' => 'ans1',
+                    'type' => 'algebraic',
+                    'tans' => 'ta1',
+                    'forbidfloat' => '1',
+                    'requirelowestterms' => '0',
+                    'checkanswertype' => '0',
+                    'mustverify' => '1',
+                    'showvalidation' => '1',
+                ],
+            ],
+            'prt' => [
+                        [
+                            'name' => 'prt1',
+                            'autosimplify' => '1',
+                            'feedbackstyle' => '1',
+                            'node' => [
+                                [
+                                    'name' => '0',
+                                    'answertest' => 'AlgEquiv',
+                                    'sans' => 'ans1',
+                                    'tans' => 'ta1',
+                                    'quiet' => '0',
+                                ],
+                            ],
+                        ],
+                ],
         ];
-        $diff = yaml_converter::detect_differences($infoxml, null);
+        $diff = yaml_converter::detect_differences($xml, null);
         $diffarray = Yaml::parse($diff);
         $this->assertEquals(5, count($diffarray));
-
         $this->assertEqualsCanonicalizing($expected, $diffarray);
 
         // Check results when using answertest summary in defaults.
         $diff = yaml_converter::detect_differences(
-            $infoxml,
+            $xml,
             yaml_converter::load_defaults(__DIR__ . '/fixtures/questiondefaultssugar.yml')
         );
         $diffarray = Yaml::parse($diff);
         $this->assertEquals(5, count($diffarray));
+        $expected['prt'][0]['node'][0] = [
+                    'name' => '0',
+                    'answertest' => 'ATAlgEquiv(ans1,ta1)',
+                    'quiet' => '0',
+        ];
+        $this->assertEqualsCanonicalizing($expected, $diffarray);
+
+        // No inputs, blank specific feedback.
+        $xml = '<quiz>
+                    <question type="stack">
+                        <questiontext>
+                            <text>Question wording</text>
+                        </questiontext>
+                        <specificfeedback format="html">
+                            <text></text>
+                        </specificfeedback>
+                        <defaultgrade>2</defaultgrade>
+                    </question>
+                </quiz>';
+        $expected = [
+            'name' => 'Default',
+            'questiontext' => 'Question wording',
+            'defaultgrade' => '0',
+            'specificfeedback' => '',
+            'questionsimplify' => '1',
+            'input' => [],
+            'prt' => [],
+        ];
+        $diff = yaml_converter::detect_differences($xml, null);
+        $diffarray = Yaml::parse($diff);
+        $this->assertEquals(7, count($diffarray));
+        $this->assertEqualsCanonicalizing($expected, $diffarray);
+
+        // Input, blank specific feedback.
+        $xml = '<quiz>
+                    <question type="stack">
+                        <questiontext>
+                            <text>Question wording [[input:ans1]] [[validation:ans1]]</text>
+                        </questiontext>
+                        <specificfeedback format="html">
+                            <text></text>
+                        </specificfeedback>
+                        <defaultgrade>2</defaultgrade>
+                    </question>
+                </quiz>';
+        $expected = [
+            'name' => 'Default',
+            'questiontext' => 'Question wording [[input:ans1]] [[validation:ans1]]',
+            'defaultgrade' => '2',
+            'specificfeedback' => '',
+            'questionsimplify' => '1',
+            'input' => [
+                [
+                    'name' => 'ans1',
+                    'type' => 'algebraic',
+                    'tans' => 'ta1',
+                    'forbidfloat' => '1',
+                    'requirelowestterms' => '0',
+                    'checkanswertype' => '0',
+                    'mustverify' => '1',
+                    'showvalidation' => '1',
+                ],
+            ],
+            'prt' => [],
+        ];
+        $diff = yaml_converter::detect_differences($xml, null);
+        $diffarray = Yaml::parse($diff);
+        $this->assertEquals(7, count($diffarray));
+        $this->assertEqualsCanonicalizing($expected, $diffarray);
+
+        // No input, no specific feedback.
+        $xml = '<quiz>
+                    <question type="stack">
+                        <questiontext>
+                            <text>Question wording</text>
+                        </questiontext>
+                        <defaultgrade>2</defaultgrade>
+                    </question>
+                </quiz>';
+        $expected = [
+            'name' => 'Default',
+            'questiontext' => 'Question wording',
+            'defaultgrade' => '0',
+            'questionsimplify' => '1',
+            'input' => [],
+            'prt' => [],
+        ];
+        $diff = yaml_converter::detect_differences($xml, null);
+        $diffarray = Yaml::parse($diff);
+        $this->assertEquals(6, count($diffarray));
         $this->assertEqualsCanonicalizing($expected, $diffarray);
     }
 
@@ -1159,5 +1278,115 @@ final class yaml_converter_test extends \advanced_testcase {
             '([qux, qux2])',
         ];
         $this->assertEquals($expected, yaml_converter::split_answertest($input));
+    }
+
+    public function test_question_loader_default_emptygrade(): void {
+        $defaults = yaml_converter::load_defaults(__DIR__ . '/../questiondefaults.xml', false);
+        $xmlstring = '<quiz>
+                        <question type="stack">
+                            <defaultgrade>2</defaultgrade>
+                        </question>
+                    </quiz>';
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($xmlstring, $defaults, false);
+        $question = $xml->question;
+        $this->assertEquals(
+            '<p>Default question</p><p>[[input:ans1]] [[validation:ans1]]</p>',
+            $question->questiontext->text
+        );
+        $this->assertEquals('2', $question->defaultgrade);
+        $this->assertEquals(
+            '[[feedback:prt1]]',
+            $question->specificfeedback->text
+        );
+
+        $this->assertEquals(1, count($question->prt));
+        $this->assertEquals('AlgEquiv', $question->prt->node->answertest);
+        $this->assertEquals(1, count($question->input));
+        $this->assertEquals('ans1', $question->input->name);
+    }
+
+    public function test_question_loader_default_noinputblankspecific(): void {
+        $defaults = yaml_converter::load_defaults(__DIR__ . '/../questiondefaults.xml', false);
+        $xml = '<quiz>
+                    <question type="stack">
+                        <questiontext>
+                            <text>Question wording</text>
+                        </questiontext>
+                        <specificfeedback format="html">
+                            <text></text>
+                        </specificfeedback>
+                        <defaultgrade>2</defaultgrade>
+                    </question>
+                </quiz>';
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($xml, $defaults, false);
+        $question = $xml->question;
+        $this->assertEquals(
+            'Question wording',
+            $question->questiontext->text
+        );
+        $this->assertEquals('0', $question->defaultgrade);
+        $this->assertEquals(
+            '',
+            $question->specificfeedback->text
+        );
+
+        $this->assertEquals(0, count($question->prt));
+        $this->assertEquals(0, count($question->input));
+    }
+
+    public function test_question_loader_default_inputblankspecific(): void {
+        $defaults = yaml_converter::load_defaults(__DIR__ . '/../questiondefaults.xml', false);
+        $xml = '<quiz>
+                    <question type="stack">
+                        <questiontext>
+                            <text>Question wording [[input:ans1]] [[validation:ans1]]</text>
+                        </questiontext>
+                        <specificfeedback format="html">
+                            <text></text>
+                        </specificfeedback>
+                        <defaultgrade>2</defaultgrade>
+                    </question>
+                </quiz>';
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($xml, $defaults, false);
+        $question = $xml->question;
+        $this->assertEquals(
+            'Question wording [[input:ans1]] [[validation:ans1]]',
+            $question->questiontext->text
+        );
+        $this->assertEquals('2', $question->defaultgrade);
+        $this->assertEquals(
+            '',
+            $question->specificfeedback->text
+        );
+
+        $this->assertEquals(0, count($question->prt));
+        $this->assertEquals(1, count($question->input));
+        $this->assertEquals('ans1', $question->input->name);
+    }
+
+    public function test_question_loader_default_noinputnospecific(): void {
+        $defaults = yaml_converter::load_defaults(__DIR__ . '/../questiondefaults.xml', false);
+        $xml = '<quiz>
+                    <question type="stack">
+                        <questiontext>
+                            <text>Question wording</text>
+                        </questiontext>
+                        <defaultgrade>2</defaultgrade>
+                    </question>
+                </quiz>';
+        $xml = \qbank_gitsync\yaml_converter::load_string_as_xml($xml, $defaults, false);
+        $question = $xml->question;
+        $this->assertEquals(
+            'Question wording',
+            $question->questiontext->text
+        );
+        $this->assertEquals('0', $question->defaultgrade);
+        $this->assertEquals(
+            '',
+            $question->specificfeedback->text
+        );
+
+        $this->assertEquals(0, count($question->prt));
+        $this->assertEquals(0, count($question->input));
     }
 }
