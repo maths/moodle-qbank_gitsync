@@ -20,11 +20,11 @@ question:
   questionsimplify: '1'
   assumepositive: '0'
   assumereal: '0'
-  prtcorrect: '<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.'
+  prtcorrect: '[[commonstring key="symbolicprtcorrectfeedback"/]] [[commonstring key="defaultprtcorrectfeedback"/]]'
   prtcorrectformat: html
-  prtpartiallycorrect: '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.'
+  prtpartiallycorrect: '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]'
   prtpartiallycorrectformat: html
-  prtincorrect: '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.'
+  prtincorrect: '[[commonstring key="symbolicprtincorrectfeedback"/]] [[commonstring key="defaultprtincorrectfeedback"/]]'
   prtincorrectformat: html
   decimals: .
   scientificnotation: '*10'
