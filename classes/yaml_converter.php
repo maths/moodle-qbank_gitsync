@@ -126,7 +126,11 @@ class yaml_converter {
             $question->questionnote['format'] = self::get_default('question', 'questionnoteformat');
         }
         if (!isset($question->specificfeedback->text)) {
-            self::set_field($question, 'specificfeedback->text', self::get_default('question', 'specificfeedback'));
+            if (preg_match("/\[\[input:" . self::get_default('input', 'name') . "\]\]/", $question->questiontext->text)) {
+                self::set_field($question, 'specificfeedback->text', self::get_default('question', 'specificfeedback'));
+            } else {
+                self::set_field($question, 'specificfeedback->text', '');
+            }
         }
         if (!isset($question->specificfeedback['format'])) {
             $question->specificfeedback['format'] = self::get_default('question', 'specificfeedbackformat');
@@ -198,8 +202,14 @@ class yaml_converter {
             self::set_field($question, 'scientificnotation', self::get_default('question', 'scientificnotation'));
         }
 
-        if ($question->defaultgrade != '0' && (!$question->input || !count($question->input))) {
-            self::set_field($question, 'input->0', '');
+        if (!$question->input || !count($question->input)) {
+            $inputname = self::get_default('input', 'name');
+            if (preg_match("/\[\[input:{$inputname}\]\]/", $question->questiontext->text)) {
+                self::set_field($question, 'input->0', '');
+            } else {
+                // We've not got any inputs. Set default mark to 0.
+                self::set_field($question, 'defaultgrade', '0');
+            }
         }
 
         foreach ($question->input as $inputdata) {
@@ -253,8 +263,16 @@ class yaml_converter {
             }
         }
 
-        if ($question->defaultgrade != '0' && (!$question->prt || !count($question->prt))) {
-            self::set_field($question, 'prt->0', '');
+        if (!$question->prt || !count($question->prt)) {
+            $prtname = self::get_default('prt', 'name');
+            if (
+                preg_match(
+                    "/\[\[feedback:{$prtname}\]\]/",
+                    $question->questiontext->text . $question->specificfeedback->text
+                )
+            ) {
+                self::set_field($question, 'prt->0', '');
+            }
         }
 
         foreach ($question->prt as $prtdata) {
@@ -665,6 +683,26 @@ class yaml_converter {
         $xmldata = new SimpleXMLElement($xml);
         $plaindata = self::xml_to_array($xmldata);
         $diff = self::obj_diff(self::$defaults['question'], $plaindata['question']);
+        $isquestiontext = isset($plaindata['question']['questiontext']);
+        $isdefaultinput = preg_match(
+            "/\[\[input:" . self::get_default('input', 'name') . "\]\]/",
+            self::get_default('question', 'questiontext')
+        );
+        $isrequesteddefaultinput = isset($plaindata['question']['questiontext']) && preg_match(
+            "/\[\[input:" . self::get_default('input', 'name') . "\]\]/",
+            $plaindata['question']['questiontext']
+        );
+        $isfeedback = isset($plaindata['question']['specificfeedback']);
+        $isdefaultprt = preg_match(
+            "/\[\[feedback:" . self::get_default('prt', 'name') . "\]\]/",
+            self::get_default('question', 'specificfeedback')
+        );
+        $isrequesteddefaultprt = isset($plaindata['question']['questiontext']) &&
+            isset($plaindata['question']['specificfeedback']) &&
+            preg_match(
+                "/\[\[feedback:{" . self::get_default('prt', 'name') . "}\]\]/",
+                $plaindata['question']['questiontext'] . $plaindata['question']['specificfeedback']
+            );
         if (!empty($plaindata['question']['input'])) {
             $diffinputs = [];
             foreach ($plaindata['question']['input'] as $input) {
@@ -672,7 +710,9 @@ class yaml_converter {
                 $diffinputs[] = $diffinput;
             }
             $diff['input'] = $diffinputs;
-        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade'] != '0') {
+            // We need to create an input if questiontext contains [[input:ansnamedefault]] or
+            // questiontext doesn't exist and default contains [[input:ansnamedefault]].
+        } else if ((!$isquestiontext && $isdefaultinput) || $isrequesteddefaultinput) {
             $diff['input'] = [['name' => self::get_default('input', 'name'),
                 'type' => self::get_default('input', 'type'),
                 'tans' => self::get_default('input', 'tans'),
@@ -681,8 +721,15 @@ class yaml_converter {
                 'checkanswertype' => self::get_default('input', 'checkanswertype'),
                 'mustverify' => self::get_default('input', 'mustverify'),
                 'showvalidation' => self::get_default('input', 'showvalidation')]];
+            // We need to create a PRT if questiontext contains [[input:ansnamedefault]] or
+            // questiontext doesn't exist and default contains [[input:ansnamedefault]].
         } else {
             $diff['input'] = [];
+            if (self::get_default('question', 'defaultgrade') !== 0) {
+                $diff['defaultgrade'] = '0';
+            } else {
+                unset($diff['defaultgrade']);
+            }
         }
         if (!empty($plaindata['question']['prt'])) {
             $diffprts = [];
@@ -714,7 +761,10 @@ class yaml_converter {
                 $diffprts[] = $diffprt;
             }
             $diff['prt'] = $diffprts;
-        } else if (!isset($plaindata['question']['defaultgrade']) || $plaindata['question']['defaultgrade'] != '0') {
+        } else if (
+            ((!$isfeedback && $isdefaultprt) || $isrequesteddefaultprt) &&
+            ((!$isquestiontext && $isdefaultinput) || $isrequesteddefaultinput)
+        ) {
             $prtnode = ['name' => self::get_default('node', 'name'),
                     'answertest' => self::get_default('node', 'answertest')];
             if (substr($prtnode['answertest'], 0, 2) !== 'AT') {
