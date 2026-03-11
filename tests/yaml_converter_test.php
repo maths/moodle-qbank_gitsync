@@ -75,12 +75,12 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             (string) $xml->question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            '[[commonstring key="symbolicprtincorrectfeedback"/]] [[commonstring key="defaultprtincorrectfeedback"/]]',
             (string) $xml->question->prtincorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtincorrect['format']);
@@ -233,12 +233,12 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             (string) $xml->question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            '[[commonstring key="symbolicprtincorrectfeedback"/]] [[commonstring key="defaultprtincorrectfeedback"/]]',
             (string) $xml->question->prtincorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtincorrect['format']);
@@ -371,17 +371,17 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', $question->generalfeedback['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.',
+            '[[commonstring key="symbolicprtcorrectfeedback"/]] [[commonstring key="defaultprtcorrectfeedback"/]]',
             $question->prtcorrect->text
         );
         $this->assertEquals('html', $question->prtpartiallycorrect['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             $question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', $question->prtincorrect['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            '[[commonstring key="symbolicprtincorrectfeedback"/]] [[commonstring key="defaultprtincorrectfeedback"/]]',
             $question->prtincorrect->text
         );
         $this->assertEquals('html', $question->prtcorrect['format']);
@@ -487,17 +487,17 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', $question->generalfeedback['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.',
+            '[[commonstring key="symbolicprtcorrectfeedback"/]] [[commonstring key="defaultprtcorrectfeedback"/]]',
             $question->prtcorrect->text
         );
         $this->assertEquals('html', $question->prtpartiallycorrect['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             $question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', $question->prtincorrect['format']);
         $this->assertEquals(
-            '<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.',
+            '[[commonstring key="symbolicprtincorrectfeedback"/]] [[commonstring key="defaultprtincorrectfeedback"/]]',
             $question->prtincorrect->text
         );
         $this->assertEquals('html', $question->prtcorrect['format']);
