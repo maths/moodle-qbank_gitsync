@@ -190,6 +190,14 @@ class get_question_list extends external_api {
                         ['name' => $catname, 'contextid' => $thiscontext->id, 'parent' => $parent],
                         'id, parent, name'
                     );
+                    if (!$category) {
+                        // Stop descending immediately - don't dereference a false result. Leaves
+                        // $category as false so the existing check below reports it properly
+                        // (including the more helpful 'categoryerrornew' message when the whole
+                        // path is just 'top', e.g. a context whose question bank has never been
+                        // opened in Moodle and so has no category tree yet at all).
+                        break;
+                    }
                     $parent = $category->id;
                 }
             } else {

@@ -281,7 +281,15 @@ class import_question extends external_api {
                 ['questionbankentryid' => $response->questionbankentryid]
             );
         }
-        ob_clean();
+        // Discards any stray output the (core Moodle) import machinery above may have
+        // echoed directly, so it can't corrupt the webservice's JSON response. Guarded:
+        // ob_clean() unconditionally throws "Failed to delete buffer. No buffer to
+        // delete" when no output buffer is active, which is exactly what happens with
+        // output_buffering=0 (Off) in php.ini - confirmed on this server - rather than
+        // Moodle's webservice dispatcher always having started one beforehand.
+        if (ob_get_level() > 0) {
+            ob_clean();
+        }
         return $response;
     }
 }
