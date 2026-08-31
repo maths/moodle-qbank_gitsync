@@ -59,6 +59,22 @@ specificfeedbackformat: html
 
 See [test question](../tests/fixtures/fullquestion.yml) for sample YAML layout.
 
+Files embedded in a text field are stored in a sibling `<field>files` array. Their content remains
+base64-encoded, matching Moodle XML, so both text and binary attachments round-trip without loss:
+
+```yaml
+questiontext: |-
+  <p>Question text</p>
+questiontextformat: html
+questiontextfiles:
+  - name: script.js
+    path: /
+    encoding: base64
+    content: Y29uc29sZS5sb2coJ3Rlc3QnKTs=
+```
+
+When importing, GitSync restores each entry as a standard `<file>` child of the owning XML field.
+
 Additionally you can set your default file so that the answer tests for your questions are stored
 in a summary format:
 ```
@@ -77,4 +93,3 @@ Default file example:
 When importing to Moodle, Gitsync adds all the missing fields to the YAML representation from the defaults file, converts it to XML, creates a temporary XML file in the repo directory and then uploads this to Moodle. The defaults file is selected in the same way as for export so you can use different defaults if required. If you haven't set Gitsync to use fragments but your YAML is incomplete, STACK has built in defaults and will attempt to fill in the gaps - you will need to export your questions from Moodle to see the results in your repo.
 
 Obviously, using different defaults for import and export should be handled with care to avoid information loss! It makes most sense for altering site-specific settings that will be the same for every question e.g. decimal separator. Normally Gitsync skips importing questions that have not changed in the repo since the last import so if you want to update them using different defaults you will need to use `-z` to force import of questions that have not changed themselves.
-
