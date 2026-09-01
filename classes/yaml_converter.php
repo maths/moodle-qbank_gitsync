@@ -45,6 +45,9 @@ class yaml_converter {
         'questiondescription', 'prtcorrect', 'prtpartiallycorrect', 'prtincorrect',
         'feedbackvariables', 'truefeedback', 'falsefeedback',
     ];
+
+    /** @var string Suffix used for YAML arrays containing files attached to a text field. */
+    private const FILES_SUFFIX = 'files';
     /**
      * @var array Question properties that can have multiple elements in the xml.
      */
@@ -543,6 +546,11 @@ class yaml_converter {
      */
     public static function array_to_xml($data, &$xml) {
         foreach ($data as $key => $value) {
+            if (substr($key, -strlen(self::FILES_SUFFIX)) === self::FILES_SUFFIX
+                    && in_array(substr($key, 0, -strlen(self::FILES_SUFFIX)), self::TEXTFIELDS)) {
+                // Files are restored with their owning text field, irrespective of YAML key order.
+                continue;
+            }
             if (strpos($key, 'format') !== false && in_array(str_replace('format', '', $key), self::TEXTFIELDS)) {
                 $nodekey = str_replace('format', '', $key);
                 if (!isset($xml->$nodekey)) {
@@ -562,6 +570,15 @@ class yaml_converter {
                         $subnode['format'] = $data[$key . 'format'];
                     }
                     self::array_to_xml($subvalue, $subnode);
+                    foreach ($data[$key . self::FILES_SUFFIX] ?? [] as $file) {
+                        $filenode = $subnode->addChild('file');
+                        foreach (['name', 'path', 'encoding'] as $attribute) {
+                            if (isset($file[$attribute])) {
+                                $filenode->addAttribute($attribute, $file[$attribute]);
+                            }
+                        }
+                        self::add_cdata($filenode, $file['content'] ?? '');
+                    }
                 } else {
                     $xml->$key = $value;
                 }
@@ -608,6 +625,14 @@ class yaml_converter {
                 }
                 if (isset($xmldata->{$key}['format'])) {
                     $output[$key . 'format'] = (string) $xmldata->{$key}['format'];
+                }
+                foreach ($value->file as $file) {
+                    $output[$key . self::FILES_SUFFIX][] = [
+                        'name' => (string) $file['name'],
+                        'path' => (string) $file['path'],
+                        'encoding' => (string) $file['encoding'],
+                        'content' => (string) $file,
+                    ];
                 }
             } else if ($value instanceof SimpleXMLElement && $value->count()) {
                 if (in_array($key, self::ARRAYFIELDS) && !$isdefault) {
