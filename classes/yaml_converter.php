@@ -546,8 +546,10 @@ class yaml_converter {
      */
     public static function array_to_xml($data, &$xml) {
         foreach ($data as $key => $value) {
-            if (substr($key, -strlen(self::FILES_SUFFIX)) === self::FILES_SUFFIX
-                    && in_array(substr($key, 0, -strlen(self::FILES_SUFFIX)), self::TEXTFIELDS)) {
+            if (
+                substr($key, -strlen(self::FILES_SUFFIX)) === self::FILES_SUFFIX
+                    && in_array(substr($key, 0, -strlen(self::FILES_SUFFIX)), self::TEXTFIELDS)
+            ) {
                 // Files are restored with their owning text field, irrespective of YAML key order.
                 continue;
             }

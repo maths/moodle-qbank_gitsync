@@ -75,7 +75,8 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
         $this->assertEquals(
-            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] ' .
+            '[[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             (string) $xml->question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
@@ -233,7 +234,8 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
         $this->assertEquals(
-            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] ' .
+            '[[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             (string) $xml->question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
@@ -376,7 +378,8 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', $question->prtpartiallycorrect['format']);
         $this->assertEquals(
-            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] ' .
+            '[[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             $question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', $question->prtincorrect['format']);
@@ -492,7 +495,8 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', $question->prtpartiallycorrect['format']);
         $this->assertEquals(
-            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] ' .
+            '[[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             $question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', $question->prtincorrect['format']);
