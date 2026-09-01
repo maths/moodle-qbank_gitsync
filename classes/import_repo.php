@@ -516,7 +516,7 @@ class import_repo {
         } else {
             $subdirectory = $this->directory . '/top';
         }
-        // $subdirectory legitimately does not exist for a quiz repo whose questions are
+        // NB $subdirectory legitimately does not exist for a quiz repo whose questions are
         // all referenced externally via "nonquizfilepath" (see import_quiz_data()) rather
         // than living in a local top/ tree of their own - that's not an error, there's
         // just nothing local to import. Substituting an always-empty iterator (rather
@@ -671,12 +671,14 @@ class import_repo {
                         }
                         if (!$this->upload_file($tempcatfile)) {
                             echo "Category {$repoitem} not imported.\n";
-                            continue;
+                            echo "Stopping before trying to import questions.\n";
+                            $this->call_exit();
                         }
                     } else {
                         if (!$this->upload_file($repoitem)) {
                             echo "Category {$repoitem} not imported.\n";
-                            continue;
+                            echo "Stopping before trying to import questions.\n";
+                            $this->call_exit();
                         }
                     }
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
