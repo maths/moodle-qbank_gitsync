@@ -172,8 +172,3 @@ and [export](doc/exportwholecoursefrommoodle.md) a course's questions along with
 - [More information on goals and use cases for Gitsync.](doc/index.md)
 - [Detailed list of steps that take place during the running of the four main scripts](doc/processdetails.md)
 - [Storing your questions as YAML rather than XML.](doc/useyaml.md)
-- [Troubleshooting "Broken JSON returned from Moodle" against a self-signed/local-dev Moodle instance.](doc/local-cainfo-not-applied.md)
-- [Bug report: crash instead of the intended error message when a context's question category tree doesn't exist yet.](doc/get-question-list-toplevel-crash.md)
-- [Bug report: question/category import fails when the server's PHP has output_buffering off.](doc/import-question-ob-clean-no-buffer.md)
-- [Bug report: importing a quiz with only externally-referenced questions crashes with a missing "top" directory.](doc/import-quiz-missing-top-directory-crash.md)
-- [Bug report: a single failed/timed-out file upload crashes an entire importrepotomoodle.php run.](doc/upload-file-crash-on-curl-failure.md)

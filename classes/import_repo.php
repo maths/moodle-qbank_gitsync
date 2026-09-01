@@ -671,12 +671,14 @@ class import_repo {
                         }
                         if (!$this->upload_file($tempcatfile)) {
                             echo "Category {$repoitem} not imported.\n";
-                            continue;
+                            echo "Stopping before trying to import questions.\n";
+                            $this->call_exit();
                         }
                     } else {
                         if (!$this->upload_file($repoitem)) {
                             echo "Category {$repoitem} not imported.\n";
-                            continue;
+                            echo "Stopping before trying to import questions.\n";
+                            $this->call_exit();
                         }
                     }
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
