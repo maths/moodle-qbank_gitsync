@@ -46,3 +46,9 @@ You need to download the gitsync scripts and set it up locally as described belo
 - In the same file, update rootdirectory to be the directory where you plan to keep your question repositories.
 
 Next you will need to [create a local filesystem](createrepo.md).
+
+## Local development
+If you are running a local Moodle server for development with self-signed certificate, you will need to set a local environment variable to pick up this certificate properly:
+```sh
+GITSYNC_CAINFO=/path/to/localhost.pem
+```

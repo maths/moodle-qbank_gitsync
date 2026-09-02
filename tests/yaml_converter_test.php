@@ -75,7 +75,8 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
         $this->assertEquals(
-            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] ' .
+            '[[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             (string) $xml->question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
@@ -233,7 +234,8 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', (string) $xml->question->prtcorrect['format']);
         $this->assertEquals(
-            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] ' .
+            '[[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             (string) $xml->question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', (string) $xml->question->prtpartiallycorrect['format']);
@@ -376,7 +378,8 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', $question->prtpartiallycorrect['format']);
         $this->assertEquals(
-            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] ' .
+            '[[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             $question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', $question->prtincorrect['format']);
@@ -492,7 +495,8 @@ final class yaml_converter_test extends \advanced_testcase {
         );
         $this->assertEquals('html', $question->prtpartiallycorrect['format']);
         $this->assertEquals(
-            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] [[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
+            '[[commonstring key="symbolicprtpartiallycorrectfeedback"/]] ' .
+            '[[commonstring key="defaultprtpartiallycorrectfeedback"/]]',
             $question->prtpartiallycorrect->text
         );
         $this->assertEquals('html', $question->prtincorrect['format']);
@@ -774,6 +778,55 @@ final class yaml_converter_test extends \advanced_testcase {
         $this->assertEquals('044', $xml->prt[0]->node[1]->tans);
         $array = yaml_converter::xml_to_array($xml);
         $this->assertEqualsCanonicalizing($data, $array);
+    }
+
+    public function test_embedded_files_round_trip(): void {
+        $xml = new \SimpleXMLElement('<question></question>');
+        $name = $xml->addChild('name');
+        $name->addChild('text', 'Attachment round-trip');
+        $questiontext = $xml->addChild('questiontext');
+        $questiontext->addAttribute('format', 'html');
+        $questiontext->addChild('text', 'Question with files');
+        $script = $questiontext->addChild('file', 'Y29uc29sZS5sb2coJ3Rlc3QnKTs=');
+        $script->addAttribute('name', 'script.js');
+        $script->addAttribute('path', '/');
+        $script->addAttribute('encoding', 'base64');
+        $style = $questiontext->addChild('file', 'LmV4YW1wbGUge2NvbG9yOiByZWQ7fQ==');
+        $style->addAttribute('name', 'style.css');
+        $style->addAttribute('path', '/assets/');
+        $style->addAttribute('encoding', 'base64');
+        $generalfeedback = $xml->addChild('generalfeedback');
+        $generalfeedback->addChild('text', 'Feedback with file');
+        $feedbackfile = $generalfeedback->addChild('file', 'ZmVlZGJhY2s=');
+        $feedbackfile->addAttribute('name', 'feedback.txt');
+        $feedbackfile->addAttribute('path', '/');
+        $feedbackfile->addAttribute('encoding', 'base64');
+
+        $data = yaml_converter::xml_to_array($xml);
+        $this->assertCount(2, $data['questiontextfiles']);
+        $this->assertEquals('script.js', $data['questiontextfiles'][0]['name']);
+        $this->assertEquals('/assets/', $data['questiontextfiles'][1]['path']);
+        $this->assertCount(1, $data['generalfeedbackfiles']);
+
+        $roundtripped = new \SimpleXMLElement('<question></question>');
+        yaml_converter::array_to_xml($data, $roundtripped);
+        $this->assertCount(2, $roundtripped->questiontext->file);
+        $this->assertEquals('script.js', (string) $roundtripped->questiontext->file[0]['name']);
+        $this->assertEquals('Y29uc29sZS5sb2coJ3Rlc3QnKTs=', (string) $roundtripped->questiontext->file[0]);
+        $this->assertEquals('/assets/', (string) $roundtripped->questiontext->file[1]['path']);
+        $this->assertCount(1, $roundtripped->generalfeedback->file);
+        $this->assertEquals('ZmVlZGJhY2s=', (string) $roundtripped->generalfeedback->file[0]);
+
+        if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+            $yaml = yaml_converter::xmlstring_to_yamlstring($xml->asXML());
+            $this->assertStringContainsString('questiontextfiles:', $yaml);
+            $this->assertStringContainsString('generalfeedbackfiles:', $yaml);
+            $roundtripped = yaml_converter::yamlstring_to_xml($yaml);
+            $this->assertCount(3, $roundtripped->xpath('//file'));
+            $this->assertEquals('script.js', (string) $roundtripped->question->questiontext->file[0]['name']);
+            $this->assertEquals('/assets/', (string) $roundtripped->question->questiontext->file[1]['path']);
+            $this->assertEquals('ZmVlZGJhY2s=', (string) $roundtripped->question->generalfeedback->file[0]);
+        }
     }
 
     public function test_defaults_xml_to_array(): void {

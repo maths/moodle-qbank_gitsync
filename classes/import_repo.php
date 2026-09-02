@@ -516,8 +516,16 @@ class import_repo {
         } else {
             $subdirectory = $this->directory . '/top';
         }
+        // NB $subdirectory legitimately does not exist for a quiz repo whose questions are
+        // all referenced externally via "nonquizfilepath" (see import_quiz_data()) rather
+        // than living in a local top/ tree of their own - that's not an error, there's
+        // just nothing local to import. Substituting an always-empty iterator (rather
+        // than skipping construction of $this->repoiterator entirely) keeps every foreach
+        // below, and the ->rewind()/second pass further down that reuses the same
+        // iterator, working unchanged - they just iterate zero times, same as an existing
+        // but empty directory would already have produced.
         $this->repoiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($subdirectory),
+            is_dir($subdirectory) ? new \RecursiveDirectoryIterator($subdirectory) : new \RecursiveArrayIterator([]),
             \RecursiveIteratorIterator::SELF_FIRST
         );
         // Create missing category files.
@@ -661,9 +669,17 @@ class import_repo {
                             echo "Stopping before trying to import questions.\n";
                             $this->call_exit();
                         }
-                        $this->upload_file($tempcatfile);
+                        if (!$this->upload_file($tempcatfile)) {
+                            echo "Category {$repoitem} not imported.\n";
+                            echo "Stopping before trying to import questions.\n";
+                            $this->call_exit();
+                        }
                     } else {
-                        $this->upload_file($repoitem);
+                        if (!$this->upload_file($repoitem)) {
+                            echo "Category {$repoitem} not imported.\n";
+                            echo "Stopping before trying to import questions.\n";
+                            $this->call_exit();
+                        }
                     }
                     $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
                     $response = $this->curlrequest->execute();
@@ -701,13 +717,19 @@ class import_repo {
         $this->uploadcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->uploadpostsettings);
         $fileinfo = json_decode($this->uploadcurlrequest->execute());
         // We're expecting an array containing one file information object.
-        // If things go wrong, we should get just an error object.
+        // If things go wrong, we should get just an error object - but if the curl request
+        // itself fails outright (e.g. a timeout - observed on a large import under sustained
+        // load) rather than returning a JSON error body, curl_exec() returns false and
+        // json_decode(false) returns null, which is neither an array nor an object
+        // property_exists() can be called on without crashing.
         if (!is_array($fileinfo)) {
-            if (property_exists($fileinfo, 'error')) {
+            if (is_object($fileinfo) && property_exists($fileinfo, 'error')) {
                 echo "{$fileinfo->error}\n";
                 echo "Check that the webservice allows file uploads at ";
                 echo "Site administration->Server->Web services->External services->";
                 echo "qbank_gitsync->Edit->Show more->Can upload files.\n";
+            } else if ($fileinfo === null) {
+                echo "No response from Moodle - the request may have failed or timed out.\n";
             }
             echo "{$repoitem->getPathname()} not imported.\n";
             return false;
@@ -734,8 +756,13 @@ class import_repo {
         } else {
             $subdirectory = $this->directory . '/top';
         }
+        // See the matching check in import_categories() above - $subdirectory legitimately
+        // not existing means there are no local questions to import (e.g. a quiz repo whose
+        // questions are all referenced externally via "nonquizfilepath"), not an error.
         $this->subdirectoryiterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            is_dir($subdirectory)
+                ? new \RecursiveDirectoryIterator($subdirectory, \RecursiveDirectoryIterator::SKIP_DOTS)
+                : new \RecursiveArrayIterator([]),
             \RecursiveIteratorIterator::SELF_FIRST
         );
         $tempfile = fopen($this->tempfilepath, 'w+');
