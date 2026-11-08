@@ -40,6 +40,7 @@ Commit this update.
 |z|forceimport|Force import of all questions, even if current commit previously imported.
 |y|useyaml|Export questions as YAML?|
 |b|usefragments|Export questions as difference files?|
+|q|batchsize|Number of questions to import per request (default 20). Each question adds 11 request variables, which must fit the server's PHP max_input_vars (default 1000).|
 
 ## Scenario 1: Importing questions into Moodle from an existing repo
 

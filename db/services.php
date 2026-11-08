@@ -32,9 +32,9 @@ $functions = [
         'type'        => 'read',
         'ajax'        => true,
     ],
-    'qbank_gitsync_import_question' => [
-        'classname'   => 'qbank_gitsync\external\import_question',
-        'description' => 'Imports a question and separate metadata.',
+    'qbank_gitsync_import_questions' => [
+        'classname'   => 'qbank_gitsync\external\import_questions',
+        'description' => 'Imports questions, each with separate metadata.',
         'type'        => 'write',
         'ajax'        => true,
     ],
@@ -67,7 +67,7 @@ $functions = [
 $services = [
     'qbank_gitsync' => [
             'functions' => ['qbank_gitsync_export_question',
-                            'qbank_gitsync_import_question',
+                            'qbank_gitsync_import_questions',
                             'qbank_gitsync_delete_question',
                             'qbank_gitsync_get_question_list',
                             'qbank_gitsync_export_quiz_data',
