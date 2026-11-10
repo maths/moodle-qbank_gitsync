@@ -594,7 +594,7 @@ final class import_repo_test extends advanced_testcase {
 
         $pending = json_decode(file_get_contents(str_replace('.tmp', '_pending.tmp', $this->importrepo->tempfilepath)));
         $this->assertCount(1, $pending);
-        $this->assertStringEndsWith('-Question.xml', $pending[0]->filepath);
+        $this->assertStringEndsWith('-Question.xml', $pending[0]->record->filepath);
         $this->assertStringEndsWith(' Question', $pending[0]->name);
         $this->assertStringContainsString('cat', $pending[0]->category);
         $this->expectOutputRegex('/No response from Moodle.*Run the import again/s');
@@ -609,7 +609,8 @@ final class import_repo_test extends advanced_testcase {
             "modulename":"Test 1","coursecategory":null},
             "questions":[{"questionbankentryid":"1", "importedversion":"1", "exportedversion":"1",
                 "filepath":"/top/cat-1/First-Question.xml", "format":"xml"}]}');
-        $pending = fn($file, $id, $version, $name, $category) => ['filepath' => $this->rootpath . $file,
+        $pending = fn($file, $id, $version, $name, $category) => [
+            'record' => ['filepath' => $this->rootpath . $file, 'format' => 'xml', 'moodlecommit' => 'abc'],
             'questionbankentryid' => $id, 'version' => $version, 'name' => $name, 'category' => $category];
         file_put_contents(str_replace('.tmp', '_pending.tmp', $this->importrepo->tempfilepath), json_encode([
             $pending('/top/cat-1/First-Question.xml', '1', 1, 'First Question', 'cat 1'),
@@ -636,6 +637,8 @@ final class import_repo_test extends advanced_testcase {
         $this->assertEquals(['1', '50'], array_keys($entries));
         $this->assertEquals('2', $entries['1']->importedversion);
         $this->assertEquals('/top/cat-2/subcat-2_1/Third-Question.xml', $entries['50']->filepath);
+        // The commit noted when the request was sent is recorded, whatever the files look like now.
+        $this->assertEquals('abc', $entries['50']->moodlecommit);
         $this->assertFileDoesNotExist(str_replace('.tmp', '_pending.tmp', $this->importrepo->tempfilepath));
         $this->expectOutputRegex('/First-Question.xml was imported.*Third-Question.xml was imported/s');
     }

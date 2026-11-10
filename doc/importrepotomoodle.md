@@ -122,3 +122,5 @@ To delete the questions from Moodle and tidy the manifest, run deletefrommoodle.
   - a new question, if exactly one question with its name in its category is not linked to the repository yet.
 
   Questions it cannot match are imported again. If a new question then exists twice in Moodle, the copy that is not linked is listed at the end of the run and can be removed with [`deletefrommoodle.php`](deletefrommoodle.md).
+
+  The check relies on a temporary file (`*_pending.tmp`) next to the manifest. Without that file the next import cannot tell what happened. It then stops with `Export questions from Moodle before proceeding` if existing questions got a new version: run [`exportrepofrommoodle.php`](exportrepofrommoodle.md) first. New questions are imported again, as above.

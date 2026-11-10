@@ -817,17 +817,19 @@ class import_repo {
      */
     public function import_batch(array $batch, $tempfile): void {
         // Note what is being sent, so that the next run can check these questions if the answer is lost.
-        file_put_contents($this->pending_path(), json_encode(array_map(function ($item) {
+        // The manifest record is prepared now, because the files can change before that run.
+        $pending = array_map(function ($item) {
             $settings = $item['postsettings'];
             $categories = $this->split_category_path($settings['qcategoryname']);
             return [
-                'filepath' => $item['repoitem']->getPathname(),
+                'record' => $this->manifest_record($item['repoitem']->getPathname(), $item['existingentry']),
                 'questionbankentryid' => $settings['questionbankentryid'],
                 'version' => max((int) $settings['importedversion'], (int) $settings['exportedversion']),
                 'name' => self::question_name($item['content']),
                 'category' => end($categories),
             ];
-        }, $batch)));
+        }, $batch);
+        file_put_contents($this->pending_path(), json_encode($pending));
         $results = $this->send_batch($batch);
         if ($results === null) {
             echo "Moodle may still have imported questions of this request. Stopping.\n";
@@ -843,7 +845,7 @@ class import_repo {
                 echo "{$result->error}\n";
                 echo "{$filepath} not imported.\n";
             } else if ($result->questionbankentryid) {
-                $this->record_import($filepath, $item['existingentry'], $result, $tempfile);
+                $this->record_import($pending[$index]['record'], $result, $tempfile);
                 if (!empty($result->validation)) {
                     echo "\n{$filepath} imported but has validation issues. " .
                         "Please exportrepofrommoodle to identify any changes which have been made.\n";
@@ -854,32 +856,38 @@ class import_repo {
     }
 
     /**
-     * Add an imported question to the temporary manifest file.
+     * Manifest record of a question file, without the details of the question in Moodle.
      *
      * @param string $filepath question file in the repository
      * @param object|false $existingentry manifest entry of the question, if any
-     * @param object $question questionbankentryid and version of the question in Moodle
-     * @param resource $tempfile temporary manifest file
-     * @return void
+     * @return array
      */
-    private function record_import(string $filepath, $existingentry, object $question, $tempfile): void {
-        $fileoutput = [
-            'questionbankentryid' => $question->questionbankentryid,
-            'version' => $question->version,
-            'filepath' => str_replace('\\', '/', $filepath),
-            'format' => 'xml',
-        ];
+    private function manifest_record(string $filepath, $existingentry): array {
+        $record = ['filepath' => str_replace('\\', '/', $filepath), 'format' => 'xml'];
         if ($existingentry && isset($existingentry->currentcommit)) {
-            $fileoutput['moodlecommit'] = $existingentry->currentcommit;
+            $record['moodlecommit'] = $existingentry->currentcommit;
         }
         if ($this->usegit && !$existingentry) {
             $manifestdirname = dirname($this->manifestpath);
             chdir($manifestdirname);
             $commithash = exec('git log -n 1 --pretty=format:%H -- "' . $filepath . '"');
-            $fileoutput['moodlecommit'] = $commithash;
-            $fileoutput['currentcommit'] = $commithash;
+            $record['moodlecommit'] = $commithash;
+            $record['currentcommit'] = $commithash;
         }
-        fwrite($tempfile, json_encode($fileoutput) . "\n");
+        return $record;
+    }
+
+    /**
+     * Add an imported question to the temporary manifest file.
+     *
+     * @param array|object $record manifest record of the question file
+     * @param object $question questionbankentryid and version of the question in Moodle
+     * @param resource $tempfile temporary manifest file
+     * @return void
+     */
+    private function record_import($record, object $question, $tempfile): void {
+        $ids = ['questionbankentryid' => $question->questionbankentryid, 'version' => $question->version];
+        fwrite($tempfile, json_encode($ids + (array) $record) . "\n");
     }
 
     /**
@@ -951,10 +959,10 @@ class import_repo {
                 $this->call_exit();
                 return;
             }
-            $entries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
             $tempfile = fopen($this->tempfilepath, 'a+');
             $recorded = array_map('json_decode', file($this->tempfilepath));
-            $linked = $entries + array_column($recorded, null, 'questionbankentryid');
+            $linked = array_column($this->manifestcontents->questions, null, 'questionbankentryid')
+                + array_column($recorded, null, 'questionbankentryid');
             foreach (json_decode(file_get_contents($this->pending_path())) as $item) {
                 // An existing question was imported if its version went up. A new question was
                 // imported if exactly one question with its name and category is not linked yet.
@@ -968,9 +976,9 @@ class import_repo {
                 });
                 if (count($matches) === 1) {
                     $match = reset($matches);
-                    $this->record_import($item->filepath, $entries[$match->questionbankentryid] ?? false, $match, $tempfile);
+                    $this->record_import($item->record, $match, $tempfile);
                     $linked[$match->questionbankentryid] = $match;
-                    echo "{$item->filepath} was imported.\n";
+                    echo "{$item->record->filepath} was imported.\n";
                 }
             }
             fclose($tempfile);
