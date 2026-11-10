@@ -40,7 +40,7 @@ Commit this update.
 |z|forceimport|Force import of all questions, even if current commit previously imported.
 |y|useyaml|Export questions as YAML?|
 |b|usefragments|Export questions as difference files?|
-|q|batchsize|Number of questions to import per request (default 20). Each question adds 11 request variables, which must fit the server's PHP max_input_vars (default 1000).|
+|q|batchsize|Number of questions to import per request (default 20). See [Batches](#batches).|
 
 ## Scenario 1: Importing questions into Moodle from an existing repo
 
@@ -98,6 +98,14 @@ If your STACK questions are [YAML difference files](useyaml.md), set `useyaml` f
 
 `php importrepotomoodle.php -f 'course1/instance1_course_course-1_question_manifest.json' -y 'true' -o 'questiondefaultscomma.yml' -z`
 
+## Batches
+
+Questions are sent to Moodle in batches of `--batchsize` (`-q`, default 20). A batch is also closed when its question files reach 4 MB in total, so that a request stays below PHP's default `post_max_size` of 8M. A question file larger than 4 MB is sent on its own. Each question is imported separately on the server, so a question that fails does not stop the rest of its batch.
+
+A request must also fit the server's PHP limits:
+- Each question adds 11 request variables. With the default `max_input_vars` of 1000, a batch can hold about 90 questions.
+- If `post_max_size` is below about 5M, a batch can be too large. Moodle then ignores the whole request and answers `Invalid token - token not found`, although other requests work. Nothing from that batch is imported. Run the import again with a smaller `--batchsize`.
+
 ## Deletion
 
 A check will be run to see if there are questions in the context/category in the manifest that do not have a file in the repo.
@@ -109,3 +117,6 @@ To delete the questions from Moodle and tidy the manifest, run deletefrommoodle.
 
 ### On failure
 - If the script fails, it can be safely run again once the issue has been dealt with. Pending updates to the manifest file are stored in a temporary file in the root directory and these will be picked up at the start of the new run, avoiding multiple new versions of a question being created in Moodle.
+- If the script reports `No response from Moodle - the request may have failed or timed out`, Moodle may still have imported some or all questions of that batch. They are listed as not imported and are not recorded in the manifest. Tidy up before importing again:
+  1. New questions that Moodle did create are listed at the end of the run under `These questions are in Moodle but not linked to your repository`. Run [`deletefrommoodle.php`](deletefrommoodle.md) with the same arguments and confirm the deletion of each of them. If the repository is under Git, commit the manifest first. Otherwise the next import creates them a second time.
+  2. Run the import again. If Moodle did save new versions of existing questions, the import stops and lists them with `Export questions from Moodle before proceeding`. Run [`exportrepofrommoodle.php`](exportrepofrommoodle.md) with the manifest path, commit the result, and run the import once more.

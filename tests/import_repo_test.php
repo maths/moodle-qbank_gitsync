@@ -535,6 +535,55 @@ final class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test large questions are split over several requests.
+     * @covers \gitsync\import_repo\import_questions()
+     */
+    public function test_import_questions_limits_request_size(): void {
+        $this->options['batchsize'] = 20;
+        $this->replace_mock_default();
+        // Two questions that do not fit into one request together.
+        $padding = '<!--' . str_repeat('x', (int) (import_repo::MAX_BATCH_BYTES * 0.6)) . '-->';
+        foreach (['/top/cat-1/First-Question.xml', '/top/cat-2/Second-Question.xml'] as $file) {
+            file_put_contents($this->rootpath . $file, $padding, FILE_APPEND);
+        }
+        $sizes = [];
+        $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute', 'set_option',
+        ])->setConstructorArgs(['xxxx'])->getMock();
+        $this->curl->expects($this->any())->method('set_option')->willReturnCallback(
+            function ($option, $value) use (&$sizes) {
+                if ($option === CURLOPT_POSTFIELDS) {
+                    $sizes[] = array_map('strlen', array_filter(
+                        $value,
+                        fn($key) => substr($key, -9) === '[content]',
+                        ARRAY_FILTER_USE_KEY
+                    ));
+                }
+            }
+        );
+        $this->curl->expects($this->exactly(2))->method('execute')->willReturnCallback(
+            function () use (&$sizes) {
+                return json_encode(array_fill(0, count(end($sizes)), [
+                    'questionbankentryid' => '35001', 'version' => '2', 'validation' => '', 'error' => '',
+                ]));
+            }
+        );
+        $this->importrepo->curlrequest = $this->curl;
+        $this->importrepo->postsettings = [
+            'wstoken' => 'XXXXXX',
+            'wsfunction' => 'qbank_gitsync_import_questions',
+            'moodlewsrestformat' => 'json',
+            'contextlevel' => '10',
+        ];
+        $this->importrepo->import_questions();
+
+        $this->assertCount(2, $sizes);
+        $this->assertEquals(4, count($sizes[0]) + count($sizes[1]));
+        $this->assertLessThanOrEqual(import_repo::MAX_BATCH_BYTES, array_sum($sizes[0]));
+        $this->assertLessThanOrEqual(import_repo::MAX_BATCH_BYTES, array_sum($sizes[1]));
+    }
+
+    /**
      * Test importing questions with ignore.
      * @covers \gitsync\import_repo\import_questions()
      */

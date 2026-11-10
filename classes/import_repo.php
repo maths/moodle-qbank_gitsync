@@ -34,6 +34,12 @@ class import_repo {
     use tidy_trait;
 
     /**
+     * Largest total size of question XML sent in one import request with several questions.
+     * Half of PHP's default post_max_size (8M). A larger question is sent on its own.
+     */
+    public const MAX_BATCH_BYTES = 4194304;
+
+    /**
      * CLI helper for this import
      *
      * @var cli_helper
@@ -771,11 +777,18 @@ class import_repo {
                         }
 
                         // Converted files reuse one temporary path, so keep the content.
+                        $content = file_get_contents((($tempqfile) ? $tempqfile : $repoitem)->getPathname());
+                        // Send the queued questions first if this one would make the request too large.
+                        $queuedbytes = array_sum(array_map('strlen', array_column($batch, 'content')));
+                        if ($batch && $queuedbytes + strlen($content) > self::MAX_BATCH_BYTES) {
+                            $this->import_batch($batch, $tempfile);
+                            $batch = [];
+                        }
                         $batch[] = [
                             'repoitem' => $repoitem,
                             'existingentry' => $existingentry,
                             'postsettings' => $this->postsettings,
-                            'content' => file_get_contents((($tempqfile) ? $tempqfile : $repoitem)->getPathname()),
+                            'content' => $content,
                         ];
                         if (count($batch) === $this->batchsize) {
                             $this->import_batch($batch, $tempfile);
