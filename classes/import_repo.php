@@ -209,7 +209,7 @@ class import_repo {
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
         $manifestpath = $arguments['manifestpath'];
-        $this->forceimport = $arguments['forceimport'];
+        $this->forceimport = $arguments['forceimport'] ?? false;
         $this->batchsize = max(1, (int) ($arguments['batchsize'] ?? 1));
         if ($arguments['directory']) {
             $this->directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
