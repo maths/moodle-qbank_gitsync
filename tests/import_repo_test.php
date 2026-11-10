@@ -584,6 +584,63 @@ final class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test an import request without an answer stops the run and notes its questions.
+     * @covers \gitsync\import_repo\import_batch()
+     */
+    public function test_import_questions_without_answer(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(false);
+        $this->importrepo->expects($this->atLeastOnce())->method('call_exit');
+        $this->importrepo->import_questions();
+
+        $pending = json_decode(file_get_contents(str_replace('.tmp', '_pending.tmp', $this->importrepo->tempfilepath)));
+        $this->assertCount(1, $pending);
+        $this->assertStringEndsWith('-Question.xml', $pending[0]->filepath);
+        $this->assertStringEndsWith(' Question', $pending[0]->name);
+        $this->assertStringContainsString('cat', $pending[0]->category);
+        $this->expectOutputRegex('/No response from Moodle.*Run the import again/s');
+    }
+
+    /**
+     * Test the next run records the questions Moodle imported from an unanswered request.
+     * @covers \gitsync\import_repo\recovery()
+     */
+    public function test_recovery_after_unanswered_request(): void {
+        $this->importrepo->manifestcontents = json_decode('{"context":{"contextlevel":70,"coursename":"Course 1",
+            "modulename":"Test 1","coursecategory":null},
+            "questions":[{"questionbankentryid":"1", "importedversion":"1", "exportedversion":"1",
+                "filepath":"/top/cat-1/First-Question.xml", "format":"xml"}]}');
+        $pending = fn($file, $id, $version, $name, $category) => ['filepath' => $this->rootpath . $file,
+            'questionbankentryid' => $id, 'version' => $version, 'name' => $name, 'category' => $category];
+        file_put_contents(str_replace('.tmp', '_pending.tmp', $this->importrepo->tempfilepath), json_encode([
+            $pending('/top/cat-1/First-Question.xml', '1', 1, 'First Question', 'cat 1'),
+            $pending('/top/cat-2/Second-Question.xml', null, 0, 'Second Question', 'cat 2'),
+            $pending('/top/cat-2/subcat-2_1/Third-Question.xml', null, 0, 'Third Question', 'subcat 2_1'),
+            $pending('/top/cat-2/subcat-2_1/Fourth-Question.xml', null, 0, 'Fourth Question', 'subcat 2_1'),
+        ]));
+        // Moodle saved a new version of the first question and created the third one.
+        // The second was not created and two unlinked questions could be the fourth.
+        $inmoodle = fn($id, $name, $category, $version) => ['questionbankentryid' => $id, 'name' => $name,
+            'questioncategory' => $category, 'version' => $version];
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(json_encode([
+            'contextinfo' => [],
+            'questions' => [
+                $inmoodle('1', 'First Question', 'cat 1', '2'),
+                $inmoodle('50', 'Third Question', 'subcat 2_1', '1'),
+                $inmoodle('51', 'Fourth Question', 'subcat 2_1', '1'),
+                $inmoodle('52', 'Fourth Question', 'subcat 2_1', '1'),
+            ],
+        ]));
+        $this->importrepo->recovery();
+
+        $entries = array_column($this->importrepo->manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertEquals(['1', '50'], array_keys($entries));
+        $this->assertEquals('2', $entries['1']->importedversion);
+        $this->assertEquals('/top/cat-2/subcat-2_1/Third-Question.xml', $entries['50']->filepath);
+        $this->assertFileDoesNotExist(str_replace('.tmp', '_pending.tmp', $this->importrepo->tempfilepath));
+        $this->expectOutputRegex('/First-Question.xml was imported.*Third-Question.xml was imported/s');
+    }
+
+    /**
      * Test importing questions with ignore.
      * @covers \gitsync\import_repo\import_questions()
      */

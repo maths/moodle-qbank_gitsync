@@ -816,38 +816,92 @@ class import_repo {
      * @return void
      */
     public function import_batch(array $batch, $tempfile): void {
+        // Note what is being sent, so that the next run can check these questions if the answer is lost.
+        file_put_contents($this->pending_path(), json_encode(array_map(function ($item) {
+            $settings = $item['postsettings'];
+            $categories = $this->split_category_path($settings['qcategoryname']);
+            return [
+                'filepath' => $item['repoitem']->getPathname(),
+                'questionbankentryid' => $settings['questionbankentryid'],
+                'version' => max((int) $settings['importedversion'], (int) $settings['exportedversion']),
+                'name' => self::question_name($item['content']),
+                'category' => end($categories),
+            ];
+        }, $batch)));
         $results = $this->send_batch($batch);
+        if ($results === null) {
+            echo "Moodle may still have imported questions of this request. Stopping.\n";
+            echo "Run the import again. It checks these questions in Moodle before it continues.\n";
+            $this->call_exit();
+            return;
+        }
+        unlink($this->pending_path());
         foreach ($batch as $index => $item) {
-            $result = $results[$index] ?? null;
-            if (!$result || !empty($result->error)) {
-                echo $result ? "{$result->error}\n" : '';
-                echo "{$item['repoitem']->getPathname()} not imported.\n";
+            $result = $results[$index];
+            $filepath = $item['repoitem']->getPathname();
+            if (!empty($result->error)) {
+                echo "{$result->error}\n";
+                echo "{$filepath} not imported.\n";
             } else if ($result->questionbankentryid) {
-                $repoitem = $item['repoitem'];
-                $fileoutput = [
-                    'questionbankentryid' => $result->questionbankentryid,
-                    'version' => $result->version,
-                    'filepath' => str_replace('\\', '/', $repoitem->getPathname()),
-                    'format' => 'xml',
-                ];
-                if ($item['existingentry'] && isset($item['existingentry']->currentcommit)) {
-                    $fileoutput['moodlecommit'] = $item['existingentry']->currentcommit;
-                }
-                if ($this->usegit && !$item['existingentry']) {
-                    $manifestdirname = dirname($this->manifestpath);
-                    chdir($manifestdirname);
-                    $commithash = exec('git log -n 1 --pretty=format:%H -- "' . $repoitem->getPathname() . '"');
-                    $fileoutput['moodlecommit'] = $commithash;
-                    $fileoutput['currentcommit'] = $commithash;
-                }
-                fwrite($tempfile, json_encode($fileoutput) . "\n");
+                $this->record_import($filepath, $item['existingentry'], $result, $tempfile);
                 if (!empty($result->validation)) {
-                    echo "\n{$repoitem->getPathname()} imported but has validation issues. " .
+                    echo "\n{$filepath} imported but has validation issues. " .
                         "Please exportrepofrommoodle to identify any changes which have been made.\n";
                     echo "{$result->validation}\n";
                 }
             }
         }
+    }
+
+    /**
+     * Add an imported question to the temporary manifest file.
+     *
+     * @param string $filepath question file in the repository
+     * @param object|false $existingentry manifest entry of the question, if any
+     * @param object $question questionbankentryid and version of the question in Moodle
+     * @param resource $tempfile temporary manifest file
+     * @return void
+     */
+    private function record_import(string $filepath, $existingentry, object $question, $tempfile): void {
+        $fileoutput = [
+            'questionbankentryid' => $question->questionbankentryid,
+            'version' => $question->version,
+            'filepath' => str_replace('\\', '/', $filepath),
+            'format' => 'xml',
+        ];
+        if ($existingentry && isset($existingentry->currentcommit)) {
+            $fileoutput['moodlecommit'] = $existingentry->currentcommit;
+        }
+        if ($this->usegit && !$existingentry) {
+            $manifestdirname = dirname($this->manifestpath);
+            chdir($manifestdirname);
+            $commithash = exec('git log -n 1 --pretty=format:%H -- "' . $filepath . '"');
+            $fileoutput['moodlecommit'] = $commithash;
+            $fileoutput['currentcommit'] = $commithash;
+        }
+        fwrite($tempfile, json_encode($fileoutput) . "\n");
+    }
+
+    /**
+     * Path of the file listing the questions of an import request that Moodle has not answered yet.
+     *
+     * @return string
+     */
+    private function pending_path(): string {
+        return str_replace('.tmp', '_pending.tmp', $this->tempfilepath);
+    }
+
+    /**
+     * Name of the question in a Moodle XML file.
+     *
+     * @param string $content Moodle XML
+     * @return string question name, empty if the XML cannot be read
+     */
+    private static function question_name(string $content): string {
+        $previous = libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($content);
+        libxml_use_internal_errors($previous);
+        return $xml ? trim((string) $xml->question->name->text) : '';
     }
 
     /**
@@ -888,6 +942,40 @@ class import_repo {
      * @return void
      */
     public function recovery(): void {
+        if (file_exists($this->pending_path())) {
+            echo "The last run got no answer to an import request. Checking its questions in Moodle:\n";
+            $moodle = json_decode($this->listcurlrequest->execute());
+            if (!isset($moodle->questions)) {
+                echo ($moodle->message ?? 'Broken JSON returned from Moodle.') . "\n";
+                echo "Failed to check the questions.\n";
+                $this->call_exit();
+                return;
+            }
+            $entries = array_column($this->manifestcontents->questions, null, 'questionbankentryid');
+            $tempfile = fopen($this->tempfilepath, 'a+');
+            $recorded = array_map('json_decode', file($this->tempfilepath));
+            $linked = $entries + array_column($recorded, null, 'questionbankentryid');
+            foreach (json_decode(file_get_contents($this->pending_path())) as $item) {
+                // An existing question was imported if its version went up. A new question was
+                // imported if exactly one question with its name and category is not linked yet.
+                $matches = array_filter($moodle->questions, function ($question) use ($item, $linked) {
+                    if ($item->questionbankentryid) {
+                        return (string) $question->questionbankentryid === (string) $item->questionbankentryid
+                            && (int) $question->version > $item->version;
+                    }
+                    return $question->name === $item->name && $question->questioncategory === $item->category
+                        && !isset($linked[$question->questionbankentryid]);
+                });
+                if (count($matches) === 1) {
+                    $match = reset($matches);
+                    $this->record_import($item->filepath, $entries[$match->questionbankentryid] ?? false, $match, $tempfile);
+                    $linked[$match->questionbankentryid] = $match;
+                    echo "{$item->filepath} was imported.\n";
+                }
+            }
+            fclose($tempfile);
+            unlink($this->pending_path());
+        }
         if (file_exists($this->tempfilepath)) {
             echo 'Attempting recovery from failure on previous run. Updating manifest:';
             $this->manifestcontents = cli_helper::create_manifest_file(

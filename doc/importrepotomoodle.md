@@ -117,6 +117,8 @@ To delete the questions from Moodle and tidy the manifest, run deletefrommoodle.
 
 ### On failure
 - If the script fails, it can be safely run again once the issue has been dealt with. Pending updates to the manifest file are stored in a temporary file in the root directory and these will be picked up at the start of the new run, avoiding multiple new versions of a question being created in Moodle.
-- If the script reports `No response from Moodle - the request may have failed or timed out`, Moodle may still have imported some or all questions of that batch. They are listed as not imported and are not recorded in the manifest. Tidy up before importing again:
-  1. New questions that Moodle did create are listed at the end of the run under `These questions are in Moodle but not linked to your repository`. Run [`deletefrommoodle.php`](deletefrommoodle.md) with the same arguments and confirm the deletion of each of them. If the repository is under Git, commit the manifest first. Otherwise the next import creates them a second time.
-  2. Run the import again. If Moodle did save new versions of existing questions, the import stops and lists them with `Export questions from Moodle before proceeding`. Run [`exportrepofrommoodle.php`](exportrepofrommoodle.md) with the manifest path, commit the result, and run the import once more.
+- If Moodle does not answer an import request properly, the script stops, because Moodle may still have imported some or all questions of that batch. Run the import again. It first checks those questions in Moodle and records the ones that were imported:
+  - an existing question, if its version in Moodle has gone up;
+  - a new question, if exactly one question with its name in its category is not linked to the repository yet.
+
+  Questions it cannot match are imported again. If a new question then exists twice in Moodle, the copy that is not linked is listed at the end of the run and can be removed with [`deletefrommoodle.php`](deletefrommoodle.md).
