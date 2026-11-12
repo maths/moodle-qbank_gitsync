@@ -372,7 +372,7 @@ class import_quiz {
             $token = $arguments['token'];
         }
         $ignorecat = $arguments['ignorecat'];
-        $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
+        $ignorecat = ($ignorecat) ? ' -x ' . escapeshellarg($ignorecat) : '';
         $this->import_quiz_data();
         if ($this->useyaml) {
             $defaultsfilename = cli_helper::DEFAULTS_FILE . ($this->useyaml ? 'yml' : 'xml');
@@ -425,9 +425,10 @@ class import_quiz {
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
         $forceimport = ($this->forceimport) ? ' -z' : '';
-        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
-        return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
-                        '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token .
+        $defaults = ($this->usefragments) ? ' -b true -o ' . escapeshellarg(basename($this->defaultsfilepath)) : '';
+        return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r ' . escapeshellarg($rootdirectory) .
+                        ' -i ' . escapeshellarg($moodleinstance) . ' -l "module" -n ' . escapeshellarg((string) $quizcmid) .
+                        ' -t ' . escapeshellarg($token) .
                         $ignorecat . ' -y ' . $useyaml . $defaults . $forceimport);
     }
 
@@ -441,11 +442,12 @@ class import_quiz {
      */
     public function call_import_quiz_data(string $moodleinstance, string $token, string $scriptdirectory): ?string {
         chdir($scriptdirectory);
-        $nonquiz = ($this->nonquizmanifestpath) ? ' -p "' . $this->nonquizmanifestpath . '"' : '';
+        $nonquiz = ($this->nonquizmanifestpath) ? ' -p ' . escapeshellarg($this->nonquizmanifestpath) : '';
         $usegit = ($this->usegit) ? 'true' : 'false';
         return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
-                    ' -w -r "" -i "' . $moodleinstance . '" -t ' . $token . ' -a "' . $this->quizdatapath .
-                    '" -f "' . $this->quizmanifestpath . '"' . $nonquiz);
+                    ' -w -r "" -i ' . escapeshellarg($moodleinstance) . ' -t ' . escapeshellarg($token) . ' -a ' .
+                    escapeshellarg($this->quizdatapath) .
+                    ' -f ' . escapeshellarg($this->quizmanifestpath) . $nonquiz);
     }
 
     /**

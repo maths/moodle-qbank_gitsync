@@ -164,6 +164,9 @@ final class create_repo_test extends advanced_testcase {
         $manifest = $this->createrepo->manifestcontents;
         $this->assertEquals("top", $manifest->context->defaultsubdirectory);
         $this->assertEquals(123, $manifest->context->defaultsubcategoryid);
+        foreach ($manifest->questions as $question) {
+            $this->assertEquals('xml', $question->format);
+        }
     }
 
     /**
