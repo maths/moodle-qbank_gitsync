@@ -487,6 +487,50 @@ final class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test that importing a YAML question records YAML in the manifest.
+     * @covers \gitsync\import_repo::import_questions()
+     * @covers \gitsync\cli_helper::create_manifest_file()
+     */
+    public function test_import_yaml_question_format(): void {
+        global $CFG;
+        unlink($this->rootpath . '/top/cat-1/First-Question.xml');
+        file_put_contents(
+            $this->rootpath . '/top/cat-1/Yaml-Question.yml',
+            file_get_contents($CFG->dirroot . '/question/bank/gitsync/tests/fixtures/fullquestion.yml')
+        );
+        $this->importrepo->useyaml = true;
+        $this->importrepo->subdirectory = 'top/cat-1';
+        $this->importrepo->manifestcontents = json_decode('{"context":{},"questions":[]}');
+        $this->importrepo->postsettings = [
+            'contextlevel' => '10',
+            'coursename' => 'Course 1',
+            'modulename' => 'Test 1',
+            'coursecategory' => 'Cat 1',
+            'instanceid' => null,
+        ];
+        $this->curl->expects($this->once())->method('execute')->willReturn(
+            '[{"questionbankentryid":"35005","version":"2"}]'
+        );
+
+        $this->importrepo->import_questions();
+
+        $tempfile = fopen($this->importrepo->tempfilepath, 'r');
+        $questioninfo = json_decode(fgets($tempfile));
+        fclose($tempfile);
+        $this->assertEquals('yml', $questioninfo->format);
+
+        $this->expectOutputString("\nAdded 1 question.\n");
+        cli_helper::create_manifest_file(
+            $this->importrepo->manifestcontents,
+            $this->importrepo->tempfilepath,
+            $this->importrepo->manifestpath,
+            false
+        );
+        $manifestcontents = json_decode(file_get_contents($this->importrepo->manifestpath));
+        $this->assertEquals('yml', $manifestcontents->questions[0]->format);
+    }
+
+    /**
      * Test importing questions in batches.
      * @covers \gitsync\import_repo\import_batch()
      */

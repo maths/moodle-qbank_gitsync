@@ -410,4 +410,21 @@ final class import_questions_test extends externallib_advanced_testcase {
         }
         $this->assertSame($before + 2, $DB->count_records('question'));
     }
+
+    /**
+     * Test a category from another context is rejected.
+     */
+    public function test_category_outside_context(): void {
+        global $DB;
+        $this->give_capabilities();
+        // The category is in the course context, the import targets the quiz context.
+        $results = import_questions::execute([[
+            'questionbankentryid' => '', 'importedversion' => '', 'exportedversion' => '', 'qcategoryname' => '',
+            'contextlevel' => '70', 'coursename' => $this->course->fullname, 'modulename' => $this->module->name,
+            'coursecategory' => '', 'qcategoryid' => (string) $this->qcategory->id, 'instanceid' => '',
+            'content' => file_get_contents($this->testrepo . 'top/cat-1/First-Question.xml'),
+        ]]);
+        $this->assertStringContainsString('The category is not in the supplied context.', $results[0]['error']);
+        $this->assertFalse($DB->record_exists('question', ['name' => 'First Question']));
+    }
 }

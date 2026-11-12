@@ -374,7 +374,7 @@ class create_repo {
             $token = $arguments['token'];
         }
         $ignorecat = $arguments['ignorecat'];
-        $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
+        $ignorecat = ($ignorecat) ? ' -x ' . escapeshellarg($ignorecat) : '';
         $quizlocations = [];
         foreach ($contextinfo->quizzes as $quiz) {
             $instanceid = $quiz->instanceid;
@@ -444,9 +444,10 @@ class create_repo {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
-        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
-        return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r "' .
-                $rootdirectory .  '" -i "' . $moodleinstance .
-                '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat . ' -y ' . $useyaml . $defaults);
+        $defaults = ($this->usefragments) ? ' -b true -o ' . escapeshellarg(basename($this->defaultsfilepath)) : '';
+        return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r ' .
+                escapeshellarg($rootdirectory) .  ' -i ' . escapeshellarg($moodleinstance) .
+                ' -l "module" -n ' . escapeshellarg($instanceid) . ' -t ' . escapeshellarg($token) . $ignorecat . ' -y ' .
+                $useyaml . $defaults);
     }
 }

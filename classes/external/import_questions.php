@@ -194,6 +194,13 @@ class import_questions extends external_api {
             $question = question_bank::load_question($questiondata->questionid);
         } else if (isset($params['qcategoryid']) && $params['qcategoryid'] !== '') {
             $category = $DB->get_record('question_categories', ['id' => $params['qcategoryid']]);
+            if (!$category) {
+                throw new moodle_exception('categoryerror', 'qbank_gitsync', null, $params['qcategoryid']);
+            }
+            // The capability checks above apply to $thiscontext only.
+            if ((int) $category->contextid !== (int) $thiscontext->id) {
+                throw new moodle_exception('categorymismatcherror', 'qbank_gitsync', null, $params['qcategoryid']);
+            }
             $qformat->setCategory($category);
             $qformat->setCatfromfile(false);
         } else if ($params['qcategoryname']) {

@@ -863,14 +863,17 @@ class import_repo {
      * @return array
      */
     private function manifest_record(string $filepath, $existingentry): array {
-        $record = ['filepath' => str_replace('\\', '/', $filepath), 'format' => 'xml'];
+        $record = [
+            'filepath' => str_replace('\\', '/', $filepath),
+            'format' => strtolower(pathinfo($filepath, PATHINFO_EXTENSION)),
+        ];
         if ($existingentry && isset($existingentry->currentcommit)) {
             $record['moodlecommit'] = $existingentry->currentcommit;
         }
         if ($this->usegit && !$existingentry) {
             $manifestdirname = dirname($this->manifestpath);
             chdir($manifestdirname);
-            $commithash = exec('git log -n 1 --pretty=format:%H -- "' . $filepath . '"');
+            $commithash = exec('git log -n 1 --pretty=format:%H -- ' . escapeshellarg($filepath));
             $record['moodlecommit'] = $commithash;
             $record['currentcommit'] = $commithash;
         }
@@ -1283,7 +1286,7 @@ class import_repo {
             $token = $arguments['token'];
         }
         $ignorecat = $arguments['ignorecat'];
-        $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
+        $ignorecat = ($ignorecat) ? ' -x ' . escapeshellarg($ignorecat) : '';
         $quizlocations = (isset($this->manifestcontents->quizzes)) ? $this->manifestcontents->quizzes : [];
         $topdircontents = scandir(dirname($basedirectory));
         foreach ($topdircontents as $quizdirectory) {
@@ -1444,18 +1447,20 @@ class import_repo {
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
         $forceimport = ($this->forceimport) ? ' -z' : '';
-        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
+        $defaults = ($this->usefragments) ? ' -b true -o ' . escapeshellarg(basename($this->defaultsfilepath)) : '';
         if ($this->usefragments) {
             copy($this->defaultsfilepath, $rootdirectory . '/' . basename($this->defaultsfilepath));
         }
         chdir($scriptdirectory);
         if ($quizmanifestname) {
-            return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
-                            '" -i "' . $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat .
+            return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r ' . escapeshellarg($rootdirectory) .
+                            ' -i ' . escapeshellarg($moodleinstance) . ' -f ' . escapeshellarg($quizmanifestname) . ' -t ' .
+                            escapeshellarg($token) . $ignorecat .
                             ' -y ' . $useyaml . $defaults . $forceimport);
         } else {
-            return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory .
-                            '" -i "' . $moodleinstance . '" -l "module" -n ' . $quizcmid . ' -t ' . $token . $ignorecat .
+            return shell_exec('php importrepotomoodle.php -u ' . $usegit . ' -w -r ' . escapeshellarg($rootdirectory) .
+                            ' -i ' . escapeshellarg($moodleinstance) . ' -l "module" -n ' .
+                            escapeshellarg((string) $quizcmid) . ' -t ' . escapeshellarg($token) . $ignorecat .
                             ' -y ' . $useyaml . $defaults . $forceimport);
         }
     }
@@ -1483,13 +1488,15 @@ class import_repo {
         $usegit = ($this->usegit) ? 'true' : 'false';
         if ($quizmanifestpath) {
             return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
-                    ' -w -r "" -i "' . $moodleinstance . '" -n ' .
-                    $instanceid . ' -t ' . $token . ' -p "' . $this->manifestpath . '" -f "' .
-                    $quizmanifestpath . '" -a "' . $structurefilepath . '"');
+                    ' -w -r "" -i ' . escapeshellarg($moodleinstance) . ' -n ' .
+                    escapeshellarg($instanceid) . ' -t ' . escapeshellarg($token) . ' -p ' .
+                    escapeshellarg($this->manifestpath) . ' -f ' .
+                    escapeshellarg($quizmanifestpath) . ' -a ' . escapeshellarg($structurefilepath));
         } else {
             return shell_exec('php importquizstructuretomoodle.php -u ' . $usegit .
-                    ' -w -r "" -i "' . $moodleinstance . '" -n ' .
-                    $instanceid . ' -t ' . $token . ' -p "' . $this->manifestpath . '" -a "' . $structurefilepath . '"');
+                    ' -w -r "" -i ' . escapeshellarg($moodleinstance) . ' -n ' .
+                    escapeshellarg($instanceid) . ' -t ' . escapeshellarg($token) . ' -p ' .
+                    escapeshellarg($this->manifestpath) . ' -a ' . escapeshellarg($structurefilepath));
         }
     }
 
