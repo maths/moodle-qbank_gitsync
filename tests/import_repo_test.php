@@ -525,6 +525,7 @@ final class import_repo_test extends advanced_testcase {
         fclose($tempfile);
         $this->assertEquals('yml', $questioninfo->format);
 
+        $this->expectOutputString("\nAdded 1 question.\n");
         cli_helper::create_manifest_file(
             $this->importrepo->manifestcontents,
             $this->importrepo->tempfilepath,
