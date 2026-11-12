@@ -54,7 +54,7 @@ class cli_helper {
      * GITSYNC_VERSION - Current version of Gitsync.
      * Should match version in version.php .
      */
-    public const GITSYNC_VERSION = '2026090200';
+    public const GITSYNC_VERSION = '2026111200';
     /**
      * CATEGORY_FILE - Name of file containing category information in each directory and subdirectory.
      */
@@ -582,7 +582,7 @@ class cli_helper {
                     $questionentry = new \stdClass();
                     $questionentry->questionbankentryid = $questioninfo->questionbankentryid;
                     $questionentry->filepath = str_replace($manifestdir, '', $questioninfo->filepath);
-                    $questionentry->format = $questioninfo->format;
+                    $questionentry->format = strtolower(pathinfo($questionentry->filepath, PATHINFO_EXTENSION));
                     $questionentry->importedversion = $questioninfo->version;
                     $questionentry->exportedversion = $questioninfo->version;
                     if (isset($questioninfo->moodlecommit)) {
@@ -595,6 +595,11 @@ class cli_helper {
                 } else {
                     $updatedcount++;
                     $existingentries["{$questioninfo->questionbankentryid}"]->importedversion = $questioninfo->version;
+                    $format = strtolower(pathinfo($existingentries["{$questioninfo->questionbankentryid}"]->filepath,
+                        PATHINFO_EXTENSION));
+                    if (in_array($format, ['xml', 'yml'])) {
+                        $existingentries["{$questioninfo->questionbankentryid}"]->format = $format;
+                    }
                     if (isset($questioninfo->moodlecommit)) {
                         $existingentries["{$questioninfo->questionbankentryid}"]->moodlecommit = $questioninfo->moodlecommit;
                     }
@@ -644,7 +649,7 @@ class cli_helper {
         }
         chdir(dirname($activity->manifestpath));
         foreach ($activity->manifestcontents->questions as $question) {
-            $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
+            $commithash = exec('git log -n 1 --pretty=format:%H -- ' . escapeshellarg(substr($question->filepath, 1)));
             if ($commithash) {
                 $question->currentcommit = $commithash;
             }
@@ -671,9 +676,9 @@ class cli_helper {
         $manifestdirname = dirname($activity->manifestpath);
         chdir($manifestdirname);
         exec("git add --all");
-        exec('git commit -m "Initial Commit - ' . basename($activity->manifestpath)  . '"');
+        exec('git commit -m ' . escapeshellarg('Initial Commit - ' . basename($activity->manifestpath)));
         foreach ($activity->manifestcontents->questions as $question) {
-            $commithash = exec('git log -n 1 --pretty=format:%H -- "' . substr($question->filepath, 1) . '"');
+            $commithash = exec('git log -n 1 --pretty=format:%H -- ' . escapeshellarg(substr($question->filepath, 1)));
             if ($commithash) {
                 $question->currentcommit = $commithash;
                 $question->moodlecommit = $commithash;
@@ -705,7 +710,7 @@ class cli_helper {
             if ($repoitem->isFile()) {
                 if (pathinfo($repoitem, PATHINFO_EXTENSION) === 'xml') {
                     $path = $repoitem->getPathname();
-                    exec('python3 prettify_cli.py ' . $path);
+                    exec('python3 prettify_cli.py ' . escapeshellarg($path));
                 }
             }
         }

@@ -394,6 +394,7 @@ class export_repo {
                 } else {
                     $count++;
                     $questioninfo->exportedversion = $responsejson->version;
+                    $questioninfo->format = strtolower(pathinfo($questioninfo->filepath, PATHINFO_EXTENSION));
                 }
             }
         }
@@ -427,7 +428,7 @@ class export_repo {
             $token = $arguments['token'];
         }
         $ignorecat = $arguments['ignorecat'];
-        $ignorecat = ($ignorecat) ? ' -x "' . $ignorecat . '"' : '';
+        $ignorecat = ($ignorecat) ? ' -x ' . escapeshellarg($ignorecat) : '';
         $quizlocations = isset($this->manifestcontents->quizzes) ? $this->manifestcontents->quizzes : [];
         $locarray = array_column($quizlocations, null, 'moduleid');
         foreach ($contextinfo->quizzes as $quiz) {
@@ -532,9 +533,11 @@ class export_repo {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
-        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
-        return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r "' . $rootdirectory .  '" -i "' . $moodleinstance .
-                '" -l "module" -n ' . $instanceid . ' -t ' . $token . $ignorecat . ' -y ' . $useyaml . $defaults);
+        $defaults = ($this->usefragments) ? ' -b true -o ' . escapeshellarg(basename($this->defaultsfilepath)) : '';
+        return shell_exec('php createrepo.php -u ' . $usegit . ' -w -r ' . escapeshellarg($rootdirectory) .  ' -i ' .
+                escapeshellarg($moodleinstance) .
+                ' -l "module" -n ' . escapeshellarg($instanceid) . ' -t ' . escapeshellarg($token) . $ignorecat . ' -y ' .
+                $useyaml . $defaults);
     }
 
     /**
@@ -559,9 +562,10 @@ class export_repo {
         chdir($scriptdirectory);
         $usegit = ($this->usegit) ? 'true' : 'false';
         $useyaml = ($this->useyaml) ? 'true' : 'false';
-        $defaults = ($this->usefragments) ? ' -b true -o "' . basename($this->defaultsfilepath) . '"' : '';
-        return shell_exec('php exportrepofrommoodle.php -u ' . $usegit . ' -w -r "' . $rootdirectory . '" -i "' .
-                            $moodleinstance . '" -f "' . $quizmanifestname . '" -t ' . $token . $ignorecat .
+        $defaults = ($this->usefragments) ? ' -b true -o ' . escapeshellarg(basename($this->defaultsfilepath)) : '';
+        return shell_exec('php exportrepofrommoodle.php -u ' . $usegit . ' -w -r ' . escapeshellarg($rootdirectory) . ' -i ' .
+                            escapeshellarg($moodleinstance) . ' -f ' . escapeshellarg($quizmanifestname) . ' -t ' .
+                            escapeshellarg($token) . $ignorecat .
                             ' -y ' . $useyaml . $defaults);
     }
 }

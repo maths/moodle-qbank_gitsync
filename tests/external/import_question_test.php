@@ -507,4 +507,32 @@ final class import_question_test extends externallib_advanced_testcase {
             ['questionbankentryid' => $qbankentryid, 'version' => 1]
         ));
     }
+
+    /**
+     * Test a category from another context is rejected.
+     */
+    public function test_category_outside_context(): void {
+        global $DB;
+        $this->give_capabilities();
+        $this->upload_file($this->testrepo . 'top/cat-1/First-Question.xml');
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage('The category is not in the supplied context.');
+        try {
+            // The category is in the course context, the import targets the quiz context.
+            import_question::execute(
+                '',
+                '',
+                '',
+                null,
+                $this->fileinfo,
+                70,
+                $this->course->fullname,
+                $this->module->name,
+                null,
+                (string) $this->qcategory->id
+            );
+        } finally {
+            $this->assertFalse($DB->record_exists('question', ['name' => 'First Question']));
+        }
+    }
 }

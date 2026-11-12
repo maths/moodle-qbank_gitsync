@@ -180,6 +180,8 @@ final class export_repo_test extends advanced_testcase {
               {"questionbankentryid": "35004", "name": "Four", "questioncategory": ""}]}'
         );
         $manifestcontents = json_decode(file_get_contents($this->exportrepo->manifestpath));
+        // The format must follow the question filepath when an existing question is exported again.
+        $this->exportrepo->manifestcontents->questions[0]->format = 'yml';
         $this->exportrepo->process();
 
         // Check question files updated.
@@ -200,6 +202,7 @@ final class export_repo_test extends advanced_testcase {
 
         $this->assertEquals('1', $existingentries['35001']->importedversion);
         $this->assertEquals('10', $existingentries['35001']->exportedversion);
+        $this->assertEquals('xml', $existingentries['35001']->format);
         // Question category id should be default from manifest.
         $this->assertEquals(5, $this->exportrepo->listpostsettings["qcategoryid"]);
 

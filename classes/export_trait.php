@@ -337,11 +337,11 @@ trait export_trait {
         string $scriptdirectory
     ): ?string {
         chdir($scriptdirectory);
-        $nonquiz = ($nonquizmanifestpath) ? ' -p "' . $nonquizmanifestpath . '"' : '';
+        $nonquiz = ($nonquizmanifestpath) ? ' -p ' . escapeshellarg($nonquizmanifestpath) : '';
         $usegit = ($this->usegit) ? 'true' : 'false';
         return shell_exec('php exportquizstructurefrommoodle.php -u ' . $usegit .
-                ' -w -r "" -i "' . $moodleinstance . '" -t "'
-                . $token . '" -f "' . $quizmanifestpath . '"' . $nonquiz);
+                ' -w -r "" -i ' . escapeshellarg($moodleinstance) . ' -t '
+                . escapeshellarg($token) . ' -f ' . escapeshellarg($quizmanifestpath) . $nonquiz);
     }
 
     /**
