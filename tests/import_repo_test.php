@@ -69,8 +69,6 @@ final class import_repo_test extends advanced_testcase {
     public cli_helper $clihelper;
     /** @var curl_request mocked curl_request */
     public curl_request $curl;
-    /** @var curl_request mocked curl_request for doc upload */
-    public curl_request $uploadcurl;
     /** @var curl_request mocked curl_request for question list */
     public curl_request $listcurl;
     /** @var import_repo mocked for question delete */
@@ -81,6 +79,8 @@ final class import_repo_test extends advanced_testcase {
     public string $rootpath;
     /** @var array used to store output of multiple calls to a function */
     public array $results = [];
+    /** @var array XML content sent to the import webservice */
+    public array $sent = [];
     /** name of moodle instance for purpose of tests */
     const MOODLE = 'fakeimport';
 
@@ -128,11 +128,19 @@ final class import_repo_test extends advanced_testcase {
         );
         // Mock call to webservice.
         $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute',
+            'execute', 'set_option',
         ])->setConstructorArgs(['xxxx'])->getMock();
-        $this->uploadcurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
-            'execute',
-        ])->setConstructorArgs(['xxxx'])->getMock();
+        $this->curl->expects($this->any())->method('set_option')->willReturnCallback(
+            function ($option, $value) {
+                if ($option === CURLOPT_POSTFIELDS) {
+                    foreach ($value as $key => $content) {
+                        if (substr($key, -9) === '[content]') {
+                            $this->sent[] = $content;
+                        }
+                    }
+                }
+            }
+        );
         $this->deletecurl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
@@ -140,7 +148,6 @@ final class import_repo_test extends advanced_testcase {
             'execute',
         ])->setConstructorArgs(['xxxx'])->getMock();
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'upload_file',
             'handle_delete',
             'call_exit',
             'handle_abort',
@@ -148,8 +155,6 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->deletecurlrequest = $this->deletecurl;
         $this->importrepo->listcurlrequest = $this->listcurl;
-        $this->importrepo->uploadcurlrequest = $this->uploadcurl;
-        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
     }
 
     /**
@@ -172,7 +177,6 @@ final class import_repo_test extends advanced_testcase {
                 "questions": []}')
         );
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'upload_file',
             'handle_delete',
             'call_exit',
             'handle_abort',
@@ -180,16 +184,6 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->deletecurlrequest = $this->deletecurl;
         $this->importrepo->listcurlrequest = $this->listcurl;
-        $this->importrepo->uploadcurlrequest = $this->uploadcurl;
-        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnCallback(
-            function ($arg) {
-                if (!isset($this->results['files'])) {
-                    $this->results['files'] = [];
-                }
-                $this->results['files'][] = $arg->getPathname();
-                return true;
-            }
-        ));
     }
 
     /**
@@ -199,13 +193,13 @@ final class import_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35001", "version": "2"}',
-            '{"questionbankentryid": "35002", "version": "2"}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35001", "version": "2"}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
@@ -233,12 +227,12 @@ final class import_repo_test extends advanced_testcase {
         // We expect 3 category calls to the webservice and 3 question calls as using cat 2 subdirectory
         // from manifest file default.
         $this->curl->expects($this->exactly(6))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35002", "version": "2"}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
@@ -267,11 +261,11 @@ final class import_repo_test extends advanced_testcase {
         // We expect 3 category calls to the webservice and 2 question calls as using subcat 2_1
         // from subdirectory parameter.
         $this->curl->expects($this->exactly(5))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
@@ -299,9 +293,9 @@ final class import_repo_test extends advanced_testcase {
         // We expect 2 category calls to the webservice and 1 question calls as using defaultsubdir cat-2
         // and default ignore of subcat 2_1.
         $this->curl->expects($this->exactly(3))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35004", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
@@ -330,11 +324,11 @@ final class import_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 2 category calls to the webservice and 3 question calls as ignoring cat 1.
         $this->curl->expects($this->exactly(5))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35002", "version": "2"}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
@@ -362,7 +356,7 @@ final class import_repo_test extends advanced_testcase {
             $this->returnCallback(
                 function () {
                     $this->results[] = $this->importrepo->repoiterator->getPathname();
-                    return '{"questionbankentryid": null, "version" : null}';
+                    return '[{"questionbankentryid": null, "version" : null}]';
                 }
             )
         );
@@ -384,7 +378,7 @@ final class import_repo_test extends advanced_testcase {
             $this->returnCallback(
                 function () {
                     $this->results[] = $this->importrepo->repoiterator->getPathname();
-                    return '{"questionbankentryid": null, "version" : null}';
+                    return '[{"questionbankentryid": null, "version" : null}]';
                 }
             )
         );
@@ -406,7 +400,7 @@ final class import_repo_test extends advanced_testcase {
             $this->returnCallback(
                 function () {
                     $this->results[] = $this->importrepo->repoiterator->getPathname();
-                    return '{"questionbankentryid": null, "version" : null}';
+                    return '[{"questionbankentryid": null, "version" : null}]';
                 }
             )
         );
@@ -448,10 +442,10 @@ final class import_repo_test extends advanced_testcase {
     public function test_import_questions(): void {
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": "35001", "version": "2"}',
-            '{"questionbankentryid": "35002", "version": "2"}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": "35001", "version": "2"}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
         $this->curl->expects($this->exactly(4))->method('execute')->will(
             $this->returnCallback(
@@ -515,7 +509,7 @@ final class import_repo_test extends advanced_testcase {
             'instanceid' => null,
         ];
         $this->curl->expects($this->once())->method('execute')->willReturn(
-            '{"questionbankentryid":"35005","version":"2"}'
+            '[{"questionbankentryid":"35005","version":"2"}]'
         );
 
         $this->importrepo->import_questions();
@@ -537,6 +531,163 @@ final class import_repo_test extends advanced_testcase {
     }
 
     /**
+     * Test importing questions in batches.
+     * @covers \gitsync\import_repo\import_batch()
+     */
+    public function test_import_questions_in_batches(): void {
+        $this->options['batchsize'] = 3;
+        $this->replace_mock_default();
+        $imports = [];
+        $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute', 'set_option',
+        ])->setConstructorArgs(['xxxx'])->getMock();
+        $this->curl->expects($this->any())->method('set_option')->willReturnCallback(
+            function ($option, $value) use (&$imports) {
+                if ($option === CURLOPT_POSTFIELDS) {
+                    $imports[] = $value;
+                }
+            }
+        );
+        $this->importrepo->curlrequest = $this->curl;
+        $ok = fn($id) => ['questionbankentryid' => $id, 'version' => '2', 'validation' => '', 'error' => ''];
+        $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
+            json_encode([$ok('35001'), ['questionbankentryid' => '', 'version' => '', 'validation' => '',
+                'error' => 'Import failed'], $ok('35003')]),
+            json_encode([$ok('35004')]),
+        );
+        $this->importrepo->postsettings = [
+            'wstoken' => 'XXXXXX',
+            'wsfunction' => 'qbank_gitsync_import_questions',
+            'moodlewsrestformat' => 'json',
+            'contextlevel' => '10',
+            'coursename' => 'Course 1',
+            'modulename' => 'Test 1',
+            'coursecategory' => 'Cat 1',
+            'instanceid' => null,
+        ];
+        $this->importrepo->import_questions();
+
+        $this->assertCount(2, $imports);
+        $this->assertEquals('qbank_gitsync_import_questions', $imports[0]['wsfunction']);
+        $this->assertStringContainsString('<question', $imports[0]['questions[2][content]']);
+        $this->assertArrayHasKey('questions[0][qcategoryname]', $imports[1]);
+        $this->assertArrayNotHasKey('questions[3][content]', $imports[0]);
+        $this->assertArrayNotHasKey('questions[0][wstoken]', $imports[0]);
+        // Three of the four questions are in the temporary manifest; the failed one is reported.
+        $this->assertEquals(3, count(file($this->importrepo->tempfilepath)));
+        $this->expectOutputRegex('/Import failed\n.*not imported/');
+    }
+
+    /**
+     * Test large questions are split over several requests.
+     * @covers \gitsync\import_repo\import_questions()
+     */
+    public function test_import_questions_limits_request_size(): void {
+        $this->options['batchsize'] = 20;
+        $this->replace_mock_default();
+        // Two questions that do not fit into one request together.
+        $padding = '<!--' . str_repeat('x', (int) (import_repo::MAX_BATCH_BYTES * 0.6)) . '-->';
+        foreach (['/top/cat-1/First-Question.xml', '/top/cat-2/Second-Question.xml'] as $file) {
+            file_put_contents($this->rootpath . $file, $padding, FILE_APPEND);
+        }
+        $sizes = [];
+        $this->curl = $this->getMockBuilder(\qbank_gitsync\curl_request::class)->onlyMethods([
+            'execute', 'set_option',
+        ])->setConstructorArgs(['xxxx'])->getMock();
+        $this->curl->expects($this->any())->method('set_option')->willReturnCallback(
+            function ($option, $value) use (&$sizes) {
+                if ($option === CURLOPT_POSTFIELDS) {
+                    $sizes[] = array_map('strlen', array_filter(
+                        $value,
+                        fn($key) => substr($key, -9) === '[content]',
+                        ARRAY_FILTER_USE_KEY
+                    ));
+                }
+            }
+        );
+        $this->curl->expects($this->exactly(2))->method('execute')->willReturnCallback(
+            function () use (&$sizes) {
+                return json_encode(array_fill(0, count(end($sizes)), [
+                    'questionbankentryid' => '35001', 'version' => '2', 'validation' => '', 'error' => '',
+                ]));
+            }
+        );
+        $this->importrepo->curlrequest = $this->curl;
+        $this->importrepo->postsettings = [
+            'wstoken' => 'XXXXXX',
+            'wsfunction' => 'qbank_gitsync_import_questions',
+            'moodlewsrestformat' => 'json',
+            'contextlevel' => '10',
+        ];
+        $this->importrepo->import_questions();
+
+        $this->assertCount(2, $sizes);
+        $this->assertEquals(4, count($sizes[0]) + count($sizes[1]));
+        $this->assertLessThanOrEqual(import_repo::MAX_BATCH_BYTES, array_sum($sizes[0]));
+        $this->assertLessThanOrEqual(import_repo::MAX_BATCH_BYTES, array_sum($sizes[1]));
+    }
+
+    /**
+     * Test an import request without an answer stops the run and notes its questions.
+     * @covers \gitsync\import_repo\import_batch()
+     */
+    public function test_import_questions_without_answer(): void {
+        $this->curl->expects($this->any())->method('execute')->willReturn(false);
+        $this->importrepo->expects($this->atLeastOnce())->method('call_exit');
+        $this->importrepo->import_questions();
+
+        $pending = json_decode(file_get_contents(str_replace('.tmp', '_pending.tmp', $this->importrepo->tempfilepath)));
+        $this->assertCount(1, $pending);
+        $this->assertStringEndsWith('-Question.xml', $pending[0]->record->filepath);
+        $this->assertStringEndsWith(' Question', $pending[0]->name);
+        $this->assertStringContainsString('cat', $pending[0]->category);
+        $this->expectOutputRegex('/No response from Moodle.*Run the import again/s');
+    }
+
+    /**
+     * Test the next run records the questions Moodle imported from an unanswered request.
+     * @covers \gitsync\import_repo\recovery()
+     */
+    public function test_recovery_after_unanswered_request(): void {
+        $this->importrepo->manifestcontents = json_decode('{"context":{"contextlevel":70,"coursename":"Course 1",
+            "modulename":"Test 1","coursecategory":null},
+            "questions":[{"questionbankentryid":"1", "importedversion":"1", "exportedversion":"1",
+                "filepath":"/top/cat-1/First-Question.xml", "format":"xml"}]}');
+        $pending = fn($file, $id, $version, $name, $category) => [
+            'record' => ['filepath' => $this->rootpath . $file, 'format' => 'xml', 'moodlecommit' => 'abc'],
+            'questionbankentryid' => $id, 'version' => $version, 'name' => $name, 'category' => $category];
+        file_put_contents(str_replace('.tmp', '_pending.tmp', $this->importrepo->tempfilepath), json_encode([
+            $pending('/top/cat-1/First-Question.xml', '1', 1, 'First Question', 'cat 1'),
+            $pending('/top/cat-2/Second-Question.xml', null, 0, 'Second Question', 'cat 2'),
+            $pending('/top/cat-2/subcat-2_1/Third-Question.xml', null, 0, 'Third Question', 'subcat 2_1'),
+            $pending('/top/cat-2/subcat-2_1/Fourth-Question.xml', null, 0, 'Fourth Question', 'subcat 2_1'),
+        ]));
+        // Moodle saved a new version of the first question and created the third one.
+        // The second was not created and two unlinked questions could be the fourth.
+        $inmoodle = fn($id, $name, $category, $version) => ['questionbankentryid' => $id, 'name' => $name,
+            'questioncategory' => $category, 'version' => $version];
+        $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(json_encode([
+            'contextinfo' => [],
+            'questions' => [
+                $inmoodle('1', 'First Question', 'cat 1', '2'),
+                $inmoodle('50', 'Third Question', 'subcat 2_1', '1'),
+                $inmoodle('51', 'Fourth Question', 'subcat 2_1', '1'),
+                $inmoodle('52', 'Fourth Question', 'subcat 2_1', '1'),
+            ],
+        ]));
+        $this->importrepo->recovery();
+
+        $entries = array_column($this->importrepo->manifestcontents->questions, null, 'questionbankentryid');
+        $this->assertEquals(['1', '50'], array_keys($entries));
+        $this->assertEquals('2', $entries['1']->importedversion);
+        $this->assertEquals('/top/cat-2/subcat-2_1/Third-Question.xml', $entries['50']->filepath);
+        // The commit noted when the request was sent is recorded, whatever the files look like now.
+        $this->assertEquals('abc', $entries['50']->moodlecommit);
+        $this->assertFileDoesNotExist(str_replace('.tmp', '_pending.tmp', $this->importrepo->tempfilepath));
+        $this->expectOutputRegex('/First-Question.xml was imported.*Third-Question.xml was imported/s');
+    }
+
+    /**
      * Test importing questions with ignore.
      * @covers \gitsync\import_repo\import_questions()
      */
@@ -545,8 +696,8 @@ final class import_repo_test extends advanced_testcase {
         $this->replace_mock_default();
         $this->results = [];
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": "35001", "version": "2"}',
-            '{"questionbankentryid": "35002", "version": "2"}',
+            '[{"questionbankentryid": "35001", "version": "2"}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
         );
         $this->curl->expects($this->exactly(2))->method('execute')->will(
             $this->returnCallback(
@@ -588,7 +739,7 @@ final class import_repo_test extends advanced_testcase {
         $this->replace_mock_default();
         $this->results = [];
         $this->curl->expects($this->exactly(1))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": "35002", "version": "2"}',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
         );
         $this->curl->expects($this->exactly(1))->method('execute')->will(
             $this->returnCallback(
@@ -654,8 +805,8 @@ final class import_repo_test extends advanced_testcase {
         $this->replace_mock_default();
         $this->results = [];
         $this->curl->expects($this->exactly(2))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": "35001", "version": "2"}',
-            '{"questionbankentryid": "35002", "version": "2"}',
+            '[{"questionbankentryid": "35001", "version": "2"}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
         );
         $this->curl->expects($this->exactly(2))->method('execute')->will(
             $this->returnCallback(
@@ -719,10 +870,10 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         $this->results = [];
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": "35001", "version": "2"}',
-            '{"questionbankentryid": "35002", "version": "2"}',
-            '{"questionbankentryid": "1", "version": "2"}',
-            '{"questionbankentryid": "2", "version": "2"}',
+            '[{"questionbankentryid": "35001", "version": "2"}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
+            '[{"questionbankentryid": "1", "version": "2"}]',
+            '[{"questionbankentryid": "2", "version": "2"}]',
         );
         $this->curl->expects($this->exactly(4))->method('execute')->will(
             $this->returnCallback(
@@ -789,9 +940,9 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->manifestcontents = json_decode($manifestcontents);
         $this->results = [];
         $this->curl->expects($this->exactly(3))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": "35002", "version": "2"}',
-            '{"questionbankentryid": "2", "version": "2"}',
-            '{"questionbankentryid": "3", "version": "2"}',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
+            '[{"questionbankentryid": "2", "version": "2"}]',
+            '[{"questionbankentryid": "3", "version": "2"}]',
         );
         $this->curl->expects($this->exactly(3))->method('execute')->will(
             $this->returnCallback(
@@ -834,7 +985,7 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->directory = $this->rootpath;
         $this->importrepo->subdirectory = 'top/cat-1';
         $this->curl->expects($this->any())->method('execute')->will(
-            $this->returnValue('{"questionbankentryid": "35001", "version": "2"}')
+            $this->returnValue('[{"questionbankentryid": "35001", "version": "2"}]')
         );
         unlink($this->rootpath . '/top/cat-1' . '/' . cli_helper::CATEGORY_FILE . '.xml');
 
@@ -851,7 +1002,6 @@ final class import_repo_test extends advanced_testcase {
     public function test_manifest_file(): void {
         unlink($this->importrepo->manifestpath);
         $this->importrepo = $this->getMockBuilder(\qbank_gitsync\import_repo::class)->onlyMethods([
-            'upload_file',
             'handle_delete',
             'call_exit',
             'handle_abort',
@@ -859,18 +1009,16 @@ final class import_repo_test extends advanced_testcase {
         $this->importrepo->curlrequest = $this->curl;
         $this->importrepo->deletecurlrequest = $this->deletecurl;
         $this->importrepo->listcurlrequest = $this->listcurl;
-        $this->importrepo->uploadcurlrequest = $this->uploadcurl;
-        $this->importrepo->expects($this->any())->method('upload_file')->will($this->returnValue(true));
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->importrepo->curlrequest->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35001", "version": "2"}',
-            '{"questionbankentryid": "35002", "version": "2"}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35001", "version": "2"}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
 
         $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturn(
@@ -917,11 +1065,11 @@ final class import_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 2 question calls (as subdirectory parameter used).
         $this->importrepo->curlrequest->expects($this->exactly(5))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
 
         $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturn(
@@ -966,9 +1114,9 @@ final class import_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 2 category calls to the webservice and 1 question call.
         $this->importrepo->curlrequest->expects($this->exactly(3))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
 
         $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturn(
@@ -1011,10 +1159,10 @@ final class import_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 2 category calls to the webservice and 2 question calls.
         $this->importrepo->curlrequest->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35003", "version": "2"}',
-            '{"questionbankentryid": "35005", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
+            '[{"questionbankentryid": "35005", "version": "2"}]',
         );
 
         $this->importrepo->listcurlrequest->expects($this->exactly(1))->method('execute')->willReturn(
@@ -1729,10 +1877,10 @@ final class import_repo_test extends advanced_testcase {
         // We expect 1 category call to the webservice and 3 question calls as using cat 2
         // from subdirectory parameter.
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35005", "version": "2"}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35005", "version": "2"}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
         $this->curl->expects($this->exactly(4))->method('execute')->will(
             $this->returnCallback(
@@ -1754,22 +1902,11 @@ final class import_repo_test extends advanced_testcase {
         $this->expectOutputRegex('/\nAdded 3 questions.*Updated 0 questions.*\n/s');
         // Use subdirectory parameter.
         $this->assertEquals("top/cat-2", $this->importrepo->subdirectory);
-        $this->assertContains(
-            $this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml',
-            $this->results['files']
-        );
-        $this->assertContains(
-            $this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml',
-            $this->results['files']
-        );
-        $this->assertContains(
-            $this->rootpath . '/top/cat-2/Second-Question.xml',
-            $this->results['files']
-        );
-        $this->assertContains(
-            $this->rootpath . '/tempcatfile.tmp',
-            $this->results['files']
-        );
+        $sent = implode("
+", $this->sent);
+        foreach (['Second Question', 'Third Question', 'Fourth Question', 'top/bob/clive/subcat 2_1'] as $text) {
+            $this->assertStringContainsString("<text>{$text}</text>", $sent);
+        }
 
         $tempcontents = simplexml_load_string(
             file_get_contents($this->rootpath . '/tempcatfile.tmp')
@@ -1795,10 +1932,10 @@ final class import_repo_test extends advanced_testcase {
         // We expect 1 category call to the webservice and 3 question calls as using cat 2
         // from subdirectory parameter.
         $this->curl->expects($this->exactly(4))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35005", "version": "2"}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35005", "version": "2"}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
         $this->curl->expects($this->exactly(4))->method('execute')->will(
             $this->returnCallback(
@@ -1821,22 +1958,11 @@ final class import_repo_test extends advanced_testcase {
         $this->expectOutputRegex('/\nAdded 1 question.*Updated 2 questions.*\n/s');
         // Use subdirectory parameter.
         $this->assertEquals("top/cat-2", $this->importrepo->subdirectory);
-        $this->assertContains(
-            $this->rootpath . '/top/cat-2/subcat-2_1/Third-Question.xml',
-            $this->results['files']
-        );
-        $this->assertContains(
-            $this->rootpath . '/top/cat-2/subcat-2_1/Fourth-Question.xml',
-            $this->results['files']
-        );
-        $this->assertContains(
-            $this->rootpath . '/top/cat-2/Second-Question.xml',
-            $this->results['files']
-        );
-        $this->assertContains(
-            $this->rootpath . '/tempcatfile.tmp',
-            $this->results['files']
-        );
+        $sent = implode("
+", $this->sent);
+        foreach (['Second Question', 'Third Question', 'Fourth Question', 'top/bob/clive/subcat 2_1'] as $text) {
+            $this->assertStringContainsString("<text>{$text}</text>", $sent);
+        }
 
         $tempcontents = simplexml_load_string(
             file_get_contents($this->rootpath . '/tempcatfile.tmp')
@@ -1861,13 +1987,13 @@ final class import_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35001", "version": "2"}',
-            '{"questionbankentryid": "35002", "version": "2"}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35001", "version": "2"}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(
@@ -1910,13 +2036,13 @@ final class import_repo_test extends advanced_testcase {
         // The test repo has 2 categories and 1 subcategory. 1 question in each category and 2 in subcategory.
         // We expect 3 category calls to the webservice and 4 question calls.
         $this->curl->expects($this->exactly(7))->method('execute')->willReturnOnConsecutiveCalls(
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": null}',
-            '{"questionbankentryid": "35001", "version": "2"}',
-            '{"questionbankentryid": "35002", "version": "2"}',
-            '{"questionbankentryid": "35004", "version": "2"}',
-            '{"questionbankentryid": "35003", "version": "2"}',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": null}]',
+            '[{"questionbankentryid": "35001", "version": "2"}]',
+            '[{"questionbankentryid": "35002", "version": "2"}]',
+            '[{"questionbankentryid": "35004", "version": "2"}]',
+            '[{"questionbankentryid": "35003", "version": "2"}]',
         );
 
         $this->listcurl->expects($this->exactly(1))->method('execute')->willReturn(

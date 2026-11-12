@@ -34,6 +34,12 @@ class import_repo {
     use tidy_trait;
 
     /**
+     * Largest total size of question XML sent in one import request with several questions.
+     * Half of PHP's default post_max_size (8M). A larger question is sent on its own.
+     */
+    public const MAX_BATCH_BYTES = 4194304;
+
+    /**
      * CLI helper for this import
      *
      * @var cli_helper
@@ -61,14 +67,6 @@ class import_repo {
      */
     public array $postsettings;
     /**
-     * Settings for POST file upload request
-     *
-     * These are the parameters for the webservice upload call.
-     *
-     * @var array
-     */
-    public array $uploadpostsettings;
-    /**
      * Settings for question delete request
      *
      * These are the parameters for the webservice delete call.
@@ -90,12 +88,6 @@ class import_repo {
      * @var curl_request
      */
     public curl_request $curlrequest;
-    /**
-     * cURL request handle for file upload
-     *
-     * @var curl_request
-     */
-    public curl_request $uploadcurlrequest;
     /**
      * cURL request handle for question delete
      *
@@ -204,6 +196,11 @@ class import_repo {
      * @var bool
      */
     public bool $forceimport;
+    /**
+     * Number of questions to import per request.
+     * @var int
+     */
+    public int $batchsize;
 
     /**
      * Constructor
@@ -218,7 +215,8 @@ class import_repo {
         $arguments = $clihelper->get_arguments();
         $moodleinstance = $arguments['moodleinstance'];
         $manifestpath = $arguments['manifestpath'];
-        $this->forceimport = $arguments['forceimport'];
+        $this->forceimport = $arguments['forceimport'] ?? false;
+        $this->batchsize = max(1, (int) ($arguments['batchsize'] ?? 1));
         if ($arguments['directory']) {
             $this->directory = ($arguments['rootdirectory']) ? $arguments['rootdirectory'] . '/' . $arguments['directory'] :
                                             $arguments['directory'];
@@ -253,11 +251,10 @@ class import_repo {
         $this->curlrequest = $this->get_curl_request($wsurl);
         $this->deletecurlrequest = $this->get_curl_request($wsurl);
         $this->listcurlrequest = $this->get_curl_request($wsurl);
-        $this->uploadcurlrequest = $this->get_curl_request($this->moodleurl . '/webservice/upload.php');
 
         $this->postsettings = [
             'wstoken' => $token,
-            'wsfunction' => 'qbank_gitsync_import_question',
+            'wsfunction' => 'qbank_gitsync_import_questions',
             'moodlewsrestformat' => 'json',
             'questionbankentryid' => null,
             'importedversion' => null,
@@ -271,12 +268,6 @@ class import_repo {
         ];
         $this->curlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
         $this->curlrequest->set_option(CURLOPT_POST, 1);
-        $this->uploadpostsettings = [
-            'token' => $token,
-            'moodlewsrestformat' => 'json',
-        ];
-        $this->uploadcurlrequest->set_option(CURLOPT_RETURNTRANSFER, true);
-        $this->uploadcurlrequest->set_option(CURLOPT_POST, 1);
         $this->deletepostsettings = [
             'wstoken' => $token,
             'wsfunction' => 'qbank_gitsync_delete_question',
@@ -669,32 +660,11 @@ class import_repo {
                             echo "Stopping before trying to import questions.\n";
                             $this->call_exit();
                         }
-                        if (!$this->upload_file($tempcatfile)) {
-                            echo "Category {$repoitem} not imported.\n";
-                            echo "Stopping before trying to import questions.\n";
-                            $this->call_exit();
-                        }
-                    } else {
-                        if (!$this->upload_file($repoitem)) {
-                            echo "Category {$repoitem} not imported.\n";
-                            echo "Stopping before trying to import questions.\n";
-                            $this->call_exit();
-                        }
                     }
-                    $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-                    $response = $this->curlrequest->execute();
-                    $responsejson = json_decode($response);
-                    if (!$responsejson) {
-                        echo "Broken JSON returned from Moodle:\n";
-                        echo $response . "\n";
-                        echo "{$repoitem->getPathname()} not imported?\n";
-                        echo "Stopping before trying to import questions.\n";
-                        $this->call_exit();
-                    } else if (property_exists($responsejson, 'exception')) {
-                        echo "{$responsejson->message}\n";
-                        if (property_exists($responsejson, 'debuginfo')) {
-                            echo "{$responsejson->debuginfo}\n";
-                        }
+                    $content = file_get_contents(($newcategory ? $tempcatfile : $repoitem)->getPathname());
+                    $results = $this->send_batch([['postsettings' => $this->postsettings, 'content' => $content]]);
+                    if (!$results || !empty($results[0]->error)) {
+                        echo $results ? "{$results[0]->error}\n" : '';
                         echo "{$repoitem->getPathname()} not imported.\n";
                         echo "Stopping before trying to import questions.\n";
                         $this->call_exit();
@@ -702,47 +672,6 @@ class import_repo {
                 }
             }
         }
-    }
-
-    /**
-     * Uploads a file to Moodle via cURL request to webservice
-     *
-     * Fileinfo parameter is set ready for import call to the webservice.
-     *
-     * @param object $repoitem
-     * @return bool success or failure
-     */
-    public function upload_file($repoitem): bool {
-        $this->uploadpostsettings['file_1'] = new \CURLFile($repoitem->getPathname());
-        $this->uploadcurlrequest->set_option(CURLOPT_POSTFIELDS, $this->uploadpostsettings);
-        $fileinfo = json_decode($this->uploadcurlrequest->execute());
-        // We're expecting an array containing one file information object.
-        // If things go wrong, we should get just an error object - but if the curl request
-        // itself fails outright (e.g. a timeout - observed on a large import under sustained
-        // load) rather than returning a JSON error body, curl_exec() returns false and
-        // json_decode(false) returns null, which is neither an array nor an object
-        // property_exists() can be called on without crashing.
-        if (!is_array($fileinfo)) {
-            if (is_object($fileinfo) && property_exists($fileinfo, 'error')) {
-                echo "{$fileinfo->error}\n";
-                echo "Check that the webservice allows file uploads at ";
-                echo "Site administration->Server->Web services->External services->";
-                echo "qbank_gitsync->Edit->Show more->Can upload files.\n";
-            } else if ($fileinfo === null) {
-                echo "No response from Moodle - the request may have failed or timed out.\n";
-            }
-            echo "{$repoitem->getPathname()} not imported.\n";
-            return false;
-        }
-        $fileinfo = $fileinfo[0];
-        $this->postsettings['fileinfo[contextid]'] = $fileinfo->contextid;
-        $this->postsettings['fileinfo[userid]'] = $fileinfo->userid;
-        $this->postsettings['fileinfo[component]'] = $fileinfo->component;
-        $this->postsettings['fileinfo[filearea]'] = $fileinfo->filearea;
-        $this->postsettings['fileinfo[itemid]'] = $fileinfo->itemid;
-        $this->postsettings['fileinfo[filepath]'] = $fileinfo->filepath;
-        $this->postsettings['fileinfo[filename]'] = $fileinfo->filename;
-        return true;
     }
 
     /**
@@ -771,6 +700,7 @@ class import_repo {
             $this->call_exit();
         }
         $existingentries = array_column($this->manifestcontents->questions, null, 'filepath');
+        $batch = [];
         // Find all the question files and import them. Order is uncertain.
         $categorynames = [];
         foreach ($this->subdirectoryiterator as $repoitem) {
@@ -846,48 +776,23 @@ class import_repo {
                             }
                         }
 
-                        if (!$this->upload_file(($tempqfile) ? $tempqfile : $repoitem)) {
-                            echo 'File upload problem.\n';
-                            echo "{$repoitem->getPathname()} not imported.\n";
-                            continue;
-                        };
-                        $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $this->postsettings);
-                        $response = $this->curlrequest->execute();
-                        $responsejson = json_decode($response);
-                        if (!$responsejson) {
-                            echo "Broken JSON returned from Moodle:\n";
-                            echo $response . "\n";
-                            echo "{$repoitem->getPathname()} not imported.\n";
-                        } else if (property_exists($responsejson, 'exception')) {
-                            echo "{$responsejson->message}\n";
-                            if (property_exists($responsejson, 'debuginfo')) {
-                                echo "{$responsejson->debuginfo}\n";
-                            }
-                            echo "{$repoitem->getPathname()} not imported.\n";
-                        } else if ($responsejson->questionbankentryid) {
-                            $fileoutput = [
-                                'questionbankentryid' => $responsejson->questionbankentryid,
-                                'version' => $responsejson->version,
-                                'filepath' => str_replace('\\', '/', $repoitem->getPathname()),
-                                'format' => strtolower(pathinfo($repoitem->getPathname(), PATHINFO_EXTENSION)),
-                            ];
-                            if ($existingentry && isset($existingentry->currentcommit)) {
-                                $fileoutput['moodlecommit'] = $existingentry->currentcommit;
-                            }
-                            if ($this->usegit && !$existingentry) {
-                                $manifestdirname = dirname($this->manifestpath);
-                                chdir($manifestdirname);
-                                $commithash = exec('git log -n 1 --pretty=format:%H -- ' .
-                                    escapeshellarg($repoitem->getPathname()));
-                                $fileoutput['moodlecommit'] = $commithash;
-                                $fileoutput['currentcommit'] = $commithash;
-                            }
-                            fwrite($tempfile, json_encode($fileoutput) . "\n");
-                            if (!empty($responsejson->validation)) {
-                                echo "\n{$repoitem->getPathname()} imported but has validation issues. " .
-                                    "Please exportrepofrommoodle to identify any changes which have been made.\n";
-                                echo "{$responsejson->validation}\n";
-                            }
+                        // Converted files reuse one temporary path, so keep the content.
+                        $content = file_get_contents((($tempqfile) ? $tempqfile : $repoitem)->getPathname());
+                        // Send the queued questions first if this one would make the request too large.
+                        $queuedbytes = array_sum(array_map('strlen', array_column($batch, 'content')));
+                        if ($batch && $queuedbytes + strlen($content) > self::MAX_BATCH_BYTES) {
+                            $this->import_batch($batch, $tempfile);
+                            $batch = [];
+                        }
+                        $batch[] = [
+                            'repoitem' => $repoitem,
+                            'existingentry' => $existingentry,
+                            'postsettings' => $this->postsettings,
+                            'content' => $content,
+                        ];
+                        if (count($batch) === $this->batchsize) {
+                            $this->import_batch($batch, $tempfile);
+                            $batch = [];
                         }
                     } else {
                         echo "Problem with the category file or file location.\n" .
@@ -896,8 +801,150 @@ class import_repo {
                 }
             }
         }
+        if ($batch) {
+            $this->import_batch($batch, $tempfile);
+        }
         fclose($tempfile);
         return $tempfile;
+    }
+
+    /**
+     * Import queued questions in one request and add the imported ones to the temporary manifest file.
+     *
+     * @param array $batch queued questions: repoitem, existingentry, postsettings and content
+     * @param resource $tempfile temporary manifest file
+     * @return void
+     */
+    public function import_batch(array $batch, $tempfile): void {
+        // Note what is being sent, so that the next run can check these questions if the answer is lost.
+        // The manifest record is prepared now, because the files can change before that run.
+        $pending = array_map(function ($item) {
+            $settings = $item['postsettings'];
+            $categories = $this->split_category_path($settings['qcategoryname']);
+            return [
+                'record' => $this->manifest_record($item['repoitem']->getPathname(), $item['existingentry']),
+                'questionbankentryid' => $settings['questionbankentryid'],
+                'version' => max((int) $settings['importedversion'], (int) $settings['exportedversion']),
+                'name' => self::question_name($item['content']),
+                'category' => end($categories),
+            ];
+        }, $batch);
+        file_put_contents($this->pending_path(), json_encode($pending));
+        $results = $this->send_batch($batch);
+        if ($results === null) {
+            echo "Moodle may still have imported questions of this request. Stopping.\n";
+            echo "Run the import again. It checks these questions in Moodle before it continues.\n";
+            $this->call_exit();
+            return;
+        }
+        unlink($this->pending_path());
+        foreach ($batch as $index => $item) {
+            $result = $results[$index];
+            $filepath = $item['repoitem']->getPathname();
+            if (!empty($result->error)) {
+                echo "{$result->error}\n";
+                echo "{$filepath} not imported.\n";
+            } else if ($result->questionbankentryid) {
+                $this->record_import($pending[$index]['record'], $result, $tempfile);
+                if (!empty($result->validation)) {
+                    echo "\n{$filepath} imported but has validation issues. " .
+                        "Please exportrepofrommoodle to identify any changes which have been made.\n";
+                    echo "{$result->validation}\n";
+                }
+            }
+        }
+    }
+
+    /**
+     * Manifest record of a question file, without the details of the question in Moodle.
+     *
+     * @param string $filepath question file in the repository
+     * @param object|false $existingentry manifest entry of the question, if any
+     * @return array
+     */
+    private function manifest_record(string $filepath, $existingentry): array {
+        $record = [
+            'filepath' => str_replace('\\', '/', $filepath),
+            'format' => strtolower(pathinfo($filepath, PATHINFO_EXTENSION)),
+        ];
+        if ($existingentry && isset($existingentry->currentcommit)) {
+            $record['moodlecommit'] = $existingentry->currentcommit;
+        }
+        if ($this->usegit && !$existingentry) {
+            $manifestdirname = dirname($this->manifestpath);
+            chdir($manifestdirname);
+            $commithash = exec('git log -n 1 --pretty=format:%H -- ' . escapeshellarg($filepath));
+            $record['moodlecommit'] = $commithash;
+            $record['currentcommit'] = $commithash;
+        }
+        return $record;
+    }
+
+    /**
+     * Add an imported question to the temporary manifest file.
+     *
+     * @param array|object $record manifest record of the question file
+     * @param object $question questionbankentryid and version of the question in Moodle
+     * @param resource $tempfile temporary manifest file
+     * @return void
+     */
+    private function record_import($record, object $question, $tempfile): void {
+        $ids = ['questionbankentryid' => $question->questionbankentryid, 'version' => $question->version];
+        fwrite($tempfile, json_encode($ids + (array) $record) . "\n");
+    }
+
+    /**
+     * Path of the file listing the questions of an import request that Moodle has not answered yet.
+     *
+     * @return string
+     */
+    private function pending_path(): string {
+        return str_replace('.tmp', '_pending.tmp', $this->tempfilepath);
+    }
+
+    /**
+     * Name of the question in a Moodle XML file.
+     *
+     * @param string $content Moodle XML
+     * @return string question name, empty if the XML cannot be read
+     */
+    private static function question_name(string $content): string {
+        $previous = libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($content);
+        libxml_use_internal_errors($previous);
+        return $xml ? trim((string) $xml->question->name->text) : '';
+    }
+
+    /**
+     * Send questions with their XML to Moodle in one import request.
+     *
+     * @param array $batch items with postsettings and content
+     * @return array|null one result per item, or null if the request failed
+     */
+    public function send_batch(array $batch): ?array {
+        $request = array_intersect_key($this->postsettings, array_flip(['wstoken', 'wsfunction', 'moodlewsrestformat']));
+        foreach ($batch as $index => $item) {
+            $question = array_diff_key($item['postsettings'], $request);
+            $question['content'] = $item['content'];
+            foreach ($question as $key => $value) {
+                $request["questions[{$index}][{$key}]"] = $value;
+            }
+        }
+        $this->curlrequest->set_option(CURLOPT_POSTFIELDS, $request);
+        $response = $this->curlrequest->execute();
+        $results = json_decode($response);
+        if (!is_array($results) || count($results) !== count($batch)) {
+            if (is_object($results) && property_exists($results, 'message')) {
+                echo "{$results->message}\n";
+                echo property_exists($results, 'debuginfo') ? "{$results->debuginfo}\n" : '';
+            } else {
+                // A failed curl request returns false, which leaves nothing to decode.
+                echo ($response === false) ? "No response from Moodle - the request may have failed or timed out.\n"
+                    : "Broken JSON returned from Moodle:\n{$response}\n";
+            }
+            return null;
+        }
+        return $results;
     }
 
     /**
@@ -906,6 +953,40 @@ class import_repo {
      * @return void
      */
     public function recovery(): void {
+        if (file_exists($this->pending_path())) {
+            echo "The last run got no answer to an import request. Checking its questions in Moodle:\n";
+            $moodle = json_decode($this->listcurlrequest->execute());
+            if (!isset($moodle->questions)) {
+                echo ($moodle->message ?? 'Broken JSON returned from Moodle.') . "\n";
+                echo "Failed to check the questions.\n";
+                $this->call_exit();
+                return;
+            }
+            $tempfile = fopen($this->tempfilepath, 'a+');
+            $recorded = array_map('json_decode', file($this->tempfilepath));
+            $linked = array_column($this->manifestcontents->questions, null, 'questionbankentryid')
+                + array_column($recorded, null, 'questionbankentryid');
+            foreach (json_decode(file_get_contents($this->pending_path())) as $item) {
+                // An existing question was imported if its version went up. A new question was
+                // imported if exactly one question with its name and category is not linked yet.
+                $matches = array_filter($moodle->questions, function ($question) use ($item, $linked) {
+                    if ($item->questionbankentryid) {
+                        return (string) $question->questionbankentryid === (string) $item->questionbankentryid
+                            && (int) $question->version > $item->version;
+                    }
+                    return $question->name === $item->name && $question->questioncategory === $item->category
+                        && !isset($linked[$question->questionbankentryid]);
+                });
+                if (count($matches) === 1) {
+                    $match = reset($matches);
+                    $this->record_import($item->record, $match, $tempfile);
+                    $linked[$match->questionbankentryid] = $match;
+                    echo "{$item->record->filepath} was imported.\n";
+                }
+            }
+            fclose($tempfile);
+            unlink($this->pending_path());
+        }
         if (file_exists($this->tempfilepath)) {
             echo 'Attempting recovery from failure on previous run. Updating manifest:';
             $this->manifestcontents = cli_helper::create_manifest_file(

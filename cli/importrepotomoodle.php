@@ -195,6 +195,15 @@ $options = [
         'valuerequired' => false,
     ],
     [
+        'longopt' => 'batchsize',
+        'shortopt' => 'q',
+        'description' => 'Number of questions to import per request. A request must fit the server\'s PHP ' .
+            'max_input_vars (11 variables per question) and post_max_size.',
+        'default' => 20,
+        'variable' => 'batchsize',
+        'valuerequired' => true,
+    ],
+    [
         'longopt' => 'subcall',
         'shortopt' => 'w',
         'description' => 'Is this a subcall of the script?',

@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Import a single question with accompanying metadata via webservice.
+ * Import questions with accompanying metadata via webservice.
  *
  * @package   qbank_gitsync
  * @copyright 2023 The University of Edinburgh
@@ -34,6 +34,7 @@ require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 use context;
 use external_api;
 use external_function_parameters;
+use external_multiple_structure;
 use external_single_structure;
 use external_value;
 use moodle_exception;
@@ -42,93 +43,110 @@ use question_bank;
 use core_question\local\bank\question_edit_contexts;
 
 /**
- * A webservice function to import a single question with metadata.
+ * A webservice function to import questions with metadata, one result per question.
  */
-class import_question extends external_api {
+class import_questions extends external_api {
     /**
      * Returns description of webservice function parameters
      * @return external_function_parameters
      */
     public static function execute_parameters() {
         return new external_function_parameters([
-            'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'Moodle questionbankentryid if question exists already'),
-            'importedversion' => new external_value(PARAM_SEQUENCE, 'Last imported version of question'),
-            'exportedversion' => new external_value(PARAM_SEQUENCE, 'Last exported version of question'),
-            'qcategoryname' => new external_value(PARAM_TEXT, 'Category of question in form top/$category/$subcat1/$subcat2'),
-            'fileinfo' => new external_single_structure([
-                'component' => new external_value(PARAM_TEXT, 'File component'),
-                'contextid' => new external_value(PARAM_TEXT, 'File context'),
-                'filearea' => new external_value(PARAM_TEXT, 'File area'),
-                'userid' => new external_value(PARAM_TEXT, 'File area'),
-                'filename' => new external_value(PARAM_TEXT, 'File name'),
-                'filepath' => new external_value(PARAM_TEXT, 'File path'),
-                'itemid' => new external_value(PARAM_SEQUENCE, 'File item id'),
-            ]),
-            'contextlevel' => new external_value(PARAM_TEXT, 'Context level: 10, 40, 50, 70'),
-            'coursename' => new external_value(PARAM_TEXT, 'Unique course name'),
-            'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
-            'coursecategory' => new external_value(PARAM_TEXT, 'Unique course category name'),
-            'qcategoryid' => new external_value(PARAM_SEQUENCE, 'Question category id'),
-            'instanceid' => new external_value(PARAM_SEQUENCE, 'Course, module or coursecategory id'),
+            'questions' => new external_multiple_structure(new external_single_structure([
+                'questionbankentryid' => new external_value(
+                    PARAM_SEQUENCE,
+                    'Moodle questionbankentryid if question exists already'
+                ),
+                'importedversion' => new external_value(PARAM_SEQUENCE, 'Last imported version of question'),
+                'exportedversion' => new external_value(PARAM_SEQUENCE, 'Last exported version of question'),
+                'qcategoryname' => new external_value(PARAM_TEXT, 'Category of question in form top/$category/$subcat1/$subcat2'),
+                'contextlevel' => new external_value(PARAM_TEXT, 'Context level: 10, 40, 50, 70'),
+                'coursename' => new external_value(PARAM_TEXT, 'Unique course name'),
+                'modulename' => new external_value(PARAM_TEXT, 'Unique (within course) module name'),
+                'coursecategory' => new external_value(PARAM_TEXT, 'Unique course category name'),
+                'qcategoryid' => new external_value(PARAM_SEQUENCE, 'Question category id'),
+                'instanceid' => new external_value(PARAM_SEQUENCE, 'Course, module or coursecategory id'),
+                'content' => new external_value(PARAM_RAW, 'Moodle XML of the question or category'),
+            ])),
         ]);
     }
 
     /**
      * Returns description of webservice function output.
-     * @return external_single_structure
+     * @return external_multiple_structure
      */
     public static function execute_returns() {
-        return new external_single_structure([
+        return new external_multiple_structure(new external_single_structure([
             'questionbankentryid' => new external_value(PARAM_SEQUENCE, 'questionbankentry id'),
             'version' => new external_value(PARAM_SEQUENCE, 'question version'),
             'validation' => new external_value(PARAM_RAW, 'validation issues'),
-        ]);
+            'error' => new external_value(PARAM_RAW, 'error message if the question was not imported'),
+        ]));
     }
 
     /**
-     * Import a question from XML file
+     * Import questions from Moodle XML, each in its own transaction. A failed question does not stop the others.
      *
-     * @param string|null $questionbankentryid questionbankentry id
-     * @param string|null $importedversion last exported version of question
-     * @param string|null $exportedversion last imported version of question
-     * @param string|null $qcategoryname category of the question in form top/$category/$subcat1/$subcat2
-     * @param array $fileinfo Moodle file information of previously uploaded file
-     * @param int $contextlevel Moodle code for context level e.g. 10 for system
-     * @param string|null $coursename Unique course name (optional unless course or module context level)
-     * @param string|null $modulename Unique (within course) module name (optional unless module context level)
-     * @param string|null $coursecategory course category name (optional unless course catgeory context level)
-     * @param string|null $qcategoryid ID of the question category to search (supercedes $qcategoryname)
-     * @param string|null $instanceid ID of the relevant object for the given context level e.g. course id
-     *  for course level) to search for questions (supercedes $coursename, $modulename & $coursecategory)
-     * @return object \stdClass with property questionbankentryid'
+     * Each question has these fields:
+     * - questionbankentryid: questionbankentry id if the question exists already
+     * - importedversion, exportedversion: last imported and exported version of the question
+     * - qcategoryname: category of the question in form top/$category/$subcat1/$subcat2
+     * - contextlevel: Moodle code for context level e.g. 10 for system
+     * - coursename: Unique course name (optional unless course or module context level)
+     * - modulename: Unique (within course) module name (optional unless module context level)
+     * - coursecategory: course category name (optional unless course category context level)
+     * - qcategoryid: ID of the question category to search (supersedes qcategoryname)
+     * - instanceid: ID of the relevant object for the given context level e.g. course id
+     *   for course level (supersedes coursename, modulename and coursecategory)
+     * - content: Moodle XML of the question or category
+     *
+     * @param array $questions questions to import
+     * @return array one result per question, in request order
      */
-    public static function execute(
-        ?string $questionbankentryid,
-        ?string $importedversion,
-        ?string $exportedversion,
-        ?string $qcategoryname,
-        array $fileinfo,
-        int $contextlevel,
-        ?string $coursename = null,
-        ?string $modulename = null,
-        ?string $coursecategory = null,
-        ?string $qcategoryid = null,
-        ?string $instanceid = null
-    ): object {
-        global $CFG, $DB, $USER;
-        $params = self::validate_parameters(self::execute_parameters(), [
-            'questionbankentryid' => $questionbankentryid,
-            'importedversion' => $importedversion,
-            'exportedversion' => $exportedversion,
-            'qcategoryname' => $qcategoryname,
-            'fileinfo' => $fileinfo,
-            'contextlevel' => $contextlevel,
-            'coursename' => $coursename,
-            'modulename' => $modulename,
-            'coursecategory' => $coursecategory,
-            'qcategoryid' => $qcategoryid,
-            'instanceid' => $instanceid,
-        ]);
+    public static function execute(array $questions): array {
+        global $DB;
+        $params = self::validate_parameters(self::execute_parameters(), ['questions' => $questions]);
+        // A failed import rolls back every open transaction, so each question must own the outermost one.
+        $DB->transactions_forbidden();
+        $results = [];
+        foreach ($params['questions'] as $question) {
+            $result = ['questionbankentryid' => '', 'version' => '', 'validation' => '', 'error' => ''];
+            $bufferlevel = ob_get_level();
+            ob_start();
+            try {
+                $transaction = $DB->start_delegated_transaction();
+                $response = self::import_question($question);
+                $transaction->allow_commit();
+                $result['questionbankentryid'] = (string) $response->questionbankentryid;
+                $result['version'] = (string) $response->version;
+                $result['validation'] = (string) $response->validation;
+            } catch (\Throwable $e) {
+                $DB->force_transaction_rollback();
+                $result['error'] = $e->getMessage();
+                // Like the REST server, include debug information only when debugging is on.
+                if ($e instanceof moodle_exception && $e->debuginfo && debugging()) {
+                    $result['error'] .= "\n" . $e->debuginfo;
+                }
+            } finally {
+                // Discard any stray output from the (core Moodle) import machinery,
+                // so it can't corrupt the webservice's JSON response.
+                while (ob_get_level() > $bufferlevel) {
+                    ob_end_clean();
+                }
+            }
+            $results[] = $result;
+        }
+        return $results;
+    }
+
+    /**
+     * Import one question or category from XML.
+     *
+     * @param array $params validated fields of one question, see execute()
+     * @return object \stdClass with questionbankentryid, version and validation
+     */
+    private static function import_question(array $params): object {
+        global $DB;
         $questiondata = null;
         $question = null;
         $thiscontext = null;
@@ -210,18 +228,9 @@ class import_question extends external_api {
             $qformat->setCatfromfile(true);
             $iscategory = true;
         }
-        $fs = get_file_storage();
-        $file = $fs->get_file(
-            $params['fileinfo']['contextid'],
-            $params['fileinfo']['component'],
-            $params['fileinfo']['filearea'],
-            $params['fileinfo']['itemid'],
-            $params['fileinfo']['filepath'],
-            $params['fileinfo']['filename']
-        );
-        $filename = $file->get_filename();
-        $requestdir = make_request_directory();
-        $tempfile = $file->copy_content_to_temp("{$requestdir}/{$filename}");
+        $filename = 'question.xml';
+        $tempfile = make_request_directory() . '/' . $filename;
+        file_put_contents($tempfile, $params['content']);
 
         if ($params['questionbankentryid']) {
             question_require_capability_on($question, 'edit');
@@ -257,7 +266,6 @@ class import_question extends external_api {
             throw new moodle_exception('importerror', 'qbank_gitsync', null, $filename);
         }
 
-        $file->delete();
         $response = new \stdClass();
         $response->questionbankentryid = null;
         $response->version = null;
@@ -287,15 +295,6 @@ class import_question extends external_api {
                 'SELECT MAX(version) FROM {question_versions} WHERE questionbankentryid = :questionbankentryid',
                 ['questionbankentryid' => $response->questionbankentryid]
             );
-        }
-        // Discards any stray output the (core Moodle) import machinery above may have
-        // echoed directly, so it can't corrupt the webservice's JSON response. Guarded:
-        // ob_clean() unconditionally throws "Failed to delete buffer. No buffer to
-        // delete" when no output buffer is active, which is exactly what happens with
-        // output_buffering=0 (Off) in php.ini - confirmed on this server - rather than
-        // Moodle's webservice dispatcher always having started one beforehand.
-        if (ob_get_level() > 0) {
-            ob_clean();
         }
         return $response;
     }

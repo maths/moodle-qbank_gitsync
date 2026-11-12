@@ -15,7 +15,7 @@
 // along with Stack.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for import_question function of gitsync webservice
+ * Unit tests for import_questions function of gitsync webservice
  *
  * @package    qbank_gitsync
  * @copyright  2023 The Open University
@@ -29,24 +29,20 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/question/engine/tests/helpers.php');
 require_once($CFG->dirroot . '/webservice/tests/helpers.php');
-require_once($CFG->dirroot . '/files/externallib.php');
 require_once($CFG->dirroot . '/question/bank/gitsync/lib.php');
 
 use context_course;
 use externallib_advanced_testcase;
 use external_api;
-use required_capability_exception;
-use require_login_exception;
-use core_files_external;
 
 /**
- * Test the export_question webservice function.
+ * Test the import_questions webservice function.
  * @runTestsInSeparateProcesses
  * @group qbank_gitsync
  *
- * @covers \gitsync\external\import_question::execute
+ * @covers \qbank_gitsync\external\import_questions::execute
  */
-final class import_question_test extends externallib_advanced_testcase {
+final class import_questions_test extends externallib_advanced_testcase {
     /** @var core_question_generator plugin generator */
     protected \core_question_generator $generator;
     /** @var generated course object */
@@ -59,8 +55,6 @@ final class import_question_test extends externallib_advanced_testcase {
     protected \stdClass $context;
     /** @var \stdClass generated question_category object */
     protected \stdClass $qcategory;
-    /** @var array information about uploaded file */
-    protected array $fileinfo;
     /** @var generated user object */
     protected \stdClass $user;
     /** @var string filepath of directory containing test files */
@@ -72,6 +66,8 @@ final class import_question_test extends externallib_advanced_testcase {
         parent::setUp();
         global $CFG;
         $this->resetAfterTest();
+        // The function under test must own the outermost transaction.
+        $this->preventResetByRollback();
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $this->course = $this->getDataGenerator()->create_course();
         $this->coursecontext = \context_course::instance($this->course->id);
@@ -95,49 +91,35 @@ final class import_question_test extends externallib_advanced_testcase {
         $this->user = $user;
         $this->setUser($user);
         $this->testrepo = $CFG->dirroot . '/question/bank/gitsync/testrepoparent/testrepo/';
-        $this->fileinfo = ['contextid' => '', 'component' => '', 'filearea' => '', 'userid' => '',
-                           'itemid' => '', 'filepath' => '', 'filename' => '',
-                        ];
     }
 
     /**
-     * Upload a question file ready for import.
+     * Import one file through the webservice function.
      *
      * @param string $contentpath Path to test file containing question
-     * @return void
+     * @param string $qcategoryname category of the question, empty for a category file
+     * @param string $questionbankentryid existing question bank entry, if any
+     * @param string $importedversion last imported version
+     * @param string $exportedversion last exported version
+     * @return array result for the question
      */
-    public function upload_file(string $contentpath): void {
-        global $USER;
-        $content = file_get_contents($contentpath);
-        $context = \context_user::instance($USER->id);
-        $contextid = $context->id;
-        $component = "user";
-        $filearea = "draft";
-        $itemid = 0;
-        $filepath = "/";
-        $filename = "Simple.txt";
-        $filecontent = base64_encode($content);
-        $contextlevel = null;
-        $instanceid = null;
-
-        // Make sure no file exists.
-        $fileinfo = core_files_external::upload(
-            $contextid,
-            $component,
-            $filearea,
-            $itemid,
-            $filepath,
-            $filename,
-            $filecontent,
-            $contextlevel,
-            $instanceid
-        );
-
-        $fileinfo = core_files_external::clean_returnvalue(core_files_external::upload_returns(), $fileinfo);
-
-        $this->fileinfo = $fileinfo;
-        unset($this->fileinfo['url']);
-        $this->fileinfo['userid'] = '';
+    public function import(
+        string $contentpath,
+        string $qcategoryname = '',
+        string $questionbankentryid = '',
+        string $importedversion = '',
+        string $exportedversion = ''
+    ): array {
+        $results = import_questions::execute([[
+            'questionbankentryid' => $questionbankentryid, 'importedversion' => $importedversion,
+            'exportedversion' => $exportedversion, 'qcategoryname' => $qcategoryname, 'contextlevel' => '70',
+            'coursename' => $this->course->fullname, 'modulename' => $this->module->name, 'coursecategory' => '',
+            'qcategoryid' => '', 'instanceid' => '', 'content' => file_get_contents($contentpath),
+        ]]);
+        // We need to execute the return values cleaning process to simulate the web service server.
+        $results = external_api::clean_returnvalue(import_questions::execute_returns(), $results);
+        $this->assertCount(1, $results);
+        return $results[0];
     }
 
     /**
@@ -158,24 +140,7 @@ final class import_question_test extends externallib_advanced_testcase {
      */
     public function test_capabilities(): void {
         $this->give_capabilities();
-        $this->upload_file($this->testrepo . 'top/cat-1/gitsync_category.xml');
-        $returnvalue = import_question::execute(
-            '',
-            '',
-            '',
-            null,
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
-        );
-
-        // We need to execute the return values cleaning process to simulate
-        // the web service server.
-        $returnvalue = external_api::clean_returnvalue(
-            import_question::execute_returns(),
-            $returnvalue
-        );
+        $returnvalue = $this->import($this->testrepo . 'top/cat-1/gitsync_category.xml');
 
         // Assert that there was a response.
         // The actual response is tested in other tests.
@@ -188,18 +153,11 @@ final class import_question_test extends externallib_advanced_testcase {
     public function test_not_logged_in(): void {
         global $DB;
         $this->setUser();
-        $this->expectException(require_login_exception::class);
         // Exception messages don't seem to get translated.
-        $this->expectExceptionMessage('not logged in');
-        import_question::execute(
-            '',
-            '',
-            '',
-            null,
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
+        $result = $this->import($this->testrepo . 'top/cat-1/gitsync_category.xml');
+        $this->assertStringContainsString(
+            'not logged in',
+            $result['error']
         );
     }
 
@@ -211,17 +169,10 @@ final class import_question_test extends externallib_advanced_testcase {
         $managerroleid = $DB->get_field('role', 'id', ['shortname' => 'manager']);
         role_assign($managerroleid, $this->user->id, $this->coursecontext->id);
         $this->unassignUserCapability('qbank/gitsync:importquestions', \context_system::instance()->id, $managerroleid);
-        $this->expectException(required_capability_exception::class);
-        $this->expectExceptionMessage('you do not currently have permissions to do that (Import)');
-        import_question::execute(
-            '',
-            '',
-            '',
-            null,
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
+        $result = $this->import($this->testrepo . 'top/cat-1/gitsync_category.xml');
+        $this->assertStringContainsString(
+            'you do not currently have permissions to do that (Import)',
+            $result['error']
         );
     }
 
@@ -229,17 +180,10 @@ final class import_question_test extends externallib_advanced_testcase {
      * Test the execute function fails when user has no access to supplied context.
      */
     public function test_import_capability(): void {
-        $this->expectException(require_login_exception::class);
-        $this->expectExceptionMessage('Not enrolled');
-        import_question::execute(
-            '',
-            '',
-            '',
-            null,
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
+        $result = $this->import($this->testrepo . 'top/cat-1/gitsync_category.xml');
+        $this->assertStringContainsString(
+            'Not enrolled',
+            $result['error']
         );
     }
 
@@ -250,22 +194,12 @@ final class import_question_test extends externallib_advanced_testcase {
     public function test_category_import(): void {
         global $DB;
         $this->give_capabilities();
-        $this->upload_file($this->testrepo . 'top/cat-1/gitsync_category.xml');
         $createdcategory = $DB->get_record('question_categories', ['name' => 'cat 1'], '*');
         $this->assertEquals($createdcategory, false);
         $sink = $this->redirectEvents();
 
         // Create a category.
-        $returnvalue = import_question::execute(
-            '',
-            '',
-            '',
-            null,
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
-        );
+        $returnvalue = $this->import($this->testrepo . 'top/cat-1/gitsync_category.xml');
         $createdcategory = $DB->get_record('question_categories', ['name' => 'cat 1'], '*', $strictness = MUST_EXIST);
         $this->assertEquals($createdcategory->contextid, $this->context->id);
         $parentcategory = $DB->get_record(
@@ -276,11 +210,6 @@ final class import_question_test extends externallib_advanced_testcase {
         );
         $this->assertEquals($createdcategory->parent, $parentcategory->id);
         $this->assertEquals($createdcategory->info, 'First imported folder');
-
-        $returnvalue = external_api::clean_returnvalue(
-            import_question::execute_returns(),
-            $returnvalue
-        );
 
         $this->assertEquals($returnvalue['questionbankentryid'], null);
         $events = $sink->get_events();
@@ -295,7 +224,6 @@ final class import_question_test extends externallib_advanced_testcase {
     public function test_subcategory_import(): void {
         global $DB;
         $this->give_capabilities();
-        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/gitsync_category.xml');
         $createdcategory = $DB->get_record('question_categories', ['name' => 'cat 2'], '*');
         $this->assertEquals($createdcategory, false);
         $createdsubcategory = $DB->get_record('question_categories', ['name' => 'subcat 2_1'], '*');
@@ -303,16 +231,7 @@ final class import_question_test extends externallib_advanced_testcase {
         $sink = $this->redirectEvents();
 
         // Create a category and subcategory.
-        $returnvalue = import_question::execute(
-            '',
-            '',
-            '',
-            null,
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
-        );
+        $returnvalue = $this->import($this->testrepo . 'top/cat-2/subcat-2_1/gitsync_category.xml');
         $createdcategory = $DB->get_record('question_categories', ['name' => 'cat 2'], '*', $strictness = MUST_EXIST);
         $this->assertEquals($createdcategory->contextid, $this->context->id);
         $parentcategory = $DB->get_record(
@@ -330,11 +249,6 @@ final class import_question_test extends externallib_advanced_testcase {
         $this->assertEquals($createdsubcategory->parent, $createdcategory->id);
         $this->assertEquals($createdsubcategory->info, 'Imported subfolder');
 
-        $returnvalue = external_api::clean_returnvalue(
-            import_question::execute_returns(),
-            $returnvalue
-        );
-
         $this->assertEquals($returnvalue['questionbankentryid'], null);
         $events = $sink->get_events();
         $this->assertEquals(count($events), 2);
@@ -348,34 +262,14 @@ final class import_question_test extends externallib_advanced_testcase {
     public function test_question_import(): void {
         global $DB;
         $this->give_capabilities();
-        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/gitsync_category.xml');
         $createdquestion = $DB->get_record('question', ['name' => 'Third Question'], '*');
         $this->assertEquals($createdquestion, false);
 
-        $returnvalue = import_question::execute(
-            '',
-            '',
-            '',
-            null,
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
-        );
+        $returnvalue = $this->import($this->testrepo . 'top/cat-2/subcat-2_1/gitsync_category.xml');
         $createdsubcategory = $DB->get_record('question_categories', ['name' => 'subcat 2_1'], '*', $strictness = MUST_EXIST);
 
         $sink = $this->redirectEvents();
-        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml');
-        $returnvalue = import_question::execute(
-            '',
-            '',
-            '',
-            'top/cat 2/subcat 2_1',
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
-        );
+        $returnvalue = $this->import($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml', 'top/cat 2/subcat 2_1');
         $createdquestion = $DB->get_record('question', ['name' => 'Third Question'], '*', $strictness = MUST_EXIST);
         $qversion = $DB->get_record(
             'question_versions',
@@ -396,11 +290,6 @@ final class import_question_test extends externallib_advanced_testcase {
             $strictness = MUST_EXIST
         );
         $this->assertEquals($qcategory->id, $createdsubcategory->id);
-
-        $returnvalue = external_api::clean_returnvalue(
-            import_question::execute_returns(),
-            $returnvalue
-        );
 
         $this->assertEquals($returnvalue['questionbankentryid'], $qbankentry->id);
         $events = $sink->get_events();
@@ -433,27 +322,12 @@ final class import_question_test extends externallib_advanced_testcase {
         ));
         $sink = $this->redirectEvents();
         // Update question.
-        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml');
-        $returnvalue = import_question::execute(
-            $qbankentryid,
-            '1',
-            '1',
-            null,
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
-        );
+        $returnvalue = $this->import($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml', '', $qbankentryid, '1', '1');
         // Check version number has increased.
         $this->assertEquals(true, $DB->record_exists(
             'question_versions',
             ['questionbankentryid' => $qbankentryid, 'version' => 2]
         ));
-
-        $returnvalue = external_api::clean_returnvalue(
-            import_question::execute_returns(),
-            $returnvalue
-        );
 
         $this->assertEquals($returnvalue['questionbankentryid'], $qbankentryid);
         $events = $sink->get_events();
@@ -485,20 +359,12 @@ final class import_question_test extends externallib_advanced_testcase {
         ));
         $sink = $this->redirectEvents();
         // Update question.
-        $this->upload_file($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml');
-        $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessage('Could not import question : Example STACK question ' .
+        $result = $this->import($this->testrepo . 'top/cat-2/subcat-2_1/Third-Question.xml', '', $qbankentryid, '3', '4');
+        $this->assertStringContainsString(
+            'Could not import question : Example STACK question ' .
                                       'Current version in Moodle is 1. Last imported version is 3. ' .
-                                      'Last exported version is 4. You need to export the question.');
-        import_question::execute(
-            $qbankentryid,
-            '3',
-            '4',
-            null,
-            $this->fileinfo,
-            70,
-            $this->course->fullname,
-            $this->module->name
+                                      'Last exported version is 4. You need to export the question.',
+            $result['error']
         );
 
         // Check version number has not increased.
@@ -509,30 +375,56 @@ final class import_question_test extends externallib_advanced_testcase {
     }
 
     /**
+     * A failed question is reported and rolled back without stopping the others.
+     */
+    public function test_independent_results(): void {
+        global $DB;
+        $this->give_capabilities();
+        $question = fn($content, $qcategoryname) => [
+            'questionbankentryid' => '', 'importedversion' => '', 'exportedversion' => '',
+            'qcategoryname' => $qcategoryname, 'contextlevel' => '70', 'coursename' => $this->course->fullname,
+            'modulename' => $this->module->name, 'coursecategory' => '', 'qcategoryid' => '', 'instanceid' => '',
+            'content' => $content,
+        ];
+        $before = $DB->count_records('question');
+        $results = import_questions::execute([
+            $question(file_get_contents($this->testrepo . 'top/cat-1/gitsync_category.xml'), ''),
+            $question(file_get_contents($this->testrepo . 'top/cat-1/First-Question.xml'), 'top/cat 1'),
+            $question('This is not XML.', 'top/cat 1'),
+            $question(file_get_contents($this->testrepo . 'top/cat-2/Second-Question.xml'), 'top/cat 1'),
+        ]);
+        $results = external_api::clean_returnvalue(import_questions::execute_returns(), $results);
+
+        $this->assertCount(4, $results);
+        $this->assertSame(['', ''], [$results[0]['questionbankentryid'], $results[0]['error']]);
+        $this->assertSame('', $results[2]['questionbankentryid']);
+        $this->assertNotSame('', $results[2]['error']);
+        foreach ([1 => 'First Question', 3 => 'Second Question'] as $index => $name) {
+            $this->assertSame('', $results[$index]['error']);
+            $this->assertSame('1', $results[$index]['version']);
+            $questionid = $DB->get_field('question', 'id', ['name' => $name], MUST_EXIST);
+            $this->assertEquals(
+                $results[$index]['questionbankentryid'],
+                $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $questionid])
+            );
+        }
+        $this->assertSame($before + 2, $DB->count_records('question'));
+    }
+
+    /**
      * Test a category from another context is rejected.
      */
     public function test_category_outside_context(): void {
         global $DB;
         $this->give_capabilities();
-        $this->upload_file($this->testrepo . 'top/cat-1/First-Question.xml');
-        $this->expectException(\moodle_exception::class);
-        $this->expectExceptionMessage('The category is not in the supplied context.');
-        try {
-            // The category is in the course context, the import targets the quiz context.
-            import_question::execute(
-                '',
-                '',
-                '',
-                null,
-                $this->fileinfo,
-                70,
-                $this->course->fullname,
-                $this->module->name,
-                null,
-                (string) $this->qcategory->id
-            );
-        } finally {
-            $this->assertFalse($DB->record_exists('question', ['name' => 'First Question']));
-        }
+        // The category is in the course context, the import targets the quiz context.
+        $results = import_questions::execute([[
+            'questionbankentryid' => '', 'importedversion' => '', 'exportedversion' => '', 'qcategoryname' => '',
+            'contextlevel' => '70', 'coursename' => $this->course->fullname, 'modulename' => $this->module->name,
+            'coursecategory' => '', 'qcategoryid' => (string) $this->qcategory->id, 'instanceid' => '',
+            'content' => file_get_contents($this->testrepo . 'top/cat-1/First-Question.xml'),
+        ]]);
+        $this->assertStringContainsString('The category is not in the supplied context.', $results[0]['error']);
+        $this->assertFalse($DB->record_exists('question', ['name' => 'First Question']));
     }
 }
